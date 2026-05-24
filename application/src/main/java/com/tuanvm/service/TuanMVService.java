@@ -11,12 +11,12 @@ public class TuanMVService {
      @Autowired
     private TripRepository tripRepository;
 
-    public List<TripDetailProjection> getComplexTripDetails(String dateStr) {
+    public List<TripDetailProjection> getComplexTripDetails(String dateStr, String route) {
         // Chặn đầu chặn đuôi ngày chạy của con xe
         String start = dateStr + " 00:00:00";
         String end = dateStr + " 23:59:59.999"; 
         
-        return tripRepository.layThongTinChuyenXeComplex(start, end);
+        return tripRepository.layThongTinChuyenXeComplex(start, end, route);
     }
 
 }

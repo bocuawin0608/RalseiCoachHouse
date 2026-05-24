@@ -13,15 +13,17 @@ import com.tuanvm.dto.projection.TripDetailProjection;
 public interface TripRepository extends JpaRepository<Trip, Integer> {
 
     @Query(value = """
-        SELECT r.routeName AS routeName, 
-               sl.seatLayoutName AS seatLayoutName, 
-               t.[status] AS status, 
-               t.departureTime AS departureTime 
-        FROM [trip] t 
-        JOIN route R ON t.routeId = R.routeId
-        JOIN coach C ON t.coachId = C.coachId
-        JOIN seat_layout SL ON C.seatLayoutId = SL.seatLayoutId 
-        WHERE t.departureTime BETWEEN :start AND :end
-        """, nativeQuery = true)
-    List<TripDetailProjection> layThongTinChuyenXeComplex(@Param("start") String start, @Param("end") String end);
+            SELECT r.routeName AS routeName,
+                   sl.seatLayoutName AS seatLayoutName,
+                   t.[status] AS status,
+                   t.departureTime AS departureTime
+            FROM [trip] t
+            JOIN route R ON t.routeId = R.routeId
+            JOIN coach C ON t.coachId = C.coachId
+            JOIN seat_layout SL ON C.seatLayoutId = SL.seatLayoutId
+            WHERE t.departureTime BETWEEN :start AND :end
+            AND R.routeName = :route
+            """, nativeQuery = true)
+    List<TripDetailProjection> layThongTinChuyenXeComplex(@Param("start") String start, @Param("end") String end,
+            @Param("route") String route);
 }

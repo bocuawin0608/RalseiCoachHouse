@@ -31,6 +31,7 @@ public String searchTrips(
         @RequestParam(value = "from", required = false) String from,
         @RequestParam(value = "to", required = false) String to,
         @RequestParam("date") String dateStr, 
+        @RequestParam(value = "route", required = false) String route,
         Model model) {
 
     System.out.println("====== TEST ======");
@@ -41,7 +42,7 @@ public String searchTrips(
         return "redirect:/home";
     }
 
-List<TripDetailProjection> ketQuaTimKiem = tuanMVService.getComplexTripDetails(dateStr);    
+List<TripDetailProjection> ketQuaTimKiem = tuanMVService.getComplexTripDetails(dateStr, from + " - " + to  );    
 
 // CHÈN THÊM 2 DÒNG NÀY ĐỂ DEBUG
 System.out.println("--> Số lượng chuyến xe tìm thấy: " + (ketQuaTimKiem != null ? ketQuaTimKiem.size() : "NULL"));
