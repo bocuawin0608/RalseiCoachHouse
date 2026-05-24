@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Nhà xe Tuan minh vuong</title>
+</head>
+<body>
+
+    <div class="search-section">
+
+        <form action="/search-trips" method="get">
+
+            <div class="trip-type">
+                <label>
+                    <input type="radio" name="tripType" value="one-way" checked>
+                    Một chiều
+                </label>
+                <label>
+                    <input type="radio" name="tripType" value="round-trip">
+                    Khứ hồi
+                </label>
+            </div>
+
+            <div class="search-form">
+
+                <div class="form-group">
+                    <input type="text" name="from" placeholder="Điểm đi">
+                </div>
+
+                <div class="swap-button">
+                    ↔
+                </div>
+
+                <div class="form-group">
+                    <input type="text" name="to" placeholder="Điểm đến">
+                </div>
+
+                <div class="form-group">
+                    <input type="date" name="date" required>
+                </div>
+
+                <div class="form-group">
+                    <button type="submit">Tìm lịch trình</button>
+                </div>
+
+            </div>
+
+        </form>
+
+        <div class="recent-search">
+            <p>Tìm kiếm gần đây</p>
+
+            <div class="recent-card">
+                <p>Tỉnh Quảng Bình - Thành phố ...</p>
+                <p>23/05/2026</p>
+                <span>Một chiều</span>
+            </div>
+        </div>
+        <div class="result-section" th:if="${trips != null}" style="margin: 30px auto; width: 80%; font-family: Arial, sans-serif;">
+    
+    <h3 style="text-align: center; color: #333;">
+        Kết quả tìm kiếm cho ngày: <span th:text="${searchDate}" style="color: #008CBA;">2026-05-25</span>
+    </h3>
+<!---Sửa sau, vibe code tạm-->
+    <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+        <thead>
+            <tr style="background-color: #008CBA; color: white;">
+                <th style="padding: 12px; border: 1px solid #ddd;">Tuyến Đường</th>
+                <th style="padding: 12px; border: 1px solid #ddd;">Sơ Đồ Ghế</th>
+                <th style="padding: 12px; border: 1px solid #ddd;">Trạng Thái</th>
+                <th style="padding: 12px; border: 1px solid #ddd;">Giờ Khởi Hành</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="c : ${trips}" style="border-bottom: 1px solid #ddd;">
+                <td style="padding: 12px;" th:text="${c.routeName}">Hà Nội - Quảng Bình</td>
+                <td style="padding: 12px;" th:text="${c.seatLayoutName}"></td>
+                <td style="padding: 12px;" th:text="${c.status}"></td>
+                <td style="padding: 12px;" th:text="${#temporals.format(c.departureTime, 'HH:mm dd/MM/yyyy')}">12:00</td>
+            </tr>
+            
+            <tr th:if="${#lists.isEmpty(trips)}">
+                <td colspan="4" style="text-align: center; padding: 20px; color: red; font-weight: bold;">
+                    Không có chuyến xe nào khởi hành trong ngày này!
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+    </div>
+
+
+    <div class="contact-section">
+
+        <h2>Liên hệ</h2>
+
+        <div class="contact-list">
+
+            <div class="contact-card">
+                <h3>VP Quảng Trị (Quảng Bình cũ)</h3>
+
+                <ul>
+                    <li>19A Lý Thường Kiệt, Đông Hà</li>
+                    <li>38 Xuân Diệu, Đông Hà</li>
+                    <li>23 Hùng Vương, Ba Đồn</li>
+                    <li>105 Trần Hưng Đạo, Đồng Lê</li>
+                    <li>Đường Nguyễn Văn Linh, Bố Trạch</li>
+                    <li>Tổ dân phố Xuân Tiến, Phong Nha</li>
+                    <li>Tổ dân phố 2, Quy Đạt</li>
+                    <li>Nguyễn Tất Thành, Kiến Giang</li>
+                    <li>Tổ dân phố 2, Lệ Ninh</li>
+                    <li>Thôn Thượng Giang, Cảnh Dương</li>
+                    <li>Thanh Trạch, Bố Trạch</li>
+                </ul>
+
+                <p class="hotline">
+                    Hotline: 0914.077.779 - 0963.388.388
+                </p>
+            </div>
+
+            <div class="contact-card">
+                <h3>VP Hà Nội</h3>
+
+                <ul>
+                    <li>338 Trần Khát Chân, Hai Bà Trưng</li>
+                    <li>Nhà số 1 ngõ 2 Cống Làng</li>
+                    <li>Liên Kế 531 Khu A Dịch Vụ</li>
+                    <li>Sảnh T1 + T2 Sân bay Nội Bài</li>
+                    <li>Chợ Ninh Hiệp, Gia Lâm</li>
+                    <li>24 Ao Sào, Hoàng Mai</li>
+                </ul>
+
+                <p class="hotline">
+                    Hotline: 0914.077.779 - 0963.388.388
+                </p>
+            </div>
+
+            <div class="contact-card">
+                <h3>VP Vinh, Nghệ An</h3>
+
+                <ul>
+                    <li>149 Nguyễn Trãi, TP Vinh</li>
+                </ul>
+
+                <p class="hotline">
+                    Hotline: 0914.077.779 - 0963.388.388
+                </p>
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+</html>
