@@ -159,3 +159,24 @@ INSERT INTO [payment] (passengerTicketId, cargoTicketId, amount, paymentMethod, 
 PRINT N'Hoàn tất Seed Data!';
 GO
 
+SELECT * From TRIP
+
+
+
+
+
+SELECT * FROM [trip] 
+
+
+
+SELECT * FROM route;
+SELECT * FROM coach
+SELECT * FrOM seat_layout
+SELECT  r.routeName, sl.seatLayoutName,t.[status] ,t.departureTime FROM [trip] t JOIN route R 
+ON t.routeId = R.routeId
+JOIN coach C
+    ON t.coachId = C.coachId
+JOIN seat_layout SL
+    ON C.seatLayoutId = SL.seatLayoutId 
+WHERE departureTime BETWEEN '2026-05-25 00:00:00' AND '2026-05-25 23:59:59';
+
