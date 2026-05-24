@@ -1,16 +1,19 @@
 package com.tuanvm.model;
 
-import java.time.LocalDateTime;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 
 @Entity
 @Table(name = "seat")
@@ -18,13 +21,15 @@ import jakarta.persistence.GenerationType;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Seat {
+@Builder
+public class Seat extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "seatId")
     private int seatId;
 
-    @Column(name = "seatLayoutId", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "seatLayoutId", nullable = false)
     private int seatLayoutId;
 
     @Column(name = "seatCode", nullable = false)
@@ -38,18 +43,4 @@ public class Seat {
 
     @Column(name = "isActive", nullable = false)
     private boolean isActive;
-
-    @Column(name = "createdAt")
-    private LocalDateTime createdAt;
-
-    @Column(name = "createdBy")
-    private Integer createdBy;
-
-    @Column(name = "updatedAt")
-    private LocalDateTime updatedAt;
-
-    @Column(name = "updatedBy")
-    private Integer updatedBy;
-
-   
 }
