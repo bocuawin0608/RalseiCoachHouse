@@ -114,11 +114,13 @@ CREATE TABLE [cargo_type] (
 -- ============================================================================
 
 CREATE TABLE [account_role] (
-    [accountId] INT NOT NULL,
-    [roleId] INT NOT NULL,
-    PRIMARY KEY ([accountId], [roleId]),
-    FOREIGN KEY ([accountId]) REFERENCES [account] ([accountId]),
-    FOREIGN KEY ([roleId]) REFERENCES [role] ([roleId])
+	accountRoleId INT IDENTITY(1,1) PRIMARY KEY,
+    accountId INT NOT NULL,
+    roleId INT NOT NULL,    
+    FOREIGN KEY (accountId) REFERENCES [account](accountId),
+    FOREIGN KEY (roleId) REFERENCES [role](roleId),
+
+	CONSTRAINT UQ_Account_Role UNIQUE (accountId, roleId),
 );
 
 CREATE TABLE [customer] (
