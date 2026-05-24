@@ -190,3 +190,14 @@ JOIN seat_layout SL
     ON C.seatLayoutId = SL.seatLayoutId 
 WHERE departureTime BETWEEN '2026-05-25 00:00:00' AND '2026-05-25 23:59:59';
 
+            SELECT r.routeName AS routeName,
+                   sl.seatLayoutName AS seatLayoutName,
+                   t.[status] AS status,
+                   t.departureTime AS departureTime
+            FROM [trip] t
+            JOIN route R ON t.routeId = R.routeId
+            JOIN coach C ON t.coachId = C.coachId
+            JOIN seat_layout SL ON C.seatLayoutId = SL.seatLayoutId
+            WHERE t.departureTime BETWEEN '2026-05-25 00:00:00' AND '2026-05-25 23:59:59'
+            AND R.routeName = N'Hà Nội - Quảng Bình';
+       
