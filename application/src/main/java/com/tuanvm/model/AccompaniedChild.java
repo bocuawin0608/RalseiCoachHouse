@@ -15,12 +15,10 @@ import jakarta.persistence.GenerationType;
 
 @Entity
 @Table(name = "accompanied_child")
-
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-
 public class AccompaniedChild {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
