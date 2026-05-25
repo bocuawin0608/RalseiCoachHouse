@@ -33,7 +33,7 @@ public class SeatLayoutPrice extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seatLayoutId", nullable = false)
-    private int seatLayoutId;
+    private SeatLayout seatLayout;
 
     @Column(name = "seatPrice", nullable = false)
     private BigDecimal seatPrice;
