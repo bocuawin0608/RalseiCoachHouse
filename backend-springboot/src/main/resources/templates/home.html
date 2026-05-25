@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Nhà Xe Tuân Minh Vướng</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="text-gray-800 antialiased">
+
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-brand text-white p-2 rounded-lg font-bold text-xl tracking-wider shadow-md">
+                    TMW
+                </div>
+                <div>
+                    <span class="text-xl font-bold tracking-tight text-brand block">Tuân Minh Vướng</span>
+                    <span class="text-[10px] text-gray-400 font-medium tracking-widest uppercase block -mt-1">Vận tải đỉnh cao</span>
+                </div>
+            </div>
+            
+            <nav class="hidden md:flex space-x-8 font-semibold text-sm">
+                <a href="#" class="text-brand border-b-2 border-brand pb-1">Trang chủ</a>
+                <a href="#" class="text-gray-600 hover:text-brand transition duration-200">Tạo đơn hàng</a>
+                <a href="#" class="text-gray-600 hover:text-brand transition duration-200">Tra cứu đơn</a>
+                <a href="#" class="text-gray-600 hover:text-brand transition duration-200">Thuê xe</a>
+                <a href="#" class="text-gray-600 hover:text-brand transition duration-200">Tin tức</a>
+            </nav>
+
+            <div class="flex items-center space-x-4">
+                <a href="/login" class="text-sm font-semibold text-brand hover:text-opacity-80 transition">Đăng nhập</a>
+                <a href="/register" class="bg-brand text-white text-sm font-semibold px-5 py-2.5 rounded-full shadow-lg shadow-blue-900/20 hover:bg-opacity-90 transform hover:-translate-y-0.5 transition duration-200">Đăng ký</a>
+            </div>
+        </div>
+    </header>
+
+    <section class="relative bg-gradient-to-r from-[#003851] to-[#005b7f] min-h-[500px] flex items-center pt-12 pb-32 overflow-hidden">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute inset-0 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
+        </div>
+        
+        <div class="container mx-auto px-6 grid md:grid-cols-12 gap-8 items-center relative z-10">
+            <div class="md:col-span-7 text-white space-y-6">
+                <span class="bg-blue-500/20 text-blue-300 text-xs font-bold tracking-widest uppercase px-4 py-1.5 rounded-full inline-block">
+                    Hệ Thống Nhà Xe Uy Tín Đạt Chuẩn
+                </span>
+                <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight leading-tight">
+                    Sáng Tạo Dịch Vụ <br><span class="text-cyan-400">Vận Tải Đỉnh Cao</span>
+                </h1>
+                <p class="text-gray-300 max-w-xl text-sm md:text-base leading-relaxed">
+                    Kết nối hành trình Hà Nội - Vinh - Hà Tĩnh - Quảng Trị với dòng xe giường nằm cao cấp. Cam kết dịch vụ an toàn, tiện nghi và đúng giờ.
+                </p>
+                <div class="flex flex-wrap gap-4 pt-2">
+                    <div class="flex items-center space-x-3 bg-white/10 px-4 py-3 rounded-xl backdrop-blur-sm">
+                        <i class="fa-solid fa-phone text-cyan-400 text-lg"></i>
+                        <div>
+                            <p class="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Hotline đặt vé</p>
+                            <p class="font-bold text-sm text-white">0914.077.779</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3 bg-white/10 px-4 py-3 rounded-xl backdrop-blur-sm">
+                        <i class="fa-solid fa-globe text-cyan-400 text-lg"></i>
+                        <div>
+                            <p class="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">Website chính thức</p>
+                            <p class="font-bold text-sm text-white">xetuanminhvuong.com</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="md:col-span-5 relative flex justify-center items-center">
+                <div class="relative w-full max-w-md h-80 md:h-96 rounded-2xl overflow-hidden shadow-2xl shadow-black/40 border border-white/10">
+                    <img src="https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=800" alt="Tuân Minh Vướng Bus" class="absolute inset-0 w-full h-full object-cover mix-blend-luminosity opacity-40">
+                    <div class="absolute inset-0 bg-gradient-to-t from-[#003851] via-transparent to-transparent z-10"></div>
+                    <div class="absolute bottom-6 left-6 right-6 z-20 text-white">
+                        <p class="text-xs text-cyan-400 font-bold uppercase tracking-wider">Chủ xe cam kết</p>
+                        <h3 class="text-lg font-bold mt-1">Dịch vụ An toàn - Uy tín - Tận tâm</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="container mx-auto px-6 -mt-24 relative z-30">
+        <div class="glass-morphism rounded-3xl shadow-2xl p-6 md:p-8 max-w-5xl mx-auto">
+            <form action="/search-trips" method="get">
+                <div class="flex space-x-6 mb-6">
+                    <label class="inline-flex items-center cursor-pointer group">
+                        <input type="radio" name="tripType" value="one-way" checked class="w-4 h-4 accent-[#005b7f]">
+                        <span class="ml-2.5 text-sm font-semibold text-gray-700 group-hover:text-brand transition">Một chiều</span>
+                    </label>
+                    <label class="inline-flex items-center cursor-pointer group">
+                        <input type="radio" name="tripType" value="round-trip" class="w-4 h-4 accent-[#005b7f]">
+                        <span class="ml-2.5 text-sm font-semibold text-gray-700 group-hover:text-brand transition">Khứ hồi</span>
+                    </label>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                    <div class="md:col-span-3 relative">
+                        <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Điểm đi</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-location-dot absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                            <input type="text" name="from" placeholder="Nơi khởi hành..." class="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-brand focus:bg-white transition text-sm font-medium">
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-1 flex justify-center pt-5">
+                        <button type="button" class="bg-gray-100 hover:bg-brand hover:text-white text-gray-500 w-10 h-10 rounded-full flex items-center justify-center shadow-md transition-all duration-200">
+                            <i class="fa-solid fa-arrows-rotate text-sm"></i>
+                        </button>
+                    </div>
+
+                    <div class="md:col-span-3 relative">
+                        <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Điểm đến</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-location-crosshairs absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                            <input type="text" name="to" placeholder="Nơi bạn muốn đến..." class="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-brand focus:bg-white transition text-sm font-medium">
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-3 relative">
+                        <label class="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 ml-1">Ngày đi</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-calendar-days absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                            <input type="date" name="date" required class="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-brand focus:bg-white transition text-sm font-medium text-gray-700">
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-2 pt-5">
+                        <button type="submit" value="Tìm kiếm" class="w-full bg-brand hover:bg-opacity-95 text-black font-bold py-3.5 rounded-xl shadow-lg shadow-blue-900/20 transition duration-150 text-sm tracking-wide">
+                            <i class="fa-solid fa-magnifying-glass mr-2"></i>Tìm kiếm
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <div class="mt-6 pt-5 border-t border-gray-100 flex items-center space-x-4 text-xs">
+                <span class="font-bold text-gray-400 uppercase tracking-wider">Tìm kiếm gần đây:</span>
+                
+                <div class="flex items-center gap-3 bg-gray-50 border border-gray-200/50 rounded-xl p-3 shadow-sm hover:border-brand hover:bg-white hover:shadow-md transition-all duration-200 cursor-pointer">
+                    <div class="w-10 h-10 rounded-full border border-gray-100 overflow-hidden shadow-inner bg-gray-100">
+                        <img th:src="@{/images/chu-xe-tmw.jpg}" alt="Chủ xe" class="w-full h-full object-cover">
+                    </div>
+                    
+                    <div class="space-y-0.5">
+                        <div class="flex items-center gap-1.5 font-bold text-brand">
+                            <span>Hà Nội</span>
+                            <i class="fa-solid fa-arrow-right-long text-[10px] opacity-70"></i>
+                            <span>Quảng Trị</span>
+                        </div>
+                        <div class="flex items-center gap-2.5 text-gray-500 font-medium">
+                            <span class="flex items-center gap-1">
+                                <i class="fa-solid fa-calendar-day text-[11px] opacity-80"></i>
+                                <span>25/05/2026</span>
+                            </span>
+                            <span class="bg-green-50 text-green-700 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-green-100">Một chiều</span>
+                        </div>
+                    </div>
+                    
+                    <div class="ml-auto text-brand opacity-60">
+                        <i class="fa-solid fa-chevron-right text-lg"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="container mx-auto px-6 my-16" th:if="${trips != null}">
+        <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+            <div class="bg-gradient-to-r from-[#003851] to-[#005b7f] px-6 py-4 flex justify-between items-center">
+                <h3 class="text-white font-bold text-lg tracking-tight">
+                    <i class="fa-solid fa-bus mr-2.5 text-cyan-400"></i>Kết Quả Tìm Kiếm Chuyến Xe
+                </h3>
+                <span class="bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full backdrop-blur-sm">
+                    Ngày: <span th:text="${searchDate}">2026-05-25</span>
+                </span>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 border-b border-gray-100 text-gray-500 text-xs font-bold uppercase tracking-wider">
+                            <th class="px-6 py-4">Tuyến Đường</th>
+                            <th class="px-6 py-4">Sơ Đồ Ghế</th>
+                            <th class="px-6 py-4">Trạng Thái</th>
+                            <th class="px-6 py-4 text-right">Giờ Khởi Hành</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 text-sm font-medium">
+                        <tr th:each="c : ${trips}" class="hover:bg-blue-50/30 transition duration-150">
+                            <td class="px-6 py-4 text-gray-900 font-semibold" th:text="${c.routeName}">Hà Nội - Quảng Bình</td>
+                            <td class="px-6 py-4 text-gray-600">
+                                <span class="bg-gray-100 px-2.5 py-1 rounded text-xs font-medium" th:text="${c.seatLayoutName}">Giường nằm 40 chỗ</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-100" th:text="${c.status}">Còn chỗ</span>
+                            </td>
+                            <td class="px-6 py-4 text-right text-brand font-bold text-base" th:text="${#temporals.format(c.departureTime, 'HH:mm dd/MM/yyyy')}">
+                                12:00 25/05/2026
+                            </td>
+                        </tr>
+                        
+                        <tr th:if="${#lists.isEmpty(trips)}">
+                            <td colspan="4" class="text-center py-12 px-6">
+                                <div class="max-w-xs mx-auto space-y-2">
+                                    <i class="fa-solid fa-circle-exclamation text-red-400 text-3xl"></i>
+                                    <p class="text-red-500 font-bold text-base">Không tìm thấy chuyến xe nào!</p>
+                                    <p class="text-gray-400 text-xs">Vui lòng chọn lại ngày khởi hành hoặc thay đổi tuyến đường.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section class="container mx-auto px-6 my-20">
+        <div class="text-center max-w-xl mx-auto mb-12 space-y-2">
+            <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight text-gray-900">Dịch Vụ Của Chúng Tôi</h2>
+            <div class="w-12 h-1 bg-brand mx-auto rounded-full"></div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 space-y-4 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-brand text-xl shadow-inner">
+                    <i class="fa-solid fa-suitcase-rolling"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900">Tổ Chức Tour Du Lịch</h3>
+                <ul class="text-xs text-gray-500 space-y-2 font-medium">
+                    <li><i class="fa-solid fa-check text-green-500 mr-2"></i>An toàn trên mọi lộ trình</li>
+                    <li><i class="fa-solid fa-check text-green-500 mr-2"></i>Giá thành hợp lý tối ưu</li>
+                    <li><i class="fa-solid fa-check text-green-500 mr-2"></i>Phương tiện hiện đại, tiện nghi</li>
+                </ul>
+            </div>
+            
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 space-y-4 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-brand text-xl shadow-inner">
+                    <i class="fa-solid fa-truck-fast"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900">Vận Chuyển Hàng Hóa</h3>
+                <ul class="text-xs text-gray-500 space-y-2 font-medium">
+                    <li><i class="fa-solid fa-check text-green-500 mr-2"></i>Giao hàng an toàn & kịp thời</li>
+                    <li><i class="fa-solid fa-check text-green-500 mr-2"></i>Dịch vụ chuyên nghiệp uy tín</li>
+                    <li><i class="fa-solid fa-check text-green-500 mr-2"></i>Giao nhận tận nơi tiện lợi</li>
+                </ul>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 space-y-4 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-brand text-xl shadow-inner">
+                    <i class="fa-solid fa-users-line"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900">Vận Chuyển Khách Ghép Đoàn</h3>
+                <ul class="text-xs text-gray-500 space-y-2 font-medium">
+                    <li><i class="fa-solid fa-check text-green-500 mr-2"></i>Chi phí thấp hơn tour riêng biệt</li>
+                    <li><i class="fa-solid fa-check text-green-500 mr-2"></i>Chia sẻ chi phí cố định tối ưu</li>
+                    <li><i class="fa-solid fa-check text-green-500 mr-2"></i>Hướng dẫn viên nhiệt tình chu đáo</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <section class="bg-white border-t border-gray-100 py-16">
+        <div class="container mx-auto px-6 max-w-6xl">
+            <div class="text-center max-w-xl mx-auto mb-12 space-y-2">
+                <h2 class="text-2xl font-extrabold tracking-tight text-gray-900">Hệ Thống Văn Phòng Liên Hệ</h2>
+                <div class="w-12 h-1 bg-brand mx-auto rounded-full"></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-gray-50 rounded-2xl p-6 border border-gray-200/60 relative overflow-hidden flex flex-col justify-between">
+                    <div>
+                        <div class="bg-brand text-white px-4 py-1.5 rounded-xl text-xs font-bold inline-block mb-4 shadow-sm">
+                            Khu Vực Miền Trung
+                        </div>
+                        <h3 class="font-bold text-gray-900 text-base mb-3"><i class="fa-solid fa-map-location-dot mr-2 text-brand"></i>VP Quảng Trị</h3>
+                        <ul class="text-xs text-gray-600 space-y-2.5 font-medium max-h-48 overflow-y-auto pr-1">
+                            <li>• 19A Lý Thường Kiệt, Đông Hà</li>
+                            <li>• 38 Xuân Diệu, Đông Hà</li>
+                            <li>• 23 Hùng Vương, Ba Đồn</li>
+                            <li>• 105 Trần Hưng Đạo, Đồng Lê</li>
+                            <li>• Đường Nguyễn Văn Linh, Bố Trạch</li>
+                            <li>• Tổ dân phố Phùng Thanh Độ, Thấp Bằng</li>
+                        </ul>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-gray-200/80">
+                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Hotline hỗ trợ</p>
+                        <p class="text-brand font-extrabold text-sm mt-0.5">0914.929.929 - 0922.222.222</p>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 rounded-2xl p-6 border border-gray-200/60 relative overflow-hidden flex flex-col justify-between">
+                    <div>
+                        <div class="bg-brand text-white px-4 py-1.5 rounded-xl text-xs font-bold inline-block mb-4 shadow-sm">
+                            Khu Vực Đầu Cầu Hà Nội
+                        </div>
+                        <h3 class="font-bold text-gray-900 text-base mb-3"><i class="fa-solid fa-map-location-dot mr-2 text-brand"></i>VP Hà Nội</h3>
+                        <ul class="text-xs text-gray-600 space-y-2.5 font-medium">
+                            <li>• 123 phố threadCity, Hai Bà Trưng</li>
+                            <li>• Nhà số 1 ngõ 2 CLB Juventus</li>
+                            <li>• Liên Kế 531 Khu A Dịch Vụ, Yên Nghĩa</li>
+                            <li>• Sảnh T1 + T2 Sân bay Cá Om Dưa</li>
+                            <li>• Chợ Đầu Mối, Gia Lâm</li>
+                            <li>• 24 Ao Sào, Hoàng Mai</li>
+                        </ul>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-gray-200/80">
+                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Hotline hỗ trợ</p>
+                        <p class="text-brand font-extrabold text-sm mt-0.5">0914.077.779 - 0963.388.388</p>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 rounded-2xl p-6 border border-gray-200/60 relative overflow-hidden flex flex-col justify-between">
+                    <div>
+                        <div class="bg-brand text-white px-4 py-1.5 rounded-xl text-xs font-bold inline-block mb-4 shadow-sm">
+                            Khu Vực Nghệ An
+                        </div>
+                        <h3 class="font-bold text-gray-900 text-base mb-3"><i class="fa-solid fa-map-location-dot mr-2 text-brand"></i>VP Vinh, Nghệ An</h3>
+                        <ul class="text-xs text-gray-600 space-y-2.5 font-medium">
+                            <li>• 149 Rau má, TP Cá gỗ</li>
+                        </ul>
+                    </div>
+                    <div class="mt-6 pt-4 border-t border-gray-200/80">
+                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Hotline hỗ trợ</p>
+                        <p class="text-brand font-extrabold text-sm mt-0.5">0914.077.779 - 0963.388.388</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="bg-[#0b1b24] text-gray-400 py-12 text-xs border-t border-gray-800">
+        <div class="container mx-auto px-6 max-w-6xl grid grid-cols-1 md:grid-cols-12 gap-8">
+            <div class="md:col-span-5 space-y-3">
+                <span class="text-white font-bold text-sm tracking-wide block">CÔNG TY TNHH DU LỊCH 6767</span>
+                <p>M.S.D.N: 01567343490 — Chịu trách nhiệm: Tuân Minh Vướng</p>
+                <p><i class="fa-solid fa-location-dot mr-2"></i>Địa chỉ: 338 Trần Khát Chân, Hai Bà Trưng, Hà Nội</p>
+            </div>
+            <div class="md:col-span-4 space-y-2">
+                <span class="text-white font-bold text-sm tracking-wide block">THÔNG TIN CẦN BIẾT</span>
+                <div class="grid grid-cols-2 gap-2">
+                    <a href="#" class="hover:text-white transition">Về chúng tôi</a>
+                    <a href="#" class="hover:text-white transition">Chính sách bảo mật</a>
+                    <a href="#" class="hover:text-white transition">Điều khoản sử dụng</a>
+                    <a href="#" class="hover:text-white transition">Giải quyết tranh chấp</a>
+                </div>
+            </div>
+            <div class="md:col-span-3 text-right flex flex-col justify-between items-end">
+                <span class="text-cyan-400 font-bold tracking-widest text-lg">TMW TRANSPORT</span>
+                <p class="mt-4 text-gray-500">© Bản quyền thuộc về CÔNG TY TNHH DU LỊCH 6767</p>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>
