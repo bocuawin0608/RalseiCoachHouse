@@ -1,17 +1,18 @@
 package com.tuanvm.model;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 
 @Entity
 @Table(name = "accompanied_child")
@@ -19,7 +20,8 @@ import jakarta.persistence.GenerationType;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class AccompaniedChild {
+@Builder
+public class AccompaniedChild extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "accompaniedChildId")
@@ -33,17 +35,5 @@ public class AccompaniedChild {
 
     @Column(name = "dob", nullable = false)
     private LocalDate dob;
-
-    @Column(name = "createdAt")
-    private LocalDateTime createdAt;
-
-    @Column(name = "createdBy")
-    private Integer createdBy;
-
-    @Column(name = "updatedAt")
-    private LocalDateTime updatedAt;
-
-    @Column(name = "updatedBy")
-    private Integer updatedBy;
 
 }
