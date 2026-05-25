@@ -9,14 +9,18 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.tuanvm.dto.projection.TripDetailProjection;
-import com.tuanvm.service.TuanMVService;
+import com.tuanvm.service.CustomerService;
 
 
 @Controller
 public class WebController {
     @Autowired
-    private TuanMVService tuanMVService;
-
+    private CustomerService tuanMVService;
+    @GetMapping("/register")
+    public String getRegister() {
+        return "register";
+    }
+    
     @GetMapping("/login")
     public String getLoginPage() {
         return "login";

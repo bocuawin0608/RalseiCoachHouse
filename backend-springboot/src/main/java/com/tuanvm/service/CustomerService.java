@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 @Service
 
-public class TuanMVService {
+public class CustomerService {
      @Autowired
     private TripRepository tripRepository;
 
@@ -18,6 +18,6 @@ public class TuanMVService {
         
         return tripRepository.layThongTinChuyenXeComplex(start, end, route);
     }
-
+    
 }
    
