@@ -31,5 +31,6 @@ public class CoachStop extends BaseEntity {
     @Column(name = "address", nullable = false)
     private String address;
 
-    
+    @Column(name = "isActive", nullable = false)
+    private boolean isActive;
 }

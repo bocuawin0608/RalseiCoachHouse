@@ -65,6 +65,7 @@ CREATE TABLE [coach_stop] (
     [stopPointId] INT IDENTITY(1,1) PRIMARY KEY,
     [stopPointName] NVARCHAR(255) NOT NULL,
     [address] NVARCHAR(MAX) NOT NULL,
+    [isActive] BIT NOT NULL DEFAULT 1,
     [createdAt] DATETIME DEFAULT GETDATE(),
     [createdBy] INT NULL,
     [updatedAt] DATETIME DEFAULT GETDATE(),
@@ -181,6 +182,7 @@ CREATE TABLE [route_stop] (
     [stopOrder] INT NOT NULL, -- Thứ tự điểm dừng
     [kilometersFromStart] DECIMAL(8, 2) NOT NULL,
     [minutesFromStart] INT NOT NULL,
+    [isActive] BIT NOT NULL DEFAULT 1,
     [createdAt] DATETIME DEFAULT GETDATE(),
     [createdBy] INT NULL,
     [updatedAt] DATETIME DEFAULT GETDATE(),
