@@ -30,7 +30,7 @@ public class Seat extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seatLayoutId", nullable = false)
-    private int seatLayoutId;
+    private SeatLayout seatLayout;
 
     @Column(name = "seatCode", nullable = false)
     private String seatCode;
