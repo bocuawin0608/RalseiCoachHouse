@@ -42,5 +42,6 @@ public class RouteStop extends BaseEntity {
     @Column(name = "minutesFromStart", nullable = false)
     private int minutesFromStart;
 
-   
+    @Column(name = "isActive", nullable = false)
+    private boolean isActive;
 }

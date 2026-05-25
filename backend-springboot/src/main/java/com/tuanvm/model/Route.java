@@ -38,6 +38,4 @@ public class Route extends BaseEntity {
 
     @Column(name = "isActive", nullable = false)
     private boolean isActive;
-
-  
 }
