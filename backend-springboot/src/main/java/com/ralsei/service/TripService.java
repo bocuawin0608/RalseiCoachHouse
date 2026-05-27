@@ -1,7 +1,7 @@
-package com.tuanvm.service;
+package com.ralsei.service;
 
-import com.tuanvm.dto.projection.TripDetailProjection;
-import com.tuanvm.dto.response.PagedResponse;
+import com.ralsei.dto.projection.TripDetailProjection;
+import com.ralsei.dto.response.PagedResponse;
 import java.time.LocalDateTime;
 
 public interface TripService {

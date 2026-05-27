@@ -1,4 +1,4 @@
-package com.tuanvm.dto.response;
+package com.ralsei.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -1,4 +1,4 @@
-package com.tuanvm.model;
+package com.ralsei.model;
 
 import java.time.LocalDate;
 

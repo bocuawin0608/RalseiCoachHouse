@@ -1,4 +1,4 @@
-package com.tuanvm.service;
+package com.ralsei.service;
 
 import org.springframework.stereotype.Service;
 

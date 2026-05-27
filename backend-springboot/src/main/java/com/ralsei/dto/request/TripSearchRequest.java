@@ -1,4 +1,4 @@
-package com.tuanvm.dto.request;
+package com.ralsei.dto.request;
 
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;

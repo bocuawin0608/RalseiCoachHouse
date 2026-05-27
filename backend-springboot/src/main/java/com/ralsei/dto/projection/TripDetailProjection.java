@@ -1,4 +1,4 @@
-package com.tuanvm.dto.projection;
+package com.ralsei.dto.projection;
 
 import java.time.LocalDateTime;
 

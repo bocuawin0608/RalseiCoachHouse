@@ -1,4 +1,4 @@
-package com.tuanvm.repository;
+package com.ralsei.repository;
 
 public class CustomerRepository {
     

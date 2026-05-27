@@ -1,4 +1,4 @@
-package com.tuanvm.model;
+package com.ralsei.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

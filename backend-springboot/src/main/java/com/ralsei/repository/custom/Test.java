@@ -1,4 +1,4 @@
-package com.tuanvm.repository.custom;
+package com.ralsei.repository.custom;
 
 public class Test {
     

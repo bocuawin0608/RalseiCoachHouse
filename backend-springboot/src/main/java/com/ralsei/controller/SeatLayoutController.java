@@ -1,4 +1,4 @@
-package com.tuanvm.controller;
+package com.ralsei.controller;
 
 import java.math.BigDecimal;
 
@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.tuanvm.dto.projection.SeatLayoutProjection;
-import com.tuanvm.service.SeatLayoutService;
+import com.ralsei.dto.projection.SeatLayoutProjection;
+import com.ralsei.service.SeatLayoutService;
 
 import lombok.RequiredArgsConstructor;
 
