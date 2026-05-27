@@ -1,7 +1,7 @@
-package com.tuanvm.repository;
+package com.ralsei.repository;
 
-import com.tuanvm.dto.projection.TripDetailProjection;
-import com.tuanvm.model.Trip;
+import com.ralsei.dto.projection.TripDetailProjection;
+import com.ralsei.model.Trip;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

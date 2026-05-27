@@ -1,9 +1,9 @@
-package com.tuanvm.service.impl;
+package com.ralsei.service.impl;
 
-import com.tuanvm.dto.projection.TripDetailProjection;
-import com.tuanvm.dto.response.PagedResponse;
-import com.tuanvm.repository.TripRepository;
-import com.tuanvm.service.TripService;
+import com.ralsei.dto.projection.TripDetailProjection;
+import com.ralsei.dto.response.PagedResponse;
+import com.ralsei.repository.TripRepository;
+import com.ralsei.service.TripService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;

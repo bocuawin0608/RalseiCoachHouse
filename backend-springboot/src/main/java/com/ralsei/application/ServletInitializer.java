@@ -1,4 +1,4 @@
-package com.tuanvm.application;
+package com.ralsei.application;
 
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;

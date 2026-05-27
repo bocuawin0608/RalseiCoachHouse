@@ -1,10 +1,10 @@
-package com.tuanvm.service;
+package com.ralsei.service;
 
 import java.math.BigDecimal;
 
 import org.springframework.data.domain.Page;
 
-import com.tuanvm.dto.projection.SeatLayoutProjection;
+import com.ralsei.dto.projection.SeatLayoutProjection;
 
 public interface SeatLayoutService {
     Page<SeatLayoutProjection> filterSeatLayouts(

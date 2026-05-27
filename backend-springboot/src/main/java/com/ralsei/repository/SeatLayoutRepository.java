@@ -1,4 +1,4 @@
-package com.tuanvm.repository;
+package com.ralsei.repository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -10,8 +10,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import com.tuanvm.dto.projection.SeatLayoutProjection;
-import com.tuanvm.model.SeatLayout;
+import com.ralsei.dto.projection.SeatLayoutProjection;
+import com.ralsei.model.SeatLayout;
 
 @Repository
 public interface SeatLayoutRepository extends JpaRepository<SeatLayout, Integer>{

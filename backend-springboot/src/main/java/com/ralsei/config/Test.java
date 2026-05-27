@@ -1,4 +1,4 @@
-package com.tuanvm.config;
+package com.ralsei.config;
 
 public class Test {
     

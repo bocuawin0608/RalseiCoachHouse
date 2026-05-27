@@ -1,4 +1,4 @@
-package com.tuanvm.service.impl;
+package com.ralsei.service.impl;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -9,9 +9,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.tuanvm.dto.projection.SeatLayoutProjection;
-import com.tuanvm.repository.SeatLayoutRepository;
-import com.tuanvm.service.SeatLayoutService;
+import com.ralsei.dto.projection.SeatLayoutProjection;
+import com.ralsei.repository.SeatLayoutRepository;
+import com.ralsei.service.SeatLayoutService;
 
 import lombok.RequiredArgsConstructor;
 

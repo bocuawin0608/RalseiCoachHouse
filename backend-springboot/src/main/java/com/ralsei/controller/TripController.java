@@ -1,9 +1,9 @@
-package com.tuanvm.controller;
+package com.ralsei.controller;
 
-import com.tuanvm.dto.projection.TripDetailProjection;
-import com.tuanvm.dto.request.TripSearchRequest;
-import com.tuanvm.dto.response.PagedResponse;
-import com.tuanvm.service.TripService;
+import com.ralsei.dto.projection.TripDetailProjection;
+import com.ralsei.dto.request.TripSearchRequest;
+import com.ralsei.dto.response.PagedResponse;
+import com.ralsei.service.TripService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
