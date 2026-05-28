@@ -29,7 +29,7 @@ public class SeatLayoutServiceImpl implements SeatLayoutService {
         }
         
         if(filterRequest.minSeats() != null && filterRequest.maxSeats() != null && filterRequest.minSeats() > filterRequest.maxSeats()) {
-            throw new IllegalArgumentException("Giá tối thiểu không thể lớn hơn Giá tối đa!");
+            throw new IllegalArgumentException("Số ghế tối thiểu không thể lớn hơn Số ghế tối đa!");
         }
         
         return seatLayoutRepository.searchSeatLayouts(filterRequest, LocalDateTime.now(), pageable);
