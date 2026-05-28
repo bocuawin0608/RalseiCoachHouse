@@ -27,9 +27,7 @@ public class SeatLayoutController {
 
     @GetMapping("")
     public ResponseEntity<Page<SeatLayoutProjection>> filterSeatLayouts(
-        @Valid @ModelAttribute SeatLayoutFilterRequest filterRequest,
-        Pageable pageable
-    ) {
+        @Valid @ModelAttribute SeatLayoutFilterRequest filterRequest, Pageable pageable) {
         
         Page<SeatLayoutProjection> responses = seatLayoutService.filterSeatLayouts(filterRequest, pageable);
         
