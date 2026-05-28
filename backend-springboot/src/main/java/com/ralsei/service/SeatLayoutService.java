@@ -1,19 +1,13 @@
 package com.ralsei.service;
 
-import java.math.BigDecimal;
-
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import com.ralsei.dto.projection.SeatLayoutProjection;
+import com.ralsei.dto.request.seatlayout.SeatLayoutFilterRequest;
 
 public interface SeatLayoutService {
-    Page<SeatLayoutProjection> filterSeatLayouts(
-        String seatLayoutName,
-        Boolean isActive,
-        BigDecimal minPrice, BigDecimal maxPrice,
-        Integer minSeats, Integer maxSeats,
-        int page, int size
-    );
+    Page<SeatLayoutProjection> filterSeatLayouts(SeatLayoutFilterRequest filterRequest, Pageable pageable);
 
     
 }
