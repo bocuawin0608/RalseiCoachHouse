@@ -1,7 +1,7 @@
 package com.ralsei.repository;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.ralsei.dto.projection.SeatLayoutProjection;
+import com.ralsei.dto.request.seatlayout.SeatLayoutFilterRequest;
 import com.ralsei.model.SeatLayout;
 
 @Repository
@@ -26,12 +27,12 @@ public interface SeatLayoutRepository extends JpaRepository<SeatLayout, Integer>
         LEFT JOIN seat_layout_price p 
             ON p.seatLayoutId = sl.seatLayoutId 
             AND :now BETWEEN p.startEffectiveDate AND p.endEffectiveDate
-        WHERE (:seatLayoutName IS NULL OR sl.seatLayoutName LIKE '%' + :seatLayoutName + '%')
-            AND (:isActive IS NULL OR sl.isActive = :isActive)
-            AND (:minPrice IS NULL OR p.seatPrice >= :minPrice)
-            AND (:maxPrice IS NULL OR p.seatPrice <= :maxPrice)
-            AND (:minSeats IS NULL OR sl.totalSeat >= :minSeats)
-            AND (:maxSeats IS NULL OR sl.totalSeat <= :maxSeats)
+        WHERE (:#{#filter.seatLayoutName} IS NULL OR sl.seatLayoutName LIKE '%' + :#{#filter.seatLayoutName} + '%')
+            AND (:#{#filter.isActive} IS NULL OR sl.isActive = :#{#filter.isActive})
+            AND (:#{#filter.minPrice} IS NULL OR p.seatPrice >= :#{#filter.minPrice})
+            AND (:#{#filter.maxPrice} IS NULL OR p.seatPrice <= :#{#filter.maxPrice})
+            AND (:#{#filter.minSeats} IS NULL OR sl.totalSeat >= :#{#filter.minSeats})
+            AND (:#{#filter.maxSeats} IS NULL OR sl.totalSeat <= :#{#filter.maxSeats})
         """, 
         nativeQuery = true,
         countQuery = """
@@ -40,20 +41,24 @@ public interface SeatLayoutRepository extends JpaRepository<SeatLayout, Integer>
             LEFT JOIN seat_layout_price p
                 ON p.seatLayoutId = sl.seatLayoutId
                 AND :now BETWEEN p.startEffectiveDate AND p.endEffectiveDate
-            WHERE (:seatLayoutName IS NULL OR sl.seatLayoutName LIKE '%' + :seatLayoutName + '%')
-                AND (:isActive IS NULL OR sl.isActive = :isActive)
-                AND (:minPrice IS NULL OR p.seatPrice >= :minPrice)
-                AND (:maxPrice IS NULL OR p.seatPrice <= :maxPrice)
-                AND (:minSeats IS NULL OR sl.totalSeat >= :minSeats)
-                AND (:maxSeats IS NULL OR sl.totalSeat <= :maxSeats)
+            WHERE (:#{#filter.seatLayoutName} IS NULL OR sl.seatLayoutName LIKE '%' + :#{#filter.seatLayoutName} + '%')
+                AND (:#{#filter.isActive} IS NULL OR sl.isActive = :#{#filter.isActive})
+                AND (:#{#filter.minPrice} IS NULL OR p.seatPrice >= :#{#filter.minPrice})
+                AND (:#{#filter.maxPrice} IS NULL OR p.seatPrice <= :#{#filter.maxPrice})
+                AND (:#{#filter.minSeats} IS NULL OR sl.totalSeat >= :#{#filter.minSeats})
+                AND (:#{#filter.maxSeats} IS NULL OR sl.totalSeat <= :#{#filter.maxSeats})
         """)
     Page<SeatLayoutProjection> searchSeatLayouts(
-        @Param("seatLayoutName") String seatLayoutName,
-        @Param("isActive") Boolean isActive,
-        @Param("minPrice") BigDecimal minPrice,
-        @Param("maxPrice") BigDecimal maxPrice,
-        @Param("minSeats") Integer minSeats,
-        @Param("maxSeats") Integer maxSeats,
+        @Param("filter") SeatLayoutFilterRequest filter,
         @Param("now") LocalDateTime now,
-        Pageable pageable);
+        Pageable pageable
+    );
+
+    @Query("""
+        SELECT sl FROM SeatLayout sl
+        LEFT JOIN FETCH sl.seats s WHERE sl.seatLayoutId = :id
+        ORDER BY s.rowIndex ASC, s.colIndex ASC
+        """)
+    Optional<SeatLayout> findByIdWithSeatsAndPrice(Integer id);
+
 }

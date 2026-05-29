@@ -1,19 +1,15 @@
 package com.ralsei.service;
 
-import java.math.BigDecimal;
-
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
-import com.ralsei.dto.projection.SeatLayoutProjection;
+import com.ralsei.dto.request.seatlayout.SeatLayoutCreateRequest;
+import com.ralsei.dto.request.seatlayout.SeatLayoutFilterRequest;
+import com.ralsei.dto.response.seatlayout.SeatLayoutDetailResponse;
+import com.ralsei.dto.response.seatlayout.SeatLayoutResponse;
 
 public interface SeatLayoutService {
-    Page<SeatLayoutProjection> filterSeatLayouts(
-        String seatLayoutName,
-        Boolean isActive,
-        BigDecimal minPrice, BigDecimal maxPrice,
-        Integer minSeats, Integer maxSeats,
-        int page, int size
-    );
-
-    
+    Page<SeatLayoutResponse> filterSeatLayouts(SeatLayoutFilterRequest filterRequest, Pageable pageable);
+    SeatLayoutResponse createSeatLayout(SeatLayoutCreateRequest request);
+    SeatLayoutDetailResponse getSeatLayoutDetail(Integer seatLayoutId);
 }
