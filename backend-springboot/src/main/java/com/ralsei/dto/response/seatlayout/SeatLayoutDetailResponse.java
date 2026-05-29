@@ -9,5 +9,5 @@ public record SeatLayoutDetailResponse(
     Integer totalSeat,
     BigDecimal currentPrice,
     Boolean isActive,
-    List<SeatDTO> seats
+    List<SeatResponseDTO> seats
 ) {}

@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -172,6 +173,28 @@ public class GlobalExceptionHandler {
                 .build();
 
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    // Bắt lỗi JSON malformed hoặc sai kiểu dữ liệu (vd: "hehe" cho Boolean) -> chưa tối ưu
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, HttpServletRequest request) {
+        Throwable cause = ex.getMostSpecificCause();
+        String message = cause.getMessage();
+        if (message.contains("Cannot deserialize value of type `java.lang.Boolean`")) {
+            message = "Giá trị của trường boolean phải là true hoặc false";
+        } else if (message.contains("Cannot deserialize value of type `java.math.BigDecimal`")) {
+            message = "Giá trị phải là số";
+        }
+
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Validation Error")
+                .message(message)
+                .path(request.getRequestURI())
+                .build();
+
+        return ResponseEntity.badRequest().body(response);
     }
 
     // Hứng mọi lỗi còn lại
