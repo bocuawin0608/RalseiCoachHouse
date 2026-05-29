@@ -11,11 +11,17 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import com.ralsei.dto.response.ErrorResponse;
 
-import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
+
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     
@@ -105,11 +111,74 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
-    // TODO: Hứng lỗi @Validated dùng với @RequestParam: ConstraintViolationException
+    // Hứng lỗi @Validated với @PathVariable và @RequestParam (áp cho Spring Boot >= 3.2+)
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ErrorResponse> handleHandlerMethodValidation(HandlerMethodValidationException ex, HttpServletRequest request) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getParameterValidationResults().forEach(error -> {
+            String paramName = error.getMethodParameter().getParameterName();
+            error.getResolvableErrors().forEach(err -> {
+                String message = err.getDefaultMessage();
+                errors.put(paramName, message);
+            });
+        });
+
+        ErrorResponse response = ErrorResponse.builder()
+            .timestamp(LocalDateTime.now())
+            .status(HttpStatus.BAD_REQUEST.value())
+            .error("Validation Error")
+            .message("Tham số đường dẫn hoặc tham số truy vấn không hợp lệ!")
+            .fieldErrors(errors)
+            .path(request.getRequestURI())
+            .build();
+
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    // Hứng lỗi @Validated với @PathVariable và @RequestParam (áp cho Spring Boot < 3.2)
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex, HttpServletRequest request) {
+        Map<String, String> fieldErrors = new HashMap<>();
+        ex.getConstraintViolations().forEach(violation -> {
+            String path = violation.getPropertyPath().toString();
+            String paramName = path.substring(path.lastIndexOf('.') + 1);
+            fieldErrors.put(paramName, violation.getMessage());
+        });
+
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Validation Error")
+                .message("Tham số đường dẫn hoặc tham số truy vấn không hợp lệ!")
+                .path(request.getRequestURI())
+                .fieldErrors(fieldErrors)
+                .build();
+
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    // Hứng lỗi type mismatch (ví dụ truyền /abc dù @PathVariable nhận Integer)
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+        String paramName = ex.getName();
+        String message = String.format("Tham số '%s' phải là số nguyên hợp lệ", paramName);
+
+        ErrorResponse response = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Validation Error")
+                .message(message)
+                .path(request.getRequestURI())
+                .build();
+
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
 
     // Hứng mọi lỗi còn lại
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex, HttpServletRequest request) {
+        log.error("Unexpected error: ", ex);
+
         ErrorResponse response = ErrorResponse.builder()
             .timestamp(LocalDateTime.now())
             .status(HttpStatus.INTERNAL_SERVER_ERROR.value())

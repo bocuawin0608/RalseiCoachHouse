@@ -1,6 +1,7 @@
 package com.ralsei.repository;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -50,5 +51,14 @@ public interface SeatLayoutRepository extends JpaRepository<SeatLayout, Integer>
     Page<SeatLayoutProjection> searchSeatLayouts(
         @Param("filter") SeatLayoutFilterRequest filter,
         @Param("now") LocalDateTime now,
-        Pageable pageable);
+        Pageable pageable
+    );
+
+    @Query("""
+        SELECT sl FROM SeatLayout sl
+        LEFT JOIN FETCH sl.seats s WHERE sl.seatLayoutId = :id
+        ORDER BY s.rowIndex ASC, s.colIndex ASC
+        """)
+    Optional<SeatLayout> findByIdWithSeatsAndPrice(Integer id);
+
 }
