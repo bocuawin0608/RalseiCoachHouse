@@ -1,15 +1,18 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import LoginPage from '../pages/LoginPage';
+import React from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom'; 
+import HomePage from '../pages/HomePage';
 import SeatLayoutPage from '../pages/SeatLayoutPage';
 
-export default function AppRouter() {
+const AppRouter = () => {
     return (
         <Routes>
-            <Route path="/" element={<Navigate to="/login" replace />} />
-
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/seat-layouts" element={<SeatLayoutPage />} />
-            <Route path="*" element={<h2>404 - Link ko khả dụng</h2>} />
+            {/* Chuyển hướng bắt buộc từ root (/) sang /home */}
+            <Route path="/" element={<Navigate to="/home" replace />} />
+            
+            <Route path="/home" element={<HomePage />} />
+            <Route path="/seat-layout/:tripId" element={<SeatLayoutPage />} />
         </Routes>
     );
-}
+};
+
+export default AppRouter;
