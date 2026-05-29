@@ -159,28 +159,8 @@ INSERT INTO [payment] (passengerTicketId, cargoTicketId, amount, paymentMethod, 
 PRINT N'Hoàn tất Seed Data!';
 GO
 
-SELECT * From TRIP
-
-
-
-
-
-SELECT * FROM [trip] 
-
-
-
-SELECT * FROM route;
-SELECT * FROM coach
-SELECT * FrOM seat_layout
-
-
-
-
-
-
-
+--===================================================
 USE VeXeDB;
-
 
 SELECT  r.routeName, sl.seatLayoutName,t.[status] ,t.departureTime FROM [trip] t JOIN route R 
 ON t.routeId = R.routeId
