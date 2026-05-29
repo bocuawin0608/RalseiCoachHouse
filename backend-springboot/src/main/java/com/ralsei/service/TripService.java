@@ -11,5 +11,6 @@ public interface TripService {
             String route,
             int page,
             int size
+
     );
 }
