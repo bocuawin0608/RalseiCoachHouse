@@ -1,10 +1,15 @@
 package com.ralsei.model;
 
+import java.util.List;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,4 +38,10 @@ public class SeatLayout extends BaseEntity {
 
     @Column(name = "isActive", nullable = false)
     private boolean isActive;
+
+    @OneToMany(mappedBy="seatLayout", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<SeatLayoutPrice> seatLayoutPrices;
+
+    @OneToMany(mappedBy="seatLayout", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Seat> seats;
 }
