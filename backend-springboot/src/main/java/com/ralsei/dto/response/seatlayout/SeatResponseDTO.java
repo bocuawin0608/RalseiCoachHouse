@@ -1,6 +1,6 @@
 package com.ralsei.dto.response.seatlayout;
 
-public record SeatDTO(
+public record SeatResponseDTO(
     Integer seatId,
     String seatCode,
     Integer rowIndex,
