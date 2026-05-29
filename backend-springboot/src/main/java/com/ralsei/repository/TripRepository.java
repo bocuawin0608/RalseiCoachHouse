@@ -13,25 +13,32 @@ import java.time.LocalDateTime;
 @Repository
 public interface TripRepository extends JpaRepository<Trip, Integer> {
 
-    @Query(value = """
-            SELECT t.route.routeName AS routeName,
-                   t.coach.seatLayout.seatLayoutName AS seatLayoutName,
-                   t.status AS status,
-                   t.departureTime AS departureTime
-            FROM Trip t
-            WHERE t.departureTime BETWEEN :start AND :end
-              AND t.route.routeName = :route
-            """,
-            countQuery = """
-            SELECT COUNT(t) 
-            FROM Trip t 
-            WHERE t.departureTime BETWEEN :start AND :end
-              AND t.route.routeName = :route
-            """) // Câu lệnh count gọn nhẹ, không JOIN thừa thãi
-    Page<TripDetailProjection> findTripDetails(
-            @Param("start") LocalDateTime start, 
-            @Param("end") LocalDateTime end,
-            @Param("route") String route,
-            Pageable pageable
-    );
+  @Query(
+      value = """
+          SELECT 
+              r.routeName AS routeName, 
+              sl.seatLayoutName AS seatLayoutName, 
+              t.status AS status, 
+              t.departureTime AS departureTime
+          FROM trip t 
+          JOIN route r ON t.routeId = r.routeId
+          JOIN coach c ON t.coachId = c.coachId
+          JOIN seat_layout sl ON c.seatLayoutId = sl.seatLayoutId
+          WHERE t.departureTime BETWEEN :start AND :end
+              AND r.routeName = :route
+      """, 
+      countQuery = """
+          SELECT count(t.tripId)
+          FROM trip t 
+          JOIN route r ON t.routeId = r.routeId
+          WHERE t.departureTime BETWEEN :start AND :end
+              AND r.routeName = :route
+      """,
+      nativeQuery = true
+  )
+  Page<TripDetailProjection> findTripDetails(
+      @Param("start") LocalDateTime start,
+      @Param("end") LocalDateTime end,
+      @Param("route") String route,
+      Pageable pageable);
 }

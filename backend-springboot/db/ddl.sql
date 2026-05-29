@@ -1,4 +1,35 @@
-﻿IF EXISTS (SELECT * FROM sys.databases WHERE name = 'VeXeDB')
+﻿USE master;
+GO
+
+-- Xóa theo thứ tự từ LEVEL cao xuống LEVEL thấp để không dính Foreign Key Constraints
+DROP TABLE IF EXISTS [refund];
+DROP TABLE IF EXISTS [accompanied_child];
+DROP TABLE IF EXISTS [payment];
+DROP TABLE IF EXISTS [cargo_ticket_detail];
+DROP TABLE IF EXISTS [passenger_ticket_detail];
+DROP TABLE IF EXISTS [cargo_ticket];
+DROP TABLE IF EXISTS [passenger_ticket];
+DROP TABLE IF EXISTS [trip];
+DROP TABLE IF EXISTS [coach];
+DROP TABLE IF EXISTS [cargo_type_price];
+DROP TABLE IF EXISTS [seat_layout_price];
+DROP TABLE IF EXISTS [seat];
+DROP TABLE IF EXISTS [route_stop];
+DROP TABLE IF EXISTS [staff];
+DROP TABLE IF EXISTS [ticket_agency];
+DROP TABLE IF EXISTS [customer];
+DROP TABLE IF EXISTS [account_role];
+DROP TABLE IF EXISTS [cargo_type];
+DROP TABLE IF EXISTS [seat_layout];
+DROP TABLE IF EXISTS [route];
+DROP TABLE IF EXISTS [coach_stop];
+DROP TABLE IF EXISTS [voucher];
+DROP TABLE IF EXISTS [role];
+DROP TABLE IF EXISTS [account];
+GO
+USE master;
+GO
+IF EXISTS (SELECT * FROM sys.databases WHERE name = 'VeXeDB')
 BEGIN
     ALTER DATABASE VeXeDB SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
     DROP DATABASE VeXeDB;
@@ -469,3 +500,5 @@ CREATE TABLE [refund] (
     CONSTRAINT CK_Refund_Method CHECK ([refundMethod] IN ('vnpay', 'bank_transfer', 'cash')),
     CONSTRAINT CK_Refund_Status CHECK ([status] IN ('pending', 'completed', 'failed'))
 );
+USE VeXeDB;
+GO
