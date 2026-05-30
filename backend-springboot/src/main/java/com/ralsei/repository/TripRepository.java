@@ -12,33 +12,24 @@ import java.time.LocalDateTime;
 
 @Repository
 public interface TripRepository extends JpaRepository<Trip, Integer> {
-
-  @Query(
-      value = """
-          SELECT 
-              r.routeName AS routeName, 
-              sl.seatLayoutName AS seatLayoutName, 
-              t.status AS status, 
-              t.departureTime AS departureTime
-          FROM trip t 
-          JOIN route r ON t.routeId = r.routeId
-          JOIN coach c ON t.coachId = c.coachId
-          JOIN seat_layout sl ON c.seatLayoutId = sl.seatLayoutId
-          WHERE t.departureTime BETWEEN :start AND :end
-              AND r.routeName = :route
-      """, 
-      countQuery = """
-          SELECT count(t.tripId)
-          FROM trip t 
-          JOIN route r ON t.routeId = r.routeId
-          WHERE t.departureTime BETWEEN :start AND :end
-              AND r.routeName = :route
-      """,
-      nativeQuery = true
-  )
-  Page<TripDetailProjection> findTripDetails(
-      @Param("start") LocalDateTime start,
-      @Param("end") LocalDateTime end,
-      @Param("route") String route,
-      Pageable pageable);
+@Query("""
+    SELECT 
+        r.routeName AS routeName, 
+        sl.seatLayoutName AS seatLayoutName, 
+        t.status AS status, 
+        t.departureTime AS departureTime
+    FROM Trip t 
+    JOIN t.route r
+    JOIN t.coach c
+    JOIN c.seatLayout sl
+    WHERE t.departureTime BETWEEN :start AND :end
+    AND r.routeName = :route
+    ORDER BY t.departureTime
+    """)
+Page<TripDetailProjection> findTripDetails(
+    @Param("start") LocalDateTime start,
+    @Param("end") LocalDateTime end,
+    @Param("route") String route,
+    Pageable pageable
+);
 }

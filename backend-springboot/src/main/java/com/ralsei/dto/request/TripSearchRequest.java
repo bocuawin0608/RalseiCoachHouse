@@ -8,10 +8,8 @@ import java.time.LocalDateTime;
 public class TripSearchRequest {
     
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-    private LocalDateTime start;
+    private LocalDateTime date;
     
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
-    private LocalDateTime end;
     
     private String route;
     
