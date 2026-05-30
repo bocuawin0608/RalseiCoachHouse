@@ -1,6 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import SeatLayoutFilter from '../components/seat-layout/SeatLayoutFilter';
-import SeatLayoutTable from '../components/seat-layout/SeatLayoutTable';
 import { seatLayoutService } from '../services/seatLayoutService';
 
 export default function SeatLayoutPage() {

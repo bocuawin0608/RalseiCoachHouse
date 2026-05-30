@@ -117,7 +117,8 @@ INSERT INTO [trip] (routeId, coachId, departureTime, status, driverId, attendant
 -- ============================================================================
 -- LEVEL 4: TRANSACTIONAL ENTITIES (Tickets)
 -- ============================================================================
-
+use VeXeDB;
+select * from trip
 -- 18. PASSENGER_TICKET
 INSERT INTO [passenger_ticket] (customerId, tripId, voucherId, soldBy, ticketCode, totalPrice, pickupStopId, dropoffStopId, status) VALUES 
 (1, 1, NULL, NULL, 'TK_ONL_COMPLETED', 550000.00, 1, 4, 'confirmed'), -- 1: Khách tự mua Online, ĐÃ thanh toán
@@ -188,4 +189,4 @@ JOIN coach C
     ON t.coachId = C.coachId
 JOIN seat_layout SL
     ON C.seatLayoutId = SL.seatLayoutId 
-WHERE departureTime BETWEEN '2026-05-25 00:00:00' AND '2026-05-25 23:59:59';
+WHERE departureTime BETWEEN '2026-05-30 00:00:00' AND '2026-05-30 23:59:59';
