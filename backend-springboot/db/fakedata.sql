@@ -464,6 +464,8 @@ PRINT N'=== TOÀN BỘ CƠ SỞ DỮ LIỆU ĐÃ ĐƯỢC RESET VÀ SEED HOÀN H
 GO
 PRINT N'=== TOÀN BỘ CƠ SỞ DỮ LIỆU ĐÃ ĐƯỢC RESET VÀ SEED HOÀN HẢO CHUẨN V11 ===';
 GO
+
+--RECHECK QUERRY AFTER SEED
 SELECT * FROM [account];
 SELECT * FROM [role];
 SELECT * FROM [voucher];
