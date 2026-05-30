@@ -1,5 +1,8 @@
 package com.ralsei.repository;
 
-public class SeatLayoutPriceRepository {
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.ralsei.model.SeatLayoutPrice;
+public interface SeatLayoutPriceRepository extends JpaRepository<SeatLayoutPrice, Integer> {
     
 }
