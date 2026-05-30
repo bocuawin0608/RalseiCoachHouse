@@ -20,7 +20,7 @@ public class TripServiceImpl implements TripService {
     private final TripRepository tripRepository;
 
     @Override
-    @Transactional(readOnly = true) 
+    @Transactional(readOnly = true)
     public PagedResponse<TripDetailProjection> getTripDetails(
             LocalDateTime start,
             LocalDateTime end,

@@ -491,3 +491,13 @@ SELECT * FROM [payment];
 SELECT * FROM [accompanied_child];
 SELECT * FROM [refund];     
     
+
+-- Xem tất cả chuyến xe có trong DBSELECT t.tripId, r.routeName, t.departureTime
+SELECT t.tripId,sl.seatLayoutName,r.routeName, t.departureTime
+FROM trip t
+JOIN route r ON t.routeId = r.routeId
+JOIN coach c ON t.coachId = c.coachId
+JOIN seat_layout sl ON c.seatLayoutId = sl.seatLayoutId
+WHERE t.departureTime BETWEEN '2026-01-01 00:00:00.000' AND '2026-01-01 23:59:59.999'
+AND r.routeName = N'Hà Nội - Quảng Bình'
+ORDER BY t.departureTime
