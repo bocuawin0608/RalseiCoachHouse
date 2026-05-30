@@ -12,6 +12,7 @@ html, body {
   margin: 0;
   padding: 0;
 }
+
 :root {
   --ralsei-green: #9cf0d3;
   --ralsei-pink: #ff47a3;
@@ -22,36 +23,41 @@ html, body {
   --ralsei-footer: #51c9a7;
 }
 
-/* 1. SỬA CONTAINER: Đảm bảo trang web chiếm hết chiều ngang màn hình */
+/* Đảm bảo box-sizing chuẩn toàn trang để không bị border làm phình layout */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 .homepage-container {
   display: flex;
   flex-direction: column;
   width: 100%;
-  min-height: 100%;
+  min-height: 100vh;
   background-color: var(--ralsei-light-grey);
   font-family: sans-serif;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
 }
 
+/* HEADER RESPONSIVE */
 .homepage-header {
   display: flex;
   justify-content: space-between; 
   align-items: center;            
-  padding: 15px 30px;
+  padding: 15px 20px;
   background-color: var(--ralsei-green);
   color: var(--ralsei-white);
   width: 100%;
-  box-sizing: border-box;
   box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  flex-wrap: wrap; /* Cho phép hạ hàng nếu màn hình quá hẹp */
+  gap: 15px;
 }
 
-/* Cụm bên trái: Logo + 4 nút quay lại xếp thẳng hàng */
 .header-left {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap; /* Tránh tràn nút trên mobile */
 }
 
 .logo-img {
@@ -62,26 +68,26 @@ html, body {
   box-shadow: 0 0 10px rgba(255, 71, 163, 0.5);
 }
 
-/* Cụm bên phải: SĐT + 2 nút đăng nhập/ký */
 .header-right {
   display: flex;
   align-items: center;
   gap: 15px;
+  flex-wrap: wrap;
 }
 
 .host-phone-number {
   color: var(--ralsei-black);
-  font-weight: 500;
+  font-weight: bold;
   font-size: 16px;
-  font-style: bold ;
   white-space: nowrap;
 }
 
-/* Định dạng các nút bấm trên Header */
 .btn-head {
+  display: flex;
+  justify-content: center;
   background-color: var(--ralsei-green);
   color: var(--ralsei-black);
-  border:0px solid var(--ralsei-white);
+  border: none;
   padding: 8px 15px;
   border-radius: 6px;
   font-weight: bold;
@@ -91,34 +97,32 @@ html, body {
 }
 
 .btn-head:hover {
-  
   color: var(--ralsei-white);
   border-bottom: 2px solid var(--ralsei-pink);
 }
 
-/* 3. CÁC PHẦN KHÁC GIỮ NGUYÊN HOẶC TINH CHỈNH PHONG THỦY */
-
-/* Ảnh Phật Tổ Giữ Phong Thủy */
+/* ẢNH PHONG THỦY */
 .buddha-wrapper {
   display: flex;
   justify-content: center;
   margin: 20px 0;
+  padding: 0 15px;
 }
 
 .buddha-img {
-  justify-content: center;
-  display : flex;
   width: 100%;
-  max-width: 100%;  
-
+  max-width: 1100px;  
+  height: auto; /* Giữ tỷ lệ ảnh không bị móp khi thu nhỏ */
+  object-fit: cover;
+  border-radius: 8px;
 }
 
-/* Form tìm kiếm chuyến xe */
-/* Bao bọc toàn bộ form, tạo màu nền bo góc nhẹ */
+/* FORM TÌM KIẾM CHUYẾN XE */
 .search-form-wrapper {
-  max-width: 1100px; /* Nới rộng form ra để đủ không gian dàn hàng ngang */
+  max-width: 1100px;
   margin: 30px auto;
   padding: 0 20px;
+  width: 100%;
 }
 
 .search-form {
@@ -131,20 +135,21 @@ html, body {
   gap: 20px;
 }
 
-/* TẦNG 1: Căn đều hai bên */
 .form-tier-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid #f0f0f0;
   padding-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 15px;
 }
 
 .radio-group {
   display: flex;
   gap: 20px;
+  flex-wrap: wrap;
 }
-
 
 .radio-label {
   display: flex;
@@ -166,29 +171,29 @@ html, body {
   text-decoration: underline;
 }
 
-.v-divider {
-  margin: 0 10px;
-  color: #ccc;
-}
-
-/* TẦNG 2: Layout hàng ngang sử dụng Flexbox */
+/* TẦNG 2: THIẾT KẾ LẠI BẰNG FLEX-WRAP CHO MOBILE */
 .form-tier-main {
   display: flex;
   align-items: center;
   border: 1px solid #e0e0e0;
   border-radius: 12px;
-  overflow: hidden; /* Để nút Submit ôm khít góc phải */
   background-color: var(--ralsei-white);
+  flex-wrap: wrap; /* Quan trọng để rớt dòng trên điện thoại */
 }
 
-/* Khối nhập liệu con */
 .input-block {
   flex: 1;
+  min-width: 200px; /* Không cho phép block co quá nhỏ */
   display: flex;
   align-items: center;
-  padding: 10px 15px;
+  padding: 12px 15px;
   gap: 12px;
   border-right: 1px solid #e0e0e0;
+}
+
+/* Xóa border phải của phần tử cuối cùng trước nút submit trên desktop */
+.input-block:nth-last-child(2) {
+  border-right: none;
 }
 
 .input-field-wrapper {
@@ -207,12 +212,11 @@ html, body {
 .input-field-wrapper input {
   border: none;
   outline: none;
-  font-size: 15px bold;
+  font-size: 15px;
   font-weight: bold;
   background-color: transparent;
   color: #204f3d;
   width: 100%;
-  padding: 4px 0;
 }
 
 .input-icon {
@@ -220,43 +224,57 @@ html, body {
   color: #a0a0a0;
 }
 
-/* Nút hoán đổi vị trí */
 .btn-swap {
   background: #f5f5f5;
   border: 1px solid #e0e0e0;
   border-radius: 50%;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 -14px; /* Giật ngược lề để đè lên đường viền */
+  margin: 0 -16px; 
   z-index: 2;
   font-weight: bold;
   color: var(--ralsei-black);
+  transition: transform 0.2s;
+}
+.btn-swap:hover {
+  transform: rotate(180deg);
 }
 
-/* Nút Submit màu cam đặc trưng */
 .btn-search-submit {
   background-color: var(--ralsei-green); 
-  color: white;
+  color: var(--ralsei-black); 
   border: none;
   height: 100%;
-  align-self: stretch; /* Kéo giãn chiều cao bằng với khối input */
-  padding: 2rem;
+  min-height: 58px;
+  align-self: stretch; 
+  padding: 0 35px;
   font-size: 16px;
   font-weight: bold;
   cursor: pointer;
-  transition:  0.2s;
+  transition: 0.2s;
   white-space: nowrap;
+  flex-grow: 1; /* Co giãn hết cỡ khi xuống dòng */
 }
 
 .btn-search-submit:hover {
-  background-color: var(--ralsei-pink);
+ background-color: var(--ralsei-green);
+color: white;
+border: none;
+height: 100%;
+align-self: stretch; 
+padding: 2rem;
+font-size: 16px;
+font-weight: bold;
+cursor: pointer;
+transition: 0.2s;
+white-space: nowrap; 
 }
 
-/* TẦNG 3: Danh sách tìm kiếm gần đây */
+/* TẦNG 3: LỊCH SỬ TÌM KIẾM */
 .form-tier-recent {
   display: flex;
   flex-direction: column;
@@ -266,13 +284,25 @@ html, body {
 .recent-title {
   font-size: 14px;
   font-weight: bold;
-  color: var(--ralsei-white);
+  color: var(--ralsei-dark); 
 }
 
 .recent-cards-container {
   display: flex;
   gap: 15px;
   overflow-x: auto; 
+  padding-bottom: 5px;
+  /* Mượt mà hơn trên mobile */
+  -webkit-overflow-scrolling: touch; 
+}
+
+/* Ẩn thanh scrollbar thô kệch trên một số trình duyệt */
+.recent-cards-container::-webkit-scrollbar {
+  height: 4px;
+}
+.recent-cards-container::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
 }
 
 .recent-card {
@@ -282,8 +312,8 @@ html, body {
   border: 1px solid #e9ecef;
   border-radius: 8px;
   padding: 12px;
-  min-width: 240px;
-  align-items: flex-start;
+  min-width: 260px;
+  flex-shrink: 0; /* Không cho thẻ bị bóp nghẹt chiều ngang */
 }
 
 .history-icon {
@@ -293,10 +323,15 @@ html, body {
   font-size: 14px;
 }
 
+.recent-info {
+  width: 100%;
+  overflow: hidden;
+}
+
 .recent-info strong {
   display: block;
   font-size: 13px;
-  color: var(--ralsei-white);
+  color: var(--ralsei-dark); /* SỬA LỖI TƯƠNG PHẢN: Đổi từ trắng sang tối */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -308,33 +343,18 @@ html, body {
   color: #777;
 }
 
-.badge-khu-hoi {
-  display: inline-block;
-  background-color: #e3f2fd;
-  color: #0d47a1;
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-weight: bold;
-}
-
-/* Danh sách vé xe kết quả */
+/* KẾT QUẢ TÌM KIẾM */
 .results-wrapper {
   max-width: 800px;
   margin: 20px auto;
   padding: 0 20px 40px 20px;
+  width: 100%;
 }
 
 .results-title {
   color: var(--ralsei-dark);
   border-bottom: 2px solid var(--ralsei-green);
   padding-bottom: 10px;
-}
-
-.no-results-msg {
-  text-align: center;
-  color: #666;
-  margin-top: 20px;
 }
 
 .trips-list {
@@ -353,8 +373,8 @@ html, body {
   align-items: center;
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   border-left: 6px solid var(--ralsei-green);
-  cursor: pointer;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, flex-direction 0.2s;
+  gap: 15px;
 }
 
 .trip-card:hover {
@@ -376,7 +396,7 @@ html, body {
 .trip-type-tag {
   display: inline-block;
   background-color: #e8f8f5;
-  color: var(--ralsei-green);
+  color: #117a65;
   padding: 3px 8px;
   border-radius: 4px;
   font-size: 12px;
@@ -386,6 +406,7 @@ html, body {
 
 .trip-price-wrapper {
   text-align: right;
+  flex-shrink: 0;
 }
 
 .trip-price {
@@ -395,46 +416,37 @@ html, body {
 }
 
 .btn-select-seat {
-  display: block;
-  justify-content: left;
-  margin-top: 10px;
-  margin-left: auto;
   background-color: var(--ralsei-green);
-  color: var(--ralsei-white);
+  color: var(--ralsei-black);
   border: none;
   padding: 8px 15px;
   border-radius: 4px;
   font-weight: bold;
   cursor: pointer;
+  margin-top: 10px;
 }
 
-
-/* Container bọc toàn bộ phần Liên hệ */
+/* KHỐI LIÊN HỆ ĐỊA CHỈ */
 .office-section-container {
     max-width: 1200px;
     margin: 40px auto;
     padding: 0 20px;
-    font-family: system-ui, -apple-system, sans-serif;
+    width: 100%;
 }
 
-/* Tiêu đề "Liên hệ" */
 .office-section-title {
     font-size: 20px;
     font-weight: 700;
     color: #333333;
     margin-bottom: 24px;
-    text-align: left;
 }
 
-/* CHIA LƯỚI GRID: Tự động chia 2 cột đều nhau */
 .office-grid-layout {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 24px; /* Khoảng cách giữa các thẻ card */
-    align-items: start;
+    gap: 24px;
 }
 
-/* Thiết kế từng thẻ Card */
 .office-card {
     background: #ffffff;
     border: 1px solid #eef0f2;
@@ -442,11 +454,9 @@ html, body {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
     display: flex;
     flex-direction: column;
-    overflow: hidden; /* Đảm bảo góc bo không bị lem màu header */
-    height: 100%;
+    overflow: hidden;
 }
 
-/* TẦNG ĐẦU: TIÊU ĐỀ VÀNG (Đổ màu gradient nhẹ) */
 .office-card-header {
     background: linear-gradient(to bottom, #f7dc99, #f2cd74);
     color: #443210;
@@ -457,11 +467,9 @@ html, body {
     border-bottom: 1px solid #e0b85c;
 }
 
-/* TẦNG GIỮA: NỘI DUNG DANH SÁCH ĐỊA CHỈ */
 .office-card-body {
     padding: 16px;
-    flex-grow: 1; /* Đẩy footer xuống đáy nếu nội dung ngắn */
-    background-color: #fdfdfd;
+    flex-grow: 1;
 }
 
 .address-list {
@@ -480,7 +488,6 @@ html, body {
     display: flex;
     align-items: flex-start;
     gap: 8px;
-    text-align: left;
 }
 
 .location-icon {
@@ -495,7 +502,6 @@ html, body {
     padding: 12px 16px;
     text-align: center;
     font-size: 14px;
-    color: #444444;
 }
 
 .phone-highlight {
@@ -503,19 +509,11 @@ html, body {
     font-weight: 700;
 }
 
-
-@media (max-width: 900px) {
-    .office-grid-layout {
-        grid-template-columns: 1fr;
-    }
-}
-
-
-
+/* FOOTER TOÀN DIỆN */
 .homepage-footer {
-    background-color: #4db6ac !important; 
+    background-color: var(--ralsei-footer) !important; 
     width: 100% !important;
-    padding: 40px 10% 30px 10% !important; 
+    padding: 40px 20px !important; 
     box-sizing: border-box !important;
     margin-top: 50px !important;
 }
@@ -524,23 +522,21 @@ html, body {
     width: 100% !important;
     max-width: 1200px !important;
     margin: 0 auto !important;
-    padding: 0 !important; 
-    box-sizing: border-box !important;
 }
+
 .footer-main-content {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 60px; 
+    gap: 30px; 
     width: 100%;
-    box-sizing: border-box;
 }
+
 .footer-col {
     flex: 1;
     display: flex;
     flex-direction: column;
     align-items: flex-start; 
-    text-align: left;
 }
 
 .col-brand .footer-logo {
@@ -561,13 +557,14 @@ html, body {
 .app-download-section .download-title {
     font-size: 14px;
     font-weight: 600;
-    color: #e64a19; 
+    color: #ffffff; 
     margin: 0 0 10px 0;
 }
 
 .app-buttons {
     display: flex;
     gap: 8px;
+    flex-wrap: wrap;
 }
 
 .btn-app-store, .btn-google-play {
@@ -591,7 +588,6 @@ html, body {
     margin-bottom: 18px; 
     display: inline-block;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
 }
 
 .badge-orange {
@@ -622,7 +618,6 @@ html, body {
     font-size: 13px;
     line-height: 1.8;
     color: #ffffff; 
-    margin-bottom: 5px;
 }
 
 .policy-list {
@@ -636,7 +631,6 @@ html, body {
     border-bottom: 1px dashed rgba(255, 255, 255, 0.3); 
     padding-bottom: 6px;
     margin-bottom: 8px;
-    width: 100%;
 }
 
 .policy-list li:last-child {
@@ -648,25 +642,20 @@ html, body {
     color: #ffffff; 
     font-size: 13px;
     display: block;
-    text-align: left; 
-    transition: opacity 0.2s;
-}
-
-.policy-list a:hover {
-    opacity: 0.8; 
 }
 
 .footer-divider {
     border: 0;
     border-top: 1px solid rgba(255, 255, 255, 0.2); 
-    margin: 15px 0;
+    margin: 20px 0;
 }
 
 .footer-bottom {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    width: 100%;
+    flex-wrap: wrap;
+    gap: 15px;
 }
 
 .copyright-text {
@@ -675,12 +664,94 @@ html, body {
     margin: 0;
 }
 
-.bocongthuong-badge {
-    display: flex;
-    align-items: center;
-}
-
 .bocongthuong-badge img {
     height: 35px;
     width: auto;
+}
+
+
+
+@media (max-width: 1024px) {
+  .footer-main-content {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 40px;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Header dọc hóa */
+  .homepage-header {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+  .header-left, .header-right {
+    justify-content: center;
+  }
+
+  .form-tier-main {
+    flex-direction: column;
+    align-items: stretch;
+    border: none; 
+    background-color: transparent;
+  }
+
+  .input-block {
+    background-color: var(--ralsei-white);
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    width: 100%;
+  }
+  
+  .input-block:nth-last-child(2) {
+    border-right: 1px solid #e0e0e0;
+  }
+
+  .btn-swap {
+    margin: -5px auto 5px auto;
+    transform: rotate(90deg);
+  }
+  .btn-swap:hover {
+    transform: rotate(270deg);
+  }
+
+  .btn-search-submit {
+    border-radius: 8px;
+    width: 100%;
+    padding: 15px;
+  }
+
+  .trip-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .trip-price-wrapper {
+    text-align: left;
+    width: 100%;
+    border-top: 1px dashed #e0e0e0;
+    padding-top: 12px;
+    margin-top: 5px;
+  }
+  
+  .btn-select-seat {
+    margin-left: 0; 
+    width: 100%;
+  }
+
+  .office-grid-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-main-content {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+  
+  .footer-bottom {
+    flex-direction: column;
+    text-align: center;
+  }
 }
