@@ -1,4 +1,4 @@
-import axiosClient from '../api/axiosClient'; // ✅ Đúng rồi, giữ nguyên
+import axiosClient from '../api/axiosClient'; 
 
 export const tripService = {
     searchTrips: async (searchParams) => {
@@ -8,7 +8,7 @@ export const tripService = {
                     start: searchParams.start || '',
                     end: searchParams.end || '',
                     route: searchParams.route || `${searchParams.start} - ${searchParams.end}`,
-                    date: searchParams.date || '',   // ✅ Thêm date
+                    date: searchParams.date || '',   
                     page: searchParams.page ?? 0,
                     size: searchParams.size || 10
                 }
