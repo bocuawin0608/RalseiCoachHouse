@@ -13,12 +13,12 @@ public class WebConfig {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/api/**") // ✅ Áp dụng cho tất cả endpoint /api/
+                registry.addMapping("/api/**") // Áp dụng cho tất cả endpoint /api/
                         .allowedOrigins(
-                                "http://localhost:5174", // Vite default
-                                "http://localhost:3000" // CRA fallback
-                )
-                        .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                            "http://localhost:5173", // Vite default
+                            "http://localhost:3000" // CRA fallback
+                        )
+                        .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
                         .allowCredentials(true);
             }
