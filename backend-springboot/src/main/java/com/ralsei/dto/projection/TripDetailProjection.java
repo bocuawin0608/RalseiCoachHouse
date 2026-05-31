@@ -6,4 +6,5 @@ public interface TripDetailProjection {
     String getSeatLayoutName();
     String getStatus();
     LocalDateTime getDepartureTime();
+    Double getSeatPrice();
 }

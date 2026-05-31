@@ -117,7 +117,6 @@ html, body {
   border-radius: 8px;
 }
 
-/* FORM TÌM KIẾM CHUYẾN XE */
 .search-form-wrapper {
   max-width: 1100px;
   margin: 30px auto;
@@ -171,19 +170,18 @@ html, body {
   text-decoration: underline;
 }
 
-/* TẦNG 2: THIẾT KẾ LẠI BẰNG FLEX-WRAP CHO MOBILE */
 .form-tier-main {
   display: flex;
   align-items: center;
   border: 1px solid #e0e0e0;
   border-radius: 12px;
   background-color: var(--ralsei-white);
-  flex-wrap: wrap; /* Quan trọng để rớt dòng trên điện thoại */
+  flex-wrap: wrap; 
 }
 
 .input-block {
   flex: 1;
-  min-width: 200px; /* Không cho phép block co quá nhỏ */
+  min-width: 200px;
   display: flex;
   align-items: center;
   padding: 12px 15px;
@@ -191,7 +189,6 @@ html, body {
   border-right: 1px solid #e0e0e0;
 }
 
-/* Xóa border phải của phần tử cuối cùng trước nút submit trên desktop */
 .input-block:nth-last-child(2) {
   border-right: none;
 }
@@ -257,7 +254,7 @@ html, body {
   cursor: pointer;
   transition: 0.2s;
   white-space: nowrap;
-  flex-grow: 1; /* Co giãn hết cỡ khi xuống dòng */
+  flex-grow: 1; 
 }
 
 .btn-search-submit:hover {
@@ -274,7 +271,6 @@ transition: 0.2s;
 white-space: nowrap; 
 }
 
-/* TẦNG 3: LỊCH SỬ TÌM KIẾM */
 .form-tier-recent {
   display: flex;
   flex-direction: column;
@@ -458,13 +454,13 @@ white-space: nowrap;
 }
 
 .office-card-header {
-    background: linear-gradient(to bottom, #f7dc99, #f2cd74);
-    color: #443210;
+    background: linear-gradient(to bottom, var(--ralsei-green), var(--ralsei-footer));
+    color: var(--ralsei-black);
     padding: 12px 16px;
     font-weight: 700;
     font-size: 15px;
     text-align: center;
-    border-bottom: 1px solid #e0b85c;
+    border-bottom: 1px solid var-(--ralsei-green);
 }
 
 .office-card-body {
@@ -505,7 +501,7 @@ white-space: nowrap;
 }
 
 .phone-highlight {
-    color: #b37d14;
+    color: var(--ralsei-black);
     font-weight: 700;
 }
 
@@ -591,8 +587,8 @@ white-space: nowrap;
 }
 
 .badge-orange {
-    background-color: #ffe0b2;
-    color: #e65100;
+    background-color: var(--ralsei-green);
+    color: var(--ralsei-black) ;
 }
 
 .badge-blue {
