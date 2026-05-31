@@ -17,13 +17,12 @@ const HomePage = () => {
         setLoading(true);
         setHasSearched(true);
         try {
-            const searchParams = {
-                route: `${departure} - ${destination}`,
-                start: `${date}T00:00:00`,
-                end: `${date}T23:59:59`,
-                page: 0,
-                size: 10
-            };
+const searchParams = {
+    route: `${departure} - ${destination}`,
+    date: date,  // "2026-01-01" từ input type="date"
+    page: 0,
+    size: 10
+};
 
             const responseData = await tripService.searchTrips(searchParams);
             if (responseData && responseData.content) {
@@ -48,7 +47,6 @@ const HomePage = () => {
     const handleSelectTrip = (tripId) => {
         navigate(`/select-seat/${tripId}`);
     };
-
     return (
         <div className="homepage-container">
             <header className="homepage-header">
@@ -236,7 +234,6 @@ const HomePage = () => {
     </div>
 </div>
                 ) : (
-                    /* KỊCH BẢN 2: USER ĐÃ BẤM TÌM KIẾM -> ĐƯA KẾT QUẢ HOẶC BÁO KHÔNG CÓ CHUYẾN */
                     <>
                         <h3 className="results-title">Kết Quả Tìm Kiếm Chuyến Xe</h3>
                         {trips.length === 0 ? (
@@ -251,7 +248,7 @@ const HomePage = () => {
                                             <span className="trip-type-tag">{trip.type || 'Standard'}</span>
                                         </div>
                                         <div className="trip-price-wrapper">
-                                            <span className="trip-price">{(trip.price || 0).toLocaleString('vi-VN')} đ</span>
+                                            <span className="trip-price">{(trip.seatPrice || 0).toLocaleString('vi-VN')} đ</span>
                                             <button className="btn-select-seat">Chọn Xe →</button>
                                         </div>
                                     </div>

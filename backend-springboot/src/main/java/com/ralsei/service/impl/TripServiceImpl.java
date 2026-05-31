@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
@@ -32,8 +31,7 @@ public class TripServiceImpl implements TripService {
             throw new IllegalArgumentException("Your mom are in the past, please check your date range!");
         }
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by("departureTime").descending());
-
+Pageable pageable = PageRequest.of(page, size);
         Page<TripDetailProjection> tripPage = tripRepository.findTripDetails(start, end, route, pageable);
 
         return new PagedResponse<>(
