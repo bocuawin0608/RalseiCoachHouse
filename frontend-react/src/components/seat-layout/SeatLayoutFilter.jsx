@@ -1,6 +1,9 @@
-export default function SeatLayoutFilter({ filters, onFilterChange, onSearch }) {
+import { BsArrowClockwise } from "react-icons/bs";
+import Button from "../common/Button";
+
+export default function SeatLayoutFilter({ filters, onFilterChange, onReset }) {
     return (
-        <div style={{ display: 'flex', gap: '15px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '15px', marginBlock: '20px', flexWrap: 'wrap', alignItems: 'center', justifyContent:"center" }}>
             
             <input 
                 name="seatLayoutName" 
@@ -16,7 +19,7 @@ export default function SeatLayoutFilter({ filters, onFilterChange, onSearch }) 
                     name="minPrice" 
                     placeholder="Giá từ..." 
                     value={filters.minPrice || ''}
-                    onChange={onFilterChange}
+                    onChange={onFilterChange} step={1000}
                     style={{ padding: '5px', width: '100px' }}
                 />
                 <span>-</span>
@@ -25,7 +28,7 @@ export default function SeatLayoutFilter({ filters, onFilterChange, onSearch }) 
                     name="maxPrice" 
                     placeholder="Đến giá..." 
                     value={filters.maxPrice || ''}
-                    onChange={onFilterChange}
+                    onChange={onFilterChange} step={1000}
                     style={{ padding: '5px', width: '100px' }}
                 />
             </div>
@@ -36,16 +39,16 @@ export default function SeatLayoutFilter({ filters, onFilterChange, onSearch }) 
                     name="minSeats" 
                     placeholder="Số ghế từ..." 
                     value={filters.minSeats || ''}
-                    onChange={onFilterChange}
+                    onChange={onFilterChange} 
                     style={{ padding: '5px', width: '100px' }}
                 />
                 <span>-</span>
                 <input 
                     type="number"
                     name="maxSeats" 
-                    placeholder="Đến..." 
+                    placeholder="Đến số ghế..." 
                     value={filters.maxSeats || ''}
-                    onChange={onFilterChange}
+                    onChange={onFilterChange} 
                     style={{ padding: '5px', width: '100px' }}
                 />
             </div>
@@ -61,12 +64,8 @@ export default function SeatLayoutFilter({ filters, onFilterChange, onSearch }) 
                 <option value="false">Ngừng hoạt động</option>
             </select>
 
-            <button 
-                onClick={onSearch} 
-                style={{ padding: '5px 15px', cursor: 'pointer', fontWeight: 'bold' }}
-            >
-                Tìm kiếm
-            </button>
+            <Button onClick={onReset} variant="secondary"><BsArrowClockwise size={18}/>Reset</Button>
+            
         </div>
     );
 }
