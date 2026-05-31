@@ -246,29 +246,21 @@ html, body {
   color: var(--ralsei-black); 
   border: none;
   height: 100%;
-  min-height: 58px;
+  min-height: 61px;
   align-self: stretch; 
-  padding: 0 35px;
+  padding: 30px;
   font-size: 16px;
   font-weight: bold;
   cursor: pointer;
   transition: 0.2s;
   white-space: nowrap;
-  flex-grow: 1; 
+  flex-grow: 3; 
+  border-radius: 0 12px 12px 0;
 }
 
-.btn-search-submit:hover {
- background-color: var(--ralsei-green);
-color: white;
-border: none;
-height: 100%;
-align-self: stretch; 
-padding: 2rem;
-font-size: 16px;
-font-weight: bold;
-cursor: pointer;
-transition: 0.2s;
-white-space: nowrap; 
+.btn-search-submit:hover{
+color: var(--ralsei-white);
+background-color: var(--ralsei-pink);
 }
 
 .form-tier-recent {
