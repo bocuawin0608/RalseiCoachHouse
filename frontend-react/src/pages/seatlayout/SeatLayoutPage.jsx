@@ -7,6 +7,7 @@ import Pagination from '../../components/common/Pagination';
 import { useNavigate } from 'react-router-dom';
 import Button from '../../components/common/Button';
 import SeatLayoutCreateModal from '../../components/seat-layout/SeatLayoutCreateModal';
+import SeatLayoutUpdateInfoModal from '../../components/seat-layout/SeatLayoutUpdateInfoModal';
 
 export default function SeatLayoutPage() {
     const navigate = useNavigate();
@@ -21,6 +22,8 @@ export default function SeatLayoutPage() {
     });
 
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isUpdateInfoModalOpen, setIsUpdateInfoModalOpen] = useState(false);
+    const [selectedLayout, setSelectedLayout] = useState(null);
 
     const fetchLayouts = useCallback(async (currentFilters, currentPage, currentSize) => {
         
@@ -59,6 +62,16 @@ export default function SeatLayoutPage() {
         setPageInfo(prev => ({ ...prev, page: 0 }));
     };
 
+    const handleOpenUpdateInfoModal = (layout) => {
+        setSelectedLayout(layout);
+        setIsUpdateInfoModalOpen(true);
+    }
+
+    const handleCloseUpdateInfoModal = () => {
+        setIsUpdateInfoModalOpen(false);
+        setSelectedLayout(null);
+    }
+
     return (
         <div style={{ padding: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', marginBottom: '20px' }}>
@@ -78,10 +91,11 @@ export default function SeatLayoutPage() {
                 onReset={handleReset}
             />
 
-            <SeatLayoutTable layouts={layouts} navigate={navigate}/>            
+            <SeatLayoutTable layouts={layouts} navigate={navigate} onEditInfoClick={handleOpenUpdateInfoModal}/>            
             <Pagination pageInfo={pageInfo} onPageChange={setPageInfo} />
 
             <SeatLayoutCreateModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} onSuccess={handleReset} />
+            <SeatLayoutUpdateInfoModal isOpen={isUpdateInfoModalOpen} detailData={selectedLayout} onClose={handleCloseUpdateInfoModal} onSuccess={handleReset} />
         </div>
     );
 }

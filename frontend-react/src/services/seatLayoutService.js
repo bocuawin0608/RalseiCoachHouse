@@ -29,8 +29,8 @@ export const seatLayoutService = {
      * @param {number|string} id - ID của SeatLayout cần sửa
      * @param {Object} data - Chứa thông tin cần cập nhật (seatLayoutName, isActive)
      */
-    updateSeatLayout: (id, data) => {
+    updateSeatLayoutInfo: (id, data) => {
         const url = `/seat-layouts/${id}`;
-        return axiosClient.put(url, data);
+        return axiosClient.patch(url, data);
     },
 };

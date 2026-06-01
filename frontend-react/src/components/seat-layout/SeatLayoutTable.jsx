@@ -1,7 +1,7 @@
 import { BsEye, BsPencilFill, BsCashStack, BsLayoutSplit } from "react-icons/bs";
 import Button from "../common/Button";
 
-export default function SeatLayoutTable({ layouts, navigate }) {
+export default function SeatLayoutTable({ layouts, navigate, onEditInfoClick }) {
     return (
         <table border="1" cellPadding="10" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
@@ -44,7 +44,7 @@ export default function SeatLayoutTable({ layouts, navigate }) {
 
                                 <Button 
                                     variant="primary" 
-                                    iconOnly={true} 
+                                    iconOnly={true} onClick={() => onEditInfoClick(layout)}
                                     title="Sửa thông tin">
                                     <BsPencilFill  size={15} />
                                 </Button>
