@@ -4,6 +4,7 @@ import com.ralsei.dto.projection.TripDetailProjection;
 import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.repository.TripRepository;
 import com.ralsei.service.TripService;
+import com.ralsei.util.FormatHandlerUtility;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -27,6 +28,7 @@ public class TripServiceImpl implements TripService {
             int page,
             int size
     ) {
+        route = FormatHandlerUtility.formatProvinceName(route);
         if (start != null && end != null && start.isAfter(end)) {
             throw new IllegalArgumentException("Your mom are in the past, please check your date range!");
         }
