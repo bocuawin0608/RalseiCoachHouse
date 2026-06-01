@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { seatLayoutService } from "../../services/seatLayoutService";
 import SeatIcon from "../../components/seat-layout/SeatIcon";
 import Button from '../../components/common/Button';
