@@ -1,8 +1,8 @@
-package com.ralsei.repository;
+// package com.ralsei.repository;
 
-import org.springframework.data.jpa.repository.JpaRepository;
+// import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.ralsei.model.SeatLayoutPrice;
-public interface SeatLayoutPriceRepository extends JpaRepository<SeatLayoutPrice, Integer> {
+// import com.ralsei.model.CoachTypePrice;
+// public interface SeatLayoutPriceRepository extends JpaRepository<CoachTypePrice, Integer> {
     
-}
+// }
