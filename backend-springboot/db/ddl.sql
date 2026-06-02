@@ -9,18 +9,19 @@ DROP TABLE IF EXISTS [cargo_ticket_detail];
 DROP TABLE IF EXISTS [passenger_ticket_detail];
 DROP TABLE IF EXISTS [cargo_ticket];
 DROP TABLE IF EXISTS [passenger_ticket];
+DROP TABLE IF EXISTS [trip_seat];
 DROP TABLE IF EXISTS [trip];
+DROP TABLE IF EXISTS [seat];
 DROP TABLE IF EXISTS [coach];
 DROP TABLE IF EXISTS [cargo_type_price];
-DROP TABLE IF EXISTS [seat_layout_price];
-DROP TABLE IF EXISTS [seat];
+DROP TABLE IF EXISTS [coach_type_price];
 DROP TABLE IF EXISTS [route_stop];
 DROP TABLE IF EXISTS [staff];
 DROP TABLE IF EXISTS [ticket_agency];
 DROP TABLE IF EXISTS [customer];
 DROP TABLE IF EXISTS [account_role];
 DROP TABLE IF EXISTS [cargo_type];
-DROP TABLE IF EXISTS [seat_layout];
+DROP TABLE IF EXISTS [coach_type];
 DROP TABLE IF EXISTS [route];
 DROP TABLE IF EXISTS [coach_stop];
 DROP TABLE IF EXISTS [voucher];
@@ -118,9 +119,9 @@ CREATE TABLE [route] (
     CONSTRAINT CK_Route_Time CHECK ([totalMinutes] > 0)
 );
 
-CREATE TABLE [seat_layout] (
-    [seatLayoutId] INT IDENTITY(1,1) PRIMARY KEY,
-    [seatLayoutName] NVARCHAR(100) NOT NULL,
+CREATE TABLE [coach_type] (
+    [coachTypeId] INT IDENTITY(1,1) PRIMARY KEY,
+    [coachTypeName] NVARCHAR(100) NOT NULL,
     [totalSeat] INT NOT NULL,
     [isActive] BIT NOT NULL DEFAULT 1,
     [createdAt] DATETIME DEFAULT GETDATE(),
@@ -130,6 +131,8 @@ CREATE TABLE [seat_layout] (
 
 	CONSTRAINT CK_SeatLayout_Total CHECK ([totalSeat] > 0)
 );
+
+ALTER TABLE [coach_type] ADD CONSTRAINT UQ_CoachType_Name UNIQUE ([coachTypeName]);
 
 CREATE TABLE [cargo_type] (
     [cargoTypeId] INT IDENTITY(1,1) PRIMARY KEY,
@@ -225,25 +228,9 @@ CREATE TABLE [route_stop] (
     CONSTRAINT CK_RouteStop_Metrics CHECK ([kilometersFromStart] >= 0 AND [minutesFromStart] >= 0)
 );
 
-CREATE TABLE [seat] (
-    [seatId] INT IDENTITY(1,1) PRIMARY KEY,
-    [seatLayoutId] INT NOT NULL,
-    [seatCode] VARCHAR(10) NOT NULL,
-    [rowIndex] INT NOT NULL,
-    [colIndex] INT NOT NULL,
-    [isActive] BIT NOT NULL DEFAULT 1,
-    [createdAt] DATETIME DEFAULT GETDATE(),
-    [createdBy] INT NULL,
-    [updatedAt] DATETIME DEFAULT GETDATE(),
-    [updatedBy] INT NULL,
-    FOREIGN KEY ([seatLayoutId]) REFERENCES [seat_layout] ([seatLayoutId]),
-
-	CONSTRAINT CK_Seat_Coordinates CHECK ([rowIndex] >= 1 AND [colIndex] >= 1)
-);
-
-CREATE TABLE [seat_layout_price] (
-    [seatLayoutPriceId] INT IDENTITY(1,1) PRIMARY KEY,
-    [seatLayoutId] INT NOT NULL,
+CREATE TABLE [coach_type_price] (
+    [coachTypePriceId] INT IDENTITY(1,1) PRIMARY KEY,
+    [coachTypeId] INT NOT NULL,
     [seatPrice] DECIMAL(15, 2) NOT NULL,
     [startEffectiveDate] DATETIME NOT NULL,
     [endEffectiveDate] DATETIME NOT NULL,
@@ -251,11 +238,13 @@ CREATE TABLE [seat_layout_price] (
     [createdBy] INT NULL,
     [updatedAt] DATETIME DEFAULT GETDATE(),
     [updatedBy] INT NULL,
-    FOREIGN KEY ([seatLayoutId]) REFERENCES [seat_layout] ([seatLayoutId]),
+    FOREIGN KEY ([coachTypeId]) REFERENCES [coach_type] ([coachTypeId]),
 
 	CONSTRAINT CK_SeatPrice_Value CHECK ([seatPrice] >= 0),
     CONSTRAINT CK_SeatPrice_Dates CHECK ([endEffectiveDate] >= [startEffectiveDate])
 );
+
+ALTER TABLE [coach_type_price] ADD CONSTRAINT UQ_SeatPrice_Timeline UNIQUE ([coachTypeId], [startEffectiveDate]); -- để tránh bị duplicate request gây hỏng data logic
 
 CREATE TABLE [cargo_type_price] (
     [cargoTypePriceId] INT IDENTITY(1,1) PRIMARY KEY,
@@ -276,7 +265,7 @@ CREATE TABLE [cargo_type_price] (
 
 CREATE TABLE [coach] (
     [coachId] INT IDENTITY(1,1) PRIMARY KEY,
-    [seatLayoutId] INT NOT NULL,
+    [coachTypeId] INT NOT NULL,
     [licensePlate] VARCHAR(20) NOT NULL UNIQUE,
     [status] VARCHAR(50) NOT NULL DEFAULT 'active', 
     [manufacturer] NVARCHAR(100) NULL,
@@ -285,10 +274,30 @@ CREATE TABLE [coach] (
     [createdBy] INT NULL,
     [updatedAt] DATETIME DEFAULT GETDATE(),
     [updatedBy] INT NULL,
-    FOREIGN KEY ([seatLayoutId]) REFERENCES [seat_layout] ([seatLayoutId]),
+    FOREIGN KEY ([coachTypeId]) REFERENCES [coach_type] ([coachTypeId]),
 
 	CONSTRAINT CK_Coach_Status CHECK ([status] IN ('active', 'maintenance', 'retired'))
 );
+
+
+CREATE TABLE [seat] (
+    [seatId] INT IDENTITY(1,1) PRIMARY KEY,
+    [coachId] INT NOT NULL,
+    [seatCode] VARCHAR(10) NOT NULL,
+    [rowIndex] INT NOT NULL,
+    [colIndex] INT NOT NULL,
+    [isActive] BIT NOT NULL DEFAULT 1,
+    [createdAt] DATETIME DEFAULT GETDATE(),
+    [createdBy] INT NULL,
+    [updatedAt] DATETIME DEFAULT GETDATE(),
+    [updatedBy] INT NULL,
+    FOREIGN KEY ([coachId]) REFERENCES [coach] ([coachId]),
+
+	CONSTRAINT CK_Seat_Coordinates CHECK ([rowIndex] >= 1 AND [colIndex] >= 1)
+);
+
+ALTER TABLE [seat] ADD CONSTRAINT UQ_Seat_Matrix UNIQUE ([coachId], [rowIndex], [colIndex]);
+ALTER TABLE [seat] ADD CONSTRAINT UQ_Seat_Code UNIQUE ([coachId], [seatCode]);
 
 -- ============================================================================
 -- LEVEL 3: OPERATIONAL ENTITIES (Chuyến xe thực tế chạy)
@@ -313,6 +322,23 @@ CREATE TABLE [trip] (
 
 	CONSTRAINT CK_Trip_Status CHECK ([status] IN ('scheduled', 'in_progress', 'cancelled', 'completed')),
     CONSTRAINT CK_Trip_Personnel CHECK ([driverId] <> [attendantId])
+);
+
+CREATE TABLE [trip_seat] (
+    [tripSeatId] INT IDENTITY(1,1) PRIMARY KEY,
+    [tripId] INT NOT NULL,
+    [seatId] INT NOT NULL,
+    [price] DECIMAL(15,2) NOT NULL, -- Lưu giá tiền CỦA từng ghế của CHUYẾN NÀY (snapshot)
+    [status] VARCHAR(50) NOT NULL DEFAULT 'available',
+    [createdAt] DATETIME DEFAULT GETDATE(),
+    [createdBy] INT NULL,
+    [updatedAt] DATETIME DEFAULT GETDATE(),
+    [updatedBy] INT NULL,
+    FOREIGN KEY ([tripId]) REFERENCES [trip] ([tripId]),
+    FOREIGN KEY ([seatId]) REFERENCES [seat] ([seatId]),
+
+    CONSTRAINT UQ_Trip_Seat UNIQUE ([tripId], [seatId]), -- Đảm bảo 1 chuyến không duplicate ghế
+    CONSTRAINT CK_TripSeat_Status CHECK ([status] IN ('available', 'locked', 'sold'))
 );
 
 -- ============================================================================
@@ -346,7 +372,7 @@ CREATE TABLE [passenger_ticket] (
 
 CREATE TABLE [cargo_ticket] (
     [cargoTicketId] INT IDENTITY(1,1) PRIMARY KEY,
-    [tripId] INT NOT NULL,
+    [tripId] INT NULL, -- được NULLABLE ban đầu vì chưa gán chuyến ngay
     [customerId] INT NULL,
     [senderName] NVARCHAR(100) NOT NULL,
     [senderPhone] VARCHAR(20) NOT NULL,
@@ -392,7 +418,7 @@ CREATE TABLE [cargo_ticket] (
 CREATE TABLE [passenger_ticket_detail] (
     [ticketDetailId] INT IDENTITY(1,1) PRIMARY KEY,
     [passengerTicketId] INT NOT NULL,
-    [seatId] INT NOT NULL,
+    [tripSeatId] INT NOT NULL,
     [qrcode] VARCHAR(MAX) NULL,
     [fullName] NVARCHAR(100) NOT NULL,
     [phone] VARCHAR(20) NOT NULL,
@@ -407,7 +433,7 @@ CREATE TABLE [passenger_ticket_detail] (
     [updatedAt] DATETIME DEFAULT GETDATE(),
     [updatedBy] INT NULL,
     FOREIGN KEY ([passengerTicketId]) REFERENCES [passenger_ticket] ([passengerTicketId]) ON DELETE CASCADE,
-    FOREIGN KEY ([seatId]) REFERENCES [seat] ([seatId]),
+    FOREIGN KEY ([tripSeatId]) REFERENCES [trip_seat] ([tripSeatId]),
 
 	CONSTRAINT CK_PassengerDetail_Price CHECK ([price] >= 0),
     CONSTRAINT CK_PassengerDetail_Status CHECK ([status] IN ('pending', 'confirmed', 'checked_in', 'cancelled', 'expired'))
