@@ -331,7 +331,9 @@ CREATE TABLE [trip_seat] (
     [price] DECIMAL(15,2) NOT NULL, -- Lưu giá tiền CỦA từng ghế của CHUYẾN NÀY (snapshot)
     [status] VARCHAR(50) NOT NULL DEFAULT 'available',
     [createdAt] DATETIME DEFAULT GETDATE(),
+    [createdBy] INT NULL,
     [updatedAt] DATETIME DEFAULT GETDATE(),
+    [updatedBy] INT NULL,
     FOREIGN KEY ([tripId]) REFERENCES [trip] ([tripId]),
     FOREIGN KEY ([seatId]) REFERENCES [seat] ([seatId]),
 
