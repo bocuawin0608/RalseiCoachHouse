@@ -1,10 +1,11 @@
--- CRE: NIKO(Gemini Agent) - DATE: 15/06/2024
+-- CRE: NIKO(Gemini Agent) - DATE: 2026-06-02
+-- UPDATE: ĐỒNG BỘ THIẾT KẾ DDL MỚI (SEAT VỀ COACH & TRIP_SEAT SNAPSHOT)
 
 USE VeXeDB;
 GO
 
 SET NOCOUNT ON;
-PRINT N'=== BẮT ĐẦU RE-SEED MASTER (V12): FIX TRIỆT ĐỂ CA TRỰC & KHỞI TẠO CARGO TICKET ===';
+PRINT N'=== BẮT ĐẦU RE-SEED MASTER: FIX THEO SCHEMA DDL MỚI (TRIP_SEAT & COACH_TYPE) ===';
 
 -- ============================================================================
 -- CLEANUP: XÓA DỮ LIỆU THEO ĐÚNG THỨ TỰ RÀN BUỘC KHÓA NGOẠI
@@ -17,18 +18,19 @@ DELETE FROM [cargo_ticket_detail];
 DELETE FROM [passenger_ticket_detail];
 DELETE FROM [cargo_ticket];
 DELETE FROM [passenger_ticket];
+DELETE FROM [trip_seat]; -- Thêm bảng trung gian operacional
 DELETE FROM [trip];
+DELETE FROM [seat];
 DELETE FROM [coach];
 DELETE FROM [cargo_type_price];
-DELETE FROM [seat_layout_price];
-DELETE FROM [seat];
+DELETE FROM [coach_type_price]; -- Đổi tên bảng giá layout cũ
 DELETE FROM [route_stop];
 DELETE FROM [staff];
 DELETE FROM [ticket_agency];
 DELETE FROM [customer];
 DELETE FROM [account_role];
 DELETE FROM [cargo_type];
-DELETE FROM [seat_layout];
+DELETE FROM [coach_type]; -- Đổi tên danh mục layout cũ
 DELETE FROM [route];
 DELETE FROM [coach_stop];
 DELETE FROM [voucher];
@@ -42,7 +44,7 @@ DBCC CHECKIDENT ('[role]', RESEED, 0);
 DBCC CHECKIDENT ('[voucher]', RESEED, 0);
 DBCC CHECKIDENT ('[coach_stop]', RESEED, 0);
 DBCC CHECKIDENT ('[route]', RESEED, 0);
-DBCC CHECKIDENT ('[seat_layout]', RESEED, 0);
+DBCC CHECKIDENT ('[coach_type]', RESEED, 0);
 DBCC CHECKIDENT ('[cargo_type]', RESEED, 0);
 DBCC CHECKIDENT ('[account_role]', RESEED, 0);
 DBCC CHECKIDENT ('[customer]', RESEED, 0);
@@ -50,10 +52,11 @@ DBCC CHECKIDENT ('[ticket_agency]', RESEED, 0);
 DBCC CHECKIDENT ('[staff]', RESEED, 0);
 DBCC CHECKIDENT ('[route_stop]', RESEED, 0);
 DBCC CHECKIDENT ('[seat]', RESEED, 0);
-DBCC CHECKIDENT ('[seat_layout_price]', RESEED, 0);
+DBCC CHECKIDENT ('[coach_type_price]', RESEED, 0);
 DBCC CHECKIDENT ('[cargo_type_price]', RESEED, 0);
 DBCC CHECKIDENT ('[coach]', RESEED, 0);
 DBCC CHECKIDENT ('[trip]', RESEED, 0);
+DBCC CHECKIDENT ('[trip_seat]', RESEED, 0);
 DBCC CHECKIDENT ('[passenger_ticket]', RESEED, 0);
 DBCC CHECKIDENT ('[cargo_ticket]', RESEED, 0);
 DBCC CHECKIDENT ('[passenger_ticket_detail]', RESEED, 0);
@@ -83,7 +86,7 @@ INSERT INTO [route] (routeName, totalKilometers, totalMinutes) VALUES
 (N'Hà Nội - Quảng Bình', 500.00, 600), 
 (N'Quảng Bình - Hà Nội', 500.00, 600); 
 
-INSERT INTO [seat_layout] (seatLayoutName, totalSeat) VALUES 
+INSERT INTO [coach_type] (coachTypeName, totalSeat) VALUES 
 (N'Xe Limousine VIP 20 phòng', 20),      
 (N'Xe Giường Nằm Luxury 32 chỗ', 32),    
 (N'Xe Khách Truyền Thống 38 chỗ', 38);   
@@ -91,9 +94,8 @@ INSERT INTO [seat_layout] (seatLayoutName, totalSeat) VALUES
 INSERT INTO [cargo_type] (cargoTypeName) VALUES 
 (N'Hàng khô / Thùng Carton'), (N'Xe máy / Xe điện'), (N'Hàng dễ vỡ');
 
-
 -- ============================================================================
--- LEVEL 2: PERSONNEL & TICKET AGENCY GENERATION (Mạng lưới 22 Đại lý + Data Sạch)
+-- LEVEL 2: PERSONNEL & TICKET AGENCY GENERATION
 -- ============================================================================
 PRINT N'-> Đang cấu hình mạng lưới 22 Đại lý/Phòng vé chiến lược...';
 
@@ -223,22 +225,14 @@ BEGIN
     SET @idx = @idx + 1;
 END;
 
-
 -- ============================================================================
--- LEVEL 2.5: CONFIGURING ROUTE STOPS & SEATS
+-- LEVEL 2.5: CONFIGURING ROUTE STOPS & PRICES
 -- ============================================================================
 INSERT INTO [route_stop] (routeId, stopPointId, stopOrder, kilometersFromStart, minutesFromStart) VALUES 
 (1, 1, 1, 0.00, 0), (1, 2, 2, 90.00, 120), (1, 3, 3, 290.00, 360), (1, 4, 4, 500.00, 600),
 (2, 4, 1, 0.00, 0), (2, 3, 2, 210.00, 240), (2, 2, 3, 410.00, 480), (2, 1, 4, 500.00, 600);
 
-DECLARE @s INT = 1;
-WHILE @s <= 20 BEGIN INSERT INTO [seat] (seatLayoutId, seatCode, rowIndex, colIndex) VALUES (1, 'L' + RIGHT('0' + CAST(@s AS VARCHAR(2)), 2), (@s+1)/2, CASE WHEN @s%2=0 THEN 2 ELSE 1 END); SET @s = @s + 1; END;
-SET @s = 1;
-WHILE @s <= 32 BEGIN INSERT INTO [seat] (seatLayoutId, seatCode, rowIndex, colIndex) VALUES (2, 'LX' + RIGHT('0' + CAST(@s AS VARCHAR(2)), 2), (@s+1)/2, CASE WHEN @s%2=0 THEN 2 ELSE 1 END); SET @s = @s + 1; END;
-SET @s = 1;
-WHILE @s <= 38 BEGIN INSERT INTO [seat] (seatLayoutId, seatCode, rowIndex, colIndex) VALUES (3, 'T' + RIGHT('0' + CAST(@s AS VARCHAR(2)), 2), (@s+1)/2, CASE WHEN @s%2=0 THEN 2 ELSE 1 END); SET @s = @s + 1; END;
-
-INSERT INTO [seat_layout_price] (seatLayoutId, seatPrice, startEffectiveDate, endEffectiveDate) VALUES 
+INSERT INTO [coach_type_price] (coachTypeId, seatPrice, startEffectiveDate, endEffectiveDate) VALUES 
 (1, 590000.00, '2026-01-01', '2029-12-31'), 
 (2, 450000.00, '2026-01-01', '2029-12-31'), 
 (3, 350000.00, '2026-01-01', '2029-12-31'); 
@@ -248,11 +242,10 @@ INSERT INTO [cargo_type_price] (cargoTypeId, unit, pricePerUnit, startEffectiveD
 (2, N'Chiếc', 400000.00, '2026-01-01', '2029-12-31'), 
 (3, N'Kiện', 150000.00, '2026-01-01', '2029-12-31');
 
-
 -- ============================================================================
--- LEVEL 3: GENERATING COACHES (Đội xe giường nằm chất lượng cao)
+-- LEVEL 3: GENERATING COACHES & SEATS (Ghế tạo phụ thuộc trực tiếp vào xe)
 -- ============================================================================
-PRINT N'-> Đang lắp ráp hạ tầng 365 xe khách giường nằm...';
+PRINT N'-> Đang lắp ráp hạ tầng 365 xe khách và tự động cấu hình ma trận ghế...';
 
 DECLARE @ManufacturerTable TABLE (Id INT IDENTITY(1,1), Brand NVARCHAR(100));
 INSERT INTO @ManufacturerTable (Brand) VALUES 
@@ -264,6 +257,9 @@ DECLARE @c INT = 1;
 DECLARE @generatedPlate VARCHAR(20);
 DECLARE @coachStatus VARCHAR(20);
 DECLARE @pickedBrand NVARCHAR(100);
+DECLARE @TargetCoachTypeId INT;
+DECLARE @NewCoachId INT;
+DECLARE @s INT;
 
 WHILE @c <= 365
 BEGIN
@@ -272,17 +268,52 @@ BEGIN
                           RIGHT(CAST((@c * 79 + 10) AS VARCHAR(10)), 2);
     SET @coachStatus = CASE WHEN @c <= 320 THEN 'active' ELSE 'maintenance' END;
     SELECT @pickedBrand = Brand FROM @ManufacturerTable WHERE Id = ((@c % @TotalBrands) + 1);
+    
+    SET @TargetCoachTypeId = CASE WHEN @c % 3 = 0 THEN 1 WHEN @c % 3 = 1 THEN 2 ELSE 3 END;
 
-    INSERT INTO [coach] (seatLayoutId, licensePlate, [status], manufacturer, [year]) 
-    VALUES (CASE WHEN @c%3=0 THEN 1 WHEN @c%3=1 THEN 2 ELSE 3 END, @generatedPlate, @coachStatus, @pickedBrand, 2024);
+    -- Thêm Xe
+    INSERT INTO [coach] (coachTypeId, licensePlate, [status], manufacturer, [year]) 
+    VALUES (@TargetCoachTypeId, @generatedPlate, @coachStatus, @pickedBrand, 2024);
+    
+    SET @NewCoachId = SCOPE_IDENTITY();
+
+    -- Sinh dữ liệu Ghế tương ứng trực tiếp cho Xe vừa tạo để thỏa mãn Khóa Ngoại DDL mới
+    SET @s = 1;
+    IF @TargetCoachTypeId = 1
+    BEGIN
+        WHILE @s <= 20 
+        BEGIN 
+            INSERT INTO [seat] (coachId, seatCode, rowIndex, colIndex) 
+            VALUES (@NewCoachId, 'L' + RIGHT('0' + CAST(@s AS VARCHAR(2)), 2), (@s+1)/2, CASE WHEN @s%2=0 THEN 2 ELSE 1 END); 
+            SET @s = @s + 1; 
+        END;
+    END
+    ELSE IF @TargetCoachTypeId = 2
+    BEGIN
+        WHILE @s <= 32 
+        BEGIN 
+            INSERT INTO [seat] (coachId, seatCode, rowIndex, colIndex) 
+            VALUES (@NewCoachId, 'LX' + RIGHT('0' + CAST(@s AS VARCHAR(2)), 2), (@s+1)/2, CASE WHEN @s%2=0 THEN 2 ELSE 1 END); 
+            SET @s = @s + 1; 
+        END;
+    END
+    ELSE
+    BEGIN
+        WHILE @s <= 38 
+        BEGIN 
+            INSERT INTO [seat] (coachId, seatCode, rowIndex, colIndex) 
+            VALUES (@NewCoachId, 'T' + RIGHT('0' + CAST(@s AS VARCHAR(2)), 2), (@s+1)/2, CASE WHEN @s%2=0 THEN 2 ELSE 1 END); 
+            SET @s = @s + 1; 
+        END;
+    END
+
     SET @c = @c + 1;
 END;
 
-
 -- ============================================================================
--- LEVEL 4: OPERATIONAL ENTITIES - TRIPS (Tần suất sầm uất 24 chuyến/chiều/ngày)
+-- LEVEL 4: OPERATIONAL ENTITIES - TRIPS & TRIP_SEATS (Đồng bộ tạo Snapshot ghế chuyến)
 -- ============================================================================
-PRINT N'-> Đang chạy thuật toán cách ly thuật toán ca trực chống trùng ID...';
+PRINT N'-> Đang chạy thuật toán ca trực và tự động đổ dữ liệu snapshot trạng thái ghế chuyến...';
 
 DECLARE @DriverTable TABLE (RowIdx INT IDENTITY(1,1), StaffId INT);
 DECLARE @AttendantTable TABLE (RowIdx INT IDENTITY(1,1), StaffId INT);
@@ -296,11 +327,11 @@ DECLARE @TotalDrivers INT = (SELECT COUNT(*) FROM @DriverTable);
 DECLARE @TotalAttendants INT = (SELECT COUNT(*) FROM @AttendantTable);
 DECLARE @TotalActiveCoaches INT = (SELECT COUNT(*) FROM @ActiveCoachTable);
 
--- Thu hẹp khoảng thời gian seed lịch trình từ 01/01/2026 đến 15/01/2026 để tránh tràn bộ nhớ Log dữ liệu phình to quá mức
 DECLARE @StartDate DATETIME = '2026-01-01';
 DECLARE @EndDate DATETIME = '2026-01-15'; 
 DECLARE @CurrentDate DATETIME = @StartDate;
 DECLARE @TripCounter INT = 0;
+DECLARE @NewTripId INT;
 
 WHILE @CurrentDate <= @EndDate
 BEGIN
@@ -310,7 +341,6 @@ BEGIN
     BEGIN
         DECLARE @DrvId1 INT, @AtnId1 INT, @CchId1 INT;
         
-        -- THUẬT TOÁN OFFSET CÁCH LY CHỐNG TRÙNG ID TUYỆT ĐỐI (CHECK CONSTRAINT)
         IF (@TripCounter % 2 = 0)
         BEGIN
             SELECT @DrvId1 = StaffId FROM @DriverTable WHERE RowIdx = ((@TripCounter % @TotalDrivers) + 1);
@@ -327,6 +357,16 @@ BEGIN
 
         INSERT INTO [trip] (routeId, coachId, departureTime, [status], driverId, attendantId)
         VALUES (1, @CchId1, @Time1, 'scheduled', @DrvId1, @AtnId1);
+        
+        SET @NewTripId = SCOPE_IDENTITY();
+
+        -- ĐỒNG BỘ: Tạo danh sách ghế snapshot khả dụng cho chuyến này từ cấu hình gốc của Xe
+        INSERT INTO [trip_seat] (tripId, seatId, price, [status])
+        SELECT @NewTripId, s.seatId, ctp.seatPrice, 'available'
+        FROM [seat] s
+        JOIN [coach] c ON s.coachId = c.coachId
+        JOIN [coach_type_price] ctp ON c.coachTypeId = ctp.coachTypeId
+        WHERE c.coachId = @CchId1;
 
         SET @TripCounter = @TripCounter + 1;
         SET @Slot1 = @Slot1 + 1;
@@ -354,6 +394,16 @@ BEGIN
 
         INSERT INTO [trip] (routeId, coachId, departureTime, [status], driverId, attendantId)
         VALUES (2, @CchId2, @Time2, 'scheduled', @DrvId2, @AtnId2);
+        
+        SET @NewTripId = SCOPE_IDENTITY();
+
+        -- ĐỒNG BỘ: Tạo danh sách ghế snapshot khả dụng cho chuyến này từ cấu hình gốc của Xe
+        INSERT INTO [trip_seat] (tripId, seatId, price, [status])
+        SELECT @NewTripId, s.seatId, ctp.seatPrice, 'available'
+        FROM [seat] s
+        JOIN [coach] c ON s.coachId = c.coachId
+        JOIN [coach_type_price] ctp ON c.coachTypeId = ctp.coachTypeId
+        WHERE c.coachId = @CchId2;
 
         SET @TripCounter = @TripCounter + 1;
         SET @Slot2 = @Slot2 + 1;
@@ -362,13 +412,12 @@ BEGIN
     SET @CurrentDate = DATEADD(day, 1, @CurrentDate);
 END;
 
-PRINT N' -> Hoàn thành sinh ca trực. Tổng số chuyến xe đã thông qua kiểm tra pháp lý: ' + CAST(@TripCounter AS VARCHAR(10));
-
+PRINT N' -> Hoàn thành sinh ca trực & cấu hình Ghế Chuyến. Tổng số chuyến xe: ' + CAST(@TripCounter AS VARCHAR(10));
 
 -- ============================================================================
 -- LEVEL 5.1: PASSENGER TRANSACTIONAL GENERATION
 -- ============================================================================
-PRINT N'-> Đang phân bổ ngẫu nhiên vé hành khách mẫu và đồng bộ hóa dòng tiền...';
+PRINT N'-> Đang phân bổ ngẫu nhiên vé hành khách mẫu và đồng bộ hóa sang Trip_Seat...';
 
 DECLARE @TicketIdx INT = 1;
 DECLARE @MinNewTripId INT = (SELECT MIN(tripId) FROM [trip]);
@@ -378,26 +427,44 @@ DECLARE @MaxCusId INT = (SELECT MAX(customerId) FROM [customer]);
 DECLARE @TicketStaffId INT = (SELECT MIN(staffId) FROM [staff] WHERE staffPosition = 'Ticket Staff');
 
 DECLARE @TargetTripId INT;
-DECLARE @TargetLayoutId INT;
+DECLARE @TargetCoachTypeId2 INT;
 DECLARE @CalculatedTicketPrice DECIMAL(15,2);
+DECLARE @TargetTripSeatId INT;
 
 WHILE @TicketIdx <= 500
 BEGIN
     SET @TargetTripId = @MinNewTripId + (@TicketIdx % (@MaxNewTripId - @MinNewTripId + 1));
     
-    SELECT @TargetLayoutId = c.seatLayoutId FROM [trip] t JOIN [coach] c ON t.coachId = c.coachId WHERE t.tripId = @TargetTripId;
-    SELECT @CalculatedTicketPrice = seatPrice FROM [seat_layout_price] WHERE seatLayoutId = @TargetLayoutId;
+    SELECT @TargetCoachTypeId2 = c.coachTypeId FROM [trip] t JOIN [coach] c ON t.coachId = c.coachId WHERE t.tripId = @TargetTripId;
+    SELECT @CalculatedTicketPrice = seatPrice FROM [coach_type_price] WHERE coachTypeId = @TargetCoachTypeId2;
 
     DECLARE @TargetCusId INT = @MinCusId + (@TicketIdx % (@MaxCusId - @MinCusId + 1));
     DECLARE @TicketStatus VARCHAR(20) = CASE WHEN @TicketIdx % 7 = 0 THEN 'pending' ELSE 'confirmed' END;
+
+    -- Tìm ngẫu nhiên một mã ID trip_seat khả dụng tương ứng với chuyến đi này phục vụ cho vé
+    ;WITH OrderedSeats AS (
+        SELECT tripSeatId, ROW_NUMBER() OVER (ORDER BY seatId) as RowNum
+        FROM [trip_seat]
+        WHERE tripId = @TargetTripId
+    )
+    SELECT @TargetTripSeatId = tripSeatId 
+    FROM OrderedSeats 
+    WHERE RowNum = (@TicketIdx % 15) + 1; -- Đảm bảo vị trí ghế luôn nằm trong khoảng tổng số ghế khả dụng
+
+    -- Chuyển trạng thái trip_seat sang 'sold' nếu vé được confirm để dữ liệu logic sạch đẹp
+    IF (@TicketStatus = 'confirmed')
+    BEGIN
+        UPDATE [trip_seat] SET [status] = 'sold' WHERE tripSeatId = @TargetTripSeatId;
+    END
 
     INSERT INTO [passenger_ticket] (customerId, tripId, voucherId, soldBy, ticketCode, totalPrice, pickupStopId, dropoffStopId, [status])
     VALUES (@TargetCusId, @TargetTripId, NULL, CASE WHEN @TicketIdx % 3 = 0 THEN @TicketStaffId ELSE NULL END, 'TK_SYS_' + RIGHT('0000' + CAST(@TicketIdx AS VARCHAR(4)), 4), @CalculatedTicketPrice, 1, 4, @TicketStatus);
 
     DECLARE @NewPId INT = SCOPE_IDENTITY();
 
-    INSERT INTO [passenger_ticket_detail] (passengerTicketId, seatId, fullName, phone, dob, cccd, price, [status])
-    VALUES (@NewPId, (@TicketIdx % 18) + 1, N'Hành Khách Ghế ' + CAST(@TicketIdx AS NVARCHAR(5)), '0985' + RIGHT('00000' + CAST(@TicketIdx AS VARCHAR(5)), 5), '1998-04-20', '030098001234', @CalculatedTicketPrice, @TicketStatus);
+    -- ĐỒNG BỘ: Đổi sang map khóa ngoại tripSeatId thay thế cột seatId cũ
+    INSERT INTO [passenger_ticket_detail] (passengerTicketId, tripSeatId, fullName, phone, dob, cccd, price, [status])
+    VALUES (@NewPId, @TargetTripSeatId, N'Hành Khách Ghế ' + CAST(@TicketIdx AS NVARCHAR(5)), '0985' + RIGHT('00000' + CAST(@TicketIdx AS VARCHAR(5)), 5), '1998-04-20', '030098001234', @CalculatedTicketPrice, @TicketStatus);
 
     INSERT INTO [payment] (passengerTicketId, cargoTicketId, amount, paymentMethod, transactionId, [status], paymentTime)
     VALUES (@NewPId, NULL, @CalculatedTicketPrice, 'vnpay', 'TXN_P_' + CAST(@TicketIdx AS VARCHAR(5)), CASE WHEN @TicketStatus = 'confirmed' THEN 'completed' ELSE 'pending' END, CASE WHEN @TicketStatus = 'confirmed' THEN GETDATE() ELSE NULL END);
@@ -405,9 +472,8 @@ BEGIN
     SET @TicketIdx = @TicketIdx + 1;
 END;
 
-
 -- ============================================================================
--- LEVEL 5.2: CARGO TRANSACTIONAL GENERATION (Đã sửa đổi lấp đầy dữ liệu)
+-- LEVEL 5.2: CARGO TRANSACTIONAL GENERATION
 -- ============================================================================
 PRINT N'-> Đang khởi tạo 300 hóa đơn ký gửi bưu kiện mẫu (Lấp đầy Cargo Ticket)...';
 
@@ -421,14 +487,12 @@ BEGIN
     SET @TargetTripId = @MinNewTripId + (@CargoIdx % (@MaxNewTripId - @MinNewTripId + 1));
     SET @TargetCusId = @MinCusId + (@CargoIdx % (@MaxCusId - @MinCusId + 1));
     
-    -- Lấy ngẫu nhiên đơn giá loại hàng hóa ký gửi (Id từ 1 đến 3)
     SET @PickCargoTypePriceId = (@CargoIdx % 3) + 1;
     SELECT @PricePerUnit = pricePerUnit FROM [cargo_type_price] WHERE cargoTypePriceId = @PickCargoTypePriceId;
     
     DECLARE @Quantity INT = (@CargoIdx % 4) + 1;
     SET @CalculatedCargoPrice = @PricePerUnit * @Quantity;
 
-    -- Khởi tạo thực thể hóa đơn vận chuyển bưu kiện tổng
     INSERT INTO [cargo_ticket] (
         tripId, customerId, senderName, senderPhone, senderCccd, 
         receiverName, receiverPhone, receiverCccd, ticketCode, totalPrice, 
@@ -446,11 +510,9 @@ BEGIN
 
     DECLARE @NewCargoId INT = SCOPE_IDENTITY();
 
-    -- Khởi tạo chi tiết hàng hóa ký gửi
     INSERT INTO [cargo_ticket_detail] (cargoTicketId, cargoTypePriceId, description, quantity, weightKg, dimensionVol, calculatedPrice)
     VALUES (@NewCargoId, @PickCargoTypePriceId, N'Kiện bưu phẩm ký gửi mẫu số ' + CAST(@CargoIdx AS NVARCHAR(5)), @Quantity, @Quantity * 5.5, @Quantity * 0.2, @CalculatedCargoPrice);
 
-    -- Tạo dòng tiền Payment tương ứng nếu người gửi thanh toán trước luôn tại bến
     IF (@CargoIdx % 2 = 0)
     BEGIN
         INSERT INTO [payment] (passengerTicketId, cargoTicketId, amount, paymentMethod, transactionId, [status], paymentTime)
@@ -460,18 +522,16 @@ BEGIN
     SET @CargoIdx = @CargoIdx + 1;
 END;
 
-PRINT N'=== TOÀN BỘ CƠ SỞ DỮ LIỆU ĐÃ ĐƯỢC RESET VÀ SEED HOÀN HẢO CHUẨN V12 ===';
-GO
-PRINT N'=== TOÀN BỘ CƠ SỞ DỮ LIỆU ĐÃ ĐƯỢC RESET VÀ SEED HOÀN HẢO CHUẨN V11 ===';
+PRINT N'=== TOÀN BỘ CƠ SỞ DỮ LIỆU ĐÃ ĐƯỢC RESET VÀ SEED HOÀN HẢO CHUẨN SCHEMA MỚI ===';
 GO
 
---RECHECK QUERRY AFTER SEED
+-- RECHECK QUERY AFTER SEED
 SELECT * FROM [account];
 SELECT * FROM [role];
 SELECT * FROM [voucher];
 SELECT * FROM [coach_stop];     
 SELECT * FROM [route];
-SELECT * FROM [seat_layout];
+SELECT * FROM [coach_type];
 SELECT * FROM [cargo_type];
 SELECT * FROM [account_role];
 SELECT * FROM [customer];
@@ -479,10 +539,11 @@ SELECT * FROM [ticket_agency];
 SELECT * FROM [staff];
 SELECT * FROM [route_stop];
 SELECT * FROM [seat];
-SELECT * FROM [seat_layout_price];
+SELECT * FROM [coach_type_price];
 SELECT * FROM [cargo_type_price];
 SELECT * FROM [coach];
 SELECT * FROM [trip];
+SELECT * FROM [trip_seat];
 SELECT * FROM [passenger_ticket];
 SELECT * FROM [cargo_ticket];
 SELECT * FROM [passenger_ticket_detail];
@@ -491,14 +552,14 @@ SELECT * FROM [payment];
 SELECT * FROM [accompanied_child];
 SELECT * FROM [refund];     
     
-
--- Xem tất cả chuyến xe có trong DBSELECT t.tripId, r.routeName, t.departureTime
-SELECT t.tripId,sl.seatLayoutName,r.routeName, t.departureTime, slp.seatPrice
+-- Xem tất cả chuyến xe có trong DB kèm thông tin giá gốc từ cấu hình phân loại xe mới
+SELECT t.tripId, ct.coachTypeName, r.routeName, t.departureTime, ctp.seatPrice
 FROM trip t
 JOIN route r ON t.routeId = r.routeId
 JOIN coach c ON t.coachId = c.coachId
-JOIN seat_layout sl ON c.seatLayoutId = sl.seatLayoutId
-JOIN seat_layout_price slp ON sl.seatLayoutId = slp.seatLayoutId
+JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId
+JOIN coach_type_price ctp ON ct.coachTypeId = ctp.coachTypeId
 WHERE t.departureTime BETWEEN '2026-01-01 00:00:00.000' AND '2026-01-01 23:59:59.999'
 AND r.routeName = N'Hà Nội - Quảng Bình'
-ORDER BY t.departureTime
+ORDER BY t.departureTime;
+GO
