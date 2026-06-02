@@ -1,7 +1,9 @@
-import { Routes, Route, Navigate } from 'react-router-dom'; 
+import { Routes, Route, Navigate } from 'react-router-dom';
 import HomePage from '../pages/HomePage';
 import SeatLayoutPage from '../pages/seatlayout/SeatLayoutPage';
 import SeatLayoutDetailPage from '../pages/seatlayout/SeatLayoutDetailPage';
+import AdminDashboard from '../pages/admin/AdminDashboard';
+
 
 const AppRouter = () => {
     return (
@@ -11,6 +13,8 @@ const AppRouter = () => {
 
             <Route path="/seat-layouts" element={<SeatLayoutPage />} />
             <Route path="/seat-layouts/:id" element={<SeatLayoutDetailPage />} />
+
+            <Route path="/admin" element={<AdminDashboard />} />
         </Routes>
     );
 };
