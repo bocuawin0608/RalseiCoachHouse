@@ -37,33 +37,38 @@ DELETE FROM [voucher];
 DELETE FROM [role];
 DELETE FROM [account];
 
--- RESET TOÀN BỘ CỘT IDENTITY VỀ 0
-PRINT N'-> Đang reset bộ đếm Identity...';
-DBCC CHECKIDENT ('[account]', RESEED, 0);
-DBCC CHECKIDENT ('[role]', RESEED, 0);
-DBCC CHECKIDENT ('[voucher]', RESEED, 0);
-DBCC CHECKIDENT ('[coach_stop]', RESEED, 0);
-DBCC CHECKIDENT ('[route]', RESEED, 0);
-DBCC CHECKIDENT ('[coach_type]', RESEED, 0);
-DBCC CHECKIDENT ('[cargo_type]', RESEED, 0);
-DBCC CHECKIDENT ('[account_role]', RESEED, 0);
-DBCC CHECKIDENT ('[customer]', RESEED, 0);
-DBCC CHECKIDENT ('[ticket_agency]', RESEED, 0);
-DBCC CHECKIDENT ('[staff]', RESEED, 0);
-DBCC CHECKIDENT ('[route_stop]', RESEED, 0);
-DBCC CHECKIDENT ('[seat]', RESEED, 0);
-DBCC CHECKIDENT ('[coach_type_price]', RESEED, 0);
-DBCC CHECKIDENT ('[cargo_type_price]', RESEED, 0);
-DBCC CHECKIDENT ('[coach]', RESEED, 0);
-DBCC CHECKIDENT ('[trip]', RESEED, 0);
-DBCC CHECKIDENT ('[trip_seat]', RESEED, 0);
-DBCC CHECKIDENT ('[passenger_ticket]', RESEED, 0);
-DBCC CHECKIDENT ('[cargo_ticket]', RESEED, 0);
-DBCC CHECKIDENT ('[passenger_ticket_detail]', RESEED, 0);
-DBCC CHECKIDENT ('[cargo_ticket_detail]', RESEED, 0);
-DBCC CHECKIDENT ('[payment]', RESEED, 0);
-DBCC CHECKIDENT ('[accompanied_child]', RESEED, 0);
-DBCC CHECKIDENT ('[refund]', RESEED, 0);
+-- RESET TOÀN BỘ CỘT IDENTITY MỘT CÁCH AN TOÀN
+PRINT N'-> Đang reset bộ đếm Identity thông minh...';
+
+DECLARE @TableName NVARCHAR(256);
+DECLARE @SQL NVARCHAR(MAX);
+
+-- Tìm tất cả các bảng trong DB có chứa cột Identity
+DECLARE cur CURSOR FOR
+SELECT QUOTENAME(s.name) + '.' + QUOTENAME(t.name)
+FROM sys.tables t
+JOIN sys.schemas s ON t.schema_id = s.schema_id
+JOIN sys.identity_columns ic ON t.object_id = ic.object_id;
+
+OPEN cur;
+FETCH NEXT FROM cur INTO @TableName;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    -- Chỉ thực hiện RESEED 0 nếu cột Identity đã từng được sử dụng (last_value IS NOT NULL)
+    -- Nếu bảng mới tinh, bỏ qua để Identity mặc định bắt đầu từ 1
+    SET @SQL = N'
+    IF EXISTS (SELECT 1 FROM sys.identity_columns WHERE object_id = OBJECT_ID(''' + @TableName + ''') AND last_value IS NOT NULL)
+    BEGIN
+        DBCC CHECKIDENT (''' + @TableName + ''', RESEED, 0);
+    END';
+    
+    EXEC sp_executesql @SQL;
+    FETCH NEXT FROM cur INTO @TableName;
+END;
+
+CLOSE cur;
+DEALLOCATE cur;
 
 -- ============================================================================
 -- LEVEL 1: STRONG ENTITIES
