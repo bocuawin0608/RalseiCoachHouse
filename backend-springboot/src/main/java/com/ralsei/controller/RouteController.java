@@ -4,6 +4,7 @@ import com.ralsei.dto.request.RouteRequest;
 import com.ralsei.dto.response.RouteResponse;
 import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.service.RouteService;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -26,8 +27,7 @@ public class RouteController {
     @PutMapping("/{id}")
     public ResponseEntity<RouteResponse> updateRoute(
             @PathVariable Integer id,
-            @Valid @RequestBody RouteRequest request
-    ) {
+            @Valid @RequestBody RouteRequest request) {
         RouteResponse response = routeService.updateRoute(id, request);
         return ResponseEntity.ok(response);
     }
@@ -43,8 +43,7 @@ public class RouteController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Boolean isActive,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
+            @RequestParam(defaultValue = "10") int size) {
         PagedResponse<RouteResponse> response = routeService.getAllRoutes(search, isActive, page, size);
         return ResponseEntity.ok(response);
     }
@@ -52,6 +51,12 @@ public class RouteController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteRoute(@PathVariable Integer id) {
         routeService.deleteRoute(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}/restore")
+    public ResponseEntity<Void> restoreRoute(@PathVariable Integer id) {
+        routeService.restoreRoute(id);
         return ResponseEntity.noContent().build();
     }
 }

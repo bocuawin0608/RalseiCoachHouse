@@ -10,4 +10,5 @@ public interface RouteService {
     RouteResponse getRouteById(int id);
     PagedResponse<RouteResponse> getAllRoutes(String search, Boolean isActive, int page, int size);
     void deleteRoute(int id);
+    void restoreRoute(int id);
 }

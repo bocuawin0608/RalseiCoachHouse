@@ -102,6 +102,24 @@ public class RouteServiceImpl implements RouteService {
         }
     }
 
+    @Override
+    @Transactional
+    public void restoreRoute(int id) {
+        Route route = routeRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Route not found with ID: " + id));
+
+        // Restore the route itself
+        route.setActive(true);
+        routeRepository.save(route);
+
+        // Cascade restore to associated route stops
+        List<RouteStop> routeStops = routeStopRepository.findByRoute_RouteIdOrderByStopOrderAsc(id);
+        for (RouteStop routeStop : routeStops) {
+            routeStop.setActive(true);
+            routeStopRepository.save(routeStop);
+        }
+    }
+
     private RouteResponse mapToResponse(Route route) {
         if (route == null) {
             return null;
