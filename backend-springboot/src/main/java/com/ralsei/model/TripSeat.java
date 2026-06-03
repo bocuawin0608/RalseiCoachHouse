@@ -1,7 +1,6 @@
 package com.ralsei.model;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -19,28 +18,29 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "seat_layout_price")
+@Table(name = "trip_seat")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SeatLayoutPrice extends BaseEntity {
+public class TripSeat extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "seatLayoutPriceId")
-    private int seatLayoutPriceId;
+    @Column(name = "tripSeatId")
+    private int tripSeatId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "seatLayoutId", nullable = false)
-    private SeatLayout seatLayout;
+    @JoinColumn(name = "tripId", nullable = false)
+    private Trip trip;
 
-    @Column(name = "seatPrice", nullable = false)
-    private BigDecimal seatPrice;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "seatId", nullable = false)
+    private Seat seat;
 
-    @Column(name = "startEffectiveDate", nullable = false)
-    private LocalDateTime startEffectiveDate;
+    @Column(name = "price", nullable = false)
+    private BigDecimal price;
 
-    @Column(name = "endEffectiveDate", nullable = false)
-    private LocalDateTime endEffectiveDate;
+    @Column(name = "status", nullable = false)
+    private String status;
 }
