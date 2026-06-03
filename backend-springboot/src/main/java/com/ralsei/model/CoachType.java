@@ -1,5 +1,6 @@
 package com.ralsei.model;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import jakarta.persistence.CascadeType;
@@ -18,20 +19,20 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "seat_layout")
+@Table(name = "coach_type")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SeatLayout extends BaseEntity {
+public class CoachType extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "seatLayoutId")
-    private int seatLayoutId;
+    @Column(name = "coachTypeId")
+    private int coachTypeId;
 
-    @Column(name = "seatLayoutName", nullable = false)
-    private String seatLayoutName;
+    @Column(name = "coachTypeName", nullable = false, unique = true)
+    private String coachTypeName;
 
     @Column(name = "totalSeat", nullable = false)
     private int totalSeat;
@@ -39,9 +40,11 @@ public class SeatLayout extends BaseEntity {
     @Column(name = "isActive", nullable = false)
     private boolean isActive;
 
-    @OneToMany(mappedBy="seatLayout", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<SeatLayoutPrice> seatLayoutPrices;
+    @Builder.Default
+    @OneToMany(mappedBy="coachType", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<CoachTypePrice> coachTypePrices = new ArrayList<>();
 
-    @OneToMany(mappedBy="seatLayout", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Seat> seats;
+    @Builder.Default
+    @OneToMany(mappedBy="coachType", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Coach> coaches = new ArrayList<>();
 }

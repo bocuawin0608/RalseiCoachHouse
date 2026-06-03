@@ -32,8 +32,8 @@ public class PassengerTicketDetail extends BaseEntity {
     @Column(name = "passengerTicketId", nullable = false)
     private int passengerTicketId;
 
-    @Column(name = "seatId", nullable = false)
-    private int seatId;
+    @Column(name = "tripSeatId", nullable = false)
+    private int tripSeatId;
 
     @Column(name = "qrcode", columnDefinition = "VARCHAR(MAX)")
     private String qrcode;
