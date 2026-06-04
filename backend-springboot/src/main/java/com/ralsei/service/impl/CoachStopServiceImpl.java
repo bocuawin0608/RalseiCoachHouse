@@ -8,7 +8,7 @@ import com.ralsei.model.RouteStop;
 import com.ralsei.repository.CoachStopRepository;
 import com.ralsei.repository.RouteStopRepository;
 import com.ralsei.service.CoachStopService;
-import jakarta.persistence.EntityNotFoundException;
+import com.ralsei.exception.ResourceNotFoundException;
 
 import java.util.List;
 import java.util.Objects;
@@ -44,7 +44,7 @@ public class CoachStopServiceImpl implements CoachStopService {
     @Transactional
     public CoachStopResponse updateCoachStop(int id, CoachStopRequest request) {
         CoachStop coachStop = coachStopRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("CoachStop not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("CoachStop not found with ID: " + id));
 
         coachStop.setStopPointName(request.getStopPointName());
         coachStop.setAddress(request.getAddress());
@@ -57,7 +57,7 @@ public class CoachStopServiceImpl implements CoachStopService {
     @Transactional(readOnly = true)
     public CoachStopResponse getCoachStopById(int id) {
         CoachStop coachStop = coachStopRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("CoachStop not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("CoachStop not found with ID: " + id));
         return mapToResponse(coachStop);
     }
 
@@ -84,7 +84,7 @@ public class CoachStopServiceImpl implements CoachStopService {
     @Transactional
     public void deleteCoachStop(int id) {
         CoachStop coachStop = coachStopRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("CoachStop not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("CoachStop not found with ID: " + id));
 
         // Soft delete the coach stop
         coachStop.setActive(false);
@@ -102,7 +102,7 @@ public class CoachStopServiceImpl implements CoachStopService {
     @Transactional
     public void restoreCoachStop(int id) {
         CoachStop coachStop = coachStopRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("CoachStop not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("CoachStop not found with ID: " + id));
 
         // Restore the coachStop itself
         coachStop.setActive(true);
@@ -125,10 +125,6 @@ public class CoachStopServiceImpl implements CoachStopService {
                 .stopPointName(coachStop.getStopPointName())
                 .address(coachStop.getAddress())
                 .isActive(coachStop.isActive())
-                .createdAt(coachStop.getCreatedAt())
-                .createdBy(coachStop.getCreatedBy())
-                .updatedAt(coachStop.getUpdatedAt())
-                .updatedBy(coachStop.getUpdatedBy())
                 .build();
     }
 }

@@ -9,7 +9,8 @@ import com.ralsei.model.RouteStop;
 import com.ralsei.repository.RouteRepository;
 import com.ralsei.repository.RouteStopRepository;
 import com.ralsei.service.RouteService;
-import jakarta.persistence.EntityNotFoundException;
+import com.ralsei.exception.ResourceNotFoundException;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -39,15 +40,15 @@ public class RouteServiceImpl implements RouteService {
                 .isActive(true)
                 .routeStops(new ArrayList<>())
                 .build();
-            Route saved = routeRepository.save(Objects.requireNonNull(route));
-            return mapToResponse(saved);
+        Route saved = routeRepository.save(Objects.requireNonNull(route));
+        return mapToResponse(saved);
     }
 
     @Override
     @Transactional
     public RouteResponse updateRoute(int id, RouteRequest request) {
         Route route = routeRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Route not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Route not found with ID: " + id));
 
         route.setRouteName(request.getRouteName());
         route.setTotalKilometers(request.getTotalKilometers());
@@ -61,7 +62,7 @@ public class RouteServiceImpl implements RouteService {
     @Transactional(readOnly = true)
     public RouteResponse getRouteById(int id) {
         Route route = routeRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Route not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Route not found with ID: " + id));
         return mapToResponse(route);
     }
 
@@ -88,7 +89,7 @@ public class RouteServiceImpl implements RouteService {
     @Transactional
     public void deleteRoute(int id) {
         Route route = routeRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Route not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Route not found with ID: " + id));
 
         // Soft delete the route itself
         route.setActive(false);
@@ -106,7 +107,7 @@ public class RouteServiceImpl implements RouteService {
     @Transactional
     public void restoreRoute(int id) {
         Route route = routeRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Route not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Route not found with ID: " + id));
 
         // Restore the route itself
         route.setActive(true);
@@ -159,10 +160,6 @@ public class RouteServiceImpl implements RouteService {
                 .kilometersFromStart(rs.getKilometersFromStart())
                 .minutesFromStart(rs.getMinutesFromStart())
                 .isActive(rs.isActive())
-                .createdAt(rs.getCreatedAt())
-                .createdBy(rs.getCreatedBy())
-                .updatedAt(rs.getUpdatedAt())
-                .updatedBy(rs.getUpdatedBy())
                 .build();
     }
 }
