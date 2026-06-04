@@ -667,6 +667,315 @@ background-color: var(--ralsei-pink);
   }
 }
 
+/* ==========================================================================
+   ADVANCED FILTER & SEARCH RESULTS LAYOUT (NIKO ARCHITECTURE)
+   ========================================================================== */
+
+.search-results-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 25px;
+  width: 100%;
+  align-items: start;
+  margin-top: 20px;
+}
+
+/* BỘ LỌC SIDEBAR TRÁI */
+.filter-sidebar {
+  background-color: var(--ralsei-white);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  border: 1px solid #eef0f2;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 12px;
+  margin-bottom: 18px;
+}
+
+.sidebar-header h4 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--ralsei-dark);
+  font-weight: 700;
+}
+
+.btn-clear-filter {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.btn-clear-filter:hover {
+  color: var(--ralsei-pink);
+}
+
+.filter-group {
+  margin-bottom: 24px;
+}
+
+.filter-group h5 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: var(--ralsei-dark);
+  font-weight: 600;
+}
+
+.filter-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+  color: #444;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+
+.filter-checkbox-label input[type="checkbox"] {
+  accent-color: var(--ralsei-footer);
+  width: 16px;
+  height: 16px;
+}
+
+/* TAG BUTTONS TRONG SIDEBAR */
+.filter-tags-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vertical-tags {
+  flex-direction: column;
+}
+
+.filter-tag-btn {
+  background-color: #f5f7f6;
+  border: 1px solid #e2e8f0;
+  color: #555;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.filter-tag-btn:hover {
+  background-color: #eefcf7;
+  border-color: var(--ralsei-footer);
+}
+
+.filter-tag-btn.active {
+  background-color: #e1f9f1;
+  border-color: var(--ralsei-footer);
+  color: var(--ralsei-black);
+  font-weight: bold;
+}
+
+/* KHU VỰC HIỂN THỊ DANH SÁCH BÊN PHẢI */
+.results-content {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.results-main-title {
+  font-size: 18px;
+  color: var(--ralsei-dark);
+  margin: 0 0 10px 0;
+  font-weight: 700;
+}
+
+.advanced-trips-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* THIẾT KẾ CARD NÂNG CAO GIỐNG HƯNG LONG */
+.advanced-trip-card {
+  background-color: var(--ralsei-white);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+  border: 1px solid #eef0f2;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Hàng Timeline thời gian */
+.trip-timeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.time-node-start, .time-node-end {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.time-bold {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--ralsei-dark);
+}
+
+.blue-dot {
+  font-size: 12px;
+}
+
+.timeline-duration-line {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+  position: relative;
+  margin: 0 15px;
+  border-bottom: 2px dashed #cbd5e1;
+  height: 1px;
+}
+
+.duration-text {
+  position: absolute;
+  top: -18px;
+  background-color: var(--ralsei-white);
+  padding: 0 8px;
+  font-size: 12px;
+  color: #777;
+}
+
+/* Địa điểm đón trả dưới chân giờ */
+.trip-locations-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.loc-text {
+  font-size: 13px;
+  color: #555;
+  line-height: 1.4;
+}
+
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+/* Thông tin chi tiết loại xe và giá */
+.trip-detail-footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #fcfdfe;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px dashed #e2e8f0;
+}
+
+.vehicle-info-block {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.vehicle-avatar-placeholder {
+  font-size: 22px;
+}
+
+.vehicle-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.vehicle-name-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ralsei-black);
+}
+
+.vehicle-desc-sub {
+  font-size: 12px;
+  color: #666;
+}
+
+.price-and-action-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.seats-counter-badge {
+  font-size: 12px;
+  color: #27ae60;
+  font-weight: 600;
+}
+
+.trip-price-amount {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--ralsei-pink);
+}
+
+/* Thanh hành động cuối card */
+.trip-card-actions-bar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 5px;
+}
+
+.btn-secondary-info {
+  background-color: #f1f5f9;
+  color: #475569;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-secondary-info:hover {
+  background-color: #e2e8f0;
+}
+
+.btn-primary-select {
+  background-color: var(--ralsei-pink);
+  color: var(--ralsei-white);
+  border: none;
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-primary-select:hover {
+  opacity: 0.9;
+}
+
+/* ĐÁP ỨNG RESPONSIVE CHO LAYOUT MỚI */
+@media (max-width: 992px) {
+  .search-results-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 768px) {
   /* Header dọc hóa */
   .homepage-header {
