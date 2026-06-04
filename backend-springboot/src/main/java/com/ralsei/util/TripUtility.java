@@ -22,6 +22,11 @@ public class TripUtility {
     /**
      * Parse chuỗi thời gian (chấp nhận cả khoảng trắng lẫn dấu +) về LocalDateTime an toàn
      */
+    public static int forecastArrivedTime(LocalDateTime departureTime, int estimatedMinutes) {
+        if (departureTime == null) return -1; // Hoặc ném exception tùy ý
+        LocalDateTime arrivedTime = departureTime.plusMinutes(estimatedMinutes);
+        return arrivedTime.getHour() * 60 + arrivedTime.getMinute(); // Trả về tổng số phút sau nửa đêm
+    }
     public static LocalDateTime parseDate(String dateTimeStr) {
         if (dateTimeStr == null || dateTimeStr.trim().isEmpty()) {
             return null;

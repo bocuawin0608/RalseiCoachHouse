@@ -1,4 +1,4 @@
-package com.ralsei.dto.request;
+package com.ralsei.dto.request.trip;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDate;
