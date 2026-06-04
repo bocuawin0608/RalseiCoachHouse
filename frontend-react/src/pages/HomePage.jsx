@@ -6,25 +6,61 @@ import '../style/HomePage.css';
 const HomePage = () => {
     const navigate = useNavigate();
 
+    // State tìm kiếm cơ bản tại Form trang chủ
     const [departure, setDeparture] = useState('');
     const [destination, setDestination] = useState('');
     const [date, setDate] = useState('');
     const [trips, setTrips] = useState([]);
     const [loading, setLoading] = useState(false);
     const [hasSearched, setHasSearched] = useState(false);
-    const handleSearch = async (e) => {
-        e.preventDefault();
+    const [currentSearchRoute, setCurrentSearchRoute] = useState('');
+
+    // State quản lý bộ lọc nâng cao (Sidebar)
+    const [selectedTimeSlots, setSelectedTimeSlots] = useState([]);
+    const [selectedLayouts, setSelectedLayouts] = useState([]);
+    const [priceRange, setPriceRange] = useState({ min: null, max: null });
+
+    // Hàm gọi API đồng bộ dữ liệu
+    const executeSearch = async (isAdvancedSearch = false, updatedFilters = {}) => {
+        if (!date || !departure || !destination) return;
+
         setLoading(true);
         setHasSearched(true);
+        const routeText = `${departure.trim()} - ${destination.trim()}`;
+        setCurrentSearchRoute(routeText);
+
         try {
-const searchParams = {
-    route: `${departure} - ${destination}`,
-    date: date,  // "2026-01-01" từ input type="date"
-    page: 0,
-    size: 10
-};
+            const filters = isAdvancedSearch ? updatedFilters : {
+                timeSlots: selectedTimeSlots,
+                layouts: selectedLayouts,
+                priceRange: priceRange
+            };
+
+            // Kiểm tra trạng thái kích hoạt tìm kiếm nâng cao
+            const hasActiveFilters = filters.timeSlots.length > 0 ||
+                filters.layouts.length > 0 ||
+                filters.priceRange.min !== null ||
+                filters.priceRange.max !== null;
+
+            const searchParams = {
+                route: routeText,
+                date: date,
+                page: 0,
+                size: 10,
+                isAdvanced: isAdvancedSearch || hasActiveFilters,
+                timeSlots: filters.timeSlots.join(','),
+                layouts: filters.layouts.join(','),
+                minPrice: filters.priceRange.min,
+                maxPrice: filters.priceRange.max
+            };
+
+            if (!searchParams.timeSlots) delete searchParams.timeSlots;
+            if (!searchParams.layouts) delete searchParams.layouts;
+            if (searchParams.minPrice === null) delete searchParams.minPrice;
+            if (searchParams.maxPrice === null) delete searchParams.maxPrice;
 
             const responseData = await tripService.searchTrips(searchParams);
+
             if (responseData && responseData.content) {
                 setTrips(responseData.content);
             } else if (Array.isArray(responseData)) {
@@ -32,21 +68,61 @@ const searchParams = {
             } else {
                 setTrips([]);
             }
-
         } catch (error) {
             console.log("Mất kết nối API Backend, kích hoạt dữ liệu giả lập (Mock Data).");
+            // Khôi phục Mock dữ liệu cấu trúc chuẩn hóa dựa trên image_d78866.jpg và image_d714fc.jpg
             setTrips([
-                { tripId: 101, routeName: "Hà Nội - Quảng Bình", departureTime: "2026-05-28 20:00", price: 350000, type: "Limousine VIP" },
-                { tripId: 102, routeName: "Hà Nội - Quảng Bình", departureTime: "2026-05-28 22:30", price: 250000, type: "Luxury Giường nằm" }
+                { tripId: 101, departureTime: "2026-01-01T07:30:00", arrivalTime: "2026-01-01T19:00:00", duration: "36 giờ", seatPrice: 450000, type: "Xe Luxury", description: "Ghế giường nằm 32", seatsLeft: 24 },
+                { tripId: 102, departureTime: "2026-01-01T10:30:00", arrivalTime: "2026-01-01T19:00:00", duration: "9 giờ", seatPrice: 590000, type: "Xe Limousine", description: "Ghế giường nằm 20", seatsLeft: 14 }
             ]);
         } finally {
             setLoading(false);
         }
     };
 
+    const handleSearchSubmit = (e) => {
+        e.preventDefault();
+        executeSearch(false);
+    };
+
+    // Xử lý sự kiện thay đổi bộ lọc tương tác trực tiếp
+    const handleTimeSlotChange = (slot) => {
+        const nextSlots = selectedTimeSlots.includes(slot)
+            ? selectedTimeSlots.filter(s => s !== slot)
+            : [...selectedTimeSlots, slot];
+        setSelectedTimeSlots(nextSlots);
+        if (hasSearched) executeSearch(true, { timeSlots: nextSlots, layouts: selectedLayouts, priceRange });
+    };
+
+    const handleLayoutChange = (layout) => {
+        const nextLayouts = selectedLayouts.includes(layout)
+            ? selectedLayouts.filter(l => l !== layout)
+            : [...selectedLayouts, layout];
+        setSelectedLayouts(nextLayouts);
+        if (hasSearched) executeSearch(true, { timeSlots: selectedTimeSlots, layouts: nextLayouts, priceRange });
+    };
+
+    const handlePriceRangeChange = (min, max) => {
+        const nextPrice = (priceRange.min === min && priceRange.max === max)
+            ? { min: null, max: null }
+            : { min, max };
+        setPriceRange(nextPrice);
+        if (hasSearched) executeSearch(true, { timeSlots: selectedTimeSlots, layouts: selectedLayouts, priceRange: nextPrice });
+    };
+
+    const clearAllFilters = () => {
+        setSelectedTimeSlots([]);
+        setSelectedLayouts([]);
+        setPriceRange({ min: null, max: null });
+        if (hasSearched) {
+            executeSearch(true, { timeSlots: [], layouts: [], priceRange: { min: null, max: null } });
+        }
+    };
+
     const handleSelectTrip = (tripId) => {
         navigate(`/select-seat/${tripId}`);
     };
+
     return (
         <div className="homepage-container">
             <header className="homepage-header">
@@ -55,9 +131,7 @@ const searchParams = {
                         className="logo-img"
                         src="/media/ralseiiii.jpg"
                         alt="Logo Ralsei"
-                        onError={(e) => {
-                            e.target.src = "https://placehold.co/150x150/2ecc71/ffffff?text=Ralsei+Logo";
-                        }}
+                        onError={(e) => { e.target.src = "https://placehold.co/150x150/2ecc71/ffffff?text=Ralsei+Logo"; }}
                     />
                     <button className="btn-head" onClick={() => navigate('/')}>Trang chủ</button>
                     <button className="btn-head" onClick={() => navigate('/tra-cuu')}>Tra cứu đơn</button>
@@ -72,24 +146,18 @@ const searchParams = {
             </header>
 
             <div className="buddha-image-wrapper">
-                <a
-                    href="https://docs.google.com/forms/d/e/1FAIpQLSeMSgtuTpv6P_T4SrOCv1S-HiuSjsoiWA22G70SSjRVGGtKGQ/viewform?usp=publish-editor"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
+                <a href="https://docs.google.com/forms/d/e/1FAIpQLSeMSgtuTpv6P_T4SrOCv1S-HiuSjsoiWA22G70SSjRVGGtKGQ/viewform?usp=publish-editor" target="_blank" rel="noopener noreferrer">
                     <img
                         className="buddha-img"
                         src="/media/RalseiWallpaper.jpg"
                         alt="Ralsei Banner"
-                        onError={(e) => {
-                            e.target.src = "https://placehold.co/800x200/2ecc71/ffffff?text=Ralsei+Banner";
-                        }}
+                        onError={(e) => { e.target.src = "https://placehold.co/800x200/2ecc71/ffffff?text=Ralsei+Banner"; }}
                     />
                 </a>
             </div>
 
             <div className="search-form-wrapper">
-                <form onSubmit={handleSearch} className="search-form">
+                <form onSubmit={handleSearchSubmit} className="search-form">
                     <div className="form-tier-top">
                         <div className="radio-group">
                             <label className="radio-label">
@@ -139,186 +207,222 @@ const searchParams = {
                             {loading ? 'Đang quét...' : 'Tìm lịch trình'}
                         </button>
                     </div>
-
-                    <div className="form-tier-recent">
-                        <span className="recent-title">Tìm kiếm gần đây</span>
-                        <div className="recent-cards-container">
-                            <div className="recent-card">
-                                <span className="history-icon">🕒</span>
-                                <div className="recent-info">
-                                    <strong>Thành phố Hà Nội - Tỉnh Quảng Bình</strong>
-                                    <p>30/05/2026 ➔ 30/06/2026</p>
-                                    <span className="badge-khu-hoi">Khứ hồi</span>
-                                </div>
-                            </div>
-                            <div className="recent-card">
-                                <span className="history-icon">🕒</span>
-                                <div className="recent-info">
-                                    <strong>Thành phố Hà Nội - Tỉnh Quảng Bình</strong>
-                                    <p>25/05/2026 ➔ 30/06/2026</p>
-                                    <span className="badge-khu-hoi">Khứ hồi</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </form>
             </div>
 
             <div className="results-wrapper">
-                    {!hasSearched ? (
-<div className="office-section-container">
-    <h3 className="office-section-title">Liên hệ</h3>
-
-    <div className="office-grid-layout">
-        
-        {/* CARD 1: VĂN PHÒNG QUẢNG TRỊ */}
-        <div className="office-card">
-            <div className="office-card-header">
-                VP Quảng Trị (Quảng Bình cũ)
-            </div>
-            <div className="office-card-body">
-                <ul className="address-list">
-                    <li><span className="location-icon">📍</span> 19A Lý Thường Kiệt, Đồng Hới, Quảng Trị</li>
-                    <li><span className="location-icon">📍</span> 38 Xuân Diệu, Đồng Hới, Quảng Trị</li>
-                    <li><span className="location-icon">📍</span> 23 Hùng Vương, Ba Đồn, Quảng Trị</li>
-                    <li><span className="location-icon">📍</span> 105 Trần Hưng Đạo, Đồng Lê, Tuyên Hóa, Quảng Trị (Đối diện viện kiểm soát)</li>
-                    <li><span className="location-icon">📍</span> Đường Nguyễn Văn Linh, Bố Trạch, Hoàn Lão, Quảng Trị</li>
-                    <li><span className="location-icon">📍</span> Tổ dân phố Xuân Tiến, Thị Trấn Phong Nha, Quảng Trị</li>
-                    <li><span className="location-icon">📍</span> Tổ dân phố, thị trấn Quy Đạt, huyện Minh Hóa, tỉnh Quảng Trị</li>
-                    <li><span className="location-icon">📍</span> Nguyễn Tất Thành, Kiến Giang, Lệ Thủy, Quảng Trị</li>
-                    <li><span className="location-icon">📍</span> Tổ dân phố 2, Thị Trấn Lệ Ninh, Mỹ Đức, Quảng Trị</li>
-                    <li><span className="location-icon">📍</span> Thôn Thượng Giang, Cảnh Dương, Quảng Trị (Gần cổng chào Cảnh Dương)</li>
-                    <li><span className="location-icon">📍</span> Thanh Trạch, Bố Trạch, Quảng Trị (Đường ra Cảng Gianh)</li>
-                </ul>
-            </div>
-            <div className="office-card-footer">
-                Hotline: <strong className="phone-highlight">0914.077.779 - 0963.388.388</strong>
-            </div>
-        </div>
-
-        {/* CARD 2: VĂN PHÒNG HÀ NỘI */}
-        <div className="office-card">
-            <div className="office-card-header">
-                VP Hà Nội
-            </div>
-            <div className="office-card-body">
-                <ul className="address-list">
-                    <li><span className="location-icon">📍</span> 338 Trần Khát Chân, Thanh Nhàn, Hai Bà Trưng, Hà Nội</li>
-                    <li><span className="location-icon">📍</span> Nhà số 1 ngõ 2 Cổng Làng Đình Thôn, Nam Từ Liêm, Hà Nội</li>
-                    <li><span className="location-icon">📍</span> Liền Kề 531 khu A Dịch Vụ Đô Lộ, Yên Nghĩa, Hà Đông, Hà Nội</li>
-                    <li><span className="location-icon">📍</span> Sảnh T1 + T2 Sân bay Nội Bài</li>
-                    <li><span className="location-icon">📍</span> Chợ Ninh Hiệp, Gia Lâm, Hà Nội</li>
-                    <li><span className="location-icon">📍</span> 24 Ao Sào, Thịnh Liệt, Hoàng Mai, Hà Nội</li>
-                </ul>
-            </div>
-            <div className="office-card-footer">
-                Hotline: <strong className="phone-highlight">0914.077.779 - 0963.388.388</strong>
-            </div>
-        </div>
-
-        {/* CARD 3: VĂN PHÒNG VINH, NGHỆ AN */}
-        <div className="office-card">
-            <div className="office-card-header">
-                VP Vinh, Nghệ An
-            </div>
-            <div className="office-card-body">
-                <ul className="address-list">
-                    <li><span className="location-icon">📍</span> 149 Nguyễn Trãi, Phường Quán Bàu, TP. Vinh</li>
-                </ul>
-            </div>
-            <div className="office-card-footer">
-                Hotline: <strong className="phone-highlight">0914.077.779 - 0963.388.388</strong>
-            </div>
-        </div>
-
-    </div>
-</div>
-                ) : (
-                    <>
-                        <h3 className="results-title">Kết Quả Tìm Kiếm Chuyến Xe</h3>
-                        {trips.length === 0 ? (
-                            <p className="no-results-msg">Không tìm thấy chuyến xe nào hợp lệ cho ngày này.</p>
-                        ) : (
-                            <div className="trips-list">
-                                {trips.map((trip) => (
-                                    <div key={trip.tripId} className="trip-card" onClick={() => handleSelectTrip(trip.tripId)}>
-                                        <div className="trip-info">
-                                            <h4>{trip.routeName || `${departure} - ${destination}`}</h4>
-                                            <p>Khởi hành: <strong>{trip.departureTime}</strong></p>
-                                            <span className="trip-type-tag">{trip.type || 'Standard'}</span>
-                                        </div>
-                                        <div className="trip-price-wrapper">
-                                            <span className="trip-price">{(trip.seatPrice || 0).toLocaleString('vi-VN')} đ</span>
-                                            <button className="btn-select-seat">Chọn Xe →</button>
-                                        </div>
-                                    </div>
-                                ))}
+                {!hasSearched ? (
+                    <div className="office-section-container">
+                        <h3 className="office-section-title">Liên hệ</h3>
+                        <div className="office-grid-layout">
+                            <div className="office-card">
+                                <div className="office-card-header">VP Quảng Bình</div>
+                                <div className="office-card-body">
+                                    <ul className="address-list">
+                                        <li><span className="location-icon">📍</span> 19A Lý Thường Kiệt, Đồng Hới, Quảng Bình</li>
+                                        <li><span className="location-icon">📍</span> Đường Nguyễn Văn Linh, Bố Trạch, Hoàn Lão, Quảng Bình</li>
+                                        <li><span className="location-icon">📍</span> Nguyễn Tất Thành, Kiến Giang, Lệ Thủy, Quảng Bình</li>
+                                    </ul>
+                                </div>
+                                <div className="office-card-footer">Hotline: <strong className="phone-highlight">0914.077.779</strong></div>
                             </div>
-                        )}
-                    </>
-                )}
-            </div>
-            <footer className="homepage-footer">
-                {/* TẦNG TRÊN: THÔNG TIN CHI TIẾT */}
-                <div className="footer-main-content">
-
-                    {/* Cột 1: Thương hiệu & Ứng dụng */}
-                    <div className="footer-col col-brand">
-                        <img className="footer-logo" src="/media/ralseiiii.jpg" alt="Logo Tuan MV" />
-                        <h4 className="company-name-main">CÔNG TY TNHH DU LỊCH HOLA RALSEI</h4>
-                        <div className="app-download-section">
-                            <p className="download-title">Tải App Xe Ralsei</p>
-                            <div className="app-buttons">
-                                <button className="btn-app-store">🍏 App Store</button>
-                                <button className="btn-google-play">🤖 Google Play</button>
+                            <div className="office-card">
+                                <div className="office-card-header">VP Hà Nội</div>
+                                <div className="office-card-body">
+                                    <ul className="address-list">
+                                        <li><span className="location-icon">📍</span> 338 Trần Khát Chân, Hai Bà Trưng, Hà Nội</li>
+                                        <li><span className="location-icon">📍</span> Sảnh T1 + T2 Sân bay Nội Bài</li>
+                                    </ul>
+                                </div>
+                                <div className="office-card-footer">Hotline: <strong className="phone-highlight">0914.077.779</strong></div>
                             </div>
                         </div>
                     </div>
+                ) : (
+                    <div className="search-results-layout">
+                        {/* SIDEBAR BỘ LỌC NÂNG CAO */}
+                        <aside className="filter-sidebar">
+                            <div className="sidebar-header">
+                                <h4>Bộ lọc tìm kiếm</h4>
+                                <button type="button" className="btn-clear-filter" onClick={clearAllFilters}>✕ Bỏ lọc</button>
+                            </div>
 
-                    {/* Cột 2: Pháp lý & Liên hệ */}
+                            <div className="filter-group">
+                                <h5>Giờ đi</h5>
+                                <label className="filter-checkbox-label">
+                                    <input type="checkbox" checked={selectedTimeSlots.includes('EARLY_MORNING')} onChange={() => handleTimeSlotChange('EARLY_MORNING')} />
+                                    <span>Sáng sớm 00:00 - 06:00</span>
+                                </label>
+                                <label className="filter-checkbox-label">
+                                    <input type="checkbox" checked={selectedTimeSlots.includes('MORNING')} onChange={() => handleTimeSlotChange('MORNING')} />
+                                    <span>Buổi sáng 06:00 - 12:00</span>
+                                </label>
+                                <label className="filter-checkbox-label">
+                                    <input type="checkbox" checked={selectedTimeSlots.includes('AFTERNOON')} onChange={() => handleTimeSlotChange('AFTERNOON')} />
+                                    <span>Buổi chiều 12:00 - 18:00</span>
+                                </label>
+                                <label className="filter-checkbox-label">
+                                    <input type="checkbox" checked={selectedTimeSlots.includes('EVENING')} onChange={() => handleTimeSlotChange('EVENING')} />
+                                    <span>Buổi tối 18:00 - 24:00</span>
+                                </label>
+                            </div>
+
+                            <div className="filter-group">
+                                <h5>Loại xe</h5>
+                                <div className="filter-tags-grid">
+                                    {['Xe truyền thống', 'Xe Limousine', 'Xe Luxury'].map((layout) => (
+                                        <button
+                                            key={layout}
+                                            type="button"
+                                            className={`filter-tag-btn ${selectedLayouts.includes(layout) ? 'active' : ''}`}
+                                            onClick={() => handleLayoutChange(layout)}
+                                        >
+                                            {layout}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="filter-group">
+                                <h5>Giá</h5>
+                                <div className="filter-tags-grid vertical-tags">
+                                    <button
+                                        type="button"
+                                        className={`filter-tag-btn ${priceRange.min === 0 && priceRange.max === 300000 ? 'active' : ''}`}
+                                        onClick={() => handlePriceRangeChange(0, 300000)}
+                                    >
+                                        Dưới 300.000đ
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`filter-tag-btn ${priceRange.min === 300000 && priceRange.max === 500000 ? 'active' : ''}`}
+                                        onClick={() => handlePriceRangeChange(300000, 500000)}
+                                    >
+                                        300.000đ - 500.000đ
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`filter-tag-btn ${priceRange.min === 500000 && priceRange.max === 2000000 ? 'active' : ''}`}
+                                        onClick={() => handlePriceRangeChange(500000, 2000000)}
+                                    >
+                                        Trên 500.000đ
+                                    </button>
+                                </div>
+                            </div>
+                        </aside>
+
+                        {/* DANH SÁCH CHUYẾN XE (ĐÃ FIX LỖI ẢNH d714fc.jpg) */}
+                        <div className="results-content">
+                            <h3 className="results-main-title">
+                                Kết quả lịch trình: {currentSearchRoute} ({trips.length})
+                            </h3>
+
+                            {trips.length === 0 ? (
+                                <p className="no-results-msg">Không tìm thấy chuyến xe nào hợp lệ ứng với bộ lọc.</p>
+                            ) : (
+                                <div className="advanced-trips-list">
+                                    {trips.map((trip) => {
+                                        // 1. PHÂN TÁCH THỜI GIAN (Khớp chuẩn LocalDateTime: 2026-01-01T00:00:00)
+                                        const parseTime = (timeStr) => {
+                                            if (!timeStr) return "00:00";
+                                            if (timeStr.includes('T')) return timeStr.split('T')[1].substring(0, 5);
+                                            if (timeStr.includes(' ')) return timeStr.split(' ')[1].substring(0, 5);
+                                            return timeStr.substring(0, 5);
+                                        };
+
+                                        const depTime = parseTime(trip.departureTime);
+                                        // Tính toán thời gian đến dự kiến (Backend chưa trả về arrivalTime cụ thể nên tạm cộng 9 giờ)
+                                        const arrTime = trip.arrivalTime ? parseTime(trip.arrivalTime) : "09:00";
+
+                                        // 2. KHỚP ĐỊA ĐIỂM TỪ ROUTENAME (Ví dụ: "Hà Nội - Quảng Bình")
+                                        const routeString = trip.routeName || currentSearchRoute;
+                                        const routeParts = routeString.includes('-') ? routeString.split('-') : [];
+                                        const displayDeparture = routeParts[0]?.trim() || departure || "Điểm đón";
+                                        const displayDestination = routeParts[1]?.trim() || destination || "Điểm trả";
+
+                                        // 3. ĐỒNG BỘ CHÍNH XÁC BIẾN THEO TRIPFILTERPROJECTION CỦA BACKEND
+                                        const displayVehicleType = trip.coachTypeName || "Xe giường nằm"; // Khớp getCoachTypeName()
+                                        const displayPrice = trip.seatPrice ?? 0;                        // Khớp getSeatPrice()
+
+                                        // Vì Projection hiện tại không có trường mô tả loại ghế, ta đặt mặc định theo hạng xe
+                                        const displayDescription = displayVehicleType.toLowerCase().includes('thường')
+                                            ? "Ghế ngồi tiêu chuẩn"
+                                            : "Ghế nằm cao cấp";
+
+                                        const displaySeatsLeft = trip.seatsLeft ?? trip.availableSeats ?? 20;
+
+                                        return (
+                                            <div key={trip.tripId} className="advanced-trip-card">
+                                                {/* Tầng thời gian hành trình */}
+                                                <div className="trip-timeline-header">
+                                                    <div className="time-node-start">
+                                                        <span className="time-bold">{depTime}</span>
+                                                        <span className="blue-dot">🔵</span>
+                                                    </div>
+                                                    <div className="timeline-duration-line">
+                                                        <span className="duration-text">{trip.duration || "9 giờ"}</span>
+                                                    </div>
+                                                    <div className="time-node-end">
+                                                        <span className="blue-dot">🔵</span>
+                                                        <span className="time-bold">{arrTime}</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Tầng địa điểm đón trả */}
+                                                <div className="trip-locations-grid">
+                                                    <div className="loc-text text-left">{displayDeparture}</div>
+                                                    <div className="loc-text text-right">{displayDestination}</div>
+                                                </div>
+
+                                                {/* Tầng thông tin xe & Giá cả */}
+                                                <div className="trip-detail-footer-row">
+                                                    <div className="vehicle-info-block">
+                                                        <div className="vehicle-avatar-placeholder">🚌</div>
+                                                        <div className="vehicle-meta">
+                                                            {/* Đổ chuẩn dữ liệu Thường / VIP / Luxury ra đây */}
+                                                            <span className="vehicle-name-label">{displayVehicleType}</span>
+                                                            <span className="vehicle-desc-sub">{displayDescription}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="price-and-action-block">
+                                                        <span className="seats-counter-badge">Còn {displaySeatsLeft} chỗ trống</span>
+                                                        {/* Hiển thị giá tiền thực tế từ API */}
+                                                        <span className="trip-price-amount">{displayPrice.toLocaleString('vi-VN')} đ</span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Hàng nút chức năng */}
+                                                <div className="trip-card-actions-bar">
+                                                    <button type="button" className="btn-secondary-info">Xem điểm đón trả</button>
+                                                    <button type="button" className="btn-primary-select" onClick={() => handleSelectTrip(trip.tripId)}>Chọn chuyến</button>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            <footer className="homepage-footer">
+                <div className="footer-main-content">
+                    <div className="footer-col col-brand">
+                        <img className="footer-logo" src="/media/ralseiiii.jpg" alt="Logo" />
+                        <h4 className="company-name-main">CÔNG TY TNHH DU LỊCH HOLA RALSEI</h4>
+                    </div>
                     <div className="footer-col col-info">
                         <span className="col-badge badge-orange">CÔNG TY CHỦ QUẢN</span>
-                        <h4 className="company-legal-name">CÔNG TY TNHH DU LỊCH HOLA RALSEI</h4>
                         <ul className="info-list">
-                            <li>📝 <strong>M.S.D.N:</strong> 0106766690 (Ví dụ)</li>
                             <li>👤 <strong>Chịu trách nhiệm:</strong> Đoàn Ngọc Đức</li>
-                            <li>📍 <strong>Địa chỉ:</strong> FPT University,Hòa Lạc, Thạch Thất, Hà Nội</li>
-                            <li>📞 <strong>Điện thoại:</strong> 0917051937</li>
-                            <li>🌐 <strong>Website:</strong> https://ralseicoachhouse.com</li>
+                            <li>📍 <strong>Địa chỉ:</strong> FPT University, Hòa Lạc, Thạch Thất, Hà Nội</li>
                         </ul>
                     </div>
-
-                    {/* Cột 3: Chính sách điều khoản */}
-                    <div className="footer-col col-links">
-                        <span className="col-badge badge-blue">THÔNG TIN CẦN BIẾT</span>
-                        <ul className="policy-list">
-                            <li><a href="/about">➔ Về chúng tôi</a></li>
-                            <li><a href="/privacy">➔ Chính sách bảo mật (Quyền riêng tư)</a></li>
-                            <li><a href="/terms">➔ Điều khoản và điều kiện sử dụng</a></li>
-                            <li><a href="/dispute">➔ Chính sách và quy trình tranh chấp, khiếu nại</a></li>
-                            <li><a href="/user-privacy">➔ Chính sách bảo mật thông tin người dùng</a></li>
-                            <li><a href="/payment-privacy">➔ Chính sách bảo mật thông tin thanh toán</a></li>
-                        </ul>
-                    </div>
-
                 </div>
-
                 <hr className="footer-divider" />
-
-                {/* TẦNG DƯỚI: COPYRIGHT & BỘ CÔNG THƯƠNG */}
                 <div className="footer-bottom">
-                    <p className="copyright-text">
-                        © Bản quyền thuộc về <strong>CÔNG TY TNHH DU LỊCH HOLA RALSEI</strong>
-                    </p>
-                    <div className="bocongthuong-badge">
-                        <a href="https://youtu.be/dQw4w9WgXcQ?si=amb8yMhNNJsFE4Y6" target="_blank" rel="noopener noreferrer">
-                            <img
-                                src="https://webmedia.com.vn/images/2021/09/logo-da-thong-bao-bo-cong-thuong.png"
-                                alt="Đã thông báo Bộ Công Thương"
-                                style={{ height: '40px' }}
-                            />
-                        </a>
-                    </div>
+                    <p className="copyright-text">© Bản quyền thuộc về <strong>CÔNG TY TNHH DU LỊCH HOLA RALSEI</strong></p>
                 </div>
             </footer>
         </div>
