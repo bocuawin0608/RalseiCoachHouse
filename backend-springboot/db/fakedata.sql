@@ -556,7 +556,8 @@ SELECT * FROM [cargo_ticket_detail];
 SELECT * FROM [payment];
 SELECT * FROM [accompanied_child];
 SELECT * FROM [refund];     
-    
+
+USE [VeXeDB];    
 -- Xem tất cả chuyến xe có trong DB kèm thông tin giá gốc từ cấu hình phân loại xe mới
 SELECT t.tripId, ct.coachTypeName, r.routeName, t.departureTime, ctp.seatPrice
 FROM trip t
@@ -564,7 +565,159 @@ JOIN route r ON t.routeId = r.routeId
 JOIN coach c ON t.coachId = c.coachId
 JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId
 JOIN coach_type_price ctp ON ct.coachTypeId = ctp.coachTypeId
-WHERE t.departureTime BETWEEN '2026-01-01 00:00:00.000' AND '2026-01-01 23:59:59.999'
+WHERE t.departureTime BETWEEN '2026-02-01 00:00:00.000' AND '2026-02-01 23:59:59.999'
 AND r.routeName = N'Hà Nội - Quảng Bình'
-ORDER BY t.departureTime;
+ORDER BY t.departureTime
+
+USE [VeXeDB];
+SELECT * FROM trip 
+SELECT * FROM coach
+SELECT * FROM seat_layout
+SELECT * FROM trip
+SELECT t.tripId,ct.coachTypeName,r.routeName, t.departureTime, ctp.seatPrice
+FROM trip t
+JOIN route r ON t.routeId = r.routeId
+JOIN coach c ON t.coachId = c.coachId
+JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId
+JOIN coach_type_price ctp ON ct.coachTypeId = ctp.coachTypeId
+WHERE t.departureTime BETWEEN '2026-01-01 00:00:00.000' AND '2026-01-01 06:00:00.000'
+AND ct.coachTypeName = N'Xe Limousine VIP 20 phòng'
+AND ctp.seatPrice >= 500000.00
+OR t.departureTime BETWEEN '2026-01-01 00:06:00.000' AND '2026-01-02 07:00:00.000'
+AND ct.coachTypeName = N'Xe Limousine VIP 20 phòng'
+AND ctp.seatPrice >= 500000.00
+
+
+USE VeXeDB
+
+SELECT * FROM seat
+SELECT * FROM coach
+SELECT * FROM coach_type
+SELECT * FROM trip_seat
+SELECT * FROM coach_type_price
+
+
+DECLARE @now DATETIME = '2026-01-01 00:00:00.000';   
+DECLARE @start DATETIME = '2026-01-01 00:00:00.000'; 
+DECLARE @end DATETIME = '2026-01-01 23:59:59.997';   
+DECLARE @route NVARCHAR(255) = N'Hà Nội - Quảng Bình'; 
+
+DECLARE @checkTimeSlots INT = 1; 
+DECLARE @slot1Start TIME = '06:00:00'; DECLARE @slot1End TIME = '12:00:00';
+DECLARE @slot2Start TIME = NULL;       DECLARE @slot2End TIME = NULL;
+DECLARE @slot3Start TIME = NULL;       DECLARE @slot3End TIME = NULL;
+DECLARE @slot4Start TIME = NULL;       DECLARE @slot4End TIME = NULL;
+
+DECLARE @checkLayouts INT = 1; 
+DECLARE @layoutKeyword1 NVARCHAR(100) = N'%Limousine%';
+DECLARE @layoutKeyword2 NVARCHAR(100) = N'%Truyền Thống%';
+
+DECLARE @minPrice DECIMAL(18,2) = 300000.00;
+DECLARE @maxPrice DECIMAL(18,2) = 600000.00;
+
+SELECT 
+    t.tripId AS tripId,
+    ct.coachTypeName AS coachTypeName,
+    r.routeName AS routeName,
+    t.departureTime AS departureTime,
+    ctp.seatPrice AS seatPrice
+FROM trip t
+JOIN route r ON t.routeId = r.routeId
+JOIN coach c ON t.coachId = c.coachId
+JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId
+JOIN coach_type_price ctp ON ct.coachTypeId = ctp.coachTypeId
+WHERE 
+    r.routeName = @route
+    AND t.departureTime BETWEEN @start AND @end
+    AND @now BETWEEN ctp.startEffectiveDate AND ctp.endEffectiveDate 
+    
+    AND (@checkTimeSlots = 0 OR (
+        (@slot1Start IS NOT NULL AND CAST(t.departureTime AS TIME) BETWEEN @slot1Start AND @slot1End) OR
+        (@slot2Start IS NOT NULL AND CAST(t.departureTime AS TIME) BETWEEN @slot2Start AND @slot2End) OR
+        (@slot3Start IS NOT NULL AND CAST(t.departureTime AS TIME) BETWEEN @slot3Start AND @slot3End) OR
+        (@slot4Start IS NOT NULL AND CAST(t.departureTime AS TIME) BETWEEN @slot4Start AND @slot4End)
+    ))
+    
+    -- Cụm 2: Bộ lọc Loại xe tương đối (Khớp từ UI ngắn sang DB dài)
+    AND (@checkLayouts = 0 OR (
+        ct.coachTypeName LIKE @layoutKeyword1 OR 
+        ct.coachTypeName LIKE @layoutKeyword2
+    ))
+    
+    -- Cụm 3: Bộ lọc Giá tiền
+    AND (@minPrice IS NULL OR ctp.seatPrice >= @minPrice)
+    AND (@maxPrice IS NULL OR ctp.seatPrice <= @maxPrice);
+SELECT * FROM coach_type_price
+
+
+USE [VeXeDB];
+GO
+
+-- KHAI BÁO CÁC THAM SỐ GIẢ LẬP NHƯ TỪ FRONTEND/BACKEND TRUYỀN XUỐNG
+DECLARE @start DATETIME = '2026-06-05 00:00:00'; -- Ngày chạy xe cần tìm (Mốc dưới)
+DECLARE @end DATETIME = '2026-06-06 00:00:00';   -- Cộng thêm 1 ngày (Mốc trên độc quyền)
+DECLARE @route NVARCHAR(255) = N'Hà Nội - Quảng Bình'; -- Tuyến đường truyền lên
+
+-- THỰC THI CÂU LỆNH TRUY VẤN THÔNG MẠCH
+SELECT
+    t.tripId AS tripId,
+    ct.coachTypeName AS coachTypeName,
+    r.routeName AS routeName,
+    t.departureTime AS departureTime,
+    ctp.seatPrice AS seatPrice
+FROM trip t
+JOIN route r ON t.routeId = r.routeId
+JOIN coach c ON t.coachId = c.coachId
+JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId
+JOIN coach_type_price ctp ON ct.coachTypeId = ctp.coachTypeId
+WHERE 
+    -- 1. Điều kiện chặn ngày (Thay thế hoàn toàn cho BETWEEN cũ)
+    t.departureTime >= @start 
+    AND t.departureTime < @end
+    
+    -- 2. Tìm đúng tuyến đường tuyệt đối
+    AND r.routeName = @route
+    
+    -- 3. Chỉ lấy các chuyến xe trong kế hoạch hoạt động
+    AND t.status = 'scheduled'
+    
+    -- 4. Ép thời gian chuyến xe chạy phải lọt vào dải ngày hiệu lực của bảng giá vé mới
+    AND t.departureTime BETWEEN ctp.startEffectiveDate AND ctp.endEffectiveDate;
+GO
+
+USE [VeXeDB];
+GO
+SELECT * FROM coach_type_price
+SELECT * FROM coach
+SELECT * FROM
+-- KHAI BÁO CÁC THAM SỐ GIẢ LẬP NHƯ TỪ FRONTEND/BACKEND TRUYỀN XUỐNG
+DECLARE @start DATETIME = '2026-06-05 00:00:00'; -- Ngày chạy xe cần tìm (Mốc dưới)
+DECLARE @end DATETIME = '2026-06-06 00:00:00';   -- Cộng thêm 1 ngày (Mốc trên độc quyền)
+DECLARE @route NVARCHAR(255) = N'Hà Nội - Quảng Bình'; -- Tuyến đường truyền lên
+
+-- THỰC THI CÂU LỆNH TRUY VẤN THÔNG MẠCH
+SELECT
+    t.tripId AS tripId,
+    ct.coachTypeName AS coachTypeName,
+    r.routeName AS routeName,
+    t.departureTime AS departureTime,
+    ctp.seatPrice AS seatPrice
+FROM trip t
+JOIN route r ON t.routeId = r.routeId
+JOIN coach c ON t.coachId = c.coachId
+JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId
+JOIN coach_type_price ctp ON ct.coachTypeId = ctp.coachTypeId
+WHERE 
+    -- 1. Điều kiện chặn ngày (Thay thế hoàn toàn cho BETWEEN cũ)
+    t.departureTime >= @start 
+    AND t.departureTime < @end
+    
+    -- 2. Tìm đúng tuyến đường tuyệt đối
+    AND r.routeName = @route
+    
+    -- 3. Chỉ lấy các chuyến xe trong kế hoạch hoạt động
+    AND t.status = 'scheduled'
+    
+    -- 4. Ép thời gian chuyến xe chạy phải lọt vào dải ngày hiệu lực của bảng giá vé mới
+    AND t.departureTime BETWEEN ctp.startEffectiveDate AND ctp.endEffectiveDate;
 GO
