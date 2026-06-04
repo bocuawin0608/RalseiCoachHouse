@@ -47,13 +47,13 @@ public class CoachStopController {
         return ResponseEntity.ok(response);
     }
 
-    @DeleteMapping("/{id}")
+    @PatchMapping("/{id}/soft-delete")
     public ResponseEntity<Void> deleteCoachStop(@PathVariable Integer id) {
         coachStopService.deleteCoachStop(id);
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("/{id}/restore")
+    @PatchMapping("/{id}/restore")
     public ResponseEntity<Void> restoreCoachStop(@PathVariable Integer id) {
         coachStopService.restoreCoachStop(id);
         return ResponseEntity.noContent().build();

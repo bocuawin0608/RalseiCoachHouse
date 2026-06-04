@@ -76,7 +76,7 @@ const CoachStopManager = ({ onBack }) => {
     const handleDisable = async (id) => {
         if (!window.confirm('Are you sure you want to disable this stop?')) return;
         try {
-            await axiosClient.delete(`/v1/coach-stops/${id}`);
+            await axiosClient.patch(`/v1/coach-stops/${id}/soft-delete`);
             fetchStops();
         } catch (error) {
             console.error('Failed to disable coach stop', error);
@@ -87,7 +87,7 @@ const CoachStopManager = ({ onBack }) => {
     const handleRestore = async (id) => {
         if (!window.confirm('Are you sure you want to restore this stop?')) return;
         try {
-            await axiosClient.put(`/v1/coach-stops/${id}/restore`);
+            await axiosClient.patch(`/v1/coach-stops/${id}/restore`);
             fetchStops();
         } catch (error) {
             console.error('Failed to restore coach stop', error);

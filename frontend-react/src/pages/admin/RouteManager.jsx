@@ -78,7 +78,7 @@ const RouteManager = ({ onBack }) => {
     const handleDisable = async (id) => {
         if (!window.confirm('Are you sure you want to disable this route?')) return;
         try {
-            await axiosClient.delete(`/v1/routes/${id}`);
+            await axiosClient.patch(`/v1/routes/${id}/soft-delete`);
             fetchRoutes();
         } catch (error) {
             console.error('Failed to disable route', error);
@@ -89,7 +89,7 @@ const RouteManager = ({ onBack }) => {
     const handleRestore = async (id) => {
         if (!window.confirm('Are you sure you want to restore this route?')) return;
         try {
-            await axiosClient.put(`/v1/routes/${id}/restore`);
+            await axiosClient.patch(`/v1/routes/${id}/restore`);
             fetchRoutes();
         } catch (error) {
             console.error('Failed to restore route', error);
