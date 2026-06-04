@@ -1,8 +1,8 @@
 package com.ralsei.controller;
 
-import com.ralsei.dto.request.RouteRequest;
-import com.ralsei.dto.response.RouteResponse;
+import com.ralsei.dto.request.CoachAndRouteStop.RouteRequest;
 import com.ralsei.dto.response.PagedResponse;
+import com.ralsei.dto.response.CoachAndRouteStop.RouteResponse;
 import com.ralsei.service.RouteService;
 
 import jakarta.validation.Valid;

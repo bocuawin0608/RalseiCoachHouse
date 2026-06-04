@@ -1,4 +1,4 @@
-package com.ralsei.dto.request;
+package com.ralsei.dto.request.CoachAndRouteStop;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;

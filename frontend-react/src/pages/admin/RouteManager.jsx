@@ -30,7 +30,8 @@ const RouteManager = ({ onBack }) => {
             setRoutes(data.content || []);
             setTotalPages(data.totalPages || 0);
         } catch (error) {
-            console.error('Failed to fetch routes', error);
+            console.error('Failed to fetch routes', error.response.data.message);
+            alert(error.response.data.message);
         } finally {
             setLoading(false);
         }
@@ -65,8 +66,8 @@ const RouteManager = ({ onBack }) => {
             setCurrentRoute({ routeName: '', totalKilometers: '', totalMinutes: '', active: true });
             fetchRoutes();
         } catch (error) {
-            console.error('Failed to save route', error);
-            alert('Failed to save route. Check console for details.');
+            console.error('Failed to save routes', error.response.data.message);
+            alert(error.response.data.message);
         }
     };
 
@@ -81,8 +82,8 @@ const RouteManager = ({ onBack }) => {
             await axiosClient.patch(`/v1/routes/${id}/soft-delete`);
             fetchRoutes();
         } catch (error) {
-            console.error('Failed to disable route', error);
-            alert('Failed to disable route. Check console for details.');
+            console.error('Failed to disable route', error.response.data.message);
+            alert(error.response.data.message);
         }
     };
 
@@ -92,8 +93,8 @@ const RouteManager = ({ onBack }) => {
             await axiosClient.patch(`/v1/routes/${id}/restore`);
             fetchRoutes();
         } catch (error) {
-            console.error('Failed to restore route', error);
-            alert('Failed to restore route. Check console for details.');
+            console.error('Failed to restore route', error.response.data.message);
+            alert(error.response.data.message);
         }
     };
 

@@ -28,7 +28,8 @@ const CoachStopManager = ({ onBack }) => {
             setStops(data.content || []);
             setTotalPages(data.totalPages || 0);
         } catch (error) {
-            console.error('Failed to fetch coach stops', error);
+            console.error('Failed to fetch coach stops', error.response.data.message);
+            alert(error.response.data.message);
         } finally {
             setLoading(false);
         }
@@ -63,8 +64,8 @@ const CoachStopManager = ({ onBack }) => {
             setCurrentStop({ stopPointName: '', address: '' });
             fetchStops();
         } catch (error) {
-            console.error('Failed to save coach stop', error);
-            alert('Failed to save coach stop. Check console for details.');
+            console.error('Failed to save coach stop', error.response.data.message);
+            alert(error.response.data.message);
         }
     };
 
@@ -79,8 +80,8 @@ const CoachStopManager = ({ onBack }) => {
             await axiosClient.patch(`/v1/coach-stops/${id}/soft-delete`);
             fetchStops();
         } catch (error) {
-            console.error('Failed to disable coach stop', error);
-            alert('Failed to disable coach stop. Check console for details.');
+            console.error('Failed to disable coach stop', error.response.data.message);
+            alert(error.response.data.message);
         }
     };
 
@@ -90,8 +91,8 @@ const CoachStopManager = ({ onBack }) => {
             await axiosClient.patch(`/v1/coach-stops/${id}/restore`);
             fetchStops();
         } catch (error) {
-            console.error('Failed to restore coach stop', error);
-            alert('Failed to restore coach stop. Check console for details.');
+            console.error('Failed to restore coach stop', error.response.data.message);
+            alert(error.response.data.message);
         }
     };
 
