@@ -18,25 +18,26 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import com.ralsei.dto.response.ErrorResponse;
 
 import lombok.extern.slf4j.Slf4j;
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-    
-    // Hứng lỗi không tìm thấy tài nguyên (kiểu check id nhưng ko thấy id để process tiếp)
+
+    // Hứng lỗi không tìm thấy tài nguyên (kiểu check id nhưng ko thấy id để process
+    // tiếp)
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex,
+            HttpServletRequest request) {
         ErrorResponse response = ErrorResponse.builder()
-            .timestamp(LocalDateTime.now())
-            .status(HttpStatus.NOT_FOUND.value())
-            .error("Not Found")
-            .message(ex.getMessage())
-            .path(request.getRequestURI())
-            .build();
-            
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("Not Found")
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
     }
 
@@ -44,48 +45,50 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessRuleException.class)
     public ResponseEntity<ErrorResponse> handleBusinessRule(BusinessRuleException ex, HttpServletRequest request) {
         ErrorResponse response = ErrorResponse.builder()
-            .timestamp(LocalDateTime.now())
-            .status(HttpStatus.CONFLICT.value())
-            .error("Conflict")
-            .message(ex.getMessage())
-            .path(request.getRequestURI())
-            .build();
-            
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
+
         return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
 
     // Hứng lỗi ngớ ngẩn dạng input validation từ phía FE
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex,
+            HttpServletRequest request) {
         ErrorResponse response = ErrorResponse.builder()
-            .timestamp(LocalDateTime.now())
-            .status(HttpStatus.BAD_REQUEST.value())
-            .error("Bad Request")
-            .message(ex.getMessage())
-            .path(request.getRequestURI())
-            .build();
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Bad Request")
+                .message(ex.getMessage())
+                .path(request.getRequestURI())
+                .build();
 
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
     // Hứng lỗi @Valid từ @ResponseBody
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex,
+            HttpServletRequest request) {
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach(error -> {
             String fieldName = ((FieldError) error).getField();
             String errorMessage = error.getDefaultMessage();
-            errors.put(fieldName, errorMessage); 
+            errors.put(fieldName, errorMessage);
         });
-        
+
         ErrorResponse response = ErrorResponse.builder()
-            .timestamp(LocalDateTime.now())
-            .status(HttpStatus.BAD_REQUEST.value())
-            .error("Validation Error")
-            .message("Dữ liệu đầu vào không hợp lệ!")
-            .fieldErrors(errors)
-            .path(request.getRequestURI())
-            .build();
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Validation Error")
+                .message("Dữ liệu đầu vào không hợp lệ!")
+                .fieldErrors(errors)
+                .path(request.getRequestURI())
+                .build();
 
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
@@ -101,20 +104,22 @@ public class GlobalExceptionHandler {
         });
 
         ErrorResponse response = ErrorResponse.builder()
-            .timestamp(LocalDateTime.now())
-            .status(HttpStatus.BAD_REQUEST.value())
-            .error("Validation Error")
-            .message("Tham số tìm kiếm không hợp lệ!")
-            .fieldErrors(errors)
-            .path(request.getRequestURI())
-            .build();
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Validation Error")
+                .message("Tham số tìm kiếm không hợp lệ!")
+                .fieldErrors(errors)
+                .path(request.getRequestURI())
+                .build();
 
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
-    // Hứng lỗi @Validated với @PathVariable và @RequestParam (áp cho Spring Boot >= 3.2+)
+    // Hứng lỗi @Validated với @PathVariable và @RequestParam (áp cho Spring Boot >=
+    // 3.2+)
     @ExceptionHandler(HandlerMethodValidationException.class)
-    public ResponseEntity<ErrorResponse> handleHandlerMethodValidation(HandlerMethodValidationException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponse> handleHandlerMethodValidation(HandlerMethodValidationException ex,
+            HttpServletRequest request) {
         Map<String, String> errors = new HashMap<>();
         ex.getParameterValidationResults().forEach(error -> {
             String paramName = error.getMethodParameter().getParameterName();
@@ -125,20 +130,22 @@ public class GlobalExceptionHandler {
         });
 
         ErrorResponse response = ErrorResponse.builder()
-            .timestamp(LocalDateTime.now())
-            .status(HttpStatus.BAD_REQUEST.value())
-            .error("Validation Error")
-            .message("Tham số đường dẫn hoặc tham số truy vấn không hợp lệ!")
-            .fieldErrors(errors)
-            .path(request.getRequestURI())
-            .build();
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.BAD_REQUEST.value())
+                .error("Validation Error")
+                .message("Tham số đường dẫn hoặc tham số truy vấn không hợp lệ!")
+                .fieldErrors(errors)
+                .path(request.getRequestURI())
+                .build();
 
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
-    // Hứng lỗi @Validated với @PathVariable và @RequestParam (áp cho Spring Boot < 3.2)
+    // Hứng lỗi @Validated với @PathVariable và @RequestParam (áp cho Spring Boot <
+    // 3.2)
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex,
+            HttpServletRequest request) {
         Map<String, String> fieldErrors = new HashMap<>();
         ex.getConstraintViolations().forEach(violation -> {
             String path = violation.getPropertyPath().toString();
@@ -160,7 +167,8 @@ public class GlobalExceptionHandler {
 
     // Hứng lỗi type mismatch (ví dụ truyền /abc dù @PathVariable nhận Integer)
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex,
+            HttpServletRequest request) {
         String paramName = ex.getName();
         String message = String.format("Tham số '%s' phải là số nguyên hợp lệ", paramName);
 
@@ -175,9 +183,11 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
-    // Bắt lỗi JSON malformed hoặc sai kiểu dữ liệu (vd: "hehe" cho Boolean) -> chưa tối ưu
+    // Bắt lỗi JSON malformed hoặc sai kiểu dữ liệu (vd: "hehe" cho Boolean) -> chưa
+    // tối ưu
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(HttpMessageNotReadableException ex,
+            HttpServletRequest request) {
         Throwable cause = ex.getMostSpecificCause();
         String message = cause.getMessage();
         if (message.contains("Cannot deserialize value of type `java.lang.Boolean`")) {
@@ -203,19 +213,14 @@ public class GlobalExceptionHandler {
         log.error("Unexpected error: ", ex);
 
         ErrorResponse response = ErrorResponse.builder()
-            .timestamp(LocalDateTime.now())
-            .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-            .error("Internal Server Error")
-            .message("Hệ thống đang gặp sự cố, vui lòng thử lại sau!")
-            .path(request.getRequestURI())
-            .build();
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .error("Internal Server Error")
+                .message("Hệ thống đang gặp sự cố, vui lòng thử lại sau!")
+                .path(request.getRequestURI())
+                .build();
 
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    @ExceptionHandler(EntityNotFoundException.class)
-    public ResponseEntity<String> handleEntityNotFound(EntityNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
     }
 
 }
