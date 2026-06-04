@@ -1,5 +1,6 @@
-package com.ralsei.dto.request;
+package com.ralsei.dto.request.CoachAndRouteStop;
 
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -20,8 +21,10 @@ public class RouteRequest {
 
     @NotNull(message = "Total kilometers is required")
     @Positive(message = "Total kilometers must be greater than zero")
+    @Max(value = 2147483647, message = "Total kilometers must be less than 2147483647")
     private BigDecimal totalKilometers;
 
     @Min(value = 1, message = "Total minutes must be at least 1")
+    @Max(value = 2147483647, message = "Total minutes must be less than 2147483647")
     private int totalMinutes;
 }

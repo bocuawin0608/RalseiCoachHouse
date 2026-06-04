@@ -1,8 +1,8 @@
 package com.ralsei.controller;
 
-import com.ralsei.dto.request.RouteStopRequest;
-import com.ralsei.dto.response.RouteStopResponse;
+import com.ralsei.dto.request.CoachAndRouteStop.RouteStopRequest;
 import com.ralsei.dto.response.PagedResponse;
+import com.ralsei.dto.response.CoachAndRouteStop.RouteStopResponse;
 import com.ralsei.service.RouteStopService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

@@ -1,8 +1,8 @@
 package com.ralsei.service.impl;
 
-import com.ralsei.dto.request.CoachStopRequest;
-import com.ralsei.dto.response.CoachStopResponse;
+import com.ralsei.dto.request.CoachAndRouteStop.CoachStopRequest;
 import com.ralsei.dto.response.PagedResponse;
+import com.ralsei.dto.response.CoachAndRouteStop.CoachStopResponse;
 import com.ralsei.model.CoachStop;
 import com.ralsei.model.RouteStop;
 import com.ralsei.repository.CoachStopRepository;
