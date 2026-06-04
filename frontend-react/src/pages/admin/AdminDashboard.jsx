@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './AdminDashboard.css';
 import RouteManager from './RouteManager';
+import CoachStopManager from './CoachStopManager';
 
 const AdminDashboard = () => {
     const [activeScreen, setActiveScreen] = useState('schedule-screen');
@@ -58,7 +59,7 @@ const AdminDashboard = () => {
                         <h3 className="card-title">Route Map</h3>
                         <p className="card-desc">Manage origin and destination points across the service area.</p>
                     </div>
-                    <div className="card">
+                    <div className="card" onClick={() => setActiveScreen('coach-stop-manager')} style={{ cursor: 'pointer' }}>
                         <div className="card-icon">📍</div>
                         <h3 className="card-title">Pickup/Dropoff Points</h3>
                         <p className="card-desc">Configure waypoints and intermediary stops for each route.</p>
@@ -126,7 +127,8 @@ const AdminDashboard = () => {
                 </div>
             </div>
         ),
-        'route-manager': <RouteManager onBack={() => setActiveScreen('route-screen')} />
+        'route-manager': <RouteManager onBack={() => setActiveScreen('route-screen')} />,
+        'coach-stop-manager': <CoachStopManager onBack={() => setActiveScreen('route-screen')} />
     };
 
     return (
@@ -134,10 +136,10 @@ const AdminDashboard = () => {
             <header>
                 <div className="header-content">
                     <div className="brand">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2" /><circle cx="7" cy="17" r="2" /><path d="M9 17h6" /><circle cx="17" cy="17" r="2" /></svg>
                         Admin Dashboard
                     </div>
-                    
+
                     <nav id="navMenu">
                         <button className={`nav-btn ${activeScreen === 'schedule-screen' ? 'active' : ''}`} onClick={() => setActiveScreen('schedule-screen')}>Manage Trip Scheduling</button>
                         <button className={`nav-btn ${activeScreen === 'fleet-screen' ? 'active' : ''}`} onClick={() => setActiveScreen('fleet-screen')}>Manage Vehicle Fleet</button>

@@ -1,9 +1,9 @@
-.route-manager {
+.coach-stop-manager {
     padding: 1rem;
     animation: fadeIn 0.4s ease-out forwards;
 }
 
-.route-manager-header {
+.coach-stop-manager-header {
     display: flex;
     align-items: center;
     gap: 1rem;
@@ -26,20 +26,20 @@
     color: white;
 }
 
-.route-manager-content {
+.coach-stop-manager-content {
     display: grid;
     grid-template-columns: 1fr 2fr;
     gap: 2rem;
 }
 
 @media (max-width: 900px) {
-    .route-manager-content {
+    .coach-stop-manager-content {
         grid-template-columns: 1fr;
     }
 }
 
-.route-form-container,
-.route-list-container {
+.coach-stop-form-container,
+.coach-stop-list-container {
     background: var(--card-bg);
     padding: 1.5rem;
     border-radius: 12px;
@@ -47,8 +47,8 @@
     border: 1px solid var(--border-color);
 }
 
-.route-form-container h3,
-.route-list-container h3 {
+.coach-stop-form-container h3,
+.coach-stop-list-container h3 {
     margin-bottom: 1.5rem;
     font-size: 1.25rem;
     color: var(--text-main);
@@ -67,7 +67,8 @@
 }
 
 .form-group input[type="text"],
-.form-group input[type="number"] {
+.form-group input[type="number"],
+.form-group select {
     width: 100%;
     padding: 0.75rem;
     border: 1px solid var(--border-color);
@@ -78,7 +79,8 @@
     color: black;
 }
 
-.form-group input:focus {
+.form-group input:focus,
+.form-group select:focus {
     outline: none;
     border-color: var(--primary);
     box-shadow: 0 0 0 3px var(--secondary);
@@ -123,7 +125,7 @@
     background: #e2e8f0;
 }
 
-.route-list-header {
+.coach-stop-list-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -155,25 +157,25 @@
     overflow-x: auto;
 }
 
-.route-table {
+.coach-stop-table {
     width: 100%;
     border-collapse: collapse;
 }
 
-.route-table th,
-.route-table td {
+.coach-stop-table th,
+.coach-stop-table td {
     padding: 1rem;
     text-align: left;
     border-bottom: 1px solid var(--border-color);
 }
 
-.route-table th {
+.coach-stop-table th {
     background: #f8fafc;
     font-weight: 600;
     color: var(--text-muted);
 }
 
-.route-table tbody tr:hover {
+.coach-stop-table tbody tr:hover {
     background: #f8fafc;
 }
 

@@ -26,8 +26,7 @@ public class CoachStopController {
     @PutMapping("/{id}")
     public ResponseEntity<CoachStopResponse> updateCoachStop(
             @PathVariable Integer id,
-            @Valid @RequestBody CoachStopRequest request
-    ) {
+            @Valid @RequestBody CoachStopRequest request) {
         CoachStopResponse response = coachStopService.updateCoachStop(id, request);
         return ResponseEntity.ok(response);
     }
@@ -43,8 +42,7 @@ public class CoachStopController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Boolean isActive,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
+            @RequestParam(defaultValue = "10") int size) {
         PagedResponse<CoachStopResponse> response = coachStopService.getAllCoachStops(search, isActive, page, size);
         return ResponseEntity.ok(response);
     }
@@ -52,6 +50,12 @@ public class CoachStopController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCoachStop(@PathVariable Integer id) {
         coachStopService.deleteCoachStop(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}/restore")
+    public ResponseEntity<Void> restoreCoachStop(@PathVariable Integer id) {
+        coachStopService.restoreCoachStop(id);
         return ResponseEntity.noContent().build();
     }
 }
