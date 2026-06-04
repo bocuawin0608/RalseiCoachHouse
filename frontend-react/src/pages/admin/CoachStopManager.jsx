@@ -1,43 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import axiosClient from '../../api/axiosClient';
-import './RouteManager.css'; // Optional: if we want specific styling
+import './CoachStopManager.css';
 
-const RouteManager = ({ onBack }) => {
-    const [routes, setRoutes] = useState([]);
+const CoachStopManager = ({ onBack }) => {
+    const [stops, setStops] = useState([]);
     const [search, setSearch] = useState('');
     const [page, setPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
     const [loading, setLoading] = useState(false);
 
     const [isEditing, setIsEditing] = useState(false);
-    const [currentRoute, setCurrentRoute] = useState({
-        routeName: '',
-        totalKilometers: '',
-        totalMinutes: '',
-        active: true
+    const [currentStop, setCurrentStop] = useState({
+        stopPointName: '',
+        address: ''
     });
 
-    const fetchRoutes = async () => {
+    const fetchStops = async () => {
         setLoading(true);
         try {
-            const data = await axiosClient.get('/v1/routes', {
+            const data = await axiosClient.get('/v1/coach-stops', {
                 params: {
                     search,
                     page,
                     size: 5
                 }
             });
-            setRoutes(data.content || []);
+            setStops(data.content || []);
             setTotalPages(data.totalPages || 0);
         } catch (error) {
-            console.error('Failed to fetch routes', error);
+            console.error('Failed to fetch coach stops', error);
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchRoutes();
+        fetchStops();
     }, [page, search]);
 
     const handleSearchChange = (e) => {
@@ -47,7 +45,7 @@ const RouteManager = ({ onBack }) => {
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
-        setCurrentRoute(prev => ({
+        setCurrentStop(prev => ({
             ...prev,
             [name]: type === 'checkbox' ? checked : value
         }));
@@ -56,93 +54,83 @@ const RouteManager = ({ onBack }) => {
     const handleSave = async (e) => {
         e.preventDefault();
         try {
-            if (isEditing && currentRoute.routeId) {
-                await axiosClient.put(`/v1/routes/${currentRoute.routeId}`, currentRoute);
+            if (isEditing && currentStop.stopPointId) {
+                await axiosClient.put(`/v1/coach-stops/${currentStop.stopPointId}`, currentStop);
             } else {
-                await axiosClient.post('/v1/routes', currentRoute);
+                await axiosClient.post('/v1/coach-stops', currentStop);
             }
             setIsEditing(false);
-            setCurrentRoute({ routeName: '', totalKilometers: '', totalMinutes: '', active: true });
-            fetchRoutes();
+            setCurrentStop({ stopPointName: '', address: '' });
+            fetchStops();
         } catch (error) {
-            console.error('Failed to save route', error);
-            alert('Failed to save route. Check console for details.');
+            console.error('Failed to save coach stop', error);
+            alert('Failed to save coach stop. Check console for details.');
         }
     };
 
-    const handleEdit = (route) => {
-        setCurrentRoute(route);
+    const handleEdit = (stop) => {
+        setCurrentStop(stop);
         setIsEditing(true);
     };
 
     const handleDisable = async (id) => {
-        if (!window.confirm('Are you sure you want to disable this route?')) return;
+        if (!window.confirm('Are you sure you want to disable this stop?')) return;
         try {
-            await axiosClient.delete(`/v1/routes/${id}`);
-            fetchRoutes();
+            await axiosClient.delete(`/v1/coach-stops/${id}`);
+            fetchStops();
         } catch (error) {
-            console.error('Failed to disable route', error);
-            alert('Failed to disable route. Check console for details.');
+            console.error('Failed to disable coach stop', error);
+            alert('Failed to disable coach stop. Check console for details.');
         }
     };
 
     const handleRestore = async (id) => {
-        if (!window.confirm('Are you sure you want to restore this route?')) return;
+        if (!window.confirm('Are you sure you want to restore this stop?')) return;
         try {
-            await axiosClient.put(`/v1/routes/${id}/restore`);
-            fetchRoutes();
+            await axiosClient.put(`/v1/coach-stops/${id}/restore`);
+            fetchStops();
         } catch (error) {
-            console.error('Failed to restore route', error);
-            alert('Failed to restore route. Check console for details.');
+            console.error('Failed to restore coach stop', error);
+            alert('Failed to restore coach stop. Check console for details.');
         }
     };
 
     const handleCancel = () => {
         setIsEditing(false);
-        setCurrentRoute({ routeName: '', totalKilometers: '', totalMinutes: '', active: true });
+        setCurrentStop({ stopPointName: '', address: '' });
     };
 
     return (
-        <div className="route-manager">
-            <div className="route-manager-header">
+        <div className="coach-stop-manager">
+            <div className="coach-stop-manager-header">
                 <button className="back-btn" onClick={onBack}>&larr; Back to Dashboard</button>
-                <h2>Route Management</h2>
+                <h2>Coach Stop Management</h2>
             </div>
 
-            <div className="route-manager-content">
-                <div className="route-form-container">
-                    <h3>{isEditing ? 'Edit Route' : 'Add New Route'}</h3>
-                    <form onSubmit={handleSave} className="route-form">
+            <div className="coach-stop-manager-content">
+                <div className="coach-stop-form-container">
+                    <h3>{isEditing ? 'Edit Stop' : 'Add New Stop'}</h3>
+                    <form onSubmit={handleSave} className="coach-stop-form">
                         <div className="form-group">
-                            <label>Route Name</label>
+                            <label>Stop Name</label>
                             <input
                                 type="text"
-                                name="routeName"
-                                value={currentRoute.routeName}
+                                name="stopPointName"
+                                value={currentStop.stopPointName || ''}
                                 onChange={handleInputChange}
                                 required
-                                placeholder="e.g. Hanoi - Sapa"
+                                placeholder="e.g. My Dinh Bus Station"
                             />
                         </div>
                         <div className="form-group">
-                            <label>Distance (km)</label>
+                            <label>Address</label>
                             <input
-                                type="number"
-                                step="0.1"
-                                name="totalKilometers"
-                                value={currentRoute.totalKilometers}
+                                type="text"
+                                name="address"
+                                value={currentStop.address || ''}
                                 onChange={handleInputChange}
                                 required
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>Duration (minutes)</label>
-                            <input
-                                type="number"
-                                name="totalMinutes"
-                                value={currentRoute.totalMinutes}
-                                onChange={handleInputChange}
-                                required
+                                placeholder="e.g. 20 Pham Hung"
                             />
                         </div>
                         <div className="form-actions">
@@ -152,12 +140,12 @@ const RouteManager = ({ onBack }) => {
                     </form>
                 </div>
 
-                <div className="route-list-container">
-                    <div className="route-list-header">
-                        <h3>Routes List</h3>
+                <div className="coach-stop-list-container">
+                    <div className="coach-stop-list-header">
+                        <h3>Stops List</h3>
                         <input
                             type="text"
-                            placeholder="Search routes..."
+                            placeholder="Search stops..."
                             value={search}
                             onChange={handleSearchChange}
                             className="search-input"
@@ -165,44 +153,42 @@ const RouteManager = ({ onBack }) => {
                     </div>
 
                     {loading ? (
-                        <p>Loading routes...</p>
+                        <p>Loading stops...</p>
                     ) : (
                         <div className="table-responsive">
-                            <table className="route-table">
+                            <table className="coach-stop-table">
                                 <thead>
                                     <tr>
                                         <th>ID</th>
                                         <th>Name</th>
-                                        <th>Distance</th>
-                                        <th>Duration</th>
+                                        <th>Address</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {routes.length > 0 ? routes.map(route => (
-                                        <tr key={route.routeId}>
-                                            <td>{route.routeId}</td>
-                                            <td>{route.routeName}</td>
-                                            <td>{route.totalKilometers} km</td>
-                                            <td>{route.totalMinutes} min</td>
+                                    {stops.length > 0 ? stops.map(stop => (
+                                        <tr key={stop.stopPointId}>
+                                            <td>{stop.stopPointId}</td>
+                                            <td>{stop.stopPointName}</td>
+                                            <td>{stop.address}</td>
                                             <td>
-                                                <span className={`status-badge ${route.active ? "active" : "inactive"}`}>
-                                                    {route.active ? "Active" : "Inactive"}
+                                                <span className={`status-badge ${stop.active ? "active" : "inactive"}`}>
+                                                    {stop.active ? "Active" : "Inactive"}
                                                 </span>
                                             </td>
                                             <td className="actions-cell">
-                                                <button onClick={() => handleEdit(route)} className="edit-btn">Edit</button>
-                                                {route.active ? (
-                                                    <button onClick={() => handleDisable(route.routeId)} className="disable-btn">Disable</button>
+                                                <button onClick={() => handleEdit(stop)} className="edit-btn">Edit</button>
+                                                {stop.active ? (
+                                                    <button onClick={() => handleDisable(stop.stopPointId)} className="disable-btn">Disable</button>
                                                 ) : (
-                                                    <button onClick={() => handleRestore(route.routeId)} className="restore-btn">Restore</button>
+                                                    <button onClick={() => handleRestore(stop.stopPointId)} className="restore-btn">Restore</button>
                                                 )}
                                             </td>
                                         </tr>
                                     )) : (
                                         <tr>
-                                            <td colSpan="6" className="text-center">No routes found.</td>
+                                            <td colSpan="5" className="text-center">No stops found.</td>
                                         </tr>
                                     )}
                                 </tbody>
@@ -233,4 +219,4 @@ const RouteManager = ({ onBack }) => {
     );
 };
 
-export default RouteManager;
+export default CoachStopManager;

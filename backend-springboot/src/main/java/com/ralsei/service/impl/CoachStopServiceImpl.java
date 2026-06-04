@@ -36,8 +36,8 @@ public class CoachStopServiceImpl implements CoachStopService {
                 .address(request.getAddress())
                 .isActive(true)
                 .build();
-            CoachStop saved = coachStopRepository.save(Objects.requireNonNull(coachStop));
-            return mapToResponse(saved); 
+        CoachStop saved = coachStopRepository.save(Objects.requireNonNull(coachStop));
+        return mapToResponse(saved);
     }
 
     @Override
@@ -90,10 +90,28 @@ public class CoachStopServiceImpl implements CoachStopService {
         coachStop.setActive(false);
         coachStopRepository.save(coachStop);
 
-        // Cascade soft delete to associated route stops
+        // Cascade soft delete to associated coach stops
         List<RouteStop> routeStops = routeStopRepository.findByCoachStop_StopPointId(id);
         for (RouteStop routeStop : routeStops) {
             routeStop.setActive(false);
+            routeStopRepository.save(routeStop);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void restoreCoachStop(int id) {
+        CoachStop coachStop = coachStopRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("CoachStop not found with ID: " + id));
+
+        // Restore the coachStop itself
+        coachStop.setActive(true);
+        coachStopRepository.save(coachStop);
+
+        // Cascade restore to associated route stops
+        List<RouteStop> routeStops = routeStopRepository.findByCoachStop_StopPointId(id);
+        for (RouteStop routeStop : routeStops) {
+            routeStop.setActive(true);
             routeStopRepository.save(routeStop);
         }
     }
