@@ -48,13 +48,13 @@ public class RouteController {
         return ResponseEntity.ok(response);
     }
 
-    @DeleteMapping("/{id}")
+    @PatchMapping("/{id}/soft-delete")
     public ResponseEntity<Void> deleteRoute(@PathVariable Integer id) {
         routeService.deleteRoute(id);
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("/{id}/restore")
+    @PatchMapping("/{id}/restore")
     public ResponseEntity<Void> restoreRoute(@PathVariable Integer id) {
         routeService.restoreRoute(id);
         return ResponseEntity.noContent().build();

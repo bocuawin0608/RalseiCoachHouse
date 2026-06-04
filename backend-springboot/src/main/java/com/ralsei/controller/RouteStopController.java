@@ -26,8 +26,7 @@ public class RouteStopController {
     @PutMapping("/{id}")
     public ResponseEntity<RouteStopResponse> updateRouteStop(
             @PathVariable Integer id,
-            @Valid @RequestBody RouteStopRequest request
-    ) {
+            @Valid @RequestBody RouteStopRequest request) {
         RouteStopResponse response = routeStopService.updateRouteStop(id, request);
         return ResponseEntity.ok(response);
     }
@@ -44,13 +43,13 @@ public class RouteStopController {
             @RequestParam(required = false) Integer stopPointId,
             @RequestParam(required = false) Boolean isActive,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-        PagedResponse<RouteStopResponse> response = routeStopService.getAllRouteStops(routeId, stopPointId, isActive, page, size);
+            @RequestParam(defaultValue = "10") int size) {
+        PagedResponse<RouteStopResponse> response = routeStopService.getAllRouteStops(routeId, stopPointId, isActive,
+                page, size);
         return ResponseEntity.ok(response);
     }
 
-    @DeleteMapping("/{id}")
+    @PatchMapping("/{id}/soft-delete")
     public ResponseEntity<Void> deleteRouteStop(@PathVariable Integer id) {
         routeStopService.deleteRouteStop(id);
         return ResponseEntity.noContent().build();
