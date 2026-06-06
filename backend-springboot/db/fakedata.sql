@@ -743,3 +743,5 @@ WHERE
     -- 4. Ép thời gian chuyến xe chạy phải lọt vào dải ngày hiệu lực của bảng giá vé mới
     AND t.departureTime BETWEEN ctp.startEffectiveDate AND ctp.endEffectiveDate;
 GO
+
+

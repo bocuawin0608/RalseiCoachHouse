@@ -176,7 +176,7 @@
         
 //         //TODO: check trùng giá hiện tại thì ko cần xuống DB update, Hibernate làm hộ r?
 //         //TODO: ALTER TABLE [seat_layout_price] ADD CONSTRAINT UQ_SeatPrice_Timeline UNIQUE ([seatLayoutId], [startEffectiveDate]);
-
+//          //TODO: Bây có cải nhau thì bây cook sang mục comment dùm bố m=))))) --- IGNORE ---
 //         SeatLayout layout = layoutRepository.findByIdWithSeatsAndPrice(seatLayoutId).orElseThrow(
 //             () -> new ResourceNotFoundException("Không tìm thấy sơ đồ ghế có ID là: " + seatLayoutId)
 //         );
