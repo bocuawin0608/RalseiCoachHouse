@@ -1,10 +1,8 @@
 import axios from 'axios';
 
 const axiosClient = axios.create({
-    baseURL: 'http://localhost:9090/api',
-    headers: {
-        'Content-Type': 'application/json',
-    },
+    baseURL: 'https://localhost:9090/api',
+    headers: {'Content-Type': 'application/json'},
     withCredentials: true,
     timeout: 10000,
 });
@@ -29,7 +27,7 @@ axiosClient.interceptors.response.use(
     (error) => {
         if (error.response) {
             const status = error.response.status;
-            
+
             switch (status) {
                 case 401:
                     console.error("Lỗi 401: Chưa đăng nhập hoặc phiên làm việc hết hạn!");

@@ -1,13 +1,7 @@
 package com.ralsei.model;
 
+import jakarta.persistence.*;
 import java.math.BigDecimal;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -27,11 +21,13 @@ public class RouteStop extends BaseEntity {
     @Column(name = "routeStopId")
     private int routeStopId;
 
-    @Column(name = "routeId", nullable = false)
-    private int routeId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "routeId", nullable = false)
+    private Route route;
 
-    @Column(name = "stopPointId", nullable = false)
-    private int stopPointId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "stopPointId", nullable = false)
+    private CoachStop coachStop;
 
     @Column(name = "stopOrder", nullable = false)
     private int stopOrder;
