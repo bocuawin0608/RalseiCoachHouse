@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 @Repository
 public interface TripRepository extends JpaRepository<Trip, Integer> {
 
+ 
   @Query(value = """
       SELECT
           t.tripId AS tripId,
