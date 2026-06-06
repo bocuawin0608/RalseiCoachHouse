@@ -1,28 +1,26 @@
-import { Routes, Route, Navigate } from 'react-router-dom'; 
-import HomePage from '../pages/HomePage';
-import CombinedLayout from '../components/layout/DesktopStaffLayout/CombinedLayout';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import DesktopLayout from '../components/layout/DesktopStaffLayout/DesktopLayout';
+import PublicLayout from '../components/layout/PublicLayout/PublicLayout'; 
 import PublicRoute from './PublicRoute';
 import ProtectedRoute from './ProtectedRoute';
 import { coachRoutes } from '../features/coaches';
+import { publicTripRoutes } from '../features/trips';
+import { routeRoutes } from '../features/routes';
 
 const AppRouter = () => {
-    // Mấy cái này sau lấy từ Context API or Redux
-    const isAuthenticated = true; // Hardcode để test
-    const userRole = 'MANAGER'; // Hardcode để test
+    const isAuthenticated = true; //để tạm bợ
+    const userRole = 'MANAGER'; //để tạm bợ
     
     return (
         <Routes>
-            {/* Hai cái này để tạm ntn */}
-            <Route path="/" element={<Navigate to="/home" replace />} />
-            <Route path="/home" element={<HomePage />} />
+            <Route path="/" element={<PublicLayout />}>
+                {publicTripRoutes}
+            </Route>
 
-
-            {/* Luồng Public (Chưa đăng nhập) */}
             <Route element={<PublicRoute isAuthenticated={isAuthenticated} />}>
                 <Route path="/login" element={<div>Trang Đăng Nhập</div>} />
             </Route>
 
-            {/* Luồng Manager (Bắt buộc đăng nhập & Quyền MANAGER) */}
             <Route element={
                 <ProtectedRoute 
                     isAuthenticated={isAuthenticated} 
@@ -30,12 +28,11 @@ const AppRouter = () => {
                     allowedRoles={['MANAGER', 'ADMIN']} 
                 />
             }>
-                {/* Bọc ManagerLayout bên ngoài */}
-                <Route path="/manager" element={<CombinedLayout />}>
-                    {/* Đường dẫn mặc định khi vào /manager */}
+                <Route path="/manager" element={<DesktopLayout />}>
                     <Route index element={<Navigate to="dashboard" replace />} />
                     <Route path="dashboard" element={<div>Bảng điều khiển</div>} />
                     {coachRoutes}
+                    {routeRoutes}
                 </Route>
             </Route>
 

@@ -2,7 +2,7 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 
-export default function CombinedLayout() {
+export default function DesktopLayout() {
     return (
         <div style={{ display: 'flex', minHeight: '100vh' }}>
             <Sidebar />
