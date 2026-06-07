@@ -1,20 +1,43 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import HomePage from '../pages/HomePage';
-import SeatLayoutPage from '../pages/seatlayout/SeatLayoutPage';
-import SeatLayoutDetailPage from '../pages/seatlayout/SeatLayoutDetailPage';
-import AdminDashboard from '../pages/admin/AdminDashboard';
-
+import DesktopLayout from '../components/layout/DesktopStaffLayout/DesktopLayout';
+import PublicLayout from '../components/layout/PublicLayout/PublicLayout'; 
+import PublicRoute from './PublicRoute';
+import ProtectedRoute from './ProtectedRoute';
+import { coachRoutes } from '../features/coaches';
+import { publicTripRoutes } from '../features/trips';
+import { routeRoutes } from '../features/routes';
 
 const AppRouter = () => {
+    const isAuthenticated = true; //để tạm bợ
+    const userRole = 'MANAGER'; //để tạm bợ
+    
     return (
         <Routes>
-            <Route path="/" element={<Navigate to="/home" replace />} />
-            <Route path="/home" element={<HomePage />} />
+            <Route path="/" element={<PublicLayout />}>
+                {publicTripRoutes}
+            </Route>
 
-            <Route path="/seat-layouts" element={<SeatLayoutPage />} />
-            <Route path="/seat-layouts/:id" element={<SeatLayoutDetailPage />} />
+            <Route element={<PublicRoute isAuthenticated={isAuthenticated} />}>
+                <Route path="/login" element={<div>Trang Đăng Nhập</div>} />
+            </Route>
 
-            <Route path="/admin" element={<AdminDashboard />} />
+            <Route element={
+                <ProtectedRoute 
+                    isAuthenticated={isAuthenticated} 
+                    userRole={userRole} 
+                    allowedRoles={['MANAGER', 'ADMIN']} 
+                />
+            }>
+                <Route path="/manager" element={<DesktopLayout />}>
+                    <Route index element={<Navigate to="dashboard" replace />} />
+                    <Route path="dashboard" element={<div>Bảng điều khiển</div>} />
+                    {coachRoutes}
+                    {routeRoutes}
+                </Route>
+            </Route>
+
+            {/* Catch-all route cho lỗi 404 */}
+            <Route path="*" element={<div>404 - Không tìm thấy trang</div>} />
         </Routes>
     );
 };

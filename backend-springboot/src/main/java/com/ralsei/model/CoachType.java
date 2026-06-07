@@ -37,6 +37,9 @@ public class CoachType extends BaseEntity {
     @Column(name = "totalSeat", nullable = false)
     private int totalSeat;
 
+    @Column(name = "seatLayout", nullable = false, columnDefinition = "TEXT")
+    private String seatLayout;
+
     @Column(name = "isActive", nullable = false)
     private boolean isActive;
 

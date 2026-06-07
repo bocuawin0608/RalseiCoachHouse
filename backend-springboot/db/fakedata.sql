@@ -530,6 +530,28 @@ END;
 PRINT N'=== TOÀN BỘ CƠ SỞ DỮ LIỆU ĐÃ ĐƯỢC RESET VÀ SEED HOÀN HẢO CHUẨN SCHEMA MỚI ===';
 GO
 
+-- ============================================================================
+-- LEVEL 6: UPDATE SEAT LAYOUT JSON (BỔ SUNG CẤU TRÚC MA TRẬN GHẾ ĐƠN GIẢN)
+-- ============================================================================
+PRINT N'-> Đang đồng bộ hóa dữ liệu cấu trúc Seat Layout JSON cho các loại xe...';
+
+-- 1. Xe Limousine VIP 20 phòng (10 hàng x 3 cột, có lối đi ở giữa)
+UPDATE [coach_type]
+SET [seatLayout] = '{"rows":10,"cols":3,"matrix":[["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"]]}'
+WHERE [coachTypeId] = 1;
+
+-- 2. Xe Giường Nằm Luxury 32 chỗ (16 hàng x 3 cột, có lối đi ở giữa)
+UPDATE [coach_type]
+SET [seatLayout] = '{"rows":16,"cols":3,"matrix":[["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"]]}'
+WHERE [coachTypeId] = 2;
+
+-- 3. Xe Khách Truyền Thống 38 chỗ (19 hàng x 3 cột, có lối đi ở giữa)
+UPDATE [coach_type]
+SET [seatLayout] = '{"rows":19,"cols":3,"matrix":[["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"]]}'
+WHERE [coachTypeId] = 3;
+
+PRINT N'-> Cập nhật Seat Layout thành công!';
+
 -- RECHECK QUERY AFTER SEED
 SELECT * FROM [account];
 SELECT * FROM [role];

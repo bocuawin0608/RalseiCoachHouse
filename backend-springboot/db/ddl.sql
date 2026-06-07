@@ -133,6 +133,7 @@ CREATE TABLE [coach_type] (
 );
 
 ALTER TABLE [coach_type] ADD CONSTRAINT UQ_CoachType_Name UNIQUE ([coachTypeName]);
+ALTER TABLE [coach_type] ADD [seatLayout] NVARCHAR(MAX) NULL;
 
 CREATE TABLE [cargo_type] (
     [cargoTypeId] INT IDENTITY(1,1) PRIMARY KEY,

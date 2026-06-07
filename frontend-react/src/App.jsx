@@ -2,15 +2,12 @@ import AppRouter from './routes/AppRouter';
 
 function App() {
   return (
-    <div className="app-container">
-      {/* <Header /> */}
-
-      <main style={{ minHeight: '80vh' }}>
-        <AppRouter />
-      </main>
-
-      {/* <Footer /> */}
-    </div>
+    <>
+      <AppRouter />
+      
+      {/* Có thể vứt cái ToastContainer ở đây để bắt thông báo toàn app */}
+      {/* <ToastContainer position="top-right" /> */}
+    </>
   );
 }
 
