@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BsArrowLeft, BsCheckCircle } from 'react-icons/bs';
+import { BsArrowLeft, BsCheckCircle, BsExclamationTriangleFill } from 'react-icons/bs';
 import { coachTypeApi, SeatMapBuilder } from '../../../features/coaches';
-import { Alert, Button, Card, Col, Container, Form, Row } from 'react-bootstrap';
+import { Alert, Button, Card, Col, Container, Form, InputGroup, Row } from 'react-bootstrap';
+import { formatCurrency } from '../../../utils/formatters';
 
 export default function CoachTypeCreatePage() {
     const navigate = useNavigate();
@@ -113,8 +114,9 @@ export default function CoachTypeCreatePage() {
             <h2 className="mb-4 text-dark fw-bold">Thêm mới loại xe & Sơ đồ cấu hình</h2>
 
             {errorMsg && (
-                <Alert variant="danger" className="fw-medium">
-                    ⚠️ {errorMsg}
+                <Alert variant="danger" className="shadow-sm border-0 d-flex align-items-center gap-2">
+                    <BsExclamationTriangleFill />
+                    <span>{errorMsg}</span>
                 </Alert>
             )}
 
@@ -142,23 +144,33 @@ export default function CoachTypeCreatePage() {
                                     />
                                 </Form.Group>
 
-                                <Form.Group>
-                                    <Form.Label className="fw-semibold text-secondary mb-1">Giá vé mặc định (VNĐ) <span className="text-danger">*</span></Form.Label>
-                                    <Form.Control 
-                                        type="number" 
-                                        name="seatPrice" 
-                                        required 
-                                        min="0" max={100000000}
-                                        placeholder="Ví dụ: 350000"
-                                        value={formData.seatPrice} 
-                                        onChange={handleInputChange}
-                                        className="py-2"
-                                    />
+                                <Form.Group className="mb-4">
+                                    <Form.Label className="fw-semibold text-secondary mb-1">Giá vé mặc định <span className="text-danger">*</span></Form.Label>
+                                    
+                                    <InputGroup>
+                                        <Form.Control 
+                                            type="number" 
+                                            name="seatPrice" 
+                                            required 
+                                            min="0" max={100000000}
+                                            placeholder="Ví dụ: 350000"
+                                            value={formData.seatPrice} 
+                                            onChange={handleInputChange}
+                                            className="py-2"
+                                        />
+                                        <InputGroup.Text className="bg-light fw-medium text-secondary">VNĐ</InputGroup.Text>
+                                    </InputGroup>
+                                    
+                                    {formData.seatPrice !== '' && !isNaN(formData.seatPrice) && (
+                                        <Form.Text className="text-success fw-medium mt-2 d-block">
+                                            Giá trị: {formatCurrency(formData.seatPrice)}
+                                        </Form.Text>
+                                    )}
                                 </Form.Group>
 
                                 <div className="d-flex gap-3">
                                     <Form.Group className="flex-fill">
-                                        <Form.Label className="fw-semibold text-secondary mb-1">Số hàng dọc (1-11) <span className="text-danger">*</span></Form.Label>
+                                        <Form.Label className="fw-semibold text-secondary mb-1">Số hàng ngang (1-11) <span className="text-danger">*</span></Form.Label>
                                         <Form.Control 
                                             type="number" 
                                             name="rows" 
@@ -171,7 +183,7 @@ export default function CoachTypeCreatePage() {
                                         />
                                     </Form.Group>
                                     <Form.Group className="flex-fill">
-                                        <Form.Label className="fw-semibold text-secondary mb-1">Số cột ngang (1-5) <span className="text-danger">*</span></Form.Label>
+                                        <Form.Label className="fw-semibold text-secondary mb-1">Số cột dọc (1-5) <span className="text-danger">*</span></Form.Label>
                                         <Form.Control 
                                             type="number" 
                                             name="cols" 
