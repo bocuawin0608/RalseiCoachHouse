@@ -3,6 +3,7 @@ package com.ralsei.service.impl;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,6 +16,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ralsei.dto.projection.CoachTypeProjection;
 import com.ralsei.dto.request.coachtype.CoachTypeCreateRequest;
 import com.ralsei.dto.request.coachtype.CoachTypeFilterRequest;
+import com.ralsei.dto.request.coachtype.CoachTypeUpdateInfoRequest;
+import com.ralsei.dto.request.coachtype.CoachTypeUpdatePriceRequest;
+import com.ralsei.dto.request.coachtype.CoachTypeUpdateSeatmapRequest;
 import com.ralsei.dto.response.coachtype.CoachTypeDetailResponse;
 import com.ralsei.dto.response.coachtype.CoachTypeResponse;
 import com.ralsei.exception.ResourceNotFoundException;
@@ -28,45 +32,73 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class CoachTypeServiceImpl implements CoachTypeService {
-    
+
     private final CoachTypeRepository coachTypeRepo;
     private final ObjectMapper objectMapper;
+
+    private final LocalDateTime infiniteDateTime = LocalDateTime.of(9999, 12, 31, 23, 59, 59);
+
+    private record ProcessedSeatLayout(int totalSeat, String seatLayout) {
+    }
 
     @Transactional(readOnly = true)
     @Override
     public Page<CoachTypeResponse> filterCoachTypes(CoachTypeFilterRequest filterRequest, Pageable pageable) {
-        
-        if(filterRequest.minPrice() != null && filterRequest.maxPrice() != null && filterRequest.minPrice().compareTo(filterRequest.maxPrice()) > 0) {
+
+        if (filterRequest.minPrice() != null && filterRequest.maxPrice() != null
+                && filterRequest.minPrice().compareTo(filterRequest.maxPrice()) > 0) {
             throw new IllegalArgumentException("Giá tối thiểu không thể lớn hơn Giá tối đa!");
         }
-        
-        if(filterRequest.minSeats() != null && filterRequest.maxSeats() != null && filterRequest.minSeats() > filterRequest.maxSeats()) {
+
+        if (filterRequest.minSeats() != null && filterRequest.maxSeats() != null
+                && filterRequest.minSeats() > filterRequest.maxSeats()) {
             throw new IllegalArgumentException("Số ghế tối thiểu không thể lớn hơn Số ghế tối đa!");
         }
 
-        Page<CoachTypeProjection> projections = coachTypeRepo.searchCoachTypes(filterRequest, LocalDateTime.now(), pageable);
-        
+        Page<CoachTypeProjection> projections = coachTypeRepo.searchCoachTypes(filterRequest, LocalDateTime.now(),
+                pageable);
+
         return projections.map(type -> new CoachTypeResponse(
-            type.getCoachTypeId(),
-            type.getCoachTypeName(),
-            type.getTotalSeat(),
-            type.getCurrentPrice(),
-            type.getIsActive(),
-            type.getTotalCoach()
-        ));
+                type.getCoachTypeId(),
+                type.getCoachTypeName(),
+                type.getTotalSeat(),
+                type.getCurrentPrice(),
+                type.getIsActive(),
+                type.getTotalCoach()));
     }
 
     @Transactional
     @Override
     public Integer createCoachType(CoachTypeCreateRequest request) {
-        if(coachTypeRepo.existsByCoachTypeNameIgnoreCase(request.coachTypeName())) {
+        if (coachTypeRepo.existsByCoachTypeNameIgnoreCase(request.coachTypeName())) {
             throw new IllegalArgumentException("Tên loại xe đã tồn tại trong hệ thống!");
         }
 
+        ProcessedSeatLayout verifiedSeatLayout = validateSeatLayout(request.seatLayout());
+
+        CoachType newCoachType = CoachType.builder()
+                .coachTypeName(request.coachTypeName())
+                .totalSeat(verifiedSeatLayout.totalSeat())
+                .seatLayout(verifiedSeatLayout.seatLayout())
+                .isActive(true)
+                .build();
+
+        CoachTypePrice price = CoachTypePrice.builder()
+                .coachType(newCoachType)
+                .seatPrice(request.seatPrice())
+                .startEffectiveDate(LocalDateTime.now())
+                .endEffectiveDate(infiniteDateTime)
+                .build();
+        newCoachType.setCoachTypePrices(List.of(price));
+
+        CoachType savedCoachType = coachTypeRepo.save(newCoachType);
+        return savedCoachType.getCoachTypeId();
+    }
+
+    private ProcessedSeatLayout validateSeatLayout(String rawSeatLayout) {
         int calculatedTotalSeat = 0;
-        String minifiedSeatLayout = "";
         try {
-            JsonNode rootNode = objectMapper.readTree(request.seatLayout());
+            JsonNode rootNode = objectMapper.readTree(rawSeatLayout);
             int declaredRows = rootNode.path("rows").asInt(0);
             int declaredCols = rootNode.path("cols").asInt(0);
             JsonNode matrixNode = rootNode.get("matrix");
@@ -78,16 +110,16 @@ public class CoachTypeServiceImpl implements CoachTypeService {
                 throw new IllegalArgumentException("Số cột trong sơ đồ ghế phải nằm trong khoảng từ 1 đến 5.");
             }
 
-            if(matrixNode==null || !matrixNode.isArray()) {
+            if (matrixNode == null || !matrixNode.isArray()) {
                 throw new IllegalArgumentException("Sơ đồ ghế bị thiếu hoặc sai định dạng.");
             }
 
-            if(matrixNode.size() != declaredRows) {
+            if (matrixNode.size() != declaredRows) {
                 throw new IllegalArgumentException("Số hàng trong sơ đồ ghế không khớp với giá trị khai báo.");
             }
 
             for (JsonNode rowNode : matrixNode) {
-                if(rowNode.size() != declaredCols) {
+                if (rowNode.size() != declaredCols) {
                     throw new IllegalArgumentException("Số cột trong sơ đồ ghế không khớp với giá trị khai báo.");
                 }
             }
@@ -100,57 +132,105 @@ public class CoachTypeServiceImpl implements CoachTypeService {
                 }
             }
 
-            if(calculatedTotalSeat == 0) {
+            if (calculatedTotalSeat == 0) {
                 throw new IllegalArgumentException("Sơ đồ ghế không thể có 0 ghế.");
             }
 
-            minifiedSeatLayout = rootNode.toString();
+            return new ProcessedSeatLayout(calculatedTotalSeat, rootNode.toString());
 
-        } catch(JsonProcessingException e) {
+        } catch (JsonProcessingException e) {
             throw new IllegalArgumentException("Định dạng JSON của sơ đồ ghế không hợp lệ.", e);
         }
-
-        CoachType newCoachType = CoachType.builder()
-            .coachTypeName(request.coachTypeName())
-            .totalSeat(calculatedTotalSeat)
-            .seatLayout(minifiedSeatLayout)
-            .isActive(true)
-            .build();
-
-        CoachTypePrice price = CoachTypePrice.builder()
-            .coachType(newCoachType)
-            .seatPrice(request.seatPrice())
-            .startEffectiveDate(LocalDateTime.now())
-            .endEffectiveDate(LocalDateTime.of(9999, 12, 31, 23, 59, 59))
-            .build();
-        newCoachType.setCoachTypePrices(List.of(price));
-        
-        CoachType savedCoachType = coachTypeRepo.save(newCoachType);
-        return savedCoachType.getCoachTypeId();
     }
 
     @Transactional
     @Override
     public CoachTypeDetailResponse getCoachTypeDetail(Integer id) {
         CoachType coachType = coachTypeRepo.findById(id).orElseThrow(
-            () -> {throw new ResourceNotFoundException("Không tìm thấy Loại xe có ID là: " + id);}
-        );
+                () -> {
+                    throw new ResourceNotFoundException("Không tìm thấy loại xe có ID là: " + id);
+                });
 
         BigDecimal currentPrice = coachType.getCoachTypePrices().stream()
-            .filter(price -> price.getStartEffectiveDate().isBefore(LocalDateTime.now())
-                  && price.getEndEffectiveDate().isAfter(LocalDateTime.now()))
-            .findFirst()
-            .map(price -> price.getSeatPrice())
-            .orElse(BigDecimal.ZERO);
+                .filter(price -> price.getStartEffectiveDate().isBefore(LocalDateTime.now())
+                        && price.getEndEffectiveDate().isAfter(LocalDateTime.now()))
+                .findFirst()
+                .map(price -> price.getSeatPrice())
+                .orElse(BigDecimal.ZERO);
 
         return new CoachTypeDetailResponse(
-            coachType.getCoachTypeId(),
-            coachType.getCoachTypeName(),
-            coachType.getTotalSeat(),
-            currentPrice,
-            coachType.isActive(),
-            coachType.getSeatLayout()
+                coachType.getCoachTypeId(),
+                coachType.getCoachTypeName(),
+                coachType.getTotalSeat(),
+                currentPrice,
+                coachType.isActive(),
+                coachType.getSeatLayout());
+    }
+
+    @Transactional
+    @Override
+    public void updateCoachTypeInfo(Integer id, CoachTypeUpdateInfoRequest updateRequest) {
+        CoachType coachType = coachTypeRepo.findById(id).orElseThrow(
+                () -> {
+                    throw new ResourceNotFoundException("Không tìm thấy loại xe có ID là: " + id);
+                });
+
+        if (!coachType.getCoachTypeName().equalsIgnoreCase(updateRequest.coachTypeName())) {
+            if (coachTypeRepo.existsByCoachTypeNameIgnoreCase(updateRequest.coachTypeName())) {
+                throw new IllegalArgumentException("Tên loại xe đã tồn tại trong hệ thống!");
+            }
+            coachType.setCoachTypeName(updateRequest.coachTypeName());
+        }
+
+        coachType.setActive(updateRequest.isActive());
+        // TODO: nếu đã có coach dùng coach_type này đang active -> ko đc đưa về
+        // inactive
+    }
+
+    @Transactional
+    @Override
+    public void updateCoachTypePrice(Integer id, CoachTypeUpdatePriceRequest updateRequest) {
+        CoachType coachType = coachTypeRepo.findById(id).orElseThrow(
+                () -> {
+                    throw new ResourceNotFoundException("Không tìm thấy loại xe có ID là: " + id);
+                });
+
+        Optional<CoachTypePrice> currentPrice = coachType.getCoachTypePrices().stream()
+                .filter(price -> !price.getStartEffectiveDate().isAfter(LocalDateTime.now())
+                        && price.getEndEffectiveDate().isAfter(LocalDateTime.now()))
+                .findFirst();
+
+        if (currentPrice.isPresent() && currentPrice.get().getSeatPrice().compareTo(updateRequest.seatPrice()) != 0) {
+            currentPrice.get().setEndEffectiveDate(LocalDateTime.now());
+
+            CoachTypePrice newPrice = CoachTypePrice.builder()
+                    .coachType(coachType)
+                    .seatPrice(updateRequest.seatPrice())
+                    .startEffectiveDate(LocalDateTime.now())
+                    .endEffectiveDate(infiniteDateTime)
+                    .build();
+
+            coachType.getCoachTypePrices().add(newPrice);
+        }
+    }
+
+    @Transactional
+    @Override
+    public void updateCoachTypeSeatmap(Integer id, CoachTypeUpdateSeatmapRequest updateRequest) {
+        CoachType coachType = coachTypeRepo.findById(id).orElseThrow(
+            () -> {throw new ResourceNotFoundException("Không tìm thấy loại xe có ID là: " + id);}
         );
+
+        
+        if(coachType.getSeatLayout().equalsIgnoreCase(updateRequest.seatLayout())) {
+            return;
+        }
+        
+        //TODO: nếu đã có xe dùng coach_type này thì ko đc đổi layout
+        
+        ProcessedSeatLayout newSeatLayout = validateSeatLayout(updateRequest.seatLayout());
+        coachType.setTotalSeat(newSeatLayout.totalSeat());
+        coachType.setSeatLayout(newSeatLayout.seatLayout());
     }
 
 }

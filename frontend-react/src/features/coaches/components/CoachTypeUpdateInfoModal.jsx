@@ -1,38 +1,49 @@
-import { Button, Form, Modal } from 'react-bootstrap'
+import { Alert, Button, Form, Modal } from 'react-bootstrap'
 import { useState, useEffect } from 'react';
 import { coachTypeApi } from '../api/coachTypeApi';
+import { BsExclamationTriangleFill } from 'react-icons/bs';
 
 export default function CoachTypeUpdateInfoModal({ isOpen, data, onClose, onSuccess }) {
     const [name, setName] = useState('');
     const [isActive, setIsActive] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         const load = () => {
             if (data && isOpen) {
                 setName(data.coachTypeName);
                 setIsActive(data.isActive);
+                setError(null);
             }    
         }
         load();
     }, [data, isOpen]);
 
-    if (!isOpen) return null;
+    const hasAnyChange = data && (data.coachTypeName !== name || data.isActive !== isActive);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if(!hasAnyChange) {
+            onClose();
+            return;
+        }
+
         setIsSubmitting(true);
+        setError(null);
         try {
             await coachTypeApi.updateCoachTypeInfo(data.coachTypeId, { coachTypeName: name, isActive });
             onSuccess(); 
             onClose();   
         } catch (error) {
-            console.error(error);
-            // thêm Toast báo lỗi ở đây!!! đổi mịa sang alert show error
+            setError(error.response?.data?.message || "Có lỗi xảy ra khi cập nhật." );
         } finally {
             setIsSubmitting(false);
         }
     };
+
+    if (!isOpen) return null;
 
     return (
         <Modal show={isOpen} onHide={onClose} centered backdrop="static">
@@ -42,7 +53,7 @@ export default function CoachTypeUpdateInfoModal({ isOpen, data, onClose, onSucc
                 </Modal.Title>
             </Modal.Header>
 
-            <Modal.Body className="px-4">
+            <Modal.Body className="px-4 pb-0">
                 <Form id="update-coach-form" onSubmit={handleSubmit}>
                     
                     <Form.Group className="mb-4">
@@ -52,7 +63,10 @@ export default function CoachTypeUpdateInfoModal({ isOpen, data, onClose, onSucc
                         <Form.Control 
                             type="text"
                             value={name} 
-                            onChange={(e) => setName(e.target.value)} 
+                            onChange={(e) => {
+                                setName(e.target.value)
+                                setError(null);
+                            }} 
                             required maxLength={100}
                             className="py-2"
                         />
@@ -66,7 +80,10 @@ export default function CoachTypeUpdateInfoModal({ isOpen, data, onClose, onSucc
                                     type="switch" 
                                     id="status-switch"
                                     checked={isActive} 
-                                    onChange={(e) => setIsActive(e.target.checked)} 
+                                    onChange={(e) => {
+                                        setIsActive(e.target.checked);
+                                        setError(null);
+                                    }} 
                                     className="fs-5 m-0"
                                 />
                                 <span style={{ fontSize: '0.95rem' }} className="fw-medium text-dark">
@@ -78,7 +95,11 @@ export default function CoachTypeUpdateInfoModal({ isOpen, data, onClose, onSucc
                             </span>
                         </div>
                     </Form.Group>
-
+                    
+                    {error && <Alert variant='danger' className="mb-3 py-2 px-3 border-0 d-flex align-items-center gap-2">
+                        <BsExclamationTriangleFill />
+                        <span>{error}</span>
+                    </Alert>}
                 </Form>
             </Modal.Body>
 
