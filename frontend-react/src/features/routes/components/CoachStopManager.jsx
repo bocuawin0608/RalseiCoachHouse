@@ -104,8 +104,7 @@ const CoachStopManager = ({ onBack }) => {
     return (
         <div className="coach-stop-manager">
             <div className="coach-stop-manager-header">
-                <button className="back-btn" onClick={onBack}>&larr; Back to Dashboard</button>
-                <h2>Coach Stop Management</h2>
+                <h2 style={{ fontWeight: 'bold' }}>Quản lý điểm dừng</h2>
             </div>
 
             <div className="coach-stop-manager-content">

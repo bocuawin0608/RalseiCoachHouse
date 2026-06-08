@@ -104,10 +104,10 @@ const RouteManager = ({ onBack }) => {
     };
 
     return (
+
         <div className="route-manager">
             <div className="route-manager-header">
-                <button className="back-btn" onClick={onBack}>&larr; Back to Dashboard</button>
-                <h2>Route Management</h2>
+                <h2 style={{ fontWeight: 'bold' }}>Quản lý tuyến xe</h2>
             </div>
 
             <div className="route-manager-content">

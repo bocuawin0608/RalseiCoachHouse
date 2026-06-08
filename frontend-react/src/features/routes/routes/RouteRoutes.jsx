@@ -1,7 +1,8 @@
-import { Route } from 'react-router-dom'
-import AdminDashboard from '../../../pages/manager/routes/AdminDashboard'
+import { Route } from 'react-router-dom';
+import RouteManager from '../components/RouteManager';
+import CoachStopManager from '../components/CoachStopManager';
+
 export const routeRoutes = [
-    <Route index path="routes" element={<AdminDashboard/>}>
-        {/* hiện thành nhúng 2 cái component kia dạng modal, not page nên ko có link để access nested ở đây */}
-    </Route>
-]
+    <Route key="routes" path="routes" element={<RouteManager />} />,
+    <Route key="stations" path="stations" element={<CoachStopManager />} />
+];
