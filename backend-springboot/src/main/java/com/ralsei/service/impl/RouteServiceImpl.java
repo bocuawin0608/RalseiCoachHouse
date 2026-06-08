@@ -70,7 +70,7 @@ public class RouteServiceImpl implements RouteService {
     @Transactional(readOnly = true)
     public PagedResponse<RouteResponse> getAllRoutes(String search, Boolean isActive, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("routeId").descending());
-        Page<Route> routePage = routeRepository.searchRoutes(search, isActive, pageable);
+        Page<Route> routePage = routeRepository.searchRoutes(search.trim(), isActive, pageable);
 
         List<RouteResponse> content = routePage.getContent().stream()
                 .map(this::mapToResponse)
