@@ -130,8 +130,11 @@ const CoachStopManager = ({ onBack }) => {
                                 value={currentStop.address || ''}
                                 onChange={handleInputChange}
                                 required
-                                placeholder="e.g. 20 Pham Hung"
+                                placeholder="VD: 20 Phạm Hùng, Nam Từ Liêm, Hà Nội"
                             />
+                            <small className="form-text text-muted" style={{ display: 'block', marginTop: '4px', fontSize: '0.8rem', color: '#6c757d' }}>
+                                Định dạng: Số nhà tên đường phố, huyện, tỉnh
+                            </small>
                         </div>
                         <div className="form-actions">
                             <button type="submit" className="save-btn">{isEditing ? 'Update' : 'Create'}</button>
