@@ -1,4 +1,4 @@
-package com.ralsei.dto.projection;
+package com.ralsei.dto.projection.trip;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

@@ -530,28 +530,6 @@ END;
 PRINT N'=== TOÀN BỘ CƠ SỞ DỮ LIỆU ĐÃ ĐƯỢC RESET VÀ SEED HOÀN HẢO CHUẨN SCHEMA MỚI ===';
 GO
 
--- ============================================================================
--- LEVEL 6: UPDATE SEAT LAYOUT JSON (BỔ SUNG CẤU TRÚC MA TRẬN GHẾ ĐƠN GIẢN)
--- ============================================================================
-PRINT N'-> Đang đồng bộ hóa dữ liệu cấu trúc Seat Layout JSON cho các loại xe...';
-
--- 1. Xe Limousine VIP 20 phòng (10 hàng x 3 cột, có lối đi ở giữa)
-UPDATE [coach_type]
-SET [seatLayout] = '{"rows":10,"cols":3,"matrix":[["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"]]}'
-WHERE [coachTypeId] = 1;
-
--- 2. Xe Giường Nằm Luxury 32 chỗ (16 hàng x 3 cột, có lối đi ở giữa)
-UPDATE [coach_type]
-SET [seatLayout] = '{"rows":16,"cols":3,"matrix":[["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"]]}'
-WHERE [coachTypeId] = 2;
-
--- 3. Xe Khách Truyền Thống 38 chỗ (19 hàng x 3 cột, có lối đi ở giữa)
-UPDATE [coach_type]
-SET [seatLayout] = '{"rows":19,"cols":3,"matrix":[["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"],["seat","empty","seat"]]}'
-WHERE [coachTypeId] = 3;
-
-PRINT N'-> Cập nhật Seat Layout thành công!';
-
 -- RECHECK QUERY AFTER SEED
 SELECT * FROM [account];
 SELECT * FROM [role];
@@ -743,3 +721,46 @@ WHERE
     -- 4. Ép thời gian chuyến xe chạy phải lọt vào dải ngày hiệu lực của bảng giá vé mới
     AND t.departureTime BETWEEN ctp.startEffectiveDate AND ctp.endEffectiveDate;
 GO
+
+USE [VeXeDB]; 
+SELECT * FROM trip
+SELECT * FROM trip_seat
+SELECT * FROM Coach
+SELECT * FROM coach_type
+SELECT * FROM coach_type_price
+SELECT * FROM [route]
+SELECT t.tripId, routeName, c.licensePlate, ct.coachTypeName, ctp.seatPrice, COUNT() FROM trip t 
+JOIN [route] r ON t.routeId = r.routeId 
+JOIN coach c ON t.coachId = c.coachId
+JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId
+JOIN coach_type_price ctp ON ct.coachTypeId = ctp.coachTypeId
+JOIN seat s ON s.coachId = c.coachId
+JOIN trip_seat ts ON ts.seatId = s.seatId AND ts.tripId = t.tripId
+
+-- DO NOT TOUCH - WHOEVER TOUCHES THIS EXCEPT Loliconhihi IS GAY 
+SELECT 
+    t.tripId, 
+    r.routeName, 
+    c.licensePlate, 
+    ct.coachTypeName,
+    ctp.seatPrice,
+    (SELECT COUNT(*) 
+     FROM trip_seat ts 
+     WHERE ts.tripId = t.tripId AND ts.status = 'Available') AS availableSeats,
+     (SELECT COUNT(*) FROM trip_seat ts WHERE ts.tripId = t.tripId) AS totalSeats,
+     CAST(t.departureTime AS TIME) AS departureTime,
+     CAST(t.departureTime AS DATE) AS departureDate,
+     c.[status] as coachStatus
+FROM trip t 
+JOIN [route] r ON t.routeId = r.routeId 
+JOIN coach c ON t.coachId = c.coachId
+JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId
+LEFT JOIN coach_type_price ctp ON ctp.coachTypeId = ct.coachTypeId
+ORDER BY t.departureTime ASC, t.tripId ASC
+-- DO NOT TOUCH - WHOEVER TOUCHES THIS EXCEPT Loliconhihi IS GAY 
+
+
+select * from seat
+select *, s.seatCode from trip_seat ts JOIN seat s ON ts.seatId = s.seatId 
+
+INSERT INTO trip_seat (tripId, seatId, price, [status])

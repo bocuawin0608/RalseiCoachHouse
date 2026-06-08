@@ -1,4 +1,4 @@
-package com.ralsei.dto.projection;
+package com.ralsei.dto.projection.trip;
 import java.time.LocalDateTime;
 
 public interface TripDetailProjection {
