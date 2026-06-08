@@ -11,12 +11,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import jakarta.validation.constraints.Pattern;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class RouteRequest {
     @NotBlank(message = "Route name is required")
+    @Pattern(regexp = "^.+ - .+$", message = "Tên tuyến đường không hợp lệ. Vui lòng nhập theo định dạng: Điểm đi - Điểm đến (VD: Hà Nội - Quảng Trị)")
     private String routeName;
 
     @NotNull(message = "Total kilometers is required")
