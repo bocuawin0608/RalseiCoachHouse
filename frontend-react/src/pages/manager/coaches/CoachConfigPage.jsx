@@ -11,6 +11,7 @@ import {
 } from '../../../features/coaches';
 import Pagination from '../../../components/common/Pagination';
 import { Alert, Button, Card, Container } from 'react-bootstrap';
+import { BsExclamationTriangleFill } from 'react-icons/bs';
 
 export default function CoachConfigPage() {
     const navigate = useNavigate();
@@ -44,9 +45,9 @@ export default function CoachConfigPage() {
             />
 
             {error && (
-                <Alert variant="danger" className="shadow-sm border-0 d-flex align-items-center">
-                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
-                    ⚠️ {error}
+                <Alert variant="danger" className="shadow-sm border-0 d-flex align-items-center gap-2">
+                    <BsExclamationTriangleFill />
+                    <span>{error}</span>
                 </Alert>
             )}
 
@@ -57,7 +58,7 @@ export default function CoachConfigPage() {
                         loading={loading}
                         onViewDetail={(row) => setModalState({ type: 'VIEW_DETAIL', data: row})}
                         onEditInfo={(row) => setModalState({ type: 'EDIT_INFO', data: row })}
-                        // onEditPrice = {}
+                        onEditPrice = {(row) => setModalState({ type: 'EDIT_PRICE', data: row })}
                         onEditSeatMap={(row) => navigate(`/manager/coach-types/${row.coachTypeId}/seat-map`)} 
                     />
                     

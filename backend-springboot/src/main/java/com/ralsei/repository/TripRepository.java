@@ -1,8 +1,8 @@
 package com.ralsei.repository;
 
 import com.ralsei.dto.projection.trip.TripDetailProjection;
-import com.ralsei.dto.projection.trip.TripFilterProjection;
 import com.ralsei.dto.projection.trip.TripSummaryProjection;
+import com.ralsei.dto.projection.trip.TripFilterProjection;
 import com.ralsei.model.Trip;
 
 import org.springframework.data.domain.Page;
@@ -133,5 +133,6 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             countQuery = "SELECT COUNT(*) FROM trip", 
             nativeQuery = true)
     Page<TripSummaryProjection> viewAllTripSummaries(Pageable pageable);
+    
 
 }
