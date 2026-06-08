@@ -119,7 +119,7 @@ const CoachStopManager = ({ onBack }) => {
                                 value={currentStop.stopPointName || ''}
                                 onChange={handleInputChange}
                                 required
-                                placeholder="e.g. My Dinh Bus Station"
+                                placeholder="VD: Bến Xe Mỹ Đình"
                             />
                         </div>
                         <div className="form-group">
@@ -148,7 +148,7 @@ const CoachStopManager = ({ onBack }) => {
                         <h3>Stops List</h3>
                         <input
                             type="text"
-                            placeholder="Search stops..."
+                            placeholder="Tìm Kiếm Điểm Dừng...    "
                             value={search}
                             onChange={handleSearchChange}
                             className="search-input"

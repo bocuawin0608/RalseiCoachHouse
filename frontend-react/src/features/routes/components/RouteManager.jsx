@@ -122,8 +122,11 @@ const RouteManager = ({ onBack }) => {
                                 value={currentRoute.routeName}
                                 onChange={handleInputChange}
                                 required
-                                placeholder="e.g. Hanoi - Sapa"
+                                placeholder="VD: Hà Nội - Sapa"
                             />
+                            <small className="form-text text-muted" style={{ display: 'block', marginTop: '4px', fontSize: '0.8rem', color: '#6c757d' }}>
+                                Định dạng: Điểm Đầu - Điểm Cuối
+                            </small>
                         </div>
                         <div className="form-group">
                             <label>Distance (km)</label>
@@ -158,7 +161,7 @@ const RouteManager = ({ onBack }) => {
                         <h3>Routes List</h3>
                         <input
                             type="text"
-                            placeholder="Search routes..."
+                            placeholder="Tìm Kiếm Tuyến Đường...   "
                             value={search}
                             onChange={handleSearchChange}
                             className="search-input"

@@ -1,6 +1,7 @@
 package com.ralsei.dto.request.CoachAndRouteStop;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,5 +16,6 @@ public class CoachStopRequest {
     private String stopPointName;
 
     @NotBlank(message = "Address is required")
+    @Pattern(regexp = "^[^,]+,\\s*[^,]+,\\s*[^,]+$", message = "Địa chỉ không hợp lệ. Vui lòng nhập theo định dạng: Số nhà tên đường phố, huyện, tỉnh.")
     private String address;
 }
