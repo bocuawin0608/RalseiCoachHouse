@@ -3,6 +3,7 @@ import { coachTypeApi } from "../api/coachTypeApi";
 import { Alert, Badge, Button, Col, Modal, Row, Spinner } from "react-bootstrap";
 import SeatMapBuilder from "./SeatMapBuilder";
 import { formatCurrency } from "../../../utils/formatters";
+import { BsExclamationTriangleFill } from "react-icons/bs";
 
 const INITIAL_DETAIL = {
     coachTypeId: '',
@@ -80,9 +81,9 @@ export default function CoachTypeViewDetailModal({isOpen, data, onClose}) {
                         <span className="mt-2 text-secondary">Đang tải thông tin...</span>
                     </div>
                 ) : error ? (
-                    <Alert variant="danger" className="fw-medium">
-                        <i className="bi bi-exclamation-triangle-fill me-2"></i>
-                        ⚠️ {error}
+                    <Alert variant="danger" className="mb-3 py-4 px-4 d-flex align-items-center gap-2">
+                        <BsExclamationTriangleFill />
+                        <span>{error}</span>
                     </Alert>
                 ) : (
                     <div className="d-flex flex-column gap-4">

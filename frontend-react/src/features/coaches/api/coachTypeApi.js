@@ -23,6 +23,15 @@ export const coachTypeApi = {
      */
     updateCoachTypeInfo: (id, data) => { return axiosClient.patch(`${BASE}/${id}`, data); },
 
-    //updateCoachTypePrice
-    //updateCoachTypeSeatMap
+    /**
+     * @param {number|string} id - ID của CoachType cần sửa
+     * @param {Object} data - Chứa thông tin cần cập nhật (seatPrice)
+     */
+    updateCoachTypePrice: (id, data) => { return axiosClient.put(`${BASE}/${id}/price`, data); },
+
+    /**
+     * @param {number|string} id - ID của CoachType cần sửa
+     * @param {Object} data - Chứa thông tin cần cập nhật (seatLayout)
+     */
+    updateCoachTypeSeatMap: (id, data) => { return axiosClient.patch(`${BASE}/${id}/seat-layout`, data); }
 };

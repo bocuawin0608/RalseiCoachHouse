@@ -62,7 +62,7 @@ export default function CoachTypeTable({
                                     <Button 
                                         variant="primary" 
                                         className="d-flex align-items-center"
-                                        onClick={() => onViewDetail?.(item)}
+                                        onClick={() => onViewDetail(item)}
                                         title="Xem chi tiết"
                                     >
                                         <BsEye size={16} />
@@ -80,7 +80,7 @@ export default function CoachTypeTable({
                                     <Button 
                                         variant="primary" 
                                         className="d-flex align-items-center"
-                                        onClick={() => onEditPrice?.(item)}
+                                        onClick={() => onEditPrice(item)}
                                         title="Sửa giá"
                                     >
                                         <BsCashStack size={16} />
