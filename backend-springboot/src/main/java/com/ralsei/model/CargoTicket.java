@@ -42,9 +42,6 @@ public class CargoTicket extends BaseEntity {
     @Column(name = "senderEmail")
     private String senderEmail;
 
-    @Column(name = "senderCccd", nullable = false)
-    private String senderCccd;
-
     @Column(name = "receiverName", nullable = false)
     private String receiverName;
 
@@ -53,9 +50,6 @@ public class CargoTicket extends BaseEntity {
 
     @Column(name = "receiverEmail")
     private String receiverEmail;
-
-    @Column(name = "receiverCccd", nullable = false)
-    private String receiverCccd;
 
     @Column(name = "ticketCode", nullable = false, unique = true)
     private String ticketCode;

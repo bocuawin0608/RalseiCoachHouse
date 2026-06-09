@@ -45,50 +45,43 @@ public class AuthServiceImpl implements AuthService {
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // CUSTOMER: login (form / Google / Facebook — tất cả qua Firebase)
-    // ─────────────────────────────────────────────────────────────────────────
+    /**
+     * LOGIN cho customer: 
+     * với google/facebook (ko cần register)
+     * với phone auth (phải register mới login đc)
+     */
     @Override
     @Transactional
     public AuthResponse customerLogin(CustomerLoginRequest request) {
-        // 1. Xác thực token với Firebase Admin SDK
         FirebaseToken firebaseToken = verifyFirebaseToken(request.idToken());
-        String firebaseUid   = firebaseToken.getUid();
-        String authProvider  = detectAuthProvider(firebaseToken);
+        String firebaseUid = firebaseToken.getUid();
+        String authProvider = detectAuthProvider(firebaseToken);
 
-        // 2. Tìm account theo username
-        AccountProjection account = accountRepository
-            .findByUsernameWithRoles(request.username())
-            .orElse(null);
+        AccountProjection account = accountRepository.findByUsernameWithRoles(request.username()).orElse(null);
 
-        // 3. Social login lần đầu → tự động tạo account + customer profile
-        //    (Phone/form login KHÔNG tự tạo ở đây — họ phải đăng ký trước)
+        // Social login lần đầu -> tự động tạo tài khoản mới (aka register)
         if (account == null) {
             if ("firebase".equals(authProvider)) {
-                // Phone/form login mà không tìm thấy → chưa đăng ký
-                throw new BusinessRuleException("Tài khoản chưa tồn tại. Vui lòng đăng ký!");
+                throw new BusinessRuleException("Tài khoản chưa tồn tại. Vui lòng đăng ký hoặc đăng nhập bằng hình thức khác!");
             }
-            // Google / Facebook → auto-tạo account lần đầu
-            buildAndSaveCustomerAccount(request.username(), firebaseUid, authProvider,
-                null, null);
+            // Google hoặc Facebook
+            buildAndSaveCustomerAccount(request.username(), firebaseToken, authProvider, null, null);
+            
             account = accountRepository.findByUsernameWithRoles(request.username())
                 .orElseThrow(() -> new BusinessRuleException("Lỗi tạo tài khoản!"));
         }
 
-        // 4. Guard: Staff không được dùng endpoint này
         if ("local".equals(account.getAuthProvider())) {
             throw new BusinessRuleException("Tài khoản nội bộ không đăng nhập qua đây!");
         }
 
-        // 5. Kiểm tra active
         if (Boolean.FALSE.equals(account.getIsActive())) {
             throw new BusinessRuleException("Tài khoản đã bị khóa!");
         }
 
-        // 6. Cập nhật lastLogin và sync firebaseUid (phòng trường hợp đổi)
         accountRepository.findById(account.getAccountId()).ifPresent(acc -> {
             acc.setFirebaseUid(firebaseUid);
-            acc.setAuthProvider(authProvider); // cập nhật nếu lần đầu dùng social
+            acc.setAuthProvider(authProvider);
             acc.setLastLogin(LocalDateTime.now());
             accountRepository.save(acc);
         });
@@ -96,32 +89,27 @@ public class AuthServiceImpl implements AuthService {
         return buildResponse(account);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // CUSTOMER: đăng ký (chỉ cho phone/password form, không dùng cho social)
-    // ─────────────────────────────────────────────────────────────────────────
+    /**
+     * REGISTER cho customer: chỉ Phone Auth firebase cần
+     */
     @Override
     @Transactional
     public AuthResponse customerRegister(CustomerRegisterRequest request) {
-        // 1. Xác thực token Firebase
         FirebaseToken firebaseToken = verifyFirebaseToken(request.idToken());
-        String firebaseUid  = firebaseToken.getUid();
         String authProvider = detectAuthProvider(firebaseToken);
 
-        // 2. Kiểm tra username chưa tồn tại
         if (accountRepository.existsByUsername(request.username())) {
             throw new BusinessRuleException("Số điện thoại đã được đăng ký!");
         }
 
-        // 3. Tạo account + customer profile
         buildAndSaveCustomerAccount(
-            request.username(),
-            firebaseUid,
-            authProvider,
-            request.customerName(),
+            request.username(), 
+            firebaseToken, 
+            authProvider, 
+            request.customerName(), 
             request.email()
         );
 
-        // 4. Trả về response luôn (không cần login lại)
         AccountProjection account = accountRepository
             .findByUsernameWithRoles(request.username())
             .orElseThrow(() -> new BusinessRuleException("Lỗi tạo tài khoản!"));
@@ -129,34 +117,29 @@ public class AuthServiceImpl implements AuthService {
         return buildResponse(account);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // STAFF: đăng nhập bằng local credentials
-    // ─────────────────────────────────────────────────────────────────────────
+    /**
+     * STAFF: chỉ áp dụng local login (ko dùng firebase)
+     */
     @Override
     @Transactional
     public AuthResponse staffLogin(StaffLoginRequest request) {
-        // 1. Tìm account
         AccountProjection account = accountRepository
             .findByUsernameWithRoles(request.username())
             .orElseThrow(() -> new BusinessRuleException("Sai tên đăng nhập hoặc mật khẩu!"));
 
-        // 2. Guard: chỉ local account mới vào đây
         if (!"local".equals(account.getAuthProvider())) {
-            throw new BusinessRuleException("Tài khoản này đăng nhập qua mạng xã hội!");
+            throw new BusinessRuleException("Tài khoản này không được đăng nhập qua mạng xã hội!");
         }
 
-        // 3. Verify password (chỉ dùng bcrypt, không so sánh plaintext)
         if (account.getPasswordHash() == null ||
             !passwordEncoder.matches(request.password(), account.getPasswordHash())) {
             throw new BusinessRuleException("Sai tên đăng nhập hoặc mật khẩu!");
         }
 
-        // 4. Kiểm tra active
         if (Boolean.FALSE.equals(account.getIsActive())) {
             throw new BusinessRuleException("Tài khoản đã bị khóa!");
         }
 
-        // 5. Cập nhật lastLogin
         accountRepository.findById(account.getAccountId()).ifPresent(acc -> {
             acc.setLastLogin(LocalDateTime.now());
             accountRepository.save(acc);
@@ -164,10 +147,6 @@ public class AuthServiceImpl implements AuthService {
 
         return buildResponse(account);
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Private helpers
-    // ─────────────────────────────────────────────────────────────────────────
 
     private FirebaseToken verifyFirebaseToken(String idToken) {
         if (firebaseAuth.isEmpty()) {
@@ -183,61 +162,109 @@ public class AuthServiceImpl implements AuthService {
 
     @SuppressWarnings("unchecked")
     private String detectAuthProvider(FirebaseToken token) {
-        // Firebase token có claim "firebase.sign_in_provider"
-        Map<String, Object> firebaseClaims =
-            (Map<String, Object>) token.getClaims().get("firebase");
+        Map<String, Object> firebaseClaims = (Map<String, Object>) token.getClaims().get("firebase");
         if (firebaseClaims == null) return "firebase";
 
-        String signInProvider = (String) firebaseClaims
-            .getOrDefault("sign_in_provider", "firebase");
+        String signInProvider = (String) firebaseClaims.getOrDefault("sign_in_provider", "firebase");
 
         return switch (signInProvider) {
             case "google.com"   -> "google";
             case "facebook.com" -> "facebook";
-            default             -> "firebase"; // password, phone, etc.
+            default             -> "firebase"; 
         };
     }
 
+    /**
+     * Tạo Account + Customer theo từng loại Auth
+     */
     private void buildAndSaveCustomerAccount(
-        String username, String firebaseUid, String authProvider,
-        String customerName, String email
+        String providedUsername, FirebaseToken token, String authProvider, 
+        String providedCustomerName, String providedEmail
     ) {
-        // Tạo Account
+        String username = determineUsername(providedUsername, token, authProvider);
+
         Account account = Account.builder()
             .username(username)
-            .passwordHash(null)         // Firebase user không có local password
-            .firebaseUid(firebaseUid)
+            .passwordHash(null)
+            .firebaseUid(token.getUid())
             .authProvider(authProvider)
             .isActive(true)
             .build();
-        Account saved = accountRepository.save(account);
 
-        // Gán role Customer
-        Role customerRole = roleRepository.findByRoleName("Customer")
+        Account savedAccount = accountRepository.save(account);
+
+        Role customerRole = roleRepository.findByRoleName("CUSTOMER")
             .orElseThrow(() -> new BusinessRuleException("Chưa có role Customer trong hệ thống!"));
+
         accountRoleRepository.save(AccountRole.builder()
-            .accountId(saved.getAccountId())
+            .accountId(savedAccount.getAccountId())
             .roleId(customerRole.getRoleId())
             .build());
 
-        // Tạo Customer profile
-        // phone: nếu username là số điện thoại thì dùng luôn, social login để null
-        String phone = (username != null && username.matches("^0[0-9]{9,10}$"))
-            ? username : "unknown";  // hoặc throw nếu bắt buộc
+        String customerName = determineCustomerName(providedCustomerName, token);
+        String phone = determinePhone(providedUsername, token, authProvider);
+        String email = determineEmail(providedEmail, token);
 
         Customer customer = Customer.builder()
-            .accountId(saved.getAccountId())
-            .customerName(customerName != null ? customerName : username)
+            .accountId(savedAccount.getAccountId())
+            .customerName(customerName)
             .phone(phone)
             .email(email)
             .isActive(true)
             .build();
+
         customerRepository.save(customer);
+    }
+
+    private String determineUsername(String provided, FirebaseToken token, String authProvider) {
+        if (provided != null && !provided.isBlank()) {
+            return provided;                    // Phone Auth
+        }
+
+        if (token.getEmail() != null) {
+            return token.getEmail();            // Google & Facebook ưu tiên email
+        }
+
+        if ("facebook".equals(authProvider)) {
+            return "fb_" + token.getUid().substring(0, 8); // tự gen username nếu Facebook ko có info email đi kèm
+        }
+
+        return "user_" + token.getUid().substring(0, 8); // fallback
+    }
+
+    private String determineCustomerName(String provided, FirebaseToken token) {
+        if (provided != null && !provided.isBlank()) {
+            return provided;        
+        }
+        return Optional.ofNullable(token.getName())
+                .or(() -> Optional.ofNullable((String) token.getClaims().get("name")))
+                .orElse("User");   
+    }
+
+    private String determinePhone(String providedUsername, FirebaseToken token, String authProvider) {
+       String phoneFromClaims = (String) token.getClaims().get("phone_number");
+        if (phoneFromClaims != null) {
+            return phoneFromClaims;
+        }
+
+        if ("firebase".equals(authProvider) && providedUsername != null 
+                && providedUsername.matches("^0[0-9]{9,10}$")) {
+            return providedUsername;
+        }
+
+        return null;
+    }
+
+    private String determineEmail(String provided, FirebaseToken token) {
+        if (provided != null && !provided.isBlank()) {
+            return provided;
+        }
+        return token.getEmail();
     }
 
     private AuthResponse buildResponse(AccountProjection account) {
         List<String> roles = (account.getRoleNames() == null || account.getRoleNames().isBlank())
-            ? List.of("Customer")
+            ? List.of("CUSTOMER")
             : Arrays.asList(account.getRoleNames().split(","));
 
         return AuthResponse.builder()
@@ -245,8 +272,7 @@ public class AuthServiceImpl implements AuthService {
             .message("Thành công!")
             .username(account.getUsername())
             .roles(roles)
-            .accessToken(UUID.randomUUID().toString()) //TODO: sẽ thay bằng JWT ở đây!!!
+            .accessToken(UUID.randomUUID().toString()) // TODO: Thay bằng JWT sau
             .build();
     }
 }
-

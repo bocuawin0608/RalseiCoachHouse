@@ -7,10 +7,10 @@ import com.ralsei.dto.response.auth.AuthResponse;
 
 public interface AuthService {
 
-    // Customer: form login / Google / Facebook - tất cả đều gửi idToken
+    // Customer: form login / Google / Facebook với firebase
     AuthResponse customerLogin(CustomerLoginRequest request);
 
-    // Customer: đăng ký lần đầu qua form (phone + password qua Firebase)
+    // Customer: đăng ký lần đầu qua phone xác thực OTP với firebase
     AuthResponse customerRegister(CustomerRegisterRequest request);
 
     // Staff: đăng nhập bằng username + password nội bộ
