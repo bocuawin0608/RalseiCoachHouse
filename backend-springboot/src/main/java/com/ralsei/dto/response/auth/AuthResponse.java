@@ -10,9 +10,9 @@ import lombok.Getter;
 @Builder
 @AllArgsConstructor
 public class AuthResponse {
-    private boolean success;
-    private String message;
-    private String username;
-    private List<String> roles;  
-    private String accessToken;  
+    private final boolean success;
+    private final String message;
+    private final String username;
+    private final List<String> roles;  
+    private final String accessToken;  
 }

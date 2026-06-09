@@ -1,13 +1,13 @@
 package com.ralsei.repository;
 
-import com.ralsei.dto.projection.AccountProjection;
-import com.ralsei.model.Account;
-
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
+import com.ralsei.dto.projection.AccountProjection;
+import com.ralsei.model.Account;
 
 public interface AccountRepository extends JpaRepository<Account, Integer> {
     
@@ -18,7 +18,7 @@ public interface AccountRepository extends JpaRepository<Account, Integer> {
             a.firebaseUid  AS firebaseUid,
             a.authProvider AS authProvider,
             a.isActive     AS isActive,
-            COALESCE(STRING_AGG(r.roleName, ','), 'Customer') AS roleName
+            COALESCE(STRING_AGG(r.roleName, ','), 'CUSTOMER') AS roleName
         FROM account a
         LEFT JOIN account_role ar ON a.accountId = ar.accountId
         LEFT JOIN role r          ON ar.roleId   = r.roleId
