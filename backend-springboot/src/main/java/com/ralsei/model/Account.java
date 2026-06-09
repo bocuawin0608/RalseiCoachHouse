@@ -24,16 +24,27 @@ import lombok.Setter;
 public class Account extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int accountID;
+    @Column(name = "accountId")
+    private Integer accountId;
 
+    @Column(name = "username", nullable = false, unique = true, length = 50)
     private String username;
 
+    @Column(name = "passwordHash")
     private String passwordHash;
 
-    @Column(name = "is_active")
-    private boolean isActive;
+    @Column(name = "firebaseUid", unique = true, length = 128)
+    private String firebaseUid;
 
-    @Column(name = "last_login")
+    @Column(name = "authProvider", nullable = false, length = 20)
+    @Builder.Default
+    private String authProvider = "local";
+
+    @Column(name = "isActive", nullable = false)
+    @Builder.Default
+    private boolean isActive = true;
+
+    @Column(name = "lastLogin")
     private LocalDateTime lastLogin;
 
    

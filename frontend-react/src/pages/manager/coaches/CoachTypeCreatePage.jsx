@@ -23,7 +23,7 @@ export default function CoachTypeCreatePage() {
         let count = 0;
         matrix.forEach(row => {
             row.forEach(cell => {
-                if (cell === 'seat') count++;
+                if (cell === 'SEAT') count++;
             });
         });
         return count;
