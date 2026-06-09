@@ -12,7 +12,8 @@ const CoachStopManager = ({ onBack }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [currentStop, setCurrentStop] = useState({
         stopPointName: '',
-        address: ''
+        address: '',
+        city: ''
     });
 
     const fetchStops = async () => {
@@ -61,7 +62,7 @@ const CoachStopManager = ({ onBack }) => {
                 await axiosClient.post('/v1/coach-stops', currentStop);
             }
             setIsEditing(false);
-            setCurrentStop({ stopPointName: '', address: '' });
+            setCurrentStop({ stopPointName: '', address: '', city: '' });
             fetchStops();
         } catch (error) {
             console.error('Failed to save coach stop', error.response.data.message);
@@ -98,7 +99,7 @@ const CoachStopManager = ({ onBack }) => {
 
     const handleCancel = () => {
         setIsEditing(false);
-        setCurrentStop({ stopPointName: '', address: '' });
+        setCurrentStop({ stopPointName: '', address: '', city: '' });
     };
 
     return (
@@ -130,10 +131,24 @@ const CoachStopManager = ({ onBack }) => {
                                 value={currentStop.address || ''}
                                 onChange={handleInputChange}
                                 required
-                                placeholder="VD: 20 Phạm Hùng, Nam Từ Liêm, Hà Nội"
+                                placeholder="VD: 20 Phạm Hùng, Nam Từ Liêm"
                             />
                             <small className="form-text text-muted" style={{ display: 'block', marginTop: '4px', fontSize: '0.8rem', color: '#6c757d' }}>
-                                Định dạng: Số nhà tên đường phố, huyện, tỉnh
+                                Định dạng: Số nhà tên đường phố, huyện
+                            </small>
+                        </div>
+                        <div className="form-group">
+                            <label>City</label>
+                            <input
+                                type="text"
+                                name="city"
+                                value={currentStop.city || ''}
+                                onChange={handleInputChange}
+                                required
+                                placeholder="VD: Hà Nội"
+                            />
+                            <small className="form-text text-muted" style={{ display: 'block', marginTop: '4px', fontSize: '0.8rem', color: '#6c757d' }}>
+                                Định dạng: Tên tỉnh/thành phố trực thuộc trung ương
                             </small>
                         </div>
                         <div className="form-actions">
@@ -165,6 +180,7 @@ const CoachStopManager = ({ onBack }) => {
                                         <th>ID</th>
                                         <th>Name</th>
                                         <th>Address</th>
+                                        <th>City</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
@@ -175,6 +191,7 @@ const CoachStopManager = ({ onBack }) => {
                                             <td>{stop.stopPointId}</td>
                                             <td>{stop.stopPointName}</td>
                                             <td>{stop.address}</td>
+                                            <td>{stop.city}</td>
                                             <td>
                                                 <span className={`status-badge ${stop.active ? "active" : "inactive"}`}>
                                                     {stop.active ? "Active" : "Inactive"}
@@ -191,7 +208,7 @@ const CoachStopManager = ({ onBack }) => {
                                         </tr>
                                     )) : (
                                         <tr>
-                                            <td colSpan="5" className="text-center">No stops found.</td>
+                                            <td colSpan="6" className="text-center">No stops found.</td>
                                         </tr>
                                     )}
                                 </tbody>

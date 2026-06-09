@@ -97,6 +97,7 @@ CREATE TABLE [coach_stop] (
     [stopPointId] INT IDENTITY(1,1) PRIMARY KEY,
     [stopPointName] NVARCHAR(255) NOT NULL,
     [address] NVARCHAR(MAX) NOT NULL,
+    [city] NVARCHAR(255) NOT NULL,
     [isActive] BIT NOT NULL DEFAULT 1,
     [createdAt] DATETIME DEFAULT GETDATE(),
     [createdBy] INT NULL,

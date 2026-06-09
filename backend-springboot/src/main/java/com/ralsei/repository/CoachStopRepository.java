@@ -11,13 +11,13 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface CoachStopRepository extends JpaRepository<CoachStop, Integer> {
 
-        @Query("""
-                        SELECT c FROM CoachStop c
-                        WHERE (:isActive IS NULL OR c.isActive = :isActive)
-                          AND (:search IS NULL OR c.stopPointName LIKE %:search% OR c.address LIKE %:search%)
-                        """)
-        Page<CoachStop> searchCoachStops(
-                        @Param("search") String search,
-                        @Param("isActive") Boolean isActive,
-                        Pageable pageable);
+  @Query("""
+      SELECT c FROM CoachStop c
+      WHERE (:isActive IS NULL OR c.isActive = :isActive)
+        AND (:search IS NULL OR c.stopPointName LIKE %:search% OR c.address LIKE %:search% OR c.city LIKE %:search%)
+      """)
+  Page<CoachStop> searchCoachStops(
+      @Param("search") String search,
+      @Param("isActive") Boolean isActive,
+      Pageable pageable);
 }
