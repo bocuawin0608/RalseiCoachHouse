@@ -34,6 +34,7 @@ public class CoachStopServiceImpl implements CoachStopService {
         CoachStop coachStop = CoachStop.builder()
                 .stopPointName(request.getStopPointName())
                 .address(request.getAddress())
+                .city(request.getCity())
                 .isActive(true)
                 .build();
         CoachStop saved = coachStopRepository.save(Objects.requireNonNull(coachStop));
@@ -48,6 +49,7 @@ public class CoachStopServiceImpl implements CoachStopService {
 
         coachStop.setStopPointName(request.getStopPointName());
         coachStop.setAddress(request.getAddress());
+        coachStop.setCity(request.getCity());
 
         CoachStop updated = coachStopRepository.save(coachStop);
         return mapToResponse(updated);
@@ -124,6 +126,7 @@ public class CoachStopServiceImpl implements CoachStopService {
                 .stopPointId(coachStop.getStopPointId())
                 .stopPointName(coachStop.getStopPointName())
                 .address(coachStop.getAddress())
+                .city(coachStop.getCity())
                 .isActive(coachStop.isActive())
                 .build();
     }
