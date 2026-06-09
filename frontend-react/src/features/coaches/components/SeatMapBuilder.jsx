@@ -17,7 +17,7 @@ export default function SeatMapBuilder({ mode = 'CREATE', rows, cols, initialMat
             if (initialMatrix && initialMatrix.length > 0) {
                 setMatrix(initialMatrix);
             } else if (rows > 0 && cols > 0) {
-                const newMatrix = Array(rows).fill().map(() => Array(cols).fill("empty"));
+                const newMatrix = Array(rows).fill().map(() => Array(cols).fill("EMPTY"));
                 setMatrix(newMatrix);
             }
         };
@@ -28,7 +28,7 @@ export default function SeatMapBuilder({ mode = 'CREATE', rows, cols, initialMat
         if (mode === 'VIEW') return; 
 
         const newMatrix = [...matrix];
-        newMatrix[rowIndex][colIndex] = newMatrix[rowIndex][colIndex] === 'seat' ? 'empty' : 'seat';
+        newMatrix[rowIndex][colIndex] = newMatrix[rowIndex][colIndex] === 'SEAT' ? 'EMPTY' : 'SEAT';
         
         setMatrix(newMatrix);
         
@@ -46,7 +46,7 @@ export default function SeatMapBuilder({ mode = 'CREATE', rows, cols, initialMat
         >
             {matrix.map((row, rIndex) => 
                 row.map((cell, cIndex) => {
-                    const isSeat = cell === 'seat';
+                    const isSeat = cell === 'SEAT';
                     
                     return (
                         <div

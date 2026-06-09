@@ -3,9 +3,13 @@ package com.ralsei.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.ralsei.model.enums.CoachStatus;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -40,8 +44,9 @@ public class Coach extends BaseEntity {
     @Column(name = "licensePlate", nullable = false, unique = true)
     private String licensePlate;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private String status;
+    private CoachStatus status;
 
     @Column(name = "manufacturer")
     private String manufacturer;

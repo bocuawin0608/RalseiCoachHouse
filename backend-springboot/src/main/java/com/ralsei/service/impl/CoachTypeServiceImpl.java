@@ -126,7 +126,7 @@ public class CoachTypeServiceImpl implements CoachTypeService {
 
             for (JsonNode rowNode : matrixNode) {
                 for (JsonNode cellNode : rowNode) {
-                    if (cellNode.asText().equals("seat")) {
+                    if (cellNode.asText().equals("SEAT")) {
                         calculatedTotalSeat++;
                     }
                 }

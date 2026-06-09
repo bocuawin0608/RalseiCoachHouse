@@ -49,14 +49,36 @@ GO
 
 CREATE TABLE [account] (
     [accountId] INT IDENTITY(1,1) PRIMARY KEY,
-    [username] VARCHAR(50) NOT NULL UNIQUE, -- Số điện thoại đăng nhập
-    [passwordHash] VARCHAR(255) NOT NULL,
+    [username] VARCHAR(50) NOT NULL UNIQUE,
+    -- Staff: số điện thoại. Customer qua form: số điện thoại. 
+    -- Customer qua Google: email Google hoặc uid Firebase.
+    [passwordHash] VARCHAR(255) NULL,
+    -- Staff: bcrypt hash của mật khẩu do Admin cấp.
+    -- Customer Firebase: NULL — Firebase giữ password, BE không cần lưu.
+    [firebaseUid] VARCHAR(128) NULL UNIQUE,
+    -- Customer Firebase/Google/Facebook: uid từ Firebase.
+    -- Staff: NULL — không dùng Firebase.
+    [authProvider]  VARCHAR(20) NOT NULL DEFAULT 'local',
+    -- 'local'    → Staff, login bằng username + password
+    -- 'firebase' → Customer đăng ký bằng form (Firebase xác thực)
+    -- 'google'   → Customer đăng nhập Google
+    -- 'facebook' → Customer đăng nhập Facebook
     [isActive] BIT NOT NULL DEFAULT 1,
     [lastLogin] DATETIME NULL,
     [createdAt] DATETIME DEFAULT GETDATE(),
     [createdBy] INT NULL,
     [updatedAt] DATETIME DEFAULT GETDATE(),
-    [updatedBy] INT NULL
+    [updatedBy] INT NULL,
+
+    CONSTRAINT CK_Account_Provider CHECK (
+        [authProvider] IN ('local', 'firebase', 'google', 'facebook')
+    ),
+    CONSTRAINT CK_Account_Credentials CHECK (
+        -- Staff (local) phải có password, không cần firebaseUid
+        ([authProvider] = 'local'    AND [passwordHash] IS NOT NULL) OR
+        -- Customer (Firebase) phải có firebaseUid, không cần password
+        ([authProvider] != 'local'   AND [firebaseUid]  IS NOT NULL)
+    )
 );
 
 CREATE TABLE [role] (
@@ -90,7 +112,7 @@ CREATE TABLE [voucher] (
     CONSTRAINT CK_Voucher_MinOrder CHECK ([minOrderValue] >= 0),
     CONSTRAINT CK_Voucher_Limits CHECK ([usageLimit] >= 0 AND [usedCount] >= 0),
     CONSTRAINT CK_Voucher_Dates CHECK ([endEffectiveDate] >= [startEffectiveDate]),
-    CONSTRAINT CK_Voucher_Type CHECK ([discountType] IN ('percent', 'fixed'))
+    CONSTRAINT CK_Voucher_Type CHECK ([discountType] IN ('PERCENT', 'FIXED'))
 );
 
 CREATE TABLE [coach_stop] (
@@ -163,10 +185,9 @@ CREATE TABLE [customer] (
     [customerId] INT IDENTITY(1,1) PRIMARY KEY,
     [accountId] INT NULL UNIQUE, -- Nullable cho khách vãng lai
     [customerName] NVARCHAR(100) NOT NULL,
-    [phone] VARCHAR(20) NOT NULL,
+    [phone] VARCHAR(20) NULL,
     [email] VARCHAR(100) NULL,
     [dob] DATE NULL,
-    [cccd] VARCHAR(20) NULL,
     [address] NVARCHAR(MAX) NULL,
     [isActive] BIT NOT NULL DEFAULT 1,
     [createdAt] DATETIME DEFAULT GETDATE(),
@@ -207,7 +228,7 @@ CREATE TABLE [staff] (
     FOREIGN KEY ([accountId]) REFERENCES [account] ([accountId]),
     FOREIGN KEY ([ticketAgencyId]) REFERENCES [ticket_agency] ([ticketAgencyId]) ON DELETE SET NULL,
 
-	CONSTRAINT CK_Staff_Position CHECK ([staffPosition] IN ('Driver', 'Attendant', 'Ticket Staff', 'Manager'))
+	CONSTRAINT CK_Staff_Position CHECK ([staffPosition] IN ('DRIVER', 'ATTENDANT', 'TICKET_STAFF', 'MANAGER'))
 );
 
 CREATE TABLE [route_stop] (
@@ -268,7 +289,7 @@ CREATE TABLE [coach] (
     [coachId] INT IDENTITY(1,1) PRIMARY KEY,
     [coachTypeId] INT NOT NULL,
     [licensePlate] VARCHAR(20) NOT NULL UNIQUE,
-    [status] VARCHAR(50) NOT NULL DEFAULT 'active', 
+    [status] VARCHAR(50) NOT NULL DEFAULT 'ACTIVE', 
     [manufacturer] NVARCHAR(100) NULL,
     [year] INT NULL,
     [createdAt] DATETIME DEFAULT GETDATE(),
@@ -277,7 +298,7 @@ CREATE TABLE [coach] (
     [updatedBy] INT NULL,
     FOREIGN KEY ([coachTypeId]) REFERENCES [coach_type] ([coachTypeId]),
 
-	CONSTRAINT CK_Coach_Status CHECK ([status] IN ('active', 'maintenance', 'retired'))
+	CONSTRAINT CK_Coach_Status CHECK ([status] IN ('ACTIVE', 'MAINTENANCE', 'RETIRED'))
 );
 
 
@@ -309,9 +330,9 @@ CREATE TABLE [trip] (
     [routeId] INT NOT NULL,
     [coachId] INT NOT NULL,
     [departureTime] DATETIME NOT NULL,
-    [status] VARCHAR(50) NOT NULL DEFAULT 'scheduled', 
-    [driverId] INT NOT NULL,
-    [attendantId] INT NOT NULL,
+    [status] VARCHAR(50) NOT NULL DEFAULT 'SCHEDULED', 
+    [driverId] INT NULL,
+    [attendantId] INT NULL,
     [createdAt] DATETIME DEFAULT GETDATE(),
     [createdBy] INT NULL,
     [updatedAt] DATETIME DEFAULT GETDATE(),
@@ -321,7 +342,7 @@ CREATE TABLE [trip] (
     FOREIGN KEY ([driverId]) REFERENCES [staff] ([staffId]),
     FOREIGN KEY ([attendantId]) REFERENCES [staff] ([staffId]),
 
-	CONSTRAINT CK_Trip_Status CHECK ([status] IN ('scheduled', 'in_progress', 'cancelled', 'completed')),
+	CONSTRAINT CK_Trip_Status CHECK ([status] IN ('SCHEDULED', 'IN_PROGRESS', 'CANCELLED', 'COMPLETED')),
     CONSTRAINT CK_Trip_Personnel CHECK ([driverId] <> [attendantId])
 );
 
@@ -330,7 +351,7 @@ CREATE TABLE [trip_seat] (
     [tripId] INT NOT NULL,
     [seatId] INT NOT NULL,
     [price] DECIMAL(15,2) NOT NULL, -- Lưu giá tiền CỦA từng ghế của CHUYẾN NÀY (snapshot)
-    [status] VARCHAR(50) NOT NULL DEFAULT 'available',
+    [status] VARCHAR(50) NOT NULL DEFAULT 'AVAILABLE',
     [createdAt] DATETIME DEFAULT GETDATE(),
     [createdBy] INT NULL,
     [updatedAt] DATETIME DEFAULT GETDATE(),
@@ -339,7 +360,7 @@ CREATE TABLE [trip_seat] (
     FOREIGN KEY ([seatId]) REFERENCES [seat] ([seatId]),
 
     CONSTRAINT UQ_Trip_Seat UNIQUE ([tripId], [seatId]), -- Đảm bảo 1 chuyến không duplicate ghế
-    CONSTRAINT CK_TripSeat_Status CHECK ([status] IN ('available', 'locked', 'sold'))
+    CONSTRAINT CK_TripSeat_Status CHECK ([status] IN ('AVAILABLE', 'LOCKED', 'SOLD'))
 );
 
 -- ============================================================================
@@ -356,7 +377,7 @@ CREATE TABLE [passenger_ticket] (
     [totalPrice] DECIMAL(15, 2) NOT NULL,
     [pickupStopId] INT NOT NULL,
     [dropoffStopId] INT NOT NULL,
-    [status] VARCHAR(50) NOT NULL DEFAULT 'pending', 
+    [status] VARCHAR(50) NOT NULL DEFAULT 'PENDING', 
     [createdAt] DATETIME DEFAULT GETDATE(),
     [createdBy] INT NULL,
     [updatedAt] DATETIME DEFAULT GETDATE(),
@@ -367,7 +388,7 @@ CREATE TABLE [passenger_ticket] (
     FOREIGN KEY ([soldBy]) REFERENCES [staff] ([staffId]),
 
 	CONSTRAINT CK_PassengerTicket_Price CHECK ([totalPrice] >= 0),
-    CONSTRAINT CK_PassengerTicket_Status CHECK ([status] IN ('pending', 'confirmed', 'changed', 'cancelled')),
+    CONSTRAINT CK_PassengerTicket_Status CHECK ([status] IN ('PENDING', 'CONFIRMED', 'CHANGED', 'CANCELLED')),
     CONSTRAINT CK_PassengerTicket_Route CHECK ([pickupStopId] <> [dropoffStopId])
 );
 
@@ -378,11 +399,9 @@ CREATE TABLE [cargo_ticket] (
     [senderName] NVARCHAR(100) NOT NULL,
     [senderPhone] VARCHAR(20) NOT NULL,
     [senderEmail] VARCHAR(100) NULL,
-	[senderCccd] VARCHAR(20) NOT NULL,
     [receiverName] NVARCHAR(100) NOT NULL,
     [receiverPhone] VARCHAR(20) NOT NULL,
     [receiverEmail] VARCHAR(100) NULL,
-	[receiverCccd] VARCHAR(20) NOT NULL,
     [ticketCode] VARCHAR(50) NOT NULL UNIQUE,
     [totalPrice] DECIMAL(15, 2) NOT NULL,
     [description] NVARCHAR(MAX) NULL,
@@ -390,7 +409,7 @@ CREATE TABLE [cargo_ticket] (
     [codAmount] DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
     [pickupStopId] INT NOT NULL,
     [dropoffStopId] INT NOT NULL,
-    [status] VARCHAR(50) NOT NULL DEFAULT 'received', 
+    [status] VARCHAR(50) NOT NULL DEFAULT 'RECEIVED', 
     [soldBy] INT NOT NULL, -- luôn đc 1 nhân viên tạo đơn cho
     [loadedBy] INT NULL,
     [unloadedBy] INT NULL,
@@ -407,8 +426,8 @@ CREATE TABLE [cargo_ticket] (
     FOREIGN KEY ([deliveredBy]) REFERENCES [staff] ([staffId]),
 
 	CONSTRAINT CK_CargoTicket_Prices CHECK ([totalPrice] >= 0 AND [codAmount] >= 0),
-    CONSTRAINT CK_CargoTicket_Payer CHECK ([feePayer] IN ('sender', 'receiver')),
-    CONSTRAINT CK_CargoTicket_Status CHECK ([status] IN ('received', 'loaded', 'arrived', 'delivered', 'cancelled', 'rejected', 'abandoned')),
+    CONSTRAINT CK_CargoTicket_Payer CHECK ([feePayer] IN ('SENDER', 'RECEIVER')),
+    CONSTRAINT CK_CargoTicket_Status CHECK ([status] IN ('RECEIVED', 'LOADED', 'ARRIVED', 'DELIVERED', 'CANCELLED', 'REJECTED', 'ABANDONED')),
     CONSTRAINT CK_CargoTicket_Route CHECK ([pickupStopId] <> [dropoffStopId])
 );
 
@@ -424,10 +443,9 @@ CREATE TABLE [passenger_ticket_detail] (
     [fullName] NVARCHAR(100) NOT NULL,
     [phone] VARCHAR(20) NOT NULL,
     [dob] DATE NOT NULL,
-    [cccd] VARCHAR(20) NOT NULL,
     [email] VARCHAR(100) NULL,
     [price] DECIMAL(15, 2) NOT NULL,
-    [status] VARCHAR(50) NOT NULL DEFAULT 'pending', 
+    [status] VARCHAR(50) NOT NULL DEFAULT 'PENDING', 
     [expiredAt] DATETIME NULL,
     [createdAt] DATETIME DEFAULT GETDATE(),
     [createdBy] INT NULL,
@@ -437,7 +455,7 @@ CREATE TABLE [passenger_ticket_detail] (
     FOREIGN KEY ([tripSeatId]) REFERENCES [trip_seat] ([tripSeatId]),
 
 	CONSTRAINT CK_PassengerDetail_Price CHECK ([price] >= 0),
-    CONSTRAINT CK_PassengerDetail_Status CHECK ([status] IN ('pending', 'confirmed', 'checked_in', 'cancelled', 'expired'))
+    CONSTRAINT CK_PassengerDetail_Status CHECK ([status] IN ('PENDING', 'CONFIRMED', 'CHECKED_IN', 'CANCELLED', 'EXPIRED'))
 );
 
 CREATE TABLE [cargo_ticket_detail] (
@@ -468,7 +486,7 @@ CREATE TABLE [payment] (
     [amount] DECIMAL(15, 2) NOT NULL,
     [paymentMethod] VARCHAR(50) NOT NULL, 
     [transactionId] VARCHAR(100) NOT NULL,
-    [status] VARCHAR(50) NOT NULL DEFAULT 'pending', 
+    [status] VARCHAR(50) NOT NULL DEFAULT 'PENDING', 
     [refundAmount] DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
     [paymentTime] DATETIME NULL,
     [callbackData] NVARCHAR(MAX) NULL,
@@ -484,8 +502,8 @@ CREATE TABLE [payment] (
         ([passengerTicketId] IS NULL AND [cargoTicketId] IS NOT NULL)
     ),
 	CONSTRAINT CK_Payment_Amount CHECK ([amount] > 0 AND [refundAmount] >= 0),
-    CONSTRAINT CK_Payment_Method CHECK ([paymentMethod] IN ('vnpay', 'cash', 'bank_transfer')),
-    CONSTRAINT CK_Payment_Status CHECK ([status] IN ('pending', 'completed', 'failed')),
+    CONSTRAINT CK_Payment_Method CHECK ([paymentMethod] IN ('VNPAY', 'CASH', 'BANK_TRANSFER')),
+    CONSTRAINT CK_Payment_Status CHECK ([status] IN ('PENDING', 'COMPLETED', 'FAILED')),
 );
 
 -- ============================================================================
@@ -514,7 +532,7 @@ CREATE TABLE [refund] (
     [reason] NVARCHAR(MAX) NULL,
     [refundMethod] VARCHAR(50) NOT NULL,
     [transactionId] VARCHAR(100) NULL,
-    [status] VARCHAR(50) NOT NULL DEFAULT 'pending', 
+    [status] VARCHAR(50) NOT NULL DEFAULT 'PENDING', 
     [refundTime] DATETIME NULL,
     [callbackData] NVARCHAR(MAX) NULL,
     [createdAt] DATETIME DEFAULT GETDATE(),
@@ -524,8 +542,8 @@ CREATE TABLE [refund] (
     FOREIGN KEY ([paymentId]) REFERENCES [payment] ([paymentId]),
 
 	CONSTRAINT CK_Refund_Amount CHECK ([amount] > 0),
-    CONSTRAINT CK_Refund_Method CHECK ([refundMethod] IN ('vnpay', 'bank_transfer', 'cash')),
-    CONSTRAINT CK_Refund_Status CHECK ([status] IN ('pending', 'completed', 'failed'))
+    CONSTRAINT CK_Refund_Method CHECK ([refundMethod] IN ('VNPAY', 'BANK_TRANSFER', 'CASH')),
+    CONSTRAINT CK_Refund_Status CHECK ([status] IN ('PENDING', 'COMPLETED', 'FAILED'))
 );
 USE VeXeDB;
 GO

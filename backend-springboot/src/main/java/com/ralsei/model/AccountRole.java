@@ -2,6 +2,8 @@ package com.ralsei.model;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -20,11 +22,14 @@ import lombok.Setter;
 public class AccountRole {
 
     @Id
-    @Column(name = "accountId")
-    private int accountId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "accountRoleId")
+    private Integer accountRoleId;
 
-    @Id
-    @Column(name = "roleId")
-    private int roleId;
+    @Column(name = "accountId", nullable = false)
+    private Integer accountId;
+
+    @Column(name = "roleId", nullable = false)
+    private Integer roleId;
 
 }
