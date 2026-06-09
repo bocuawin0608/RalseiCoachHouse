@@ -1,7 +1,8 @@
 package com.ralsei.repository;
 
-import com.ralsei.dto.projection.TripDetailProjection;
-import com.ralsei.dto.projection.TripFilterProjection;
+import com.ralsei.dto.projection.trip.TripDetailProjection;
+import com.ralsei.dto.projection.trip.TripFilterProjection;
+import com.ralsei.dto.projection.trip.TripSummaryProjection;
 import com.ralsei.model.Trip;
 
 import org.springframework.data.domain.Page;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 @Repository
 public interface TripRepository extends JpaRepository<Trip, Integer> {
 
+ 
   @Query(value = """
       SELECT
           t.tripId AS tripId,
@@ -109,4 +111,27 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
       @Param("end") LocalDateTime end,
       @Param("route") String route,
       Pageable pageable);
+    
+
+    //Manager site - view all trip summaries
+    @Query(value = "SELECT " +
+            "    t.tripId, " +
+            "    r.routeName, " +
+            "    c.licensePlate, " +
+            "    ct.coachTypeName, " +
+            "    ctp.seatPrice, " +
+            "    (SELECT COUNT(*) FROM trip_seat ts WHERE ts.tripId = t.tripId AND ts.status = 'Available') AS availableSeats, " +
+            "    (SELECT COUNT(*) FROM trip_seat ts WHERE ts.tripId = t.tripId) AS totalSeats, " +
+            "    CAST(t.departureTime AS TIME) AS departureTime, " +
+            "    CAST(t.departureTime AS DATE) AS departureDate, " +
+            "    c.[status] AS coachStatus " +
+            "FROM trip t " +
+            "JOIN [route] r ON t.routeId = r.routeId " +
+            "JOIN coach c ON t.coachId = c.coachId " +
+            "JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId " +
+            "LEFT JOIN coach_type_price ctp ON ctp.coachTypeId = ct.coachTypeId", 
+            countQuery = "SELECT COUNT(*) FROM trip", 
+            nativeQuery = true)
+    Page<TripSummaryProjection> viewAllTripSummaries(Pageable pageable);
+
 }

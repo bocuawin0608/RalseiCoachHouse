@@ -1,7 +1,8 @@
 package com.ralsei.service.impl;
 
-import com.ralsei.dto.projection.TripDetailProjection;
-import com.ralsei.dto.projection.TripFilterProjection;
+import com.ralsei.dto.projection.trip.TripDetailProjection;
+import com.ralsei.dto.projection.trip.TripFilterProjection;
+import com.ralsei.dto.projection.trip.TripSummaryProjection;
 import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.repository.TripRepository;
 import com.ralsei.service.TripService;
@@ -128,5 +129,11 @@ public class TripServiceImpl implements TripService {
                 filteredPage.isLast()
         );
     }
+
+       @Override
+       public PagedResponse<TripSummaryProjection> getAllTripSummaries(int page, int size) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getAllTripSummaries'");
+       }
 
     }
