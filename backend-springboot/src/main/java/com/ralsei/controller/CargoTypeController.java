@@ -29,7 +29,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Validated
 public class CargoTypeController {
-    
+
     private final CargoTypeService cargoTypeService;
 
     @GetMapping()
@@ -39,10 +39,9 @@ public class CargoTypeController {
         return ResponseEntity.ok(cargoTypeService.getAllCargoTypes(search, pageable));
     }
 
-
     @GetMapping("/{id}")
     public ResponseEntity<CargoTypeResponse> getCargoTypeById(
-            @PathVariable @Min(value = 1, message = "ID của Loại hàng hóa phải lớn hơn 0.") Integer id) {
+            @PathVariable @Min(value = 1, message = "ID của Loại hàng hóa phải lớn hơn 0.") int id) {
         return ResponseEntity.ok(cargoTypeService.getCargoTypeById(id));
     }
 
@@ -54,7 +53,7 @@ public class CargoTypeController {
 
     @PutMapping("/{id}")
     public ResponseEntity<CargoTypeResponse> updateCargoType(
-            @PathVariable @Min(value = 1, message = "ID của Loại hàng hóa phải lớn hơn 0.") Integer id,
+            @PathVariable @Min(value = 1, message = "ID của Loại hàng hóa phải lớn hơn 0.") int id,
             @Valid @RequestBody @NonNull CargoTypeRequest request) {
         CargoTypeResponse response = cargoTypeService.updateCargoType(id, request);
         return ResponseEntity.ok(response);
@@ -62,14 +61,14 @@ public class CargoTypeController {
 
     @PatchMapping("/{id}/soft-delete")
     public ResponseEntity<Void> softDeleteCargoType(
-            @PathVariable @Min(value = 1, message = "ID của Loại hàng hóa phải lớn hơn 0.") Integer id) {
+            @PathVariable @Min(value = 1, message = "ID của Loại hàng hóa phải lớn hơn 0.") int id) {
         cargoTypeService.softDeleteCargoType(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/restore")
     public ResponseEntity<Void> restoreCargoType(
-            @PathVariable @Min(value = 1, message = "ID của Loại hàng hóa phải lớn hơn 0.") Integer id) {
+            @PathVariable @Min(value = 1, message = "ID của Loại hàng hóa phải lớn hơn 0.") int id) {
         cargoTypeService.restoreCargoType(id);
         return ResponseEntity.noContent().build();
     }
