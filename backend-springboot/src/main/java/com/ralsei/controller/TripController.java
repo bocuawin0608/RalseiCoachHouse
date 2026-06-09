@@ -1,8 +1,8 @@
 package com.ralsei.controller;
 
-import com.ralsei.dto.projection.TripDetailProjection;
-import com.ralsei.dto.projection.TripFilterProjection;
 import com.ralsei.dto.request.trip.TripSearchRequest;
+import com.ralsei.dto.projection.trip.TripDetailProjection;
+import com.ralsei.dto.projection.trip.TripFilterProjection;
 import com.ralsei.dto.request.trip.TripFilterRequest; // Import con Request mở rộng vào đây
 import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.service.TripService;
@@ -43,7 +43,6 @@ public class TripController {
                 request.getRoute(),
                 request.getPage(),
                 request.getSize());
-                
         return ResponseEntity.ok(response);
     }
 
