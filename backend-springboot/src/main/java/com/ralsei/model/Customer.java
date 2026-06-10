@@ -33,7 +33,7 @@ public class Customer extends BaseEntity {
     @Column(name = "customerName", nullable = false)
     private String customerName;
 
-    @Column(name = "phone", nullable = false)
+    @Column(name = "phone")
     private String phone;
 
     @Column(name = "email")
@@ -41,9 +41,6 @@ public class Customer extends BaseEntity {
 
     @Column(name = "dob")
     private LocalDate dob;
-
-    @Column(name = "cccd")
-    private String cccd;
 
     @Column(name = "address")
     private String address;
