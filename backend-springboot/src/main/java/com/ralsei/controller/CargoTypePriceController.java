@@ -34,7 +34,7 @@ public class CargoTypePriceController {
 
     @GetMapping()
     public ResponseEntity<Page<CargoTypePriceResponse>> getCargoTypePrices(
-            @RequestParam(required = false) Integer cargoTypeId,
+            @RequestParam(required = false) int cargoTypeId,
             @RequestParam(required = false) String search,
             @NonNull Pageable pageable) {
         return ResponseEntity.ok(cargoTypePriceService.getAllCargoTypePrices(cargoTypeId, search, pageable));
@@ -47,7 +47,8 @@ public class CargoTypePriceController {
     }
 
     @PostMapping()
-    public ResponseEntity<CargoTypePriceResponse> createCargoTypePrice(@Valid @RequestBody CargoTypePriceRequest request) {
+    public ResponseEntity<CargoTypePriceResponse> createCargoTypePrice(
+            @Valid @RequestBody CargoTypePriceRequest request) {
         CargoTypePriceResponse response = cargoTypePriceService.createCargoTypePrice(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

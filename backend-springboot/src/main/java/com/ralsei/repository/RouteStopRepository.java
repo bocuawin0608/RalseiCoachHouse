@@ -16,12 +16,12 @@ import com.ralsei.model.RouteStop;
 public interface RouteStopRepository extends JpaRepository<RouteStop, Integer> {
 
   @EntityGraph(attributePaths = { "route", "coachStop" })
-  List<RouteStop> findByRoute_RouteIdOrderByStopOrderAsc(Integer routeId);
+  List<RouteStop> findByRoute_RouteIdOrderByStopOrderAsc(int routeId);
 
   @EntityGraph(attributePaths = { "route", "coachStop" })
-  List<RouteStop> findByRoute_RouteIdAndIsActiveOrderByStopOrderAsc(Integer routeId, boolean isActive);
+  List<RouteStop> findByRoute_RouteIdAndIsActiveOrderByStopOrderAsc(int routeId, boolean isActive);
 
-  List<RouteStop> findByCoachStop_StopPointId(Integer stopPointId);
+  List<RouteStop> findByCoachStop_StopPointId(int stopPointId);
 
   @Query("""
       SELECT rs FROM RouteStop rs
@@ -31,8 +31,8 @@ public interface RouteStopRepository extends JpaRepository<RouteStop, Integer> {
       """)
   @EntityGraph(attributePaths = { "route", "coachStop" })
   Page<RouteStop> searchRouteStops(
-      @Param("routeId") Integer routeId,
-      @Param("stopPointId") Integer stopPointId,
+      @Param("routeId") int routeId,
+      @Param("stopPointId") int stopPointId,
       @Param("isActive") Boolean isActive,
       Pageable pageable);
 }
