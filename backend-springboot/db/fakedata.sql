@@ -577,7 +577,6 @@ ORDER BY t.departureTime
 USE [VeXeDB];
 SELECT * FROM trip 
 SELECT * FROM coach
-SELECT * FROM seat_layout
 SELECT * FROM trip
 SELECT t.tripId,ct.coachTypeName,r.routeName, t.departureTime, ctp.seatPrice
 FROM trip t
@@ -694,7 +693,6 @@ USE [VeXeDB];
 GO
 SELECT * FROM coach_type_price
 SELECT * FROM coach
-SELECT * FROM
 -- KHAI BÁO CÁC THAM SỐ GIẢ LẬP NHƯ TỪ FRONTEND/BACKEND TRUYỀN XUỐNG
 DECLARE @start DATETIME = '2026-06-05 00:00:00'; -- Ngày chạy xe cần tìm (Mốc dưới)
 DECLARE @end DATETIME = '2026-06-06 00:00:00';   -- Cộng thêm 1 ngày (Mốc trên độc quyền)
