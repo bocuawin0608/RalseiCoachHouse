@@ -545,5 +545,16 @@ CREATE TABLE [refund] (
     CONSTRAINT CK_Refund_Method CHECK ([refundMethod] IN ('VNPAY', 'BANK_TRANSFER', 'CASH')),
     CONSTRAINT CK_Refund_Status CHECK ([status] IN ('PENDING', 'COMPLETED', 'FAILED'))
 );
+
+CREATE TABLE [refresh_token] (
+[id] INT IDENTITY(1,1) PRIMARY KEY,
+[token] NVARCHAR(512) NOT NULL UNIQUE,
+[accountId] INT NOT NULL,
+[expiresAt] DATETIME NOT NULL,
+[isRevoked] BIT NOT NULL DEFAULT 0,
+FOREIGN KEY ([accountId]) REFERENCES [account]([accountId])
+);
+
+
 USE VeXeDB;
 GO
