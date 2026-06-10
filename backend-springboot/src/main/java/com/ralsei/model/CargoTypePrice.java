@@ -43,5 +43,4 @@ public class CargoTypePrice extends BaseEntity {
     @Column(name = "endEffectiveDate", nullable = false)
     private LocalDateTime endEffectiveDate;
 
-   
 }

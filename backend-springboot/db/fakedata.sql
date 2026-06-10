@@ -81,11 +81,11 @@ INSERT INTO [voucher] (voucherCode, discountValue, startEffectiveDate, endEffect
 ('HE2026', 10.00, '2026-01-01', '2028-12-31', 'percent', 50000.00, 200000.00, 1000), 
 ('GIAM50K', 50000.00, '2026-01-01', '2028-12-31', 'fixed', 50000.00, 0.00, 1000);
 
-INSERT INTO [coach_stop] (stopPointName, address) VALUES 
-(N'Bến Xe Nước Ngầm (Hà Nội)', N'Số 1 Ngọc Hồi, Hoàng Mai, Hà Nội'),        
-(N'Trạm Dừng Nghỉ Ninh Bình', N'Quốc Lộ 1A, TP. Ninh Bình'),               
-(N'Bến Xe Vinh (Nghệ An)', N'Số 77 Lê Lợi, TP. Vinh, Nghệ An'),            
-(N'Văn Phòng Đồng Hới (Quảng Bình)', N'Trần Hưng Đạo, Đồng Hới, Quảng Bình');
+INSERT INTO [coach_stop] (stopPointName, address, city) VALUES 
+(N'Bến Xe Nước Ngầm (Hà Nội)', N'Số 1 Ngọc Hồi, Hoàng Mai', N'Hà Nội'),        
+(N'Trạm Dừng Nghỉ Ninh Bình', N'Quốc Lộ 1A',  N'Ninh Bình'),               
+(N'Bến Xe Vinh (Nghệ An)', N'Số 77 Lê Lợi', N'Nghệ An'),            
+(N'Văn Phòng Đồng Hới (Quảng Bình)', N'Trần Hưng Đạo, Đồng Hới', N'Quảng Bình');
 
 INSERT INTO [route] (routeName, totalKilometers, totalMinutes) VALUES 
 (N'Hà Nội - Quảng Bình', 500.00, 600), 
@@ -572,7 +572,6 @@ ORDER BY t.departureTime
 USE [VeXeDB];
 SELECT * FROM trip 
 SELECT * FROM coach
-SELECT * FROM seat_layout
 SELECT * FROM trip
 SELECT t.tripId,ct.coachTypeName,r.routeName, t.departureTime, ctp.seatPrice
 FROM trip t
@@ -689,7 +688,6 @@ USE [VeXeDB];
 GO
 SELECT * FROM coach_type_price
 SELECT * FROM coach
-SELECT * FROM
 -- KHAI BÁO CÁC THAM SỐ GIẢ LẬP NHƯ TỪ FRONTEND/BACKEND TRUYỀN XUỐNG
 DECLARE @start DATETIME = '2026-06-05 00:00:00'; -- Ngày chạy xe cần tìm (Mốc dưới)
 DECLARE @end DATETIME = '2026-06-06 00:00:00';   -- Cộng thêm 1 ngày (Mốc trên độc quyền)
@@ -729,7 +727,7 @@ SELECT * FROM Coach
 SELECT * FROM coach_type
 SELECT * FROM coach_type_price
 SELECT * FROM [route]
-SELECT t.tripId, routeName, c.licensePlate, ct.coachTypeName, ctp.seatPrice, COUNT() FROM trip t 
+SELECT t.tripId, routeName, c.licensePlate, ct.coachTypeName, ctp.seatPrice, COUNT(*) FROM trip t 
 JOIN [route] r ON t.routeId = r.routeId 
 JOIN coach c ON t.coachId = c.coachId
 JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId

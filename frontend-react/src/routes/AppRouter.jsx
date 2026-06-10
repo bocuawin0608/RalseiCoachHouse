@@ -6,6 +6,7 @@ import ProtectedRoute from './ProtectedRoute';
 import { coachRoutes } from '../features/coaches';
 import { publicTripRoutes } from '../features/trips';
 import { routeRoutes } from '../features/routes';
+import { cargoRoutes } from '../features/cargo';
 
 const AppRouter = () => {
     const isAuthenticated = true; //để tạm bợ
@@ -33,6 +34,7 @@ const AppRouter = () => {
                     <Route path="dashboard" element={<div>Bảng điều khiển</div>} />
                     {coachRoutes}
                     {routeRoutes}
+                    {cargoRoutes}
                 </Route>
             </Route>
 

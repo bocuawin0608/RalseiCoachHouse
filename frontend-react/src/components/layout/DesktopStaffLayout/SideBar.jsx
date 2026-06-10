@@ -3,7 +3,8 @@ import { NavLink } from 'react-router-dom';
 import { Collapse } from 'react-bootstrap';
 import {
     BsList, BsGrid1X2, BsBusFront, BsSignpostSplit,
-    BsChevronDown, BsChevronRight, BsTags, BsGeoAlt
+    BsChevronDown, BsChevronRight, BsTags, BsGeoAlt,
+    BsBoxSeam, BsCashCoin
 } from 'react-icons/bs';
 
 export default function Sidebar() {
@@ -113,6 +114,33 @@ export default function Sidebar() {
                                 <NavLink to="/manager/coach-stops" className={navLinkClass}>
                                     <BsGeoAlt size={16} />
                                     <span style={{ fontSize: '0.9rem' }}>Điểm dừng</span>
+                                </NavLink>
+                            </div>
+                        </Collapse>
+                    </div>
+
+                    <div>
+                        <div
+                            className="d-flex align-items-center justify-content-between px-3 py-2 rounded text-light opacity-75 hover-opacity-100"
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => handleToggleMenu('cargo')}
+                        >
+                            <div className="d-flex align-items-center gap-3">
+                                <BsBoxSeam size={20} className="flex-shrink-0" />
+                                <span>Quản lý loại hàng</span>
+                            </div>
+                            {openMenu === 'cargo' ? <BsChevronDown size={14} /> : <BsChevronRight size={14} />}
+                        </div>
+
+                        <Collapse in={openMenu === 'cargo'}>
+                            <div className="ps-4 mt-1 d-flex flex-column gap-1">
+                                <NavLink to="/manager/cargo-types" className={navLinkClass}>
+                                    <BsBoxSeam size={16} />
+                                    <span style={{ fontSize: '0.9rem' }}>Loại hàng</span>
+                                </NavLink>
+                                <NavLink to="/manager/freight-rates" className={navLinkClass}>
+                                    <BsCashCoin size={16} />
+                                    <span style={{ fontSize: '0.9rem' }}>Giá cước</span>
                                 </NavLink>
                             </div>
                         </Collapse>
