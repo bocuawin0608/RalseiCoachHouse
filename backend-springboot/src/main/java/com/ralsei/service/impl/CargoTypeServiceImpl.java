@@ -10,6 +10,7 @@ import java.util.Objects;
 
 import com.ralsei.dto.request.cargotype.CargoTypeRequest;
 import com.ralsei.dto.response.cargotype.CargoTypeResponse;
+import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.exception.ResourceNotFoundException;
 import com.ralsei.model.CargoType;
 import com.ralsei.repository.CargoTypeRepository;
@@ -24,16 +25,20 @@ public class CargoTypeServiceImpl implements CargoTypeService {
     private final CargoTypeRepository cargoTypeRepository;
 
     @Override
-    public Page<CargoTypeResponse> getAllCargoTypes(String search, @NonNull Pageable pageable) {
-        Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
-                Sort.by("cargoTypeId").descending());
-        Page<CargoType> page;
-        if (search != null && !search.trim().isEmpty()) {
-            page = cargoTypeRepository.findByCargoTypeNameContainingIgnoreCase(search.trim(), sortedPageable);
-        } else {
-            page = cargoTypeRepository.findAll(sortedPageable);
-        }
-        return page.map(this::mapToResponse);
+    public PagedResponse<CargoTypeResponse> getAllCargoTypes(String search, Boolean isActive, int page, int size) {
+        Pageable sortedPageable = PageRequest.of(page, size, Sort.by("cargoTypeId").descending());
+        
+        String processedSearch = (search != null && !search.trim().isEmpty()) ? search.trim() : null;
+        Page<CargoType> pageResult = cargoTypeRepository.filterCargoTypes(processedSearch, isActive, sortedPageable);
+        
+        return new PagedResponse<>(
+                pageResult.map(this::mapToResponse).getContent(),
+                pageResult.getNumber(),
+                pageResult.getSize(),
+                pageResult.getTotalElements(),
+                pageResult.getTotalPages(),
+                pageResult.isLast()
+        );
     }
 
     @Override

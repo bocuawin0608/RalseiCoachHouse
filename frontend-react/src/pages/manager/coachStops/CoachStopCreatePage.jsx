@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BsArrowLeft, BsCheckCircle, BsExclamationTriangleFill } from 'react-icons/bs';
-import { coachStopApi } from '../../../features/routes/api/coachStopApi';
+import { coachStopApi } from '../../../features/coachStops';
 import { Alert, Button, Card, Col, Container, Form, Row } from 'react-bootstrap';
 
 export default function CoachStopCreatePage() {

@@ -1,7 +1,5 @@
 package com.ralsei.controller;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
@@ -18,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ralsei.dto.request.cargotype.CargoTypeRequest;
 import com.ralsei.dto.response.cargotype.CargoTypeResponse;
+import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.service.CargoTypeService;
 
 import jakarta.validation.Valid;
@@ -33,10 +32,12 @@ public class CargoTypeController {
     private final CargoTypeService cargoTypeService;
 
     @GetMapping()
-    public ResponseEntity<Page<CargoTypeResponse>> getCargoTypes(
+    public ResponseEntity<PagedResponse<CargoTypeResponse>> getCargoTypes(
             @RequestParam(required = false) String search,
-            @NonNull Pageable pageable) {
-        return ResponseEntity.ok(cargoTypeService.getAllCargoTypes(search, pageable));
+            @RequestParam(required = false) Boolean isActive,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(cargoTypeService.getAllCargoTypes(search, isActive, page, size));
     }
 
     @GetMapping("/{id}")
