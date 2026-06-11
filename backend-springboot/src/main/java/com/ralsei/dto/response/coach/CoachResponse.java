@@ -1,9 +1,11 @@
 package com.ralsei.dto.response.coach;
 
+import com.ralsei.model.enums.CoachStatus;
 public record CoachResponse(
+    Integer coachId,
     String licensePlate,
     String coachTypeName,
     String manufacturerAndYear,
-    Integer totalSeat,
-    String status
+    Long totalSeat,
+    CoachStatus status
 ) {}

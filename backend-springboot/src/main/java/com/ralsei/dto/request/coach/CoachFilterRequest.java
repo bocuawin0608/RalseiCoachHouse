@@ -2,10 +2,9 @@ package com.ralsei.dto.request.coach;
 
 import java.util.List;
 
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
+import com.ralsei.model.enums.CoachStatus;
+
 import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
 public record CoachFilterRequest(
@@ -13,7 +12,7 @@ public record CoachFilterRequest(
     String licensePlate,
     
     @Size(max = 10, message = "Số lượng trạng thái lọc tối đa 10.")
-    List<String> statuses,
+    List<CoachStatus> statuses,
 
     @Positive(message = "ID loại xe phải là số dương.")
     Integer coachTypeId
