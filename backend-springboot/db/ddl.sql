@@ -55,7 +55,7 @@ CREATE TABLE [account] (
     [passwordHash] VARCHAR(255) NULL,
     -- Staff: bcrypt hash của mật khẩu do Admin cấp.
     -- Customer Firebase: NULL — Firebase giữ password, BE không cần lưu.
-    [firebaseUid] VARCHAR(128) NULL UNIQUE,
+    [firebaseUid] VARCHAR(128) NULL,
     -- Customer Firebase/Google/Facebook: uid từ Firebase.
     -- Staff: NULL — không dùng Firebase.
     [authProvider]  VARCHAR(20) NOT NULL DEFAULT 'local',
@@ -80,6 +80,13 @@ CREATE TABLE [account] (
         ([authProvider] != 'local'   AND [firebaseUid]  IS NOT NULL)
     )
 );
+
+-- THIẾT KẾ FIREBASEUID MUST BE UNIQUE NẾU KO NULL: TẠO FILTERED UNIQUE INDEX 
+-- Index này đảm bảo: Nếu có giá trị thì phải Unique, nhưng cho phép vô số giá trị NULL
+CREATE UNIQUE NONCLUSTERED INDEX UQ_Account_FirebaseUid
+ON [account]([firebaseUid])
+WHERE [firebaseUid] IS NOT NULL;
+GO
 
 CREATE TABLE [role] (
     [roleId] INT IDENTITY(1,1) PRIMARY KEY,
