@@ -11,7 +11,7 @@ const INITIAL_FORM_DATA = {
 }
 
 export default function CoachStopUpdateInfoModal({ isOpen, data, onClose, onSuccess }) {
-    
+
     const [formData, setFormData] = useState(INITIAL_FORM_DATA);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState(null);
@@ -89,13 +89,13 @@ export default function CoachStopUpdateInfoModal({ isOpen, data, onClose, onSucc
 
                     <Form.Group>
                         <Form.Label className="fw-semibold text-secondary mb-1">Tên điểm dừng <span className="text-danger">*</span></Form.Label>
-                        <Form.Control 
-                            type="text" 
-                            name="stopPointName" 
-                            required 
+                        <Form.Control
+                            type="text"
+                            name="stopPointName"
+                            required
                             maxLength={100}
                             placeholder="Ví dụ: Bến xe Mỹ Đình"
-                            value={formData.stopPointName} 
+                            value={formData.stopPointName}
                             onChange={handleInputChange}
                             className="py-2"
                         />
@@ -105,13 +105,13 @@ export default function CoachStopUpdateInfoModal({ isOpen, data, onClose, onSucc
                         <Col md={12}>
                             <Form.Group>
                                 <Form.Label className="fw-semibold text-secondary mb-1">Địa chỉ chi tiết <span className="text-danger">*</span></Form.Label>
-                                <Form.Control 
-                                    type="text" 
-                                    name="address" 
-                                    required 
+                                <Form.Control
+                                    type="text"
+                                    name="address"
+                                    required
                                     maxLength={200}
                                     placeholder="Ví dụ: 20 Phạm Hùng, Mỹ Đình, Nam Từ Liêm"
-                                    value={formData.address} 
+                                    value={formData.address}
                                     onChange={handleInputChange}
                                     className="py-2"
                                 />
@@ -123,13 +123,13 @@ export default function CoachStopUpdateInfoModal({ isOpen, data, onClose, onSucc
                         <Col md={12}>
                             <Form.Group>
                                 <Form.Label className="fw-semibold text-secondary mb-1">Thành Phố / Tỉnh <span className="text-danger">*</span></Form.Label>
-                                <Form.Control 
-                                    type="text" 
-                                    name="city" 
-                                    required 
+                                <Form.Control
+                                    type="text"
+                                    name="city"
+                                    required
                                     maxLength={50}
                                     placeholder="Ví dụ: Hà Nội"
-                                    value={formData.city} 
+                                    value={formData.city}
                                     onChange={handleInputChange}
                                     className="py-2"
                                 />
@@ -141,12 +141,12 @@ export default function CoachStopUpdateInfoModal({ isOpen, data, onClose, onSucc
                         <Form.Label className="fw-semibold text-secondary">Trạng thái hoạt động</Form.Label>
                         <div className="d-flex align-items-center justify-content-between p-3 bg-light border rounded">
                             <div className="d-flex align-items-center gap-3">
-                                <Form.Check 
-                                    type="switch" 
+                                <Form.Check
+                                    type="switch"
                                     id="active-switch-update"
                                     name="active"
-                                    checked={formData.active} 
-                                    onChange={handleInputChange} 
+                                    checked={formData.active}
+                                    onChange={handleInputChange}
                                     className="fs-5 m-0"
                                 />
                                 <span style={{ fontSize: '0.95rem' }} className="fw-medium text-dark">
@@ -154,7 +154,7 @@ export default function CoachStopUpdateInfoModal({ isOpen, data, onClose, onSucc
                                 </span>
                             </div>
                             <span className={`badge px-3 py-2 ${formData.active ? 'bg-success' : 'bg-secondary'}`}>
-                                {formData.active ? 'Đang hoạt động' : 'Đã vô hiệu'}
+                                {formData.active ? 'Đang hoạt động' : 'Ngừng hoạt động'}
                             </span>
                         </div>
                     </Form.Group>

@@ -1,10 +1,10 @@
 import { BsPencilFill } from "react-icons/bs";
 import { Badge, Button, Table } from "react-bootstrap";
 
-export default function CargoTypeTable({ 
-    data, 
-    loading, 
-    onEditInfo 
+export default function CargoTypeTable({
+    data,
+    loading,
+    onEditInfo
 }) {
     if (loading) {
         return (
@@ -37,17 +37,17 @@ export default function CargoTypeTable({
                             <td className="px-3 fw-medium text-secondary">#{item.cargoTypeId}</td>
                             <td className="px-3 fw-bold text-dark">{item.cargoTypeName}</td>
                             <td className="px-3">
-                                <Badge 
-                                    bg={item.active ? 'success' : 'danger'} 
+                                <Badge
+                                    bg={item.active ? 'success' : 'secondary'}
                                     className="px-2 py-1 rounded-pill"
                                 >
-                                    {item.active ? 'Đang hoạt động' : 'Đã tắt'}
+                                    {item.active ? 'Đang hoạt động' : 'Ngừng hoạt động'}
                                 </Badge>
                             </td>
                             <td className="px-3">
                                 <div className="d-flex gap-2 justify-content-center align-items-center">
-                                    <Button 
-                                        variant="primary" 
+                                    <Button
+                                        variant="primary"
                                         className="d-flex align-items-center"
                                         onClick={() => onEditInfo(item)}
                                         title="Sửa thông tin"
