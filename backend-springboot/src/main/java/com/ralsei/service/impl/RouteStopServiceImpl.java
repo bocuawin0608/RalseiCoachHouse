@@ -92,7 +92,10 @@ public class RouteStopServiceImpl implements RouteStopService {
         public PagedResponse<RouteStopResponse> getAllRouteStops(int routeId, int stopPointId, Boolean isActive,
                         int page, int size) {
                 Pageable pageable = PageRequest.of(page, size, Sort.by("stopOrder").ascending());
-                Page<RouteStop> routeStopPage = routeStopRepository.searchRouteStops(routeId, stopPointId, isActive,
+                Page<RouteStop> routeStopPage = routeStopRepository.searchRouteStops(
+                                routeId, 
+                                stopPointId, 
+                                isActive,
                                 pageable);
 
                 List<RouteStopResponse> content = routeStopPage.getContent().stream()

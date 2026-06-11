@@ -26,8 +26,8 @@ public interface RouteStopRepository extends JpaRepository<RouteStop, Integer> {
   @Query("""
       SELECT rs FROM RouteStop rs
       WHERE (:isActive IS NULL OR rs.isActive = :isActive)
-        AND (:routeId IS NULL OR rs.route.routeId = :routeId)
-        AND (:stopPointId IS NULL OR rs.coachStop.stopPointId = :stopPointId)
+        AND (:routeId = 0 OR rs.route.routeId = :routeId)
+        AND (:stopPointId = 0 OR rs.coachStop.stopPointId = :stopPointId)
       """)
   @EntityGraph(attributePaths = { "route", "coachStop" })
   Page<RouteStop> searchRouteStops(
