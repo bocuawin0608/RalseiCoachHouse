@@ -28,7 +28,6 @@ public class CoachController {
         @Valid @ModelAttribute CoachFilterRequest filterRequest,
         Pageable pageable
     ) {
-        return null;
-        // return ResponseEntity.ok(coachService.filterCoaches(filterRequest, pageable));
+        return ResponseEntity.ok(coachService.filterCoaches(filterRequest, pageable));
     }
 }

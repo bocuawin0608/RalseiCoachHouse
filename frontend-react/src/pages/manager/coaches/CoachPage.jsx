@@ -1,25 +1,23 @@
-// src/pages/manager/coaches/CoachConfigPage.jsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-    useCoachTypes, 
-    CoachTypeTable, 
-    CoachTypeFilter, 
-    CoachTypeUpdateInfoModal, 
-    CoachTypeViewDetailModal,
-    CoachTypeUpdatePriceModal
+    useCoaches, 
+    CoachTable, 
+    CoachFilter, 
+    CoachUpdateInfoModal, 
+    CoachViewDetailModal 
 } from '../../../features/coaches';
 import Pagination from '../../../components/common/Pagination';
 import { Alert, Button, Card, Container } from 'react-bootstrap';
 import { BsExclamationTriangleFill } from 'react-icons/bs';
 
-export default function CoachConfigPage() {
+export default function CoachPage() {
     const navigate = useNavigate();
     
     const { 
-        coachTypes, loading, pageInfo, setPageInfo, refetch,
-        filters, handleFilterChange, handleReset, error
-    } = useCoachTypes();
+        coaches, loading, pageInfo, setPageInfo, refetch,
+        filters, handleFilterChange, handleReset, handleCheckboxChange, error
+    } = useCoaches();
     
     const [modalState, setModalState] = useState({ type: null, data: null });
     const closeModal = () => setModalState({ type: null, data: null });
@@ -28,19 +26,20 @@ export default function CoachConfigPage() {
         <Container fluid className="py-4" style={{ maxWidth: '1200px' }}>
             
             <div className="d-flex justify-content-between align-items-center mb-4">
-                <h2 className="m-0 fw-bold text-dark">Quản lý các loại xe</h2>
+                <h2 className="m-0 fw-bold text-dark">Quản lý danh sách xe</h2>
                 <Button 
                     variant="primary" 
                     className="fw-medium shadow-sm"
-                    onClick={() => navigate('/manager/coach-types/create')}
+                    onClick={() => navigate('/manager/coaches/create')}
                 >
-                    + Thêm loại xe mới
+                    + Thêm xe mới
                 </Button>
             </div>
 
-            <CoachTypeFilter 
+            <CoachFilter 
                 filters={filters} 
                 onFilterChange={handleFilterChange}
+                onCheckboxChange={handleCheckboxChange}
                 onReset={handleReset}
             />
 
@@ -53,13 +52,12 @@ export default function CoachConfigPage() {
 
             <Card className="shadow-sm border-0">
                 <Card.Body className="p-0"> 
-                    <CoachTypeTable 
-                        data={coachTypes} 
+                    <CoachTable 
+                        data={coaches} 
                         loading={loading}
                         onViewDetail={(row) => setModalState({ type: 'VIEW_DETAIL', data: row})}
                         onEditInfo={(row) => setModalState({ type: 'EDIT_INFO', data: row })}
-                        onEditPrice = {(row) => setModalState({ type: 'EDIT_PRICE', data: row })}
-                        onEditSeatMap={(row) => navigate(`/manager/coach-types/${row.coachTypeId}/seat-map`)} 
+                        onEditSeatMap={(row) => navigate(`/manager/coaches/${row.coachId}/seat-map`)} 
                     />
                     
                     <div className="d-flex justify-content-center py-4 bg-white border-top">
@@ -68,24 +66,17 @@ export default function CoachConfigPage() {
                 </Card.Body>
             </Card>
 
-            <CoachTypeUpdateInfoModal 
+            <CoachUpdateInfoModal 
                 isOpen={modalState.type === 'EDIT_INFO'} 
                 data={modalState.data} 
                 onClose={closeModal} 
                 onSuccess={refetch} 
             />
 
-            <CoachTypeViewDetailModal 
+            <CoachViewDetailModal 
                 isOpen={modalState.type === 'VIEW_DETAIL'} 
                 data={modalState.data} 
                 onClose={closeModal} 
-            />
-
-            <CoachTypeUpdatePriceModal
-                isOpen={modalState.type === 'EDIT_PRICE'} 
-                data={modalState.data} 
-                onClose={closeModal} 
-                onSuccess={refetch} 
             />
 
         </Container>

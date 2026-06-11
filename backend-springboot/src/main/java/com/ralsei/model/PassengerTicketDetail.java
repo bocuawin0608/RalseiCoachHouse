@@ -47,9 +47,6 @@ public class PassengerTicketDetail extends BaseEntity {
     @Column(name = "dob", nullable = false)
     private LocalDate dob;
 
-    @Column(name = "cccd", nullable = false)
-    private String cccd;
-
     @Column(name = "email")
     private String email;
 
