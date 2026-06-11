@@ -67,7 +67,8 @@ public class CoachStopServiceImpl implements CoachStopService {
     @Transactional(readOnly = true)
     public PagedResponse<CoachStopResponse> getAllCoachStops(String search, Boolean isActive, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("stopPointId").descending());
-        Page<CoachStop> coachStopPage = coachStopRepository.searchCoachStops(search.trim(), isActive, pageable);
+        String safeSearch = search != null ? search.trim() : null;
+        Page<CoachStop> coachStopPage = coachStopRepository.searchCoachStops(safeSearch, isActive, pageable);
 
         List<CoachStopResponse> content = coachStopPage.getContent().stream()
                 .map(this::mapToResponse)

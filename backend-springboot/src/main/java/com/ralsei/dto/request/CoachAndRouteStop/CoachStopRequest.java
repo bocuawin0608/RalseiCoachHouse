@@ -20,6 +20,6 @@ public class CoachStopRequest {
     private String address;
 
     @NotBlank(message = "City is required")
-    @Pattern(regexp = "^[a-zA-Z\s]+$", message = "Thành phố không hợp lệ. Vui lòng nhập theo định dạng: Chỉ chứa chữ cái và khoảng trắng.")
+    @Pattern(regexp = "^[\\p{L}\\s]+$", message = "Thành phố không hợp lệ. Vui lòng nhập theo định dạng: Chỉ chứa chữ cái và khoảng trắng.")
     private String city;
 }

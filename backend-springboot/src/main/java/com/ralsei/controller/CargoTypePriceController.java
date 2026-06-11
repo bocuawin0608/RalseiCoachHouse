@@ -34,7 +34,7 @@ public class CargoTypePriceController {
 
     @GetMapping()
     public ResponseEntity<Page<CargoTypePriceResponse>> getCargoTypePrices(
-            @RequestParam(required = false) int cargoTypeId,
+            @RequestParam(required = false, defaultValue = "0") int cargoTypeId,
             @RequestParam(required = false) String search,
             @NonNull Pageable pageable) {
         return ResponseEntity.ok(cargoTypePriceService.getAllCargoTypePrices(cargoTypeId, search, pageable));

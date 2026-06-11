@@ -1,7 +1,9 @@
 package com.ralsei.service.impl;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import java.util.Objects;
@@ -23,11 +25,13 @@ public class CargoTypeServiceImpl implements CargoTypeService {
 
     @Override
     public Page<CargoTypeResponse> getAllCargoTypes(String search, @NonNull Pageable pageable) {
+        Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
+                Sort.by("cargoTypeId").descending());
         Page<CargoType> page;
         if (search != null && !search.trim().isEmpty()) {
-            page = cargoTypeRepository.findByCargoTypeNameContainingIgnoreCase(search.trim(), pageable);
+            page = cargoTypeRepository.findByCargoTypeNameContainingIgnoreCase(search.trim(), sortedPageable);
         } else {
-            page = cargoTypeRepository.findAll(pageable);
+            page = cargoTypeRepository.findAll(sortedPageable);
         }
         return page.map(this::mapToResponse);
     }

@@ -3,7 +3,9 @@ package com.ralsei.service.impl;
 import java.util.Objects;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
@@ -27,14 +29,16 @@ public class CargoTypePriceServiceImpl implements CargoTypePriceService {
     @Override
     public Page<CargoTypePriceResponse> getAllCargoTypePrices(int cargoTypeId, String search,
             @NonNull Pageable pageable) {
+        Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
+                Sort.by("cargoTypePriceId").descending());
         Page<CargoTypePrice> page;
 
         if (cargoTypeId > 0) {
-            page = cargoTypePriceRepository.findByCargoTypeId(cargoTypeId, pageable);
+            page = cargoTypePriceRepository.findByCargoTypeId(cargoTypeId, sortedPageable);
         } else if (search != null && !search.trim().isEmpty()) {
-            page = cargoTypePriceRepository.findByUnitContainingIgnoreCase(search.trim(), pageable);
+            page = cargoTypePriceRepository.findByUnitContainingIgnoreCase(search.trim(), sortedPageable);
         } else {
-            page = cargoTypePriceRepository.findAll(pageable);
+            page = cargoTypePriceRepository.findAll(sortedPageable);
         }
 
         return page.map(this::mapToResponse);

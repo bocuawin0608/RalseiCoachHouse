@@ -39,8 +39,8 @@ public class RouteStopController {
 
     @GetMapping
     public ResponseEntity<PagedResponse<RouteStopResponse>> getAllRouteStops(
-            @RequestParam(required = false) int routeId,
-            @RequestParam(required = false) int stopPointId,
+            @RequestParam(required = false, defaultValue = "0") int routeId,
+            @RequestParam(required = false, defaultValue = "0") int stopPointId,
             @RequestParam(required = false) Boolean isActive,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {

@@ -1,8 +1,12 @@
 import { Route } from 'react-router-dom';
-import RouteManager from '../components/RouteManager';
-import CoachStopManager from '../components/CoachStopManager';
+import RoutePage from '../../../pages/manager/routes/RoutePage';
+import RouteCreatePage from '../../../pages/manager/routes/RouteCreatePage';
+import CoachStopPage from '../../../pages/manager/coachStops/CoachStopPage';
+import CoachStopCreatePage from '../../../pages/manager/coachStops/CoachStopCreatePage';
 
 export const routeRoutes = [
-    <Route key="routes" path="routes" element={<RouteManager />} />,
-    <Route key="coach-stops" path="coach-stops" element={<CoachStopManager />} />
+    <Route key="routes" path="routes" element={<RoutePage />} />,
+    <Route key="routes-create" path="routes/create" element={<RouteCreatePage />} />,
+    <Route key="coach-stops" path="coach-stops" element={<CoachStopPage />} />,
+    <Route key="coach-stops-create" path="coach-stops/create" element={<CoachStopCreatePage />} />
 ];
