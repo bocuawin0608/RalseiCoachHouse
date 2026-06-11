@@ -1,23 +1,25 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    useCoachStops,
-    CoachStopTable,
-    CoachStopFilter,
-    CoachStopUpdateInfoModal,
-    CoachStopViewDetailModal
-} from '../../../features/coachStops';
+    useCargoTypePrices,
+    CargoTypePriceTable,
+    CargoTypePriceFilter,
+    CargoTypePriceUpdateInfoModal,
+    useCargoTypes
+} from '../../../features/cargo';
 import Pagination from '../../../components/common/Pagination';
 import { Alert, Button, Card, Container } from 'react-bootstrap';
 import { BsExclamationTriangleFill } from 'react-icons/bs';
 
-export default function CoachStopPage() {
+export default function CargoTypePricePage() {
     const navigate = useNavigate();
 
     const {
-        coachStops, loading, pageInfo, setPageInfo, refetch,
+        prices, loading, pageInfo, setPageInfo, refetch,
         filters, handleFilterChange, handleReset, error
-    } = useCoachStops();
+    } = useCargoTypePrices();
+
+    const { cargoTypes } = useCargoTypes();
 
     const [modalState, setModalState] = useState({ type: null, data: null });
     const closeModal = () => setModalState({ type: null, data: null });
@@ -26,17 +28,17 @@ export default function CoachStopPage() {
         <Container fluid className="py-4" style={{ maxWidth: '1200px' }}>
 
             <div className="d-flex justify-content-between align-items-center mb-4">
-                <h2 className="m-0 fw-bold text-dark">Quản lý điểm dừng</h2>
+                <h2 className="m-0 fw-bold text-dark">Quản lý giá cước</h2>
                 <Button
                     variant="primary"
                     className="fw-medium shadow-sm"
-                    onClick={() => navigate('/manager/coach-stops/create')}
+                    onClick={() => navigate('/manager/freight-rates/create')}
                 >
-                    + Thêm điểm dừng mới
+                    + Thêm giá cước mới
                 </Button>
             </div>
 
-            <CoachStopFilter
+            <CargoTypePriceFilter
                 filters={filters}
                 onFilterChange={handleFilterChange}
                 onReset={handleReset}
@@ -51,10 +53,10 @@ export default function CoachStopPage() {
 
             <Card className="shadow-sm border-0">
                 <Card.Body className="p-0">
-                    <CoachStopTable
-                        data={coachStops}
+                    <CargoTypePriceTable
+                        data={prices}
                         loading={loading}
-                        onViewDetail={(row) => setModalState({ type: 'VIEW_DETAIL', data: row })}
+                        cargoTypes={cargoTypes}
                         onEditInfo={(row) => setModalState({ type: 'EDIT_INFO', data: row })}
                     />
 
@@ -64,17 +66,12 @@ export default function CoachStopPage() {
                 </Card.Body>
             </Card>
 
-            <CoachStopUpdateInfoModal
+            <CargoTypePriceUpdateInfoModal
                 isOpen={modalState.type === 'EDIT_INFO'}
                 data={modalState.data}
+                cargoTypes={cargoTypes}
                 onClose={closeModal}
                 onSuccess={refetch}
-            />
-
-            <CoachStopViewDetailModal
-                isOpen={modalState.type === 'VIEW_DETAIL'}
-                data={modalState.data}
-                onClose={closeModal}
             />
 
         </Container>

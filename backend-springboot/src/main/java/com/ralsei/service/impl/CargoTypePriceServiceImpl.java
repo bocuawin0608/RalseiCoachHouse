@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import com.ralsei.dto.request.cargotypeprice.CargoTypePriceRequest;
 import com.ralsei.dto.response.cargotypeprice.CargoTypePriceResponse;
+import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.exception.ResourceNotFoundException;
 import com.ralsei.model.CargoTypePrice;
 import com.ralsei.repository.CargoTypePriceRepository;
@@ -27,21 +28,26 @@ public class CargoTypePriceServiceImpl implements CargoTypePriceService {
     private final CargoTypeRepository cargoTypeRepository;
 
     @Override
-    public Page<CargoTypePriceResponse> getAllCargoTypePrices(int cargoTypeId, String search,
-            @NonNull Pageable pageable) {
-        Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
-                Sort.by("cargoTypePriceId").descending());
-        Page<CargoTypePrice> page;
+    public PagedResponse<CargoTypePriceResponse> getAllCargoTypePrices(int cargoTypeId, String search, int page, int size) {
+        Pageable sortedPageable = PageRequest.of(page, size, Sort.by("cargoTypePriceId").descending());
+        Page<CargoTypePrice> pageResult;
 
         if (cargoTypeId > 0) {
-            page = cargoTypePriceRepository.findByCargoTypeId(cargoTypeId, sortedPageable);
+            pageResult = cargoTypePriceRepository.findByCargoTypeId(cargoTypeId, sortedPageable);
         } else if (search != null && !search.trim().isEmpty()) {
-            page = cargoTypePriceRepository.findByUnitContainingIgnoreCase(search.trim(), sortedPageable);
+            pageResult = cargoTypePriceRepository.findByUnitContainingIgnoreCase(search.trim(), sortedPageable);
         } else {
-            page = cargoTypePriceRepository.findAll(sortedPageable);
+            pageResult = cargoTypePriceRepository.findAll(sortedPageable);
         }
 
-        return page.map(this::mapToResponse);
+        return new PagedResponse<>(
+                pageResult.map(this::mapToResponse).getContent(),
+                pageResult.getNumber(),
+                pageResult.getSize(),
+                pageResult.getTotalElements(),
+                pageResult.getTotalPages(),
+                pageResult.isLast()
+        );
     }
 
     @Override

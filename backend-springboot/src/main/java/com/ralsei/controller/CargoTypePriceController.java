@@ -1,7 +1,5 @@
 package com.ralsei.controller;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
@@ -18,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ralsei.dto.request.cargotypeprice.CargoTypePriceRequest;
 import com.ralsei.dto.response.cargotypeprice.CargoTypePriceResponse;
+import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.service.CargoTypePriceService;
 
 import jakarta.validation.Valid;
@@ -33,11 +32,12 @@ public class CargoTypePriceController {
     private final CargoTypePriceService cargoTypePriceService;
 
     @GetMapping()
-    public ResponseEntity<Page<CargoTypePriceResponse>> getCargoTypePrices(
+    public ResponseEntity<PagedResponse<CargoTypePriceResponse>> getCargoTypePrices(
             @RequestParam(required = false, defaultValue = "0") int cargoTypeId,
             @RequestParam(required = false) String search,
-            @NonNull Pageable pageable) {
-        return ResponseEntity.ok(cargoTypePriceService.getAllCargoTypePrices(cargoTypeId, search, pageable));
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return ResponseEntity.ok(cargoTypePriceService.getAllCargoTypePrices(cargoTypeId, search, page, size));
     }
 
     @GetMapping("/{id}")
