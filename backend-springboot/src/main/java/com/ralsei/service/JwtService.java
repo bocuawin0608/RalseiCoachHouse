@@ -5,6 +5,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import com.ralsei.model.Account;
 
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 public interface JwtService {
@@ -22,4 +23,5 @@ String extractUsername(String token);
 boolean isTokenValid(String token, UserDetails userDetails);
 // Kiểm tra token có hết hạn chưa
 boolean isTokenExpired(String token);
+List<String> extractRoles(String token);
 }
