@@ -131,14 +131,14 @@ DECLARE @emailStr VARCHAR(100);
 
 -- Bypass UNIQUE NULL Constraint in SQL Server bằng NEWID()
 -- Admin Hệ Thống
-INSERT INTO [account] (username, passwordHash, firebaseUid, isActive) OUTPUT inserted.accountId INTO @IdOutput VALUES ('0901111111', 'hash_admin', CAST(NEWID() AS VARCHAR(128)), 1);
+INSERT INTO [account] (username, passwordHash, isActive) OUTPUT inserted.accountId INTO @IdOutput VALUES ('0901111111', '$2a$10$G1TCgI4zgHQpN1hyuRMEaOOvGeoSg7MCMQDapcuLl0NsIZNn104w2', 1);
 SELECT TOP 1 @GeneratedId = Id FROM @IdOutput; DELETE FROM @IdOutput;
 INSERT INTO [account_role] (accountId, roleId) VALUES (@GeneratedId, 1);
 INSERT INTO [staff] (accountId, ticketAgencyId, staffName, phone, email, dob, cccd, staffPosition, hireDate) 
 VALUES (@GeneratedId, NULL, N'Hệ Thống Admin', '0901111111', 'admin.root@vexedb.vn', '1990-05-15', '030090000001', 'MANAGER', '2024-01-01');
 
 -- Manager Điều Hành
-INSERT INTO [account] (username, passwordHash, firebaseUid, isActive) OUTPUT inserted.accountId INTO @IdOutput VALUES ('0902222222', 'hash_manager1', CAST(NEWID() AS VARCHAR(128)), 1);
+INSERT INTO [account] (username, passwordHash, isActive) OUTPUT inserted.accountId INTO @IdOutput VALUES ('0902222222', '$2a$10$G1TCgI4zgHQpN1hyuRMEaOOvGeoSg7MCMQDapcuLl0NsIZNn104w2', 1);
 SELECT TOP 1 @GeneratedId = Id FROM @IdOutput; DELETE FROM @IdOutput;
 INSERT INTO [account_role] (accountId, roleId) VALUES (@GeneratedId, 2);
 INSERT INTO [staff] (accountId, ticketAgencyId, staffName, phone, email, dob, cccd, staffPosition, hireDate) 
@@ -153,7 +153,7 @@ BEGIN
     SET @cccdStr = '03009' + CAST((1 + (@idx % 9)) AS VARCHAR(1)) + '000' + RIGHT('00' + CAST(@idx AS VARCHAR(2)), 2);
     SET @emailStr = 'ticketstaff' + CAST(@idx AS VARCHAR(2)) + '@vexedb.vn';
 
-    INSERT INTO [account] (username, passwordHash, firebaseUid, isActive) OUTPUT inserted.accountId INTO @IdOutput VALUES (@phoneStr, 'hash_ticket', CAST(NEWID() AS VARCHAR(128)), 1);
+    INSERT INTO [account] (username, passwordHash, isActive) OUTPUT inserted.accountId INTO @IdOutput VALUES (@phoneStr, '$2a$10$G1TCgI4zgHQpN1hyuRMEaOOvGeoSg7MCMQDapcuLl0NsIZNn104w2', 1);
     SELECT TOP 1 @GeneratedId = Id FROM @IdOutput; DELETE FROM @IdOutput;
     
     DECLARE @TargetAgencyId INT;
@@ -174,7 +174,7 @@ BEGIN
     SET @cccdStr = '03007' + CAST((1 + (@idx % 8)) AS VARCHAR(1)) + '000' + RIGHT('000' + CAST(@idx AS VARCHAR(3)), 3);
     SET @emailStr = 'driver.tx' + CAST(@idx AS VARCHAR(2)) + '@vexedb.vn';
 
-    INSERT INTO [account] (username, passwordHash, firebaseUid, isActive) OUTPUT inserted.accountId INTO @IdOutput VALUES (@phoneStr, 'hash_driver', CAST(NEWID() AS VARCHAR(128)), 1);
+    INSERT INTO [account] (username, passwordHash, isActive) OUTPUT inserted.accountId INTO @IdOutput VALUES (@phoneStr, '$2a$10$G1TCgI4zgHQpN1hyuRMEaOOvGeoSg7MCMQDapcuLl0NsIZNn104w2', 1);
     SELECT TOP 1 @GeneratedId = Id FROM @IdOutput; DELETE FROM @IdOutput;
 
     INSERT INTO [account_role] (accountId, roleId) VALUES (@GeneratedId, 4);
@@ -192,7 +192,7 @@ BEGIN
     SET @cccdStr = '03008' + CAST((1 + (@idx % 8)) AS VARCHAR(1)) + '000' + RIGHT('000' + CAST(@idx AS VARCHAR(3)), 3);
     SET @emailStr = 'attendant.px' + CAST(@idx AS VARCHAR(2)) + '@vexedb.vn';
 
-    INSERT INTO [account] (username, passwordHash, firebaseUid, isActive) OUTPUT inserted.accountId INTO @IdOutput VALUES (@phoneStr, 'hash_attendant', CAST(NEWID() AS VARCHAR(128)), 1);
+    INSERT INTO [account] (username, passwordHash, isActive) OUTPUT inserted.accountId INTO @IdOutput VALUES (@phoneStr, '$2a$10$G1TCgI4zgHQpN1hyuRMEaOOvGeoSg7MCMQDapcuLl0NsIZNn104w2', 1);
     SELECT TOP 1 @GeneratedId = Id FROM @IdOutput; DELETE FROM @IdOutput;
 
     INSERT INTO [account_role] (accountId, roleId) VALUES (@GeneratedId, 4);
@@ -208,7 +208,7 @@ BEGIN
     SET @phoneStr = '0960000' + RIGHT('000' + CAST(@idx AS VARCHAR(3)), 3);
     SET @dobStr = CAST((1980 + (@idx % 25)) AS VARCHAR(4)) + '-11-' + RIGHT('0' + CAST((1 + (@idx % 25)) AS VARCHAR(2)), 2);
 
-    INSERT INTO [account] (username, passwordHash, firebaseUid, isActive) OUTPUT inserted.accountId INTO @IdOutput VALUES (@phoneStr, 'hash_customer', CAST(NEWID() AS VARCHAR(128)), 1);
+    INSERT INTO [account] (username, passwordHash, firebaseUid, isActive) OUTPUT inserted.accountId INTO @IdOutput VALUES (@phoneStr, '$2a$10$G1TCgI4zgHQpN1hyuRMEaOOvGeoSg7MCMQDapcuLl0NsIZNn104w2', CAST(NEWID() AS VARCHAR(128)), 1);
     SELECT TOP 1 @GeneratedId = Id FROM @IdOutput; DELETE FROM @IdOutput;
 
     INSERT INTO [account_role] (accountId, roleId) VALUES (@GeneratedId, 5);
