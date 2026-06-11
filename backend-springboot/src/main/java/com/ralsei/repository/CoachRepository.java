@@ -3,20 +3,12 @@ package com.ralsei.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-<<<<<<< HEAD
-import org.springframework.stereotype.Repository;
-=======
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
->>>>>>> main
 
 import com.ralsei.dto.request.coach.CoachFilterRequest;
 import com.ralsei.dto.response.coach.CoachResponse;
 import com.ralsei.model.Coach;
-<<<<<<< HEAD
-@Repository
-public interface CoachRepository extends JpaRepository<Coach, Integer> {}
-=======
 
 public interface CoachRepository extends JpaRepository<Coach, Integer> {
     
@@ -51,4 +43,3 @@ public interface CoachRepository extends JpaRepository<Coach, Integer> {
         Pageable pageable 
     );
 }
->>>>>>> main
