@@ -18,7 +18,7 @@ public interface AccountRepository extends JpaRepository<Account, Integer> {
             a.firebaseUid  AS firebaseUid,
             a.authProvider AS authProvider,
             a.isActive     AS isActive,
-            COALESCE(STRING_AGG(r.roleName, ','), 'CUSTOMER') AS roleName
+            COALESCE(STRING_AGG(r.roleName, ','), 'CUSTOMER') AS roleNames
         FROM account a
         LEFT JOIN account_role ar ON a.accountId = ar.accountId
         LEFT JOIN role r          ON ar.roleId   = r.roleId
