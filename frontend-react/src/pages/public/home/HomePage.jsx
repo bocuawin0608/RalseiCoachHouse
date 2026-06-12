@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tripService } from '../../../features/trips/api/tripServices';
 import './HomePage.css';
+import { useAuth } from '../../../features/auth';
 
 const HomePage = () => {
     const navigate = useNavigate();
+
+    const {user, logout} = useAuth();
 
     // State tìm kiếm cơ bản tại Form trang chủ
     const [departure, setDeparture] = useState('');
@@ -139,9 +142,19 @@ const HomePage = () => {
                     <button className="btn-head" onClick={() => navigate('/tin-tuc')}>Tin tức</button>
                 </div>
                 <div className="header-right">
-                    <div className="host-phone-number">SĐT: 0917051937</div>
-                    <button className="btn-head" onClick={() => navigate('/login')}>Đăng nhập</button>
-                    <button className="btn-head" onClick={() => navigate('/register')}>Đăng ký</button>
+                    {
+                        user ? (
+                            <>
+                                <div className='host-phone-number'>Xin chào {user.username}!</div>
+                                <button className="btn-head" onClick={() => {logout(); navigate('/');}}>Đăng xuất</button>
+                            </>
+                        ) : (
+                            <>
+                                <button className="btn-head" onClick={() => navigate('/login')}>Đăng nhập</button>
+                                <button className="btn-head" onClick={() => navigate('/register')}>Đăng ký</button>
+                            </>
+                        )
+                    }
                 </div>
             </header>
 

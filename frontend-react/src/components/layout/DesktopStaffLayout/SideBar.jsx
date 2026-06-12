@@ -80,11 +80,11 @@ export default function Sidebar() {
 
                         <Collapse in={openMenu === 'coaches'}>
                             <div className="ps-4 mt-1 d-flex flex-column gap-1">
-                                <NavLink to="/manager/coach-types" className={navLinkClass}>
+                                <NavLink to="/management/coach-types" className={navLinkClass}>
                                     <BsTags size={16} />
                                     <span style={{ fontSize: '0.9rem' }}>Loại xe</span>
                                 </NavLink>
-                                <NavLink to="/manager/coaches" className={navLinkClass}>
+                                <NavLink to="/management/coaches" className={navLinkClass}>
                                     <BsBusFront size={16} />
                                     <span style={{ fontSize: '0.9rem' }}>Xe</span>
                                 </NavLink>
@@ -107,11 +107,11 @@ export default function Sidebar() {
 
                         <Collapse in={openMenu === 'routes'}>
                             <div className="ps-4 mt-1 d-flex flex-column gap-1">
-                                <NavLink to="/manager/routes" className={navLinkClass}>
+                                <NavLink to="/management/routes" className={navLinkClass}>
                                     <BsSignpostSplit size={16} />
                                     <span style={{ fontSize: '0.9rem' }}>Tuyến đường</span>
                                 </NavLink>
-                                <NavLink to="/manager/coach-stops" className={navLinkClass}>
+                                <NavLink to="/management/stations" className={navLinkClass}>
                                     <BsGeoAlt size={16} />
                                     <span style={{ fontSize: '0.9rem' }}>Điểm dừng</span>
                                 </NavLink>
