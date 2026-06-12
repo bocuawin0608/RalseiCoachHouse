@@ -113,12 +113,12 @@ const AdminDashboard = () => {
                     <p className="screen-subtitle">Create and manage discount codes and promotional campaigns.</p>
                 </div>
                 <div className="dashboard-cards">
-                    <div className="card">
+                    <div className="card" onClick={() => window.location.href = '/management/vouchers'} style={{ cursor: 'pointer' }}>
                         <div className="card-icon">🎫</div>
                         <h3 className="card-title">Active Promos</h3>
                         <p className="card-desc">View currently running discounts and usage statistics.</p>
                     </div>
-                    <div className="card">
+                    <div className="card" onClick={() => window.location.href = '/management/vouchers/create'} style={{ cursor: 'pointer' }}>
                         <div className="card-icon">✨</div>
                         <h3 className="card-title">Create Campaign</h3>
                         <p className="card-desc">Generate new discount codes for holidays or special events.</p>

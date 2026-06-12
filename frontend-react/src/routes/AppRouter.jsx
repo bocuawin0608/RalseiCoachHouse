@@ -17,6 +17,7 @@ import StaffLogin from '../pages/auth/StaffLogin';
 import { publicTripRoutes } from '../features/trips';
 import { routeRoutes } from '../features/routes';
 import { coachRoutes } from '../features/coaches';
+import { voucherRoutes } from '../features/vouchers';
 
 const AppRouter = () => {
     return (
@@ -52,6 +53,7 @@ const AppRouter = () => {
                     <Route path="dashboard" element={<div>Bảng điều khiển quản trị</div>} />
                     {coachRoutes}
                     {routeRoutes}
+                    {voucherRoutes}
                     
                     {/* route dưới thì chỉ admin vào đc, manager thì ko */}
                     <Route element={<RoleGuard allowedRoles={['ADMIN']} />}>
