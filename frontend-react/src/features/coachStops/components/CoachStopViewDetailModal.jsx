@@ -109,13 +109,12 @@ export default function CoachStopViewDetailModal({ isOpen, data, onClose }) {
                                         <tbody>
                                             {detail.routes.map(route => (
                                                 <tr key={route.routeStopId} className={!route.routeActive ? 'table-danger' : ''}>
-                                                    <td className={`fw-bold ${!route.routeActive ? 'text-danger' : 'text-primary'}`}>#{route.routeId}</td>
-                                                    <td className="text-start fw-medium">
-                                                        {route.routeName}
+                                                    <td className={`fw-bold ${!route.routeActive ? 'text-danger' : 'text-primary'}`}>
+                                                        #{route.routeId}
                                                         {!route.routeActive && (
-                                                            <MdDangerous size={18} className="ms-2 text-danger" title="Ngừng HĐ" />
-                                                        )}
+                                                            <MdDangerous size={18} className="ms-2 text-danger" title="Ngừng HĐ" />)}
                                                     </td>
+                                                    <td className="text-start fw-medium"> {route.routeName}</td>
                                                     <td>{route.stopOrder}</td>
                                                     <td>{route.kilometersFromStart} km</td>
                                                     <td>{route.minutesFromStart} phút</td>

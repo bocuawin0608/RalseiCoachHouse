@@ -49,8 +49,8 @@ public class RouteController {
     }
 
     @PatchMapping("/{id}/soft-delete")
-    public ResponseEntity<Void> deleteRoute(@PathVariable int id) {
-        routeService.deleteRoute(id);
+    public ResponseEntity<Void> softDeleteRoute(@PathVariable int id) {
+        routeService.softDeleteRoute(id);
         return ResponseEntity.noContent().build();
     }
 

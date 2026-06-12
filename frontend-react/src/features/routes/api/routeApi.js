@@ -26,7 +26,7 @@ export const routeApi = {
     /**
      * @param {number|string} id
      */
-    disableRoute: (id) => { return axiosClient.patch(`${BASE}/${id}/soft-delete`); },
+    softDeleteRoute: (id) => { return axiosClient.patch(`${BASE}/${id}/soft-delete`); },
 
     /**
      * @param {number|string} id

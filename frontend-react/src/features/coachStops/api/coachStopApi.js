@@ -28,7 +28,7 @@ export const coachStopApi = {
         return response;
     },
 
-    disableCoachStop: async (id) => {
+    softDeleteCoachStop: async (id) => {
         const response = await axiosClient.patch(`/v1/coach-stops/${id}/soft-delete`);
         return response;
     },

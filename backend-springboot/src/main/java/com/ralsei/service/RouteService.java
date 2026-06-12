@@ -13,7 +13,7 @@ public interface RouteService {
 
     PagedResponse<RouteResponse> getAllRoutes(String search, Boolean isActive, int page, int size);
 
-    void deleteRoute(int id);
+    void softDeleteRoute(int id);
 
     void restoreRoute(int id);
 }
