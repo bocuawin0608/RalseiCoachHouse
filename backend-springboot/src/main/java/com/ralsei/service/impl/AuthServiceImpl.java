@@ -119,6 +119,14 @@ public class AuthServiceImpl implements AuthService {
                 .findByUsernameWithRoles(request.username())
                 .orElseThrow(() -> new BusinessRuleException("Lỗi tạo tài khoản!"));
 
+        // hỗ trợ case đăng ký phát thì đăng nhập đc luôn
+        accountRepository.findById(account.getAccountId()).ifPresent(acc -> {
+            acc.setFirebaseUid(firebaseToken.getUid());
+            acc.setAuthProvider(authProvider);
+            acc.setLastLogin(LocalDateTime.now());
+            accountRepository.save(acc);
+        });
+
         return buildResponse(account);
     }
 
