@@ -53,6 +53,7 @@ const AppRouter = () => {
                     <Route path="dashboard" element={<div>Bảng điều khiển quản trị</div>} />
                     {coachRoutes}
                     {routeRoutes}
+                    {cargoRoutes}
 
                     {/* route dưới thì chỉ admin vào đc, manager thì ko */}
                     <Route element={<RoleGuard allowedRoles={['ADMIN']} />}>

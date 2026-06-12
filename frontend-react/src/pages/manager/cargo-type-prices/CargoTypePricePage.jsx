@@ -32,7 +32,7 @@ export default function CargoTypePricePage() {
                 <Button
                     variant="primary"
                     className="fw-medium shadow-sm"
-                    onClick={() => navigate('/manager/freight-rates/create')}
+                    onClick={() => navigate('/management/freight-rates/create')}
                 >
                     + Thêm giá cước mới
                 </Button>

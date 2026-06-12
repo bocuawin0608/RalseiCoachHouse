@@ -40,8 +40,8 @@ export default function CargoTypeCreatePage() {
             };
 
             await cargoTypeApi.createCargoType(payload);
-            
-            navigate('/manager/cargo-types');
+
+            navigate('/management/cargo-types');
         } catch (error) {
             console.error("Lỗi tạo loại hàng:", error);
             setErrorMsg(error.response?.data?.message || 'Có lỗi xảy ra khi lưu vào hệ thống.');
@@ -52,13 +52,13 @@ export default function CargoTypeCreatePage() {
 
     return (
         <Container fluid className="py-4" style={{ maxWidth: '1200px' }}>
-            
-            <Button 
-                variant="link" 
-                onClick={() => navigate('/manager/cargo-types')}
+
+            <Button
+                variant="link"
+                onClick={() => navigate('/management/cargo-types')}
                 className="text-decoration-none text-secondary p-0 mb-3 d-flex align-items-center gap-2 fw-medium"
             >
-                <BsArrowLeft size={18}/> Quay lại danh sách
+                <BsArrowLeft size={18} /> Quay lại danh sách
             </Button>
 
             <h2 className="mb-4 text-dark fw-bold">Thêm mới loại hàng</h2>
@@ -72,35 +72,35 @@ export default function CargoTypeCreatePage() {
 
             <Form onSubmit={handleSubmit}>
                 <Row className="g-4 justify-content-center">
-                    
+
                     <Col lg={6} md={12}>
                         <Card className="shadow-sm border-0 h-100">
                             <Card.Header className="bg-white border-bottom pt-3 pb-2">
                                 <h5 className="fw-bold mb-0 text-dark">Thông tin cơ bản</h5>
                             </Card.Header>
                             <Card.Body className="d-flex flex-column gap-3">
-                                
+
                                 <Form.Group>
                                     <Form.Label className="fw-semibold text-secondary mb-1">Tên loại hàng <span className="text-danger">*</span></Form.Label>
-                                    <Form.Control 
-                                        type="text" 
-                                        name="cargoTypeName" 
-                                        required 
+                                    <Form.Control
+                                        type="text"
+                                        name="cargoTypeName"
+                                        required
                                         maxLength={100}
                                         placeholder="Ví dụ: Hàng dễ vỡ, Hàng cồng kềnh..."
-                                        value={formData.cargoTypeName} 
+                                        value={formData.cargoTypeName}
                                         onChange={handleInputChange}
                                         className="py-2"
                                     />
                                 </Form.Group>
 
-                                <Button 
-                                    type="submit" 
-                                    variant="primary" 
+                                <Button
+                                    type="submit"
+                                    variant="primary"
                                     disabled={isSubmitting}
                                     className="w-100 py-2 mt-3 fw-medium d-flex justify-content-center align-items-center gap-2"
                                 >
-                                    <BsCheckCircle size={18}/> 
+                                    <BsCheckCircle size={18} />
                                     {isSubmitting ? 'Đang lưu hệ thống...' : 'Lưu & Kích hoạt'}
                                 </Button>
 

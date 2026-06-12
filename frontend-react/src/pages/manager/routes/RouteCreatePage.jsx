@@ -41,7 +41,7 @@ export default function RouteCreatePage() {
 
             await routeApi.createRoute(payload);
 
-            navigate('/manager/routes');
+            navigate('/management/routes');
         } catch (error) {
             console.error("Lỗi tạo tuyến xe:", error);
             setErrorMsg(error.response?.data?.message || 'Có lỗi xảy ra khi lưu vào hệ thống.');
@@ -55,7 +55,7 @@ export default function RouteCreatePage() {
 
             <Button
                 variant="link"
-                onClick={() => navigate('/manager/routes')}
+                onClick={() => navigate('/management/routes')}
                 className="text-decoration-none text-secondary p-0 mb-3 d-flex align-items-center gap-2 fw-medium"
             >
                 <BsArrowLeft size={18} /> Quay lại danh sách
