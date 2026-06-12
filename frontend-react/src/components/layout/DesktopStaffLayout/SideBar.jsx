@@ -111,7 +111,7 @@ export default function Sidebar() {
                                     <BsSignpostSplit size={16} />
                                     <span style={{ fontSize: '0.9rem' }}>Tuyến đường</span>
                                 </NavLink>
-                                <NavLink to="/management/stations" className={navLinkClass}>
+                                <NavLink to="/management/coach-stops" className={navLinkClass}>
                                     <BsGeoAlt size={16} />
                                     <span style={{ fontSize: '0.9rem' }}>Điểm dừng</span>
                                 </NavLink>
@@ -134,11 +134,11 @@ export default function Sidebar() {
 
                         <Collapse in={openMenu === 'cargo'}>
                             <div className="ps-4 mt-1 d-flex flex-column gap-1">
-                                <NavLink to="/manager/cargo-types" className={navLinkClass}>
+                                <NavLink to="/management/cargo-types" className={navLinkClass}>
                                     <BsBoxSeam size={16} />
                                     <span style={{ fontSize: '0.9rem' }}>Loại hàng</span>
                                 </NavLink>
-                                <NavLink to="/manager/freight-rates" className={navLinkClass}>
+                                <NavLink to="/management/freight-rates" className={navLinkClass}>
                                     <BsCashCoin size={16} />
                                     <span style={{ fontSize: '0.9rem' }}>Giá cước</span>
                                 </NavLink>

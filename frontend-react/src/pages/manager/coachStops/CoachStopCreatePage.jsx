@@ -41,7 +41,7 @@ export default function CoachStopCreatePage() {
 
             await coachStopApi.createCoachStop(payload);
 
-            navigate('/manager/coach-stops');
+            navigate('/management/coach-stops');
         } catch (error) {
             console.error("Lỗi tạo điểm dừng:", error);
             setErrorMsg(error.response?.data?.message || 'Có lỗi xảy ra khi lưu vào hệ thống.');

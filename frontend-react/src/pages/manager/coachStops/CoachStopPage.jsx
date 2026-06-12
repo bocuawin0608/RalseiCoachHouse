@@ -30,7 +30,7 @@ export default function CoachStopPage() {
                 <Button
                     variant="primary"
                     className="fw-medium shadow-sm"
-                    onClick={() => navigate('/manager/coach-stops/create')}
+                    onClick={() => navigate('/management/coach-stops/create')}
                 >
                     + Thêm điểm dừng mới
                 </Button>
