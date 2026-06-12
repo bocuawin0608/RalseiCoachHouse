@@ -14,7 +14,10 @@ import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.exception.ResourceNotFoundException;
 import com.ralsei.model.CargoType;
 import com.ralsei.repository.CargoTypeRepository;
+import com.ralsei.repository.CargoTypePriceRepository;
+import com.ralsei.model.CargoTypePrice;
 import com.ralsei.service.CargoTypeService;
+import java.time.LocalDateTime;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 public class CargoTypeServiceImpl implements CargoTypeService {
 
     private final CargoTypeRepository cargoTypeRepository;
+    private final CargoTypePriceRepository cargoTypePriceRepository;
 
     @Override
     public PagedResponse<CargoTypeResponse> getAllCargoTypes(String search, Boolean isActive, int page, int size) {
@@ -83,6 +87,15 @@ public class CargoTypeServiceImpl implements CargoTypeService {
         CargoType cargoType = findCargoTypeOrThrow(id);
         cargoType.setActive(false);
         cargoTypeRepository.save(cargoType);
+        
+        java.util.List<CargoTypePrice> prices = cargoTypePriceRepository.findByCargoTypeId(id);
+        if (prices != null && !prices.isEmpty()) {
+            LocalDateTime now = LocalDateTime.now();
+            for (CargoTypePrice price : prices) {
+                price.setEndEffectiveDate(now);
+            }
+            cargoTypePriceRepository.saveAll(prices);
+        }
     }
 
     @Override

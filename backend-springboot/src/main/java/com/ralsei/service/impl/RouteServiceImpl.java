@@ -129,6 +129,7 @@ public class RouteServiceImpl implements RouteService {
         List<RouteStopResponse> stopResponses = null;
         if (route.getRouteStops() != null) {
             stopResponses = route.getRouteStops().stream()
+                    .filter(RouteStop::isActive)
                     .map(this::mapStopToResponse)
                     .collect(Collectors.toList());
         }

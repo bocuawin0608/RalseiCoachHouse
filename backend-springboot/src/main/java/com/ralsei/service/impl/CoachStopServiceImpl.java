@@ -31,10 +31,14 @@ public class CoachStopServiceImpl implements CoachStopService {
     @Override
     @Transactional
     public CoachStopResponse createCoachStop(CoachStopRequest request) {
+        if (coachStopRepository.existsByAddressIgnoreCaseAndCityIgnoreCase(request.getAddress().trim(), request.getCity().trim())) {
+            throw new IllegalArgumentException("Đã tồn tại điểm dừng với địa chỉ và thành phố này.");
+        }
+
         CoachStop coachStop = CoachStop.builder()
-                .stopPointName(request.getStopPointName())
-                .address(request.getAddress())
-                .city(request.getCity())
+                .stopPointName(request.getStopPointName().trim())
+                .address(request.getAddress().trim())
+                .city(request.getCity().trim())
                 .isActive(true)
                 .build();
         CoachStop saved = coachStopRepository.save(Objects.requireNonNull(coachStop));
@@ -47,9 +51,18 @@ public class CoachStopServiceImpl implements CoachStopService {
         CoachStop coachStop = coachStopRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("CoachStop not found with ID: " + id));
 
-        coachStop.setStopPointName(request.getStopPointName());
-        coachStop.setAddress(request.getAddress());
-        coachStop.setCity(request.getCity());
+        boolean addressChanged = !coachStop.getAddress().equalsIgnoreCase(request.getAddress().trim());
+        boolean cityChanged = !coachStop.getCity().equalsIgnoreCase(request.getCity().trim());
+
+        if (addressChanged || cityChanged) {
+            if (coachStopRepository.existsByAddressIgnoreCaseAndCityIgnoreCase(request.getAddress().trim(), request.getCity().trim())) {
+                throw new IllegalArgumentException("Đã tồn tại điểm dừng với địa chỉ và thành phố này.");
+            }
+        }
+
+        coachStop.setStopPointName(request.getStopPointName().trim());
+        coachStop.setAddress(request.getAddress().trim());
+        coachStop.setCity(request.getCity().trim());
 
         CoachStop updated = coachStopRepository.save(coachStop);
         return mapToResponse(updated);

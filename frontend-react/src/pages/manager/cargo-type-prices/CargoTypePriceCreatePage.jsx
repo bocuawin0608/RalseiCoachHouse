@@ -49,8 +49,8 @@ export default function CargoTypePriceCreatePage() {
             };
 
             await cargoTypePriceApi.createCargoTypePrice(payload);
-            
-            navigate('/manager/cargo/freight-rates');
+
+            navigate('/manager/freight-rates');
         } catch (error) {
             console.error("Lỗi tạo giá cước:", error);
             setErrorMsg(error.response?.data?.message || 'Có lỗi xảy ra khi lưu vào hệ thống.');
@@ -61,13 +61,13 @@ export default function CargoTypePriceCreatePage() {
 
     return (
         <Container fluid className="py-4" style={{ maxWidth: '800px' }}>
-            
-            <Button 
-                variant="link" 
-                onClick={() => navigate('/manager/cargo/freight-rates')}
+
+            <Button
+                variant="link"
+                onClick={() => navigate('/manager/freight-rates')}
                 className="text-decoration-none text-secondary p-0 mb-3 d-flex align-items-center gap-2 fw-medium"
             >
-                <BsArrowLeft size={18}/> Quay lại danh sách
+                <BsArrowLeft size={18} /> Quay lại danh sách
             </Button>
 
             <h2 className="mb-4 text-dark fw-bold">Thêm mới giá cước</h2>
@@ -85,20 +85,20 @@ export default function CargoTypePriceCreatePage() {
                         <h5 className="fw-bold mb-0 text-dark">Thông tin cơ bản</h5>
                     </Card.Header>
                     <Card.Body className="p-4 d-flex flex-column gap-3">
-                        
+
                         <Row className="g-3">
                             <Col md={12}>
                                 <Form.Group>
                                     <Form.Label className="fw-semibold text-secondary mb-1">Loại hàng <span className="text-danger">*</span></Form.Label>
-                                    <Form.Select 
-                                        name="cargoTypeId" 
-                                        required 
-                                        value={formData.cargoTypeId} 
+                                    <Form.Select
+                                        name="cargoTypeId"
+                                        required
+                                        value={formData.cargoTypeId}
                                         onChange={handleInputChange}
                                         className="py-2"
                                     >
                                         <option value="" disabled>-- Chọn loại hàng --</option>
-                                        {cargoTypes && cargoTypes.map(type => (
+                                        {cargoTypes && cargoTypes.filter(type => type.isActive === true || type.active === true).map(type => (
                                             <option key={type.cargoTypeId} value={type.cargoTypeId}>
                                                 {type.cargoTypeName}
                                             </option>
@@ -112,13 +112,13 @@ export default function CargoTypePriceCreatePage() {
                             <Col md={6}>
                                 <Form.Group>
                                     <Form.Label className="fw-semibold text-secondary mb-1">Đơn vị tính <span className="text-danger">*</span></Form.Label>
-                                    <Form.Control 
-                                        type="text" 
-                                        name="unit" 
-                                        required 
+                                    <Form.Control
+                                        type="text"
+                                        name="unit"
+                                        required
                                         maxLength={50}
                                         placeholder="Ví dụ: kg, m3..."
-                                        value={formData.unit} 
+                                        value={formData.unit}
                                         onChange={handleInputChange}
                                         className="py-2"
                                     />
@@ -127,21 +127,21 @@ export default function CargoTypePriceCreatePage() {
                             <Col md={6}>
                                 <Form.Group className="mb-4">
                                     <Form.Label className="fw-semibold text-secondary mb-1">Đơn giá <span className="text-danger">*</span></Form.Label>
-                                    
+
                                     <InputGroup>
-                                        <Form.Control 
-                                            type="number" 
-                                            name="pricePerUnit" 
-                                            required 
+                                        <Form.Control
+                                            type="number"
+                                            name="pricePerUnit"
+                                            required
                                             min="0" max={100000000}
                                             placeholder="Ví dụ: 50000"
-                                            value={formData.pricePerUnit} 
+                                            value={formData.pricePerUnit}
                                             onChange={handleInputChange}
                                             className="py-2"
                                         />
                                         <InputGroup.Text className="bg-light fw-medium text-secondary">VNĐ</InputGroup.Text>
                                     </InputGroup>
-                                    
+
                                     {formData.pricePerUnit !== '' && !isNaN(formData.pricePerUnit) && (
                                         <Form.Text className="text-success fw-medium mt-2 d-block">
                                             Giá trị: {formatCurrency(formData.pricePerUnit)}
@@ -155,11 +155,11 @@ export default function CargoTypePriceCreatePage() {
                             <Col md={6}>
                                 <Form.Group>
                                     <Form.Label className="fw-semibold text-secondary mb-1">Bắt đầu hiệu lực <span className="text-danger">*</span></Form.Label>
-                                    <Form.Control 
-                                        type="datetime-local" 
-                                        name="startEffectiveDate" 
-                                        required 
-                                        value={formData.startEffectiveDate} 
+                                    <Form.Control
+                                        type="datetime-local"
+                                        name="startEffectiveDate"
+                                        required
+                                        value={formData.startEffectiveDate}
                                         onChange={handleInputChange}
                                         className="py-2"
                                     />
@@ -168,11 +168,11 @@ export default function CargoTypePriceCreatePage() {
                             <Col md={6}>
                                 <Form.Group>
                                     <Form.Label className="fw-semibold text-secondary mb-1">Kết thúc hiệu lực <span className="text-danger">*</span></Form.Label>
-                                    <Form.Control 
-                                        type="datetime-local" 
-                                        name="endEffectiveDate" 
-                                        required 
-                                        value={formData.endEffectiveDate} 
+                                    <Form.Control
+                                        type="datetime-local"
+                                        name="endEffectiveDate"
+                                        required
+                                        value={formData.endEffectiveDate}
                                         onChange={handleInputChange}
                                         className="py-2"
                                     />
@@ -180,13 +180,13 @@ export default function CargoTypePriceCreatePage() {
                             </Col>
                         </Row>
 
-                        <Button 
-                            type="submit" 
-                            variant="primary" 
+                        <Button
+                            type="submit"
+                            variant="primary"
                             disabled={isSubmitting}
                             className="w-100 py-3 mt-4 fw-medium d-flex justify-content-center align-items-center gap-2 fs-5"
                         >
-                            <BsCheckCircle size={20}/> 
+                            <BsCheckCircle size={20} />
                             {isSubmitting ? 'Đang lưu hệ thống...' : 'Tạo giá cước'}
                         </Button>
 

@@ -31,7 +31,8 @@ export default function CoachStopViewDetailModal({ isOpen, data, onClose }) {
             const routeStopsRes = await axiosClient.get('/v1/route-stops', {
                 params: {
                     stopPointId: data.stopPointId,
-                    size: 100 // Fetch up to 100 routes
+                    size: 100, // Fetch up to 100 routes
+                    isActive: true
                 }
             });
 

@@ -84,7 +84,7 @@ export default function CargoTypePriceUpdateInfoModal({ isOpen, data, cargoTypes
                             className="py-2"
                         >
                             <option value="" disabled>-- Chọn Loại Hàng --</option>
-                            {cargoTypes && cargoTypes.map(type => (
+                            {cargoTypes && cargoTypes.filter(type => type.isActive === true || type.active === true || type.cargoTypeId == formData.cargoTypeId).map(type => (
                                 <option key={type.cargoTypeId} value={type.cargoTypeId}>
                                     {type.cargoTypeName}
                                 </option>
