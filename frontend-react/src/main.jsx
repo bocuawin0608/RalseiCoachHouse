@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 // import { Provider as ReduxProvider } from 'react-redux';
 // import { store } from './store';
-// import { AuthProvider } from './features/auth';
+import { AuthProvider } from './features/auth';
 // import { NotificationProvider } from './contexts/NotificationContext';
 import App from './App.jsx';
 
@@ -15,9 +15,9 @@ createRoot(document.getElementById('root')).render(
     {/* <ReduxProvider store={store}> */}
       <BrowserRouter>
         {/* <NotificationProvider> */}
-          {/* <AuthProvider> */}
+          <AuthProvider>
             <App />
-          {/* </AuthProvider> */}
+          </AuthProvider>
         {/* </NotificationProvider> */}
       </BrowserRouter>
     {/* </ReduxProvider> */}
