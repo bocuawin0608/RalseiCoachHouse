@@ -1,4 +1,4 @@
-﻿USE master;
+USE master;
 GO
 
 -- Xóa theo thứ tự từ LEVEL cao xuống LEVEL thấp để không dính Foreign Key Constraints
@@ -246,7 +246,6 @@ CREATE TABLE [route_stop] (
     [stopOrder] INT NOT NULL, -- Thứ tự điểm dừng
     [kilometersFromStart] DECIMAL(8, 2) NOT NULL,
     [minutesFromStart] INT NOT NULL,
-    [isActive] BIT NOT NULL DEFAULT 1,
     [createdAt] DATETIME DEFAULT GETDATE(),
     [createdBy] INT NULL,
     [updatedAt] DATETIME DEFAULT GETDATE(),

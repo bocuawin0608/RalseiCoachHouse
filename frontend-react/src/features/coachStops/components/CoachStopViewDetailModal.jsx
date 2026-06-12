@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { coachStopApi } from "../api/coachStopApi";
+import { routeApi } from "../../routes/api/routeApi";
 import axiosClient from "../../../api/axiosClient";
 import { Alert, Badge, Button, Col, Modal, Row, Spinner, Table } from "react-bootstrap";
 import { BsExclamationTriangleFill } from "react-icons/bs";
+import { MdDangerous } from "react-icons/md";
 
 const INITIAL_DETAIL = {
     stopPointId: '',
@@ -31,10 +33,22 @@ export default function CoachStopViewDetailModal({ isOpen, data, onClose }) {
             const routeStopsRes = await axiosClient.get('/v1/route-stops', {
                 params: {
                     stopPointId: data.stopPointId,
-                    size: 100, // Fetch up to 100 routes
-                    isActive: true
+                    size: 100 // Fetch up to 100 routes
                 }
             });
+
+            const routeStops = routeStopsRes.content || [];
+
+            const routesWithActiveStatus = await Promise.all(
+                routeStops.map(async (route) => {
+                    try {
+                        const rRes = await routeApi.getRouteDetail(route.routeId);
+                        return { ...route, routeActive: rRes.active !== undefined ? rRes.active : true };
+                    } catch (e) {
+                        return { ...route, routeActive: true };
+                    }
+                })
+            );
 
             setDetail({
                 stopPointId: stopRes.stopPointId,
@@ -42,7 +56,7 @@ export default function CoachStopViewDetailModal({ isOpen, data, onClose }) {
                 address: stopRes.address,
                 city: stopRes.city,
                 active: stopRes.active !== undefined ? stopRes.active : stopRes.isActive,
-                routes: routeStopsRes.content || []
+                routes: routesWithActiveStatus
             });
         } catch (error) {
             setError(error.response?.data?.message || "Có lỗi xảy ra khi lấy dữ liệu điểm dừng.");
@@ -94,9 +108,14 @@ export default function CoachStopViewDetailModal({ isOpen, data, onClose }) {
                                         </thead>
                                         <tbody>
                                             {detail.routes.map(route => (
-                                                <tr key={route.routeStopId}>
-                                                    <td className="fw-bold text-primary">#{route.routeId}</td>
-                                                    <td className="text-start fw-medium">{route.routeName}</td>
+                                                <tr key={route.routeStopId} className={!route.routeActive ? 'table-danger' : ''}>
+                                                    <td className={`fw-bold ${!route.routeActive ? 'text-danger' : 'text-primary'}`}>#{route.routeId}</td>
+                                                    <td className="text-start fw-medium">
+                                                        {route.routeName}
+                                                        {!route.routeActive && (
+                                                            <MdDangerous size={18} className="ms-2 text-danger" title="Ngừng HĐ" />
+                                                        )}
+                                                    </td>
                                                     <td>{route.stopOrder}</td>
                                                     <td>{route.kilometersFromStart} km</td>
                                                     <td>{route.minutesFromStart} phút</td>

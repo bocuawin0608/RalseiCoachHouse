@@ -11,8 +11,7 @@ public interface RouteStopService {
 
     RouteStopResponse getRouteStopById(int id);
 
-    PagedResponse<RouteStopResponse> getAllRouteStops(int routeId, int stopPointId, Boolean isActive, int page,
-            int size);
+    PagedResponse<RouteStopResponse> getAllRouteStops(int routeId, int stopPointId, int page, int size);
 
     void deleteRouteStop(int id);
 }

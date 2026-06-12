@@ -48,7 +48,6 @@ public class RouteStopServiceImpl implements RouteStopService {
                                 .stopOrder(request.getStopOrder())
                                 .kilometersFromStart(request.getKilometersFromStart())
                                 .minutesFromStart(request.getMinutesFromStart())
-                                .isActive(true)
                                 .build();
 
                 RouteStop saved = routeStopRepository.save(Objects.requireNonNull(routeStop));
@@ -87,15 +86,11 @@ public class RouteStopServiceImpl implements RouteStopService {
                 return mapToResponse(routeStop);
         }
 
-        @Override
-        @Transactional(readOnly = true)
-        public PagedResponse<RouteStopResponse> getAllRouteStops(int routeId, int stopPointId, Boolean isActive,
-                        int page, int size) {
+        public PagedResponse<RouteStopResponse> getAllRouteStops(int routeId, int stopPointId, int page, int size) {
                 Pageable pageable = PageRequest.of(page, size, Sort.by("stopOrder").ascending());
                 Page<RouteStop> routeStopPage = routeStopRepository.searchRouteStops(
-                                routeId, 
-                                stopPointId, 
-                                isActive,
+                                routeId,
+                                stopPointId,
                                 pageable);
 
                 List<RouteStopResponse> content = routeStopPage.getContent().stream()
@@ -117,8 +112,7 @@ public class RouteStopServiceImpl implements RouteStopService {
                 RouteStop routeStop = routeStopRepository.findById(id)
                                 .orElseThrow(() -> new ResourceNotFoundException("RouteStop not found with ID: " + id));
 
-                routeStop.setActive(false);
-                routeStopRepository.save(routeStop);
+                routeStopRepository.delete(routeStop);
         }
 
         private RouteStopResponse mapToResponse(RouteStop rs) {
@@ -135,7 +129,6 @@ public class RouteStopServiceImpl implements RouteStopService {
                                 .stopOrder(rs.getStopOrder())
                                 .kilometersFromStart(rs.getKilometersFromStart())
                                 .minutesFromStart(rs.getMinutesFromStart())
-                                .isActive(rs.isActive())
                                 .build();
         }
 }
