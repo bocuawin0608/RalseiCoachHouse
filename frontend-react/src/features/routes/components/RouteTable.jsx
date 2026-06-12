@@ -72,7 +72,7 @@ export default function RouteTable({
                                     variant="primary"
                                     className="d-flex align-items-center gap-1"
                                     onClick={() => onManageStops(item)}
-                                    title="Quản lý trạm dừng"
+                                    title="Thêm điểm dừng"
                                 >
                                     <BsSignpostSplit size={16} />
                                     <span className="small fw-medium"></span>

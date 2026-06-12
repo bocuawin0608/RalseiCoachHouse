@@ -56,7 +56,7 @@ export default function RoutePage() {
                         loading={loading}
                         onViewDetail={(row) => setModalState({ type: 'VIEW_DETAIL', data: row })}
                         onEditInfo={(row) => setModalState({ type: 'EDIT_INFO', data: row })}
-                        onManageStops={(row) => navigate(`/manager/routes/${row.routeId}/stops`)}
+                        onManageStops={(row) => navigate(`/management/routes/${row.routeId}/add-route-stops`)}
                     />
 
                     <div className="d-flex justify-content-center py-4 bg-white border-top">
