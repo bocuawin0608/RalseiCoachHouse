@@ -105,13 +105,6 @@ public class CoachStopServiceImpl implements CoachStopService {
         // Soft delete the coach stop
         coachStop.setActive(false);
         coachStopRepository.save(coachStop);
-
-        // Cascade soft delete to associated coach stops
-        List<RouteStop> routeStops = routeStopRepository.findByCoachStop_StopPointId(id);
-        for (RouteStop routeStop : routeStops) {
-            routeStop.setActive(false);
-            routeStopRepository.save(routeStop);
-        }
     }
 
     @Override
@@ -123,13 +116,6 @@ public class CoachStopServiceImpl implements CoachStopService {
         // Restore the coachStop itself
         coachStop.setActive(true);
         coachStopRepository.save(coachStop);
-
-        // Cascade restore to associated route stops
-        List<RouteStop> routeStops = routeStopRepository.findByCoachStop_StopPointId(id);
-        for (RouteStop routeStop : routeStops) {
-            routeStop.setActive(true);
-            routeStopRepository.save(routeStop);
-        }
     }
 
     private CoachStopResponse mapToResponse(CoachStop coachStop) {

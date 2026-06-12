@@ -16,7 +16,6 @@ public class CoachStopRequest {
     private String stopPointName;
 
     @NotBlank(message = "Address is required")
-    @Pattern(regexp = "^[^,]+,\\s*[^,]+$", message = "Địa chỉ không hợp lệ. Vui lòng nhập theo định dạng: Số nhà tên đường phố, huyện, tỉnh.")
     private String address;
 
     @NotBlank(message = "City is required")

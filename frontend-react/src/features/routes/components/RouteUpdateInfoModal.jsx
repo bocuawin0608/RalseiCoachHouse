@@ -23,15 +23,15 @@ export default function RouteUpdateInfoModal({ isOpen, data, onClose, onSuccess 
                     active: data.active !== undefined ? data.active : data.isActive
                 });
                 setError(null);
-            }    
+            }
         }
         load();
     }, [data, isOpen]);
 
     const hasAnyChange = data && (
-        data.routeName !== formData.routeName || 
-        data.totalKilometers !== formData.totalKilometers || 
-        data.totalMinutes !== formData.totalMinutes || 
+        data.routeName !== formData.routeName ||
+        data.totalKilometers !== formData.totalKilometers ||
+        data.totalMinutes !== formData.totalMinutes ||
         (data.active !== undefined ? data.active : data.isActive) !== formData.active
     );
 
@@ -47,7 +47,7 @@ export default function RouteUpdateInfoModal({ isOpen, data, onClose, onSuccess 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if(!hasAnyChange) {
+        if (!hasAnyChange) {
             onClose();
             return;
         }
@@ -62,11 +62,8 @@ export default function RouteUpdateInfoModal({ isOpen, data, onClose, onSuccess 
                 totalMinutes: formData.totalMinutes,
                 active: formData.active
             });
-            
-            // Wait, does updateRouteInfo handle active status?
-            // In RouteManager, doing PUT /v1/routes/:id passes the `active` status along with everything else.
-            // But just in case backend expects separate calls for disable/restore, we check if active status changed:
-            const originalActive = data.active !== undefined ? data.active : data.isActive;
+
+            const originalActive = data.active !== undefined ? data.active : data.active;
             if (originalActive !== formData.active) {
                 if (formData.active) {
                     await routeApi.restoreRoute(data.routeId);
@@ -74,11 +71,11 @@ export default function RouteUpdateInfoModal({ isOpen, data, onClose, onSuccess 
                     await routeApi.disableRoute(data.routeId);
                 }
             }
-            
-            onSuccess(); 
-            onClose();   
+
+            onSuccess();
+            onClose();
         } catch (error) {
-            setError(error.response?.data?.message || "Có lỗi xảy ra khi cập nhật." );
+            setError(error.response?.data?.message || "Có lỗi xảy ra khi cập nhật.");
         } finally {
             setIsSubmitting(false);
         }
@@ -96,16 +93,16 @@ export default function RouteUpdateInfoModal({ isOpen, data, onClose, onSuccess 
 
             <Modal.Body className="px-4 pb-0">
                 <Form id="update-route-form" onSubmit={handleSubmit}>
-                    
+
                     <Form.Group className="mb-3">
                         <Form.Label className="fw-semibold text-secondary">
                             Tên tuyến đường <span className="text-danger">*</span>
                         </Form.Label>
-                        <Form.Control 
+                        <Form.Control
                             type="text"
                             name="routeName"
-                            value={formData.routeName} 
-                            onChange={handleInputChange} 
+                            value={formData.routeName}
+                            onChange={handleInputChange}
                             required maxLength={100}
                             className="py-2"
                         />
@@ -116,12 +113,12 @@ export default function RouteUpdateInfoModal({ isOpen, data, onClose, onSuccess 
                             <Form.Label className="fw-semibold text-secondary">
                                 Khoảng cách (km) <span className="text-danger">*</span>
                             </Form.Label>
-                            <Form.Control 
+                            <Form.Control
                                 type="number"
                                 name="totalKilometers"
                                 step="0.1" min="0"
-                                value={formData.totalKilometers} 
-                                onChange={handleInputChange} 
+                                value={formData.totalKilometers}
+                                onChange={handleInputChange}
                                 required
                                 className="py-2"
                             />
@@ -131,12 +128,12 @@ export default function RouteUpdateInfoModal({ isOpen, data, onClose, onSuccess 
                             <Form.Label className="fw-semibold text-secondary">
                                 Thời gian (phút) <span className="text-danger">*</span>
                             </Form.Label>
-                            <Form.Control 
+                            <Form.Control
                                 type="number"
                                 name="totalMinutes"
                                 min="0"
-                                value={formData.totalMinutes} 
-                                onChange={handleInputChange} 
+                                value={formData.totalMinutes}
+                                onChange={handleInputChange}
                                 required
                                 className="py-2"
                             />
@@ -147,12 +144,12 @@ export default function RouteUpdateInfoModal({ isOpen, data, onClose, onSuccess 
                         <Form.Label className="fw-semibold text-secondary">Trạng thái hệ thống</Form.Label>
                         <div className="d-flex align-items-center justify-content-between p-3 bg-light border rounded">
                             <div className="d-flex align-items-center gap-3">
-                                <Form.Check 
-                                    type="switch" 
+                                <Form.Check
+                                    type="switch"
                                     id="status-switch"
                                     name="active"
-                                    checked={formData.active} 
-                                    onChange={handleInputChange} 
+                                    checked={formData.active}
+                                    onChange={handleInputChange}
                                     className="fs-5 m-0"
                                 />
                                 <span style={{ fontSize: '0.95rem' }} className="fw-medium text-dark">
@@ -164,7 +161,7 @@ export default function RouteUpdateInfoModal({ isOpen, data, onClose, onSuccess 
                             </span>
                         </div>
                     </Form.Group>
-                    
+
                     {error && <Alert variant='danger' className="mb-3 py-2 px-3 border-0 d-flex align-items-center gap-2">
                         <BsExclamationTriangleFill />
                         <span>{error}</span>

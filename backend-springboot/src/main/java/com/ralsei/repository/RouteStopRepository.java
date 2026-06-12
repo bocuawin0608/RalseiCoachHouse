@@ -18,21 +18,16 @@ public interface RouteStopRepository extends JpaRepository<RouteStop, Integer> {
   @EntityGraph(attributePaths = { "route", "coachStop" })
   List<RouteStop> findByRoute_RouteIdOrderByStopOrderAsc(int routeId);
 
-  @EntityGraph(attributePaths = { "route", "coachStop" })
-  List<RouteStop> findByRoute_RouteIdAndIsActiveOrderByStopOrderAsc(int routeId, boolean isActive);
-
   List<RouteStop> findByCoachStop_StopPointId(int stopPointId);
 
   @Query("""
       SELECT rs FROM RouteStop rs
-      WHERE (:isActive IS NULL OR rs.isActive = :isActive)
-        AND (:routeId = 0 OR rs.route.routeId = :routeId)
+      WHERE (:routeId = 0 OR rs.route.routeId = :routeId)
         AND (:stopPointId = 0 OR rs.coachStop.stopPointId = :stopPointId)
       """)
   @EntityGraph(attributePaths = { "route", "coachStop" })
   Page<RouteStop> searchRouteStops(
       @Param("routeId") int routeId,
       @Param("stopPointId") int stopPointId,
-      @Param("isActive") Boolean isActive,
       Pageable pageable);
 }

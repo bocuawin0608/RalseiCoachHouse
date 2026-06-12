@@ -11,7 +11,7 @@ import com.ralsei.repository.RouteStopRepository;
 import com.ralsei.service.RouteService;
 import com.ralsei.exception.ResourceNotFoundException;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -38,7 +38,7 @@ public class RouteServiceImpl implements RouteService {
                 .totalKilometers(request.getTotalKilometers())
                 .totalMinutes(request.getTotalMinutes())
                 .isActive(true)
-                .routeStops(new ArrayList<>())
+                .routeStops(new HashSet<>())
                 .build();
         Route saved = routeRepository.save(Objects.requireNonNull(route));
         return mapToResponse(saved);
@@ -95,13 +95,6 @@ public class RouteServiceImpl implements RouteService {
         // Soft delete the route itself
         route.setActive(false);
         routeRepository.save(route);
-
-        // Cascade soft delete to associated route stops
-        List<RouteStop> routeStops = routeStopRepository.findByRoute_RouteIdOrderByStopOrderAsc(id);
-        for (RouteStop routeStop : routeStops) {
-            routeStop.setActive(false);
-            routeStopRepository.save(routeStop);
-        }
     }
 
     @Override
@@ -113,13 +106,6 @@ public class RouteServiceImpl implements RouteService {
         // Restore the route itself
         route.setActive(true);
         routeRepository.save(route);
-
-        // Cascade restore to associated route stops
-        List<RouteStop> routeStops = routeStopRepository.findByRoute_RouteIdOrderByStopOrderAsc(id);
-        for (RouteStop routeStop : routeStops) {
-            routeStop.setActive(true);
-            routeStopRepository.save(routeStop);
-        }
     }
 
     private RouteResponse mapToResponse(Route route) {
@@ -129,7 +115,6 @@ public class RouteServiceImpl implements RouteService {
         List<RouteStopResponse> stopResponses = null;
         if (route.getRouteStops() != null) {
             stopResponses = route.getRouteStops().stream()
-                    .filter(RouteStop::isActive)
                     .map(this::mapStopToResponse)
                     .collect(Collectors.toList());
         }
@@ -161,7 +146,6 @@ public class RouteServiceImpl implements RouteService {
                 .stopOrder(rs.getStopOrder())
                 .kilometersFromStart(rs.getKilometersFromStart())
                 .minutesFromStart(rs.getMinutesFromStart())
-                .isActive(rs.isActive())
                 .build();
     }
 }

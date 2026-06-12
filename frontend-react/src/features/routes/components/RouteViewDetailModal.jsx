@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from "react"
 import { routeApi } from "../api/routeApi";
+import { coachStopApi } from "../../coachStops/api/coachStopApi";
 import { Alert, Badge, Button, Col, Modal, Row, Spinner, Table } from "react-bootstrap";
 import { BsExclamationTriangleFill } from "react-icons/bs";
+import { MdDangerous } from "react-icons/md";
 
 const INITIAL_DETAIL = {
     routeId: '',
@@ -12,7 +14,7 @@ const INITIAL_DETAIL = {
     routeStops: []
 }
 
-export default function RouteViewDetailModal({isOpen, data, onClose}) {
+export default function RouteViewDetailModal({ isOpen, data, onClose }) {
     const [detail, setDetail] = useState(INITIAL_DETAIL);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -21,18 +23,32 @@ export default function RouteViewDetailModal({isOpen, data, onClose}) {
         setLoading(true);
         setError(null);
         try {
-            if(isOpen && data) {
+            if (isOpen && data) {
                 const res = await routeApi.getRouteDetail(data.routeId)
+                const routeStops = res.routeStops || [];
+
+                const stopsWithActiveStatus = await Promise.all(
+                    routeStops.map(async (stop) => {
+                        try {
+                            const csRes = await coachStopApi.getCoachStopById(stop.stopPointId);
+                            // Set the property we use in the render logic
+                            return { ...stop, stopPointActive: csRes.active !== undefined ? csRes.active : true };
+                        } catch (e) {
+                            return { ...stop, stopPointActive: true };
+                        }
+                    })
+                );
+
                 setDetail({
                     routeId: res.routeId,
                     routeName: res.routeName,
                     totalKilometers: res.totalKilometers,
                     totalMinutes: res.totalMinutes,
-                    active: res.active !== undefined ? res.active : res.isActive, // Handle API field name
-                    routeStops: res.routeStops || []
+                    active: res.active !== undefined ? res.active : res.active, // Handle API field name
+                    routeStops: stopsWithActiveStatus
                 });
             }
-        } catch(error) {
+        } catch (error) {
             setError(error.response?.data?.message || "Có lỗi xảy ra khi lấy dữ liệu.");
         } finally {
             setLoading(false);
@@ -114,13 +130,18 @@ export default function RouteViewDetailModal({isOpen, data, onClose}) {
                                             {[...detail.routeStops]
                                                 .sort((a, b) => a.stopOrder - b.stopOrder)
                                                 .map(stop => (
-                                                <tr key={stop.routeStopId}>
-                                                    <td className="fw-bold text-primary">{stop.stopOrder}</td>
-                                                    <td className="text-start fw-medium">{stop.stopPointName}</td>
-                                                    <td>{stop.kilometersFromStart} km</td>
-                                                    <td>{stop.minutesFromStart} phút</td>
-                                                </tr>
-                                            ))}
+                                                    <tr key={stop.routeStopId} className={!stop.stopPointActive ? 'table-danger' : ''}>
+                                                        <td className={`fw-bold ${!stop.stopPointActive ? 'text-danger' : 'text-primary'}`}>{stop.stopOrder}</td>
+                                                        <td className="text-start fw-medium">
+                                                            {stop.stopPointName}
+                                                            {!stop.stopPointActive && (
+                                                                <MdDangerous size={18} className="ms-2 text-danger" />
+                                                            )}
+                                                        </td>
+                                                        <td>{stop.kilometersFromStart} km</td>
+                                                        <td>{stop.minutesFromStart} phút</td>
+                                                    </tr>
+                                                ))}
                                         </tbody>
                                     </Table>
                                 </div>
