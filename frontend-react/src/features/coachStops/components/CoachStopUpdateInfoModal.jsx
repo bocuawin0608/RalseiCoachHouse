@@ -55,7 +55,7 @@ export default function CoachStopUpdateInfoModal({ isOpen, data, onClose, onSucc
             if (formData.active && !data.active) {
                 await coachStopApi.restoreCoachStop(data.stopPointId);
             } else if (!formData.active && data.active) {
-                await coachStopApi.disableCoachStop(data.stopPointId);
+                await coachStopApi.softDeleteCoachStop(data.stopPointId);
             }
 
             onSuccess();

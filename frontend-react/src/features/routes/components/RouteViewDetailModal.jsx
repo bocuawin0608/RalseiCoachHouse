@@ -131,13 +131,13 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
                                                 .sort((a, b) => a.stopOrder - b.stopOrder)
                                                 .map(stop => (
                                                     <tr key={stop.routeStopId} className={!stop.stopPointActive ? 'table-danger' : ''}>
-                                                        <td className={`fw-bold ${!stop.stopPointActive ? 'text-danger' : 'text-primary'}`}>{stop.stopOrder}</td>
-                                                        <td className="text-start fw-medium">
-                                                            {stop.stopPointName}
+                                                        <td className={`fw-bold ${!stop.stopPointActive ? 'text-danger' : 'text-primary'}`}>
+                                                            {stop.stopOrder}
                                                             {!stop.stopPointActive && (
-                                                                <MdDangerous size={18} className="ms-2 text-danger" />
+                                                                <MdDangerous size={18} className="ms-2 text-danger" title="Ngừng HĐ" />
                                                             )}
                                                         </td>
+                                                        <td className="text-start fw-medium"> {stop.stopPointName}</td>
                                                         <td>{stop.kilometersFromStart} km</td>
                                                         <td>{stop.minutesFromStart} phút</td>
                                                     </tr>

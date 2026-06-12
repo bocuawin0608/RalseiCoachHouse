@@ -68,7 +68,7 @@ export default function RouteUpdateInfoModal({ isOpen, data, onClose, onSuccess 
                 if (formData.active) {
                     await routeApi.restoreRoute(data.routeId);
                 } else {
-                    await routeApi.disableRoute(data.routeId);
+                    await routeApi.softDeleteRoute(data.routeId);
                 }
             }
 

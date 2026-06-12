@@ -98,7 +98,7 @@ public class CoachStopServiceImpl implements CoachStopService {
 
     @Override
     @Transactional
-    public void deleteCoachStop(int id) {
+    public void softDeleteCoachStop(int id) {
         CoachStop coachStop = coachStopRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("CoachStop not found with ID: " + id));
 

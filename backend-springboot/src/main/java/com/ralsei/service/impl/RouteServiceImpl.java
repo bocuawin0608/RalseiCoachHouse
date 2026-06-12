@@ -88,7 +88,7 @@ public class RouteServiceImpl implements RouteService {
 
     @Override
     @Transactional
-    public void deleteRoute(int id) {
+    public void softDeleteRoute(int id) {
         Route route = routeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Route not found with ID: " + id));
 
