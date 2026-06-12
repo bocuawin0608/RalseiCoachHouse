@@ -7,29 +7,29 @@ export function useCargoTypes() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [filters, setFilters] = useState({ search: '', isActive: '' });
-    const [pageInfo, setPageInfo] = useState({ 
+    const [pageInfo, setPageInfo] = useState({
         page: 0,
-        size: 10, 
-        totalElements: 0, 
-        totalPages: 0 
+        size: 10,
+        totalElements: 0,
+        totalPages: 0
     });
     const debouncedFilters = useDebounce(filters, 250);
-    
+
     const fetchCargoTypes = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
-            const response = await cargoTypeApi.filterCargoTypes({ 
-                search: debouncedFilters.search, 
+            const response = await cargoTypeApi.filterCargoTypes({
+                search: debouncedFilters.search,
                 isActive: debouncedFilters.isActive,
-                page: pageInfo.page, 
-                size: pageInfo.size 
+                page: pageInfo.page,
+                size: pageInfo.size
             });
-            
+
             setCargoTypes(response.content);
             setPageInfo(prev => ({
                 ...prev,
-                totalElements: response.page?.totalElements ?? response.totalElements ?? 0, 
+                totalElements: response.page?.totalElements ?? response.totalElements ?? 0,
                 totalPages: response.page?.totalPages ?? response.totalPages ?? 0
             }));
         } catch (error) {
@@ -46,7 +46,7 @@ export function useCargoTypes() {
 
     const handleFilterChange = (e) => {
         setFilters(prev => ({ ...prev, [e.target.name]: e.target.value }));
-        setPageInfo(prev => ({ ...prev, page: 0 })); 
+        setPageInfo(prev => ({ ...prev, page: 0 }));
     };
 
     const handleReset = () => {
@@ -57,8 +57,8 @@ export function useCargoTypes() {
 
     return {
         cargoTypes, loading, error,
-        filters, pageInfo, setPageInfo, 
+        filters, pageInfo, setPageInfo,
         handleFilterChange, handleReset,
-        refetch: fetchCargoTypes 
+        refetch: fetchCargoTypes
     };
 }

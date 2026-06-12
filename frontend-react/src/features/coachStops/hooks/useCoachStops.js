@@ -40,7 +40,7 @@ export const useCoachStops = () => {
                 pageInfo.page,
                 pageInfo.size
             );
-            
+
             setCoachStops(data.content || []);
             setPageInfo(prev => ({
                 ...prev,

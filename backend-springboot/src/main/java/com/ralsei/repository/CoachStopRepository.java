@@ -20,4 +20,6 @@ public interface CoachStopRepository extends JpaRepository<CoachStop, Integer> {
       @Param("search") String search,
       @Param("isActive") Boolean isActive,
       Pageable pageable);
+
+  boolean existsByAddressIgnoreCaseAndCityIgnoreCase(String address, String city);
 }

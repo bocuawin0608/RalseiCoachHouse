@@ -13,4 +13,6 @@ public interface CargoTypePriceRepository extends JpaRepository<CargoTypePrice, 
 
     // Example custom query method if you need to search by unit as well
     Page<CargoTypePrice> findByUnitContainingIgnoreCase(String unit, Pageable pageable);
+
+    java.util.List<CargoTypePrice> findByCargoTypeId(int cargoTypeId);
 }
