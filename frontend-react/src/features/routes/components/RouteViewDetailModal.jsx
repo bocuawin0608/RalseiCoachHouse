@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from "react"
 import { routeApi } from "../api/routeApi";
 import { coachStopApi } from "../../coachStops/api/coachStopApi";
+import { routeStopApi } from "../api/routeStopApi";
+import RouteStopUpdateInfoModal from "./RouteStopUpdateInfoModal";
 import { Alert, Badge, Button, Col, Modal, Row, Spinner, Table } from "react-bootstrap";
-import { BsExclamationTriangleFill } from "react-icons/bs";
+import { BsExclamationTriangleFill, BsTrash, BsPencilFill } from "react-icons/bs";
 import { MdDangerous } from "react-icons/md";
 
 const INITIAL_DETAIL = {
@@ -18,6 +20,7 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
     const [detail, setDetail] = useState(INITIAL_DETAIL);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [editingStop, setEditingStop] = useState(null);
 
     const fetchRouteDetail = useCallback(async () => {
         setLoading(true);
@@ -61,6 +64,16 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
         }
         load();
     }, [fetchRouteDetail])
+
+    const handleDeleteRouteStop = async (routeStopId) => {
+        if (!window.confirm("Bạn có chắc muốn xóa điểm dừng này khỏi tuyến đường?")) return;
+        try {
+            await routeStopApi.deleteRouteStop(routeStopId);
+            fetchRouteDetail();
+        } catch (error) {
+            alert(error.response?.data?.message || "Có lỗi xảy ra khi xóa điểm dừng.");
+        }
+    };
 
     if (!isOpen) return null;
 
@@ -124,6 +137,7 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
                                                 <th className="fw-semibold text-start">Tên trạm</th>
                                                 <th className="fw-semibold">Khoảng cách từ điểm xuất phát</th>
                                                 <th className="fw-semibold">Thời gian từ điểm xuất phát</th>
+                                                <th className="fw-semibold">Hành động</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -140,6 +154,16 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
                                                         <td className="text-start fw-medium"> {stop.stopPointName}</td>
                                                         <td>{stop.kilometersFromStart} km</td>
                                                         <td>{stop.minutesFromStart} phút</td>
+                                                        <td>
+                                                            <div className="d-flex gap-2 justify-content-center">
+                                                                <Button variant="primary" size="sm" onClick={() => setEditingStop(stop)} title="Sửa điểm dừng">
+                                                                    <BsPencilFill />
+                                                                </Button>
+                                                                <Button variant="danger" size="sm" onClick={() => handleDeleteRouteStop(stop.routeStopId)} title="Xóa điểm dừng">
+                                                                    <BsTrash />
+                                                                </Button>
+                                                            </div>
+                                                        </td>
                                                     </tr>
                                                 ))}
                                         </tbody>
@@ -160,6 +184,18 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
                     Đóng
                 </Button>
             </Modal.Footer>
+
+            <RouteStopUpdateInfoModal
+                isOpen={!!editingStop}
+                data={editingStop}
+                routeTotalKilometers={detail.totalKilometers}
+                routeTotalMinutes={detail.totalMinutes}
+                onClose={() => setEditingStop(null)}
+                onSuccess={() => {
+                    setEditingStop(null);
+                    fetchRouteDetail();
+                }}
+            />
         </Modal>
     );
 }

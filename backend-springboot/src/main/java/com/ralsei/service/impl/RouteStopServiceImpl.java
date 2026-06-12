@@ -42,6 +42,19 @@ public class RouteStopServiceImpl implements RouteStopService {
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "CoachStop not found with ID: " + request.getStopPointId()));
 
+                boolean orderExists = route.getRouteStops().stream()
+                                .anyMatch(rs -> rs.getStopOrder() == request.getStopOrder());
+                if (orderExists) {
+                        throw new IllegalArgumentException("Stop order " + request.getStopOrder() + " already exists in this route.");
+                }
+
+                if (request.getKilometersFromStart() != null && request.getKilometersFromStart().compareTo(route.getTotalKilometers()) > 0) {
+                        throw new IllegalArgumentException("Kilometers from start cannot be larger than route's total kilometers.");
+                }
+                if (request.getMinutesFromStart() > route.getTotalMinutes()) {
+                        throw new IllegalArgumentException("Minutes from start cannot be larger than route's total minutes.");
+                }
+
                 RouteStop routeStop = RouteStop.builder()
                                 .route(route)
                                 .coachStop(coachStop)
@@ -67,6 +80,19 @@ public class RouteStopServiceImpl implements RouteStopService {
                 CoachStop coachStop = coachStopRepository.findById(Objects.requireNonNull(request.getStopPointId()))
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "CoachStop not found with ID: " + request.getStopPointId()));
+
+                boolean orderExists = route.getRouteStops().stream()
+                                .anyMatch(rs -> rs.getRouteStopId() != id && rs.getStopOrder() == request.getStopOrder());
+                if (orderExists) {
+                        throw new IllegalArgumentException("Stop order " + request.getStopOrder() + " already exists in this route.");
+                }
+
+                if (request.getKilometersFromStart() != null && request.getKilometersFromStart().compareTo(route.getTotalKilometers()) > 0) {
+                        throw new IllegalArgumentException("Kilometers from start cannot be larger than route's total kilometers.");
+                }
+                if (request.getMinutesFromStart() > route.getTotalMinutes()) {
+                        throw new IllegalArgumentException("Minutes from start cannot be larger than route's total minutes.");
+                }
 
                 routeStop.setRoute(route);
                 routeStop.setCoachStop(coachStop);
