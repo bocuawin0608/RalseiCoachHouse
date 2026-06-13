@@ -106,7 +106,7 @@ export default function CoachStopCreatePage() {
                                         className="py-2"
                                     />
                                     <small className="text-muted">
-                                        Định dạng: "Số nhà tên đường phố, huyện, tỉnh"
+                                        Định dạng: "Số nhà tên đường phố, huyện"
                                     </small>
                                 </Form.Group>
                             </Col>
