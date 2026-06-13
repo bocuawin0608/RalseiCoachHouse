@@ -20,15 +20,16 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class Role extends BaseEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "roleId")
-    private int roleId;
+    private Integer roleId;
 
-    @Column(name = "roleName", nullable = false, unique = true)
-    private String roleName;
+    @Column(name = "roleName", nullable = false, unique = true, length = 50)
+    private String roleName;  // "Manager", "Customer", "TicketStaff"...
 
     @Column(name = "isActive", nullable = false)
-    private boolean isActive;
-
+    @Builder.Default
+    private Boolean isActive = true;
 }
