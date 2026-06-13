@@ -3,7 +3,9 @@ package com.ralsei.controller;
 import com.ralsei.dto.request.CoachAndRouteStop.RouteStopRequest;
 import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.dto.response.CoachAndRouteStop.RouteStopResponse;
+import com.ralsei.dto.request.route.RouteStopOrderUpdateRequest;
 import com.ralsei.service.RouteStopService;
+import java.util.List;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -29,6 +31,12 @@ public class RouteStopController {
             @Valid @RequestBody RouteStopRequest request) {
         RouteStopResponse response = routeStopService.updateRouteStop(id, request);
         return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/bulk-update-orders")
+    public ResponseEntity<List<RouteStopResponse>> bulkUpdateOrders(@Valid @RequestBody List<RouteStopOrderUpdateRequest> requests) {
+        List<RouteStopResponse> responses = routeStopService.bulkUpdateOrders(requests);
+        return ResponseEntity.ok(responses);
     }
 
     @GetMapping("/{id}")

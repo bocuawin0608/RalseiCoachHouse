@@ -5,7 +5,9 @@ import { routeStopApi } from "../api/routeStopApi";
 import RouteStopUpdateInfoModal from "./RouteStopUpdateInfoModal";
 import { Alert, Badge, Button, Col, Modal, Row, Spinner, Table } from "react-bootstrap";
 import { BsExclamationTriangleFill, BsTrash, BsPencilFill } from "react-icons/bs";
-import { MdDangerous } from "react-icons/md";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import SortableRouteStopRow from "./SortableRouteStopRow";
 
 const INITIAL_DETAIL = {
     routeId: '',
@@ -21,6 +23,44 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [editingStop, setEditingStop] = useState(null);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    const handleDragEnd = async (event) => {
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+
+        const oldIndex = detail.routeStops.findIndex(stop => stop.routeStopId === active.id);
+        const newIndex = detail.routeStops.findIndex(stop => stop.routeStopId === over.id);
+
+        if (oldIndex !== -1 && newIndex !== -1) {
+            const newStops = arrayMove(detail.routeStops, oldIndex, newIndex);
+
+            const updatedStops = newStops.map((stop, index) => ({
+                ...stop,
+                stopOrder: index + 1
+            }));
+
+            setDetail(prev => ({ ...prev, routeStops: updatedStops }));
+
+            try {
+                const payload = updatedStops.map(stop => ({
+                    routeStopId: stop.routeStopId,
+                    stopOrder: stop.stopOrder
+                }));
+                await routeStopApi.bulkUpdateOrders(payload);
+                fetchRouteDetail();
+            } catch (err) {
+                alert(err.response?.data?.message || "Có lỗi xảy ra khi lưu thứ tự mới.");
+                fetchRouteDetail();
+            }
+        }
+    };
 
     const fetchRouteDetail = useCallback(async () => {
         setLoading(true);
@@ -41,6 +81,8 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
                         }
                     })
                 );
+
+                stopsWithActiveStatus.sort((a, b) => a.stopOrder - b.stopOrder);
 
                 setDetail({
                     routeId: res.routeId,
@@ -99,75 +141,41 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
                 ) : (
                     <div className="d-flex flex-column gap-4">
                         <div>
-                            <h6 className="fw-bold text-dark border-bottom pb-2 mb-3">Thông tin cơ bản</h6>
-                            <Row className="gy-3">
-                                <Col sm={6}>
-                                    <p className="text-secondary fw-semibold mb-1 small">Mã tuyến đường</p>
-                                    <p className="fw-medium text-dark mb-0">#{detail.routeId || '---'}</p>
-                                </Col>
-                                <Col sm={6}>
-                                    <p className="text-secondary fw-semibold mb-1 small">Tên tuyến đường</p>
-                                    <p className="fw-medium text-dark mb-0">{detail.routeName || '---'}</p>
-                                </Col>
-                                <Col sm={6}>
-                                    <p className="text-secondary fw-semibold mb-1 small">Khoảng cách tổng</p>
-                                    <p className="fw-bold text-dark mb-0">{detail.totalKilometers} km</p>
-                                </Col>
-                                <Col sm={6}>
-                                    <p className="text-secondary fw-semibold mb-1 small">Thời gian tổng</p>
-                                    <p className="fw-bold text-dark mb-0">{detail.totalMinutes} phút</p>
-                                </Col>
-                                <Col sm={6}>
-                                    <p className="text-secondary fw-semibold mb-1 small">Trạng thái hoạt động</p>
-                                    <Badge bg={detail.active ? 'success' : 'secondary'} className="px-2 py-1">
-                                        {detail.active ? 'Đang hoạt động' : 'Ngừng hoạt động'}
-                                    </Badge>
-                                </Col>
-                            </Row>
-                        </div>
-
-                        <div>
                             <h6 className="fw-bold text-dark border-bottom pb-2 mb-3">Các trạm dừng (Route Stops)</h6>
                             {detail.routeStops && detail.routeStops.length > 0 ? (
                                 <div className="table-responsive">
-                                    <Table size="sm" bordered hover className="align-middle text-center mb-0">
-                                        <thead className="table-light text-secondary">
-                                            <tr>
-                                                <th className="fw-semibold">Thứ tự</th>
-                                                <th className="fw-semibold text-start">Tên trạm</th>
-                                                <th className="fw-semibold">Khoảng cách từ điểm xuất phát</th>
-                                                <th className="fw-semibold">Thời gian từ điểm xuất phát</th>
-                                                <th className="fw-semibold">Hành động</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {[...detail.routeStops]
-                                                .sort((a, b) => a.stopOrder - b.stopOrder)
-                                                .map(stop => (
-                                                    <tr key={stop.routeStopId} className={!stop.stopPointActive ? 'table-danger' : ''}>
-                                                        <td className={`fw-bold ${!stop.stopPointActive ? 'text-danger' : 'text-primary'}`}>
-                                                            {stop.stopOrder}
-                                                            {!stop.stopPointActive && (
-                                                                <MdDangerous size={18} className="ms-2 text-danger" title="Ngừng HĐ" />
-                                                            )}
-                                                        </td>
-                                                        <td className="text-start fw-medium"> {stop.stopPointName}</td>
-                                                        <td>{stop.kilometersFromStart} km</td>
-                                                        <td>{stop.minutesFromStart} phút</td>
-                                                        <td>
-                                                            <div className="d-flex gap-2 justify-content-center">
-                                                                <Button variant="primary" size="sm" onClick={() => setEditingStop(stop)} title="Sửa điểm dừng">
-                                                                    <BsPencilFill />
-                                                                </Button>
-                                                                <Button variant="danger" size="sm" onClick={() => handleDeleteRouteStop(stop.routeStopId)} title="Xóa điểm dừng">
-                                                                    <BsTrash />
-                                                                </Button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                        </tbody>
-                                    </Table>
+                                    <DndContext
+                                        sensors={sensors}
+                                        collisionDetection={closestCenter}
+                                        onDragEnd={handleDragEnd}
+                                    >
+                                        <Table size="sm" bordered hover className="align-middle text-center mb-0">
+                                            <thead className="table-light text-secondary">
+                                                <tr>
+                                                    <th className="fw-semibold" style={{ width: '120px' }}>Thứ tự</th>
+                                                    <th className="fw-semibold text-start">Tên trạm</th>
+                                                    <th className="fw-semibold">Khoảng cách từ điểm xuất phát</th>
+                                                    <th className="fw-semibold">Thời gian từ điểm xuất phát</th>
+                                                    <th className="fw-semibold">Hành động</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <SortableContext
+                                                    items={detail.routeStops.map(s => s.routeStopId)}
+                                                    strategy={verticalListSortingStrategy}
+                                                >
+                                                    {detail.routeStops.map(stop => (
+                                                        <SortableRouteStopRow
+                                                            key={stop.routeStopId}
+                                                            stop={stop}
+                                                            onEdit={setEditingStop}
+                                                            onDelete={handleDeleteRouteStop}
+                                                        />
+                                                    ))}
+                                                </SortableContext>
+                                            </tbody>
+                                        </Table>
+                                    </DndContext>
                                 </div>
                             ) : (
                                 <div className="bg-light p-4 rounded border text-center">
