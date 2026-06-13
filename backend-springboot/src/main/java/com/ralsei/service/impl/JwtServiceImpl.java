@@ -8,9 +8,11 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
@@ -54,14 +56,13 @@ public class JwtServiceImpl implements JwtService {
 
     @Override
     public String generateToken(Map<String, Object> extraClaims, Account account) {
-        // Nếu anh đã lấy sẵn Roles từ trước và map vào UserDetails / GrantedAuthorities
-        // (Giả sử Account của anh implement UserDetails hoặc anh có một DTO riêng)
-        // List<String> roles = account.getAuthorities().stream()
-        // .map(GrantedAuthority::getAuthority)
-        // .collect(Collectors.toList());
+        // extraClaims lúc này ĐÃ có sẵn key "roles" được nhét từ AuthServiceImpl rồi.
+        // Chỉ cần bổ sung thêm accountId nếu cần (mặc dù AuthServiceImpl cũng đã nhét
+        // nó rồi,
+        // nhưng để chắc chắn thì giữ lại dòng này cũng không sao).
+        extraClaims.putIfAbsent("accountId", account.getAccountId());
 
-        extraClaims.put("accountId", account.getAccountId());
-        // extraClaims.put("roles", roles); // <--- Nhét danh sách thật vào đây
+        // Đừng tự tạo roles giả định ở đây nữa! Xóa các dòng gây lỗi đi.
 
         return Jwts.builder()
                 .setClaims(extraClaims)
@@ -103,7 +104,8 @@ public class JwtServiceImpl implements JwtService {
     }
 
     private Key getSignInKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+        // Đọc chuỗi text thường trực tiếp bằng UTF-8, không decode Base64 bậy bạ nữa!
+        byte[] keyBytes = secretKey.getBytes(StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
