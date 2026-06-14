@@ -5,10 +5,17 @@ import {
     BsList, BsGrid1X2, BsBusFront, BsSignpostSplit, 
     BsChevronDown, BsChevronRight, BsTags, BsGeoAlt
 } from 'react-icons/bs';
+import { useAuth } from '../../../features/auth';
 
 export default function Sidebar() {
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [openMenu, setOpenMenu] = useState('');
+
+    const { user } = useAuth(); 
+    const userRoles = user?.roles || [];
+    const hasAccess = (allowedRoles) => {
+        return userRoles.some(role => allowedRoles.includes(role));
+    };
 
     const toggleSidebar = () => {
         setIsCollapsed(!isCollapsed);
@@ -42,7 +49,7 @@ export default function Sidebar() {
                 style={{ height: '70px', transition: 'all 0.3s' }}
             >
                 {!isCollapsed && (
-                    <h5 className="m-0 text-white fw-bold">Manager Portal</h5>
+                    <h5 className="m-0 text-white fw-bold">Internal Portal</h5>
                 )}
                 <button 
                     onClick={toggleSidebar}
@@ -60,64 +67,70 @@ export default function Sidebar() {
             }}>
                 <nav className="d-flex flex-column gap-2 px-2">
                     
-                    <NavLink to="/manager/dashboard" className={navLinkClass} end>
-                        <BsGrid1X2 size={20} className="flex-shrink-0" />
-                        <span>Dashboard</span>
-                    </NavLink>
+                    {hasAccess(['ADMIN', 'MANAGER']) && (
+                        <NavLink to="/manager/dashboard" className={navLinkClass} end>
+                            <BsGrid1X2 size={20} className="flex-shrink-0" />
+                            <span>Dashboard</span>
+                        </NavLink>
+                    )}
 
-                    <div>
-                        <div 
-                            className="d-flex align-items-center justify-content-between px-3 py-2 rounded text-light opacity-75 hover-opacity-100"
-                            style={{ cursor: 'pointer' }}
-                            onClick={() => handleToggleMenu('coaches')}
-                        >
-                            <div className="d-flex align-items-center gap-3">
-                                <BsBusFront size={20} className="flex-shrink-0" />
-                                <span>Quản lý xe</span>
+                    {hasAccess(['ADMIN', 'MANAGER']) && (
+                        <div>
+                            <div 
+                                className="d-flex align-items-center justify-content-between px-3 py-2 rounded text-light opacity-75 hover-opacity-100"
+                                style={{ cursor: 'pointer' }}
+                                onClick={() => handleToggleMenu('coaches')}
+                            >
+                                <div className="d-flex align-items-center gap-3">
+                                    <BsBusFront size={20} className="flex-shrink-0" />
+                                    <span>Quản lý xe</span>
+                                </div>
+                                {openMenu === 'coaches' ? <BsChevronDown size={14}/> : <BsChevronRight size={14}/>}
                             </div>
-                            {openMenu === 'coaches' ? <BsChevronDown size={14}/> : <BsChevronRight size={14}/>}
+                            
+                            <Collapse in={openMenu === 'coaches'}>
+                                <div className="ps-4 mt-1 d-flex flex-column gap-1">
+                                    <NavLink to="/management/coach-types" className={navLinkClass}>
+                                        <BsTags size={16} />
+                                        <span style={{ fontSize: '0.9rem' }}>Loại xe</span>
+                                    </NavLink>
+                                    <NavLink to="/management/coaches" className={navLinkClass}>
+                                        <BsBusFront size={16} />
+                                        <span style={{ fontSize: '0.9rem' }}>Xe</span>
+                                    </NavLink>
+                                </div>
+                            </Collapse>
                         </div>
-                        
-                        <Collapse in={openMenu === 'coaches'}>
-                            <div className="ps-4 mt-1 d-flex flex-column gap-1">
-                                <NavLink to="/management/coach-types" className={navLinkClass}>
-                                    <BsTags size={16} />
-                                    <span style={{ fontSize: '0.9rem' }}>Loại xe</span>
-                                </NavLink>
-                                <NavLink to="/management/coaches" className={navLinkClass}>
-                                    <BsBusFront size={16} />
-                                    <span style={{ fontSize: '0.9rem' }}>Xe</span>
-                                </NavLink>
-                            </div>
-                        </Collapse>
-                    </div>
+                    )}
 
-                    <div>
-                        <div 
-                            className="d-flex align-items-center justify-content-between px-3 py-2 rounded text-light opacity-75 hover-opacity-100"
-                            style={{ cursor: 'pointer' }}
-                            onClick={() => handleToggleMenu('routes')}
-                        >
-                            <div className="d-flex align-items-center gap-3">
-                                <BsSignpostSplit size={20} className="flex-shrink-0" />
-                                <span>Quản lý tuyến</span>
+                    {hasAccess(['ADMIN', 'MANAGER']) && (
+                        <div>
+                            <div 
+                                className="d-flex align-items-center justify-content-between px-3 py-2 rounded text-light opacity-75 hover-opacity-100"
+                                style={{ cursor: 'pointer' }}
+                                onClick={() => handleToggleMenu('routes')}
+                            >
+                                <div className="d-flex align-items-center gap-3">
+                                    <BsSignpostSplit size={20} className="flex-shrink-0" />
+                                    <span>Quản lý tuyến</span>
+                                </div>
+                                {openMenu === 'routes' ? <BsChevronDown size={14}/> : <BsChevronRight size={14}/>}
                             </div>
-                            {openMenu === 'routes' ? <BsChevronDown size={14}/> : <BsChevronRight size={14}/>}
+
+                            <Collapse in={openMenu === 'routes'}>
+                                <div className="ps-4 mt-1 d-flex flex-column gap-1">
+                                    <NavLink to="/management/routes" className={navLinkClass}>
+                                        <BsSignpostSplit size={16} />
+                                        <span style={{ fontSize: '0.9rem' }}>Tuyến đường</span>
+                                    </NavLink>
+                                    <NavLink to="/management/stations" className={navLinkClass}>
+                                        <BsGeoAlt size={16} />
+                                        <span style={{ fontSize: '0.9rem' }}>Điểm dừng</span>
+                                    </NavLink>
+                                </div>
+                            </Collapse>
                         </div>
-
-                        <Collapse in={openMenu === 'routes'}>
-                            <div className="ps-4 mt-1 d-flex flex-column gap-1">
-                                <NavLink to="/management/routes" className={navLinkClass}>
-                                    <BsSignpostSplit size={16} />
-                                    <span style={{ fontSize: '0.9rem' }}>Tuyến đường</span>
-                                </NavLink>
-                                <NavLink to="/management/stations" className={navLinkClass}>
-                                    <BsGeoAlt size={16} />
-                                    <span style={{ fontSize: '0.9rem' }}>Điểm dừng</span>
-                                </NavLink>
-                            </div>
-                        </Collapse>
-                    </div>
+                    )}
 
                 </nav>
             </div>

@@ -17,6 +17,13 @@
   --color-bg-body: #f8fafc;
   --color-bg-white: #ffffff;
 
+  --ralsei-green: #9cf0d3;
+  --ralsei-dark: #1a1a1a;
+  --ralsei-white: #ffffff;
+  --ralsei-black: #0a4030; 
+  --ralsei-footer: #51c9a7; 
+  --ralsei-pink: #ff47a3;
+
   /* Thông số layout */
   --border-radius-sm: 4px;
   --border-radius-md: 8px;

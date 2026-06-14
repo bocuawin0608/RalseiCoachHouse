@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -36,6 +37,7 @@ public class CoachTypeController {
     private final CoachTypeService coachTypeService;
 
     @GetMapping(path = {"", "/"})
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<Page<CoachTypeResponse>> filterCoachTypes(
         @Valid @ModelAttribute CoachTypeFilterRequest filterRequest, 
         Pageable pageable
@@ -44,17 +46,20 @@ public class CoachTypeController {
     } 
 
     @PostMapping(path = {"", "/"})
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<Integer> createCoachType(@Valid @RequestBody CoachTypeCreateRequest createRequest) {
         Integer newId = coachTypeService.createCoachType(createRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(newId);
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<CoachTypeDetailResponse> viewCoachTypeDetail(@PathVariable @Min(value = 1, message = "ID của Loại xe phải lớn hơn 0.") Integer id) {
         return ResponseEntity.ok(coachTypeService.getCoachTypeDetail(id));
     }
 
     @PatchMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<Void> updateGeneralInfo(
         @PathVariable @Min(value = 1, message = "ID của Loại xe phải lớn hơn 0.") Integer id,
         @Valid @RequestBody CoachTypeUpdateInfoRequest updateRequest
@@ -64,6 +69,7 @@ public class CoachTypeController {
     }
 
     @PutMapping("/{id}/price")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<Void> configurePrice(
         @PathVariable @Min(value = 1, message = "ID của Loại xe phải lớn hơn 0.") Integer id,
         @Valid @RequestBody CoachTypeUpdatePriceRequest updateRequest
@@ -73,6 +79,7 @@ public class CoachTypeController {
     }
 
     @PatchMapping("/{id}/seat-layout")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<Void> updateSeatLayout(
         @PathVariable @Min(value = 1, message = "ID của Loại xe phải lớn hơn 0.") Integer id,
         @Valid @RequestBody CoachTypeUpdateSeatmapRequest updateRequest
