@@ -123,7 +123,7 @@ export default function Sidebar() {
                                         <BsSignpostSplit size={16} />
                                         <span style={{ fontSize: '0.9rem' }}>Tuyến đường</span>
                                     </NavLink>
-                                    <NavLink to="/management/stations" className={navLinkClass}>
+                                    <NavLink to="/management/coach-stops" className={navLinkClass}>
                                         <BsGeoAlt size={16} />
                                         <span style={{ fontSize: '0.9rem' }}>Điểm dừng</span>
                                     </NavLink>
@@ -132,32 +132,34 @@ export default function Sidebar() {
                         </div>
                     )}
 
-                    <div>
-                        <div
-                            className="d-flex align-items-center justify-content-between px-3 py-2 rounded text-light opacity-75 hover-opacity-100"
-                            style={{ cursor: 'pointer' }}
-                            onClick={() => handleToggleMenu('cargo')}
-                        >
-                            <div className="d-flex align-items-center gap-3">
-                                <BsBoxSeam size={20} className="flex-shrink-0" />
-                                <span>Quản lý loại hàng</span>
+                    {hasAccess(['ADMIN', 'MANAGER']) && (
+                        <div>
+                            <div
+                                className="d-flex align-items-center justify-content-between px-3 py-2 rounded text-light opacity-75 hover-opacity-100"
+                                style={{ cursor: 'pointer' }}
+                                onClick={() => handleToggleMenu('cargo')}
+                            >
+                                <div className="d-flex align-items-center gap-3">
+                                    <BsBoxSeam size={20} className="flex-shrink-0" />
+                                    <span>Quản lý loại hàng</span>
+                                </div>
+                                {openMenu === 'cargo' ? <BsChevronDown size={14} /> : <BsChevronRight size={14} />}
                             </div>
-                            {openMenu === 'cargo' ? <BsChevronDown size={14} /> : <BsChevronRight size={14} />}
-                        </div>
 
-                        <Collapse in={openMenu === 'cargo'}>
-                            <div className="ps-4 mt-1 d-flex flex-column gap-1">
-                                <NavLink to="/management/cargo-types" className={navLinkClass}>
-                                    <BsBoxSeam size={16} />
-                                    <span style={{ fontSize: '0.9rem' }}>Loại hàng</span>
-                                </NavLink>
-                                <NavLink to="/management/freight-rates" className={navLinkClass}>
-                                    <BsCashCoin size={16} />
-                                    <span style={{ fontSize: '0.9rem' }}>Giá cước</span>
-                                </NavLink>
-                            </div>
-                        </Collapse>
-                    </div>
+                            <Collapse in={openMenu === 'cargo'}>
+                                <div className="ps-4 mt-1 d-flex flex-column gap-1">
+                                    <NavLink to="/management/cargo-types" className={navLinkClass}>
+                                        <BsBoxSeam size={16} />
+                                        <span style={{ fontSize: '0.9rem' }}>Loại hàng</span>
+                                    </NavLink>
+                                    <NavLink to="/management/freight-rates" className={navLinkClass}>
+                                        <BsCashCoin size={16} />
+                                        <span style={{ fontSize: '0.9rem' }}>Giá cước</span>
+                                    </NavLink>
+                                </div>
+                            </Collapse>
+                        </div>
+                    )}
 
                 </nav>
             </div>
