@@ -1,14 +1,15 @@
 package com.ralsei.service.impl;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -17,21 +18,23 @@ import com.google.firebase.auth.FirebaseToken;
 import com.ralsei.dto.projection.AccountProjection;
 import com.ralsei.dto.request.auth.CustomerLoginRequest;
 import com.ralsei.dto.request.auth.CustomerRegisterRequest;
+import com.ralsei.dto.request.auth.RefreshTokenRequest;
 import com.ralsei.dto.request.auth.StaffLoginRequest;
 import com.ralsei.dto.response.auth.AuthResponse;
 import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.model.Account;
 import com.ralsei.model.AccountRole;
 import com.ralsei.model.Customer;
+import com.ralsei.model.RefreshToken;
 import com.ralsei.model.Role;
 import com.ralsei.repository.AccountRepository;
 import com.ralsei.repository.AccountRoleRepository;
 import com.ralsei.repository.CustomerRepository;
+import com.ralsei.repository.RefreshTokenRepository;
 import com.ralsei.repository.RoleRepository;
 import com.ralsei.service.AuthService;
 import com.ralsei.service.JwtService;
 
-import io.jsonwebtoken.Claims;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,15 +43,19 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
-    //TODO: nhắc trước là bố mày chưa test code, trưa hoặc chiều mai mới ỉa testcase ra cho chúng m, đứa nào dậy sớm thì test hộ
+
     private final AccountRepository accountRepository;
     private final AccountRoleRepository accountRoleRepository;
     private final CustomerRepository customerRepository;
     private final RoleRepository roleRepository;
     private final Optional<FirebaseAuth> firebaseAuth;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private final JwtService jwtService;
+
+    @Value("${jwt.refresh.expiration}")
+    private long refreshExpirationDurationMs;
 
     /**
      * LOGIN cho customer:
@@ -302,12 +309,69 @@ private AuthResponse buildResponse(AccountProjection account) {
     // 5. Gọi JwtService sinh mã token thực tế
     String jwtToken = jwtService.generateToken(extraClaims, accountEntity);
 
+    String refreshToken = jwtService.generateRefreshToken(accountEntity);
+    refreshTokenRepository.deleteAllByAccount(accountEntity); // chơi trò 1 lúc chỉ đc login 1 thiết bị
+    refreshTokenRepository.save(RefreshToken.builder()
+            .account(accountEntity)
+            .token(refreshToken)
+            .expiresAt(LocalDateTime.now().plus(refreshExpirationDurationMs, ChronoUnit.MILLIS))
+            .isRevoked(false)
+            .build());
+
     return AuthResponse.builder()
             .success(true)
             .message("Thành công!")
             .username(account.getUsername())
             .roles(roles)
             .accessToken(jwtToken)
+            .refreshToken(refreshToken)
             .build();
 }
+
+    @Override
+    @Transactional
+    public AuthResponse refreshToken(RefreshTokenRequest request) {
+        String refreshToken = request.getRefreshToken();
+        
+        RefreshToken refreshTokenEntity = refreshTokenRepository.findByToken(refreshToken)
+            .orElseThrow(() -> new BusinessRuleException("Refresh Token không tồn tại trong hệ thống!"));
+        
+        if(!refreshTokenEntity.isValid()) {
+            refreshTokenRepository.delete(refreshTokenEntity);
+            throw new BusinessRuleException("Refresh Token đã hết hạn hoặc bị vô hiệu hóa. Vui lòng đăng nhập lại!");
+        }
+        
+        Account account = refreshTokenEntity.getAccount();
+        
+        AccountProjection accountProj = accountRepository.findByUsernameWithRoles(account.getUsername())
+                .orElseThrow(() -> new BusinessRuleException("User không tồn tại!"));
+                
+        List<String> roles = Arrays.stream(accountProj.getRoleNames().split(",")).map(String::trim).toList();
+
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("accountId", account.getAccountId());
+        extraClaims.put("roles", roles);
+        String newAccessToken = jwtService.generateToken(extraClaims, account);
+        
+        return AuthResponse.builder()
+                .success(true)
+                .message("Làm mới access token thành công!")
+                .username(account.getUsername())
+                .roles(roles)
+                .accessToken(newAccessToken)
+                .refreshToken(refreshToken)
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public void logout(RefreshTokenRequest request) {
+        refreshTokenRepository.findByToken(request.getRefreshToken()).ifPresent(token -> refreshTokenRepository.delete(token));
+    }
+
+    @Override
+    @Transactional
+    public void revokeAllUserTokens(String username) {
+
+    }
 }
