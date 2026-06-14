@@ -111,10 +111,8 @@ html, body {
 
 .buddha-img {
   width: 100%;
-  max-width: 1100px;  
   height: auto; /* Giữ tỷ lệ ảnh không bị móp khi thu nhỏ */
   object-fit: cover;
-  border-radius: 8px;
 }
 
 .search-form-wrapper {
