@@ -1,12 +1,15 @@
 package com.ralsei.service.impl;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
+import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -15,18 +18,22 @@ import com.google.firebase.auth.FirebaseToken;
 import com.ralsei.dto.projection.AccountProjection;
 import com.ralsei.dto.request.auth.CustomerLoginRequest;
 import com.ralsei.dto.request.auth.CustomerRegisterRequest;
+import com.ralsei.dto.request.auth.RefreshTokenRequest;
 import com.ralsei.dto.request.auth.StaffLoginRequest;
 import com.ralsei.dto.response.auth.AuthResponse;
 import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.model.Account;
 import com.ralsei.model.AccountRole;
 import com.ralsei.model.Customer;
+import com.ralsei.model.RefreshToken;
 import com.ralsei.model.Role;
 import com.ralsei.repository.AccountRepository;
 import com.ralsei.repository.AccountRoleRepository;
 import com.ralsei.repository.CustomerRepository;
+import com.ralsei.repository.RefreshTokenRepository;
 import com.ralsei.repository.RoleRepository;
 import com.ralsei.service.AuthService;
+import com.ralsei.service.JwtService;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -37,16 +44,21 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
-    private final AccountRepository      accountRepository;
-    private final AccountRoleRepository  accountRoleRepository;
-    private final CustomerRepository     customerRepository;
-    private final RoleRepository         roleRepository;
+    private final AccountRepository accountRepository;
+    private final AccountRoleRepository accountRoleRepository;
+    private final CustomerRepository customerRepository;
+    private final RoleRepository roleRepository;
     private final Optional<FirebaseAuth> firebaseAuth;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final JwtService jwtService;
+
+    @Value("${jwt.refresh.expiration}")
+    private long refreshExpirationDurationMs;
 
     /**
-     * LOGIN cho customer: 
+     * LOGIN cho customer:
      * với google/facebook (ko cần register)
      * với phone auth (phải register mới login đc)
      */
@@ -62,13 +74,14 @@ public class AuthServiceImpl implements AuthService {
         // Social login lần đầu -> tự động tạo tài khoản mới (aka register)
         if (account == null) {
             if ("firebase".equals(authProvider)) {
-                throw new BusinessRuleException("Tài khoản chưa tồn tại. Vui lòng đăng ký hoặc đăng nhập bằng hình thức khác!");
+                throw new BusinessRuleException(
+                        "Tài khoản chưa tồn tại. Vui lòng đăng ký hoặc đăng nhập bằng hình thức khác!");
             }
             // Google hoặc Facebook
             buildAndSaveCustomerAccount(request.username(), firebaseToken, authProvider, null, null);
-            
+
             account = accountRepository.findByUsernameWithRoles(request.username())
-                .orElseThrow(() -> new BusinessRuleException("Lỗi tạo tài khoản!"));
+                    .orElseThrow(() -> new BusinessRuleException("Lỗi tạo tài khoản!"));
         }
 
         if ("local".equals(account.getAuthProvider())) {
@@ -103,16 +116,15 @@ public class AuthServiceImpl implements AuthService {
         }
 
         buildAndSaveCustomerAccount(
-            request.username(), 
-            firebaseToken, 
-            authProvider, 
-            request.customerName(), 
-            request.email()
-        );
+                request.username(),
+                firebaseToken,
+                authProvider,
+                request.customerName(),
+                request.email());
 
         AccountProjection account = accountRepository
-            .findByUsernameWithRoles(request.username())
-            .orElseThrow(() -> new BusinessRuleException("Lỗi tạo tài khoản!"));
+                .findByUsernameWithRoles(request.username())
+                .orElseThrow(() -> new BusinessRuleException("Lỗi tạo tài khoản!"));
 
         // hỗ trợ case đăng ký phát thì đăng nhập đc luôn
         accountRepository.findById(account.getAccountId()).ifPresent(acc -> {
@@ -132,15 +144,15 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public AuthResponse staffLogin(StaffLoginRequest request) {
         AccountProjection account = accountRepository
-            .findByUsernameWithRoles(request.username())
-            .orElseThrow(() -> new BusinessRuleException("Sai tên đăng nhập hoặc mật khẩu!"));
+                .findByUsernameWithRoles(request.username())
+                .orElseThrow(() -> new BusinessRuleException("Sai tên đăng nhập hoặc mật khẩu!"));
 
         if (!"local".equals(account.getAuthProvider())) {
             throw new BusinessRuleException("Tài khoản này không được đăng nhập qua mạng xã hội!");
         }
 
         if (account.getPasswordHash() == null ||
-            !passwordEncoder.matches(request.password(), account.getPasswordHash())) {
+                !passwordEncoder.matches(request.password(), account.getPasswordHash())) {
             throw new BusinessRuleException("Sai tên đăng nhập hoặc mật khẩu!");
         }
 
@@ -171,14 +183,15 @@ public class AuthServiceImpl implements AuthService {
     @SuppressWarnings("unchecked")
     private String detectAuthProvider(FirebaseToken token) {
         Map<String, Object> firebaseClaims = (Map<String, Object>) token.getClaims().get("firebase");
-        if (firebaseClaims == null) return "firebase";
+        if (firebaseClaims == null)
+            return "firebase";
 
         String signInProvider = (String) firebaseClaims.getOrDefault("sign_in_provider", "firebase");
 
         return switch (signInProvider) {
-            case "google.com"   -> "google";
+            case "google.com" -> "google";
             case "facebook.com" -> "facebook";
-            default             -> "firebase"; 
+            default -> "firebase";
         };
     }
 
@@ -186,51 +199,50 @@ public class AuthServiceImpl implements AuthService {
      * Tạo Account + Customer theo từng loại Auth
      */
     private void buildAndSaveCustomerAccount(
-        String providedUsername, FirebaseToken token, String authProvider, 
-        String providedCustomerName, String providedEmail
-    ) {
+            String providedUsername, FirebaseToken token, String authProvider,
+            String providedCustomerName, String providedEmail) {
         String username = determineUsername(providedUsername, token, authProvider);
 
         Account account = Account.builder()
-            .username(username)
-            .passwordHash(null)
-            .firebaseUid(token.getUid())
-            .authProvider(authProvider)
-            .isActive(true)
-            .build();
+                .username(username)
+                .passwordHash(null)
+                .firebaseUid(token.getUid())
+                .authProvider(authProvider)
+                .isActive(true)
+                .build();
 
         Account savedAccount = accountRepository.save(account);
 
         Role customerRole = roleRepository.findByRoleName("CUSTOMER")
-            .orElseThrow(() -> new BusinessRuleException("Chưa có role Customer trong hệ thống!"));
+                .orElseThrow(() -> new BusinessRuleException("Chưa có role Customer trong hệ thống!"));
 
         accountRoleRepository.save(AccountRole.builder()
-            .accountId(savedAccount.getAccountId())
-            .roleId(customerRole.getRoleId())
-            .build());
+                .accountId(savedAccount.getAccountId())
+                .roleId(customerRole.getRoleId())
+                .build());
 
         String customerName = determineCustomerName(providedCustomerName, token);
         String phone = determinePhone(providedUsername, token, authProvider);
         String email = determineEmail(providedEmail, token);
 
         Customer customer = Customer.builder()
-            .accountId(savedAccount.getAccountId())
-            .customerName(customerName)
-            .phone(phone)
-            .email(email)
-            .isActive(true)
-            .build();
+                .accountId(savedAccount.getAccountId())
+                .customerName(customerName)
+                .phone(phone)
+                .email(email)
+                .isActive(true)
+                .build();
 
         customerRepository.save(customer);
     }
 
     private String determineUsername(String provided, FirebaseToken token, String authProvider) {
         if (provided != null && !provided.isBlank()) {
-            return provided;                    // Phone Auth
+            return provided; // Phone Auth
         }
 
         if (token.getEmail() != null) {
-            return token.getEmail();            // Google & Facebook ưu tiên email
+            return token.getEmail(); // Google & Facebook ưu tiên email
         }
 
         if ("facebook".equals(authProvider)) {
@@ -242,20 +254,20 @@ public class AuthServiceImpl implements AuthService {
 
     private String determineCustomerName(String provided, FirebaseToken token) {
         if (provided != null && !provided.isBlank()) {
-            return provided;        
+            return provided;
         }
         return Optional.ofNullable(token.getName())
                 .or(() -> Optional.ofNullable((String) token.getClaims().get("name")))
-                .orElse("User");   
+                .orElse("User");
     }
 
     private String determinePhone(String providedUsername, FirebaseToken token, String authProvider) {
-       String phoneFromClaims = (String) token.getClaims().get("phone_number");
+        String phoneFromClaims = (String) token.getClaims().get("phone_number");
         if (phoneFromClaims != null) {
             return phoneFromClaims;
         }
 
-        if ("firebase".equals(authProvider) && providedUsername != null 
+        if ("firebase".equals(authProvider) && providedUsername != null
                 && providedUsername.matches("^0[0-9]{9,10}$")) {
             return providedUsername;
         }
@@ -270,17 +282,96 @@ public class AuthServiceImpl implements AuthService {
         return token.getEmail();
     }
 
-    private AuthResponse buildResponse(AccountProjection account) {
-        List<String> roles = (account.getRoleNames() == null || account.getRoleNames().isBlank())
-            ? List.of("CUSTOMER")
-            : Arrays.asList(account.getRoleNames().split(","));
+private AuthResponse buildResponse(AccountProjection account) {
+    // 1. Kiểm tra xem Projection có trả về chuỗi Roles nào không
+    if (account.getRoleNames() == null || account.getRoleNames().isBlank()) {
+        log.error("Tài khoản '{}' (ID: {}) không được gán bất kỳ quyền nào dưới Database!", 
+                account.getUsername(), account.getAccountId());
+        throw new BusinessRuleException("Tài khoản của bạn chưa được cấp quyền trên hệ thống. Vui lòng liên hệ Admin!");
+    }
 
-        return AuthResponse.builder()
+    // 2. Tách chuỗi thành List Roles xịn từ DB
+    List<String> roles = Arrays.stream(account.getRoleNames().split(","))
+            .map(String::trim)
+            .collect(Collectors.toList());
+
+    // 3. Gom dữ liệu đút vào Claims của JWT
+    Map<String, Object> extraClaims = new HashMap<>();
+    extraClaims.put("accountId", account.getAccountId());
+    extraClaims.put("roles", roles);
+
+    // 4. Tạo Entity giả lập bọc thông tin cơ bản để JwtService ký sinh token
+    Account accountEntity = Account.builder()
+            .accountId(account.getAccountId())
+            .username(account.getUsername())
+            .build();
+
+    // 5. Gọi JwtService sinh mã token thực tế
+    String jwtToken = jwtService.generateToken(extraClaims, accountEntity);
+
+    String refreshToken = jwtService.generateRefreshToken(accountEntity);
+    refreshTokenRepository.deleteAllByAccount(accountEntity); // chơi trò 1 lúc chỉ đc login 1 thiết bị
+    refreshTokenRepository.save(RefreshToken.builder()
+            .account(accountEntity)
+            .token(refreshToken)
+            .expiresAt(LocalDateTime.now().plus(refreshExpirationDurationMs, ChronoUnit.MILLIS))
+            .isRevoked(false)
+            .build());
+
+    return AuthResponse.builder()
             .success(true)
             .message("Thành công!")
             .username(account.getUsername())
             .roles(roles)
-            .accessToken(UUID.randomUUID().toString()) // TODO: Thay bằng JWT sau
+            .accessToken(jwtToken)
+            .refreshToken(refreshToken)
             .build();
+}
+
+    @Override
+    @Transactional
+    public AuthResponse refreshToken(RefreshTokenRequest request) {
+        String refreshToken = request.getRefreshToken();
+        
+        RefreshToken refreshTokenEntity = refreshTokenRepository.findByToken(refreshToken)
+            .orElseThrow(() -> new BusinessRuleException("Refresh Token không tồn tại trong hệ thống!"));
+        
+        if(!refreshTokenEntity.isValid()) {
+            refreshTokenRepository.delete(refreshTokenEntity);
+            throw new BusinessRuleException("Refresh Token đã hết hạn hoặc bị vô hiệu hóa. Vui lòng đăng nhập lại!");
+        }
+        
+        Account account = refreshTokenEntity.getAccount();
+        
+        AccountProjection accountProj = accountRepository.findByUsernameWithRoles(account.getUsername())
+                .orElseThrow(() -> new BusinessRuleException("User không tồn tại!"));
+                
+        List<String> roles = Arrays.stream(accountProj.getRoleNames().split(",")).map(String::trim).toList();
+
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("accountId", account.getAccountId());
+        extraClaims.put("roles", roles);
+        String newAccessToken = jwtService.generateToken(extraClaims, account);
+        
+        return AuthResponse.builder()
+                .success(true)
+                .message("Làm mới access token thành công!")
+                .username(account.getUsername())
+                .roles(roles)
+                .accessToken(newAccessToken)
+                .refreshToken(refreshToken)
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public void logout(RefreshTokenRequest request) {
+        refreshTokenRepository.findByToken(request.getRefreshToken()).ifPresent(token -> refreshTokenRepository.delete(token));
+    }
+
+    @Override
+    @Transactional
+    public void revokeAllUserTokens(String username) {
+
     }
 }

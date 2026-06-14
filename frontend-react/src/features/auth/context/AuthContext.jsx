@@ -10,10 +10,11 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(false);
 
   const processAuthSuccess = (response, rememberMe = true) => {
-    const { accessToken, username, roles } = response;
+    const { accessToken, refreshToken, username, roles } = response;
     const userData = { username, roles };
     
     authStorage.setToken(accessToken, rememberMe);
+    authStorage.setRefreshToken(refreshToken, rememberMe);
     authStorage.setUser(userData, rememberMe);
     
     setToken(accessToken);
@@ -32,6 +33,7 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
+    authApi.logout(authStorage.getRefreshToken());
     authStorage.clearAll();
     setUser(null);
     setToken(null);
