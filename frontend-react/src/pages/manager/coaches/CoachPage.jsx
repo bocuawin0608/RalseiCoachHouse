@@ -30,7 +30,7 @@ export default function CoachPage() {
                 <Button 
                     variant="primary" 
                     className="fw-medium shadow-sm"
-                    onClick={() => navigate('/manager/coaches/create')}
+                    onClick={() => navigate('/management/coaches/create')}
                 >
                     + Thêm xe mới
                 </Button>
@@ -57,7 +57,7 @@ export default function CoachPage() {
                         loading={loading}
                         onViewDetail={(row) => setModalState({ type: 'VIEW_DETAIL', data: row})}
                         onEditInfo={(row) => setModalState({ type: 'EDIT_INFO', data: row })}
-                        onEditSeatMap={(row) => navigate(`/manager/coaches/${row.coachId}/seat-map`)} 
+                        onEditSeatMap={(row) => navigate(`/management/coaches/${row.coachId}/seat-map`)} 
                     />
                     
                     <div className="d-flex justify-content-center py-4 bg-white border-top">
