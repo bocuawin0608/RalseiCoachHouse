@@ -1,6 +1,7 @@
 const KEYS = {
   USER: 'user',
   TOKEN: 'accessToken',
+  REFRESH_TOKEN: 'refreshToken',
 }
 
 function store(key, value, remember) {
@@ -33,5 +34,8 @@ export const authStorage = {
   setToken: (token, remember) => store(KEYS.TOKEN, token, remember),
   removeToken: () => remove(KEYS.TOKEN),
 
-  clearAll: () => { remove(KEYS.USER); remove(KEYS.TOKEN) },
+  getRefreshToken: () => retrieve(KEYS.REFRESH_TOKEN),
+  setRefreshToken: (token, remember) => store(KEYS.REFRESH_TOKEN, token, remember),
+
+  clearAll: () => { remove(KEYS.USER); remove(KEYS.TOKEN); remove(KEYS.REFRESH_TOKEN); },
 }

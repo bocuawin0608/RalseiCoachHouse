@@ -1,13 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tripService } from '../../../features/trips/api/tripServices';
 import './HomePage.css';
-import { useAuth } from '../../../features/auth';
 
 const HomePage = () => {
     const navigate = useNavigate();
-
-    const {user, logout} = useAuth();
 
     // State tìm kiếm cơ bản tại Form trang chủ
     const [departure, setDeparture] = useState('');
@@ -72,7 +69,7 @@ const HomePage = () => {
                 setTrips([]);
             }
         } catch (error) {
-            console.log("Mất kết nối API Backend, kích hoạt dữ liệu giả lập (Mock Data).");
+            console.log("Mất kết nối API Backend, kích hoạt dữ liệu giả lập (Mock Data): " + error);
             // Khôi phục Mock dữ liệu cấu trúc chuẩn hóa dựa trên image_d78866.jpg và image_d714fc.jpg
             setTrips([
                 { tripId: 101, departureTime: "2026-01-01T07:30:00", arrivalTime: "2026-01-01T19:00:00", duration: "36 giờ", seatPrice: 450000, type: "Xe Luxury", description: "Ghế giường nằm 32", seatsLeft: 24 },
@@ -128,36 +125,6 @@ const HomePage = () => {
 
     return (
         <div className="homepage-container">
-            <header className="homepage-header">
-                <div className="header-left">
-                    <img
-                        className="logo-img"
-                        src="/images/ralseiiii.jpg"
-                        alt="Logo Ralsei"
-                        onError={(e) => { e.target.src = "https://placehold.co/150x150/2ecc71/ffffff?text=Ralsei+Logo"; }}
-                    />
-                    <button className="btn-head" onClick={() => navigate('/')}>Trang chủ</button>
-                    <button className="btn-head" onClick={() => navigate('/tra-cuu')}>Tra cứu đơn</button>
-                    <button className="btn-head" onClick={() => navigate('/thue-xe')}>Thuê xe</button>
-                    <button className="btn-head" onClick={() => navigate('/tin-tuc')}>Tin tức</button>
-                </div>
-                <div className="header-right">
-                    {
-                        user ? (
-                            <>
-                                <div className='host-phone-number'>Xin chào {user.username}!</div>
-                                <button className="btn-head" onClick={() => {logout(); navigate('/');}}>Đăng xuất</button>
-                            </>
-                        ) : (
-                            <>
-                                <button className="btn-head" onClick={() => navigate('/login')}>Đăng nhập</button>
-                                <button className="btn-head" onClick={() => navigate('/register')}>Đăng ký</button>
-                            </>
-                        )
-                    }
-                </div>
-            </header>
-
             <div className="buddha-image-wrapper">
                 <a href="https://docs.google.com/forms/d/e/1FAIpQLSeMSgtuTpv6P_T4SrOCv1S-HiuSjsoiWA22G70SSjRVGGtKGQ/viewform?usp=publish-editor" target="_blank" rel="noopener noreferrer">
                     <img
@@ -418,26 +385,6 @@ const HomePage = () => {
                     </div>
                 )}
             </div>
-
-            <footer className="homepage-footer">
-                <div className="footer-main-content">
-                    <div className="footer-col col-brand">
-                        <img className="footer-logo" src="/images/ralseiiii.jpg" alt="Logo" />
-                        <h4 className="company-name-main">CÔNG TY TNHH DU LỊCH HOLA RALSEI</h4>
-                    </div>
-                    <div className="footer-col col-info">
-                        <span className="col-badge badge-orange">CÔNG TY CHỦ QUẢN</span>
-                        <ul className="info-list">
-                            <li>👤 <strong>Chịu trách nhiệm:</strong> Đoàn Ngọc Đức</li>
-                            <li>📍 <strong>Địa chỉ:</strong> FPT University, Hòa Lạc, Thạch Thất, Hà Nội</li>
-                        </ul>
-                    </div>
-                </div>
-                <hr className="footer-divider" />
-                <div className="footer-bottom">
-                    <p className="copyright-text">© Bản quyền thuộc về <strong>CÔNG TY TNHH DU LỊCH HOLA RALSEI</strong></p>
-                </div>
-            </footer>
         </div>
     );
 };

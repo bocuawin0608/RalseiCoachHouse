@@ -58,6 +58,11 @@ export const authApi = {
       username: credentials.username,
       password: credentials.password
     });
+  },
+
+  // CHUNG để logout
+  logout: async (refreshToken) => {
+    return await axiosClient.post('/auth/logout', { refreshToken });
   }
 };
 
