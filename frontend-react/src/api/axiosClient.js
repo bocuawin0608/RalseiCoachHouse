@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { authStorage } from '../features/auth';
 
 const axiosClient = axios.create({
     baseURL: 'https://localhost:9090/api',
@@ -9,30 +10,90 @@ const axiosClient = axios.create({
 
 axiosClient.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+        const token = authStorage.getToken();
         if (token) {
-            config.headers['Authorization'] = `Bearer ${token}`;
+            config.headers['Authorization'] = `Bearer ${token.replace(/['"]+/g, '')}`;    
         }
         return config;
     },
-    (error) => {
-        return Promise.reject(error);
-    }
+    (error) => Promise.reject(error)
 );
 
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+    failedQueue.forEach(prom => {
+        if (error) {
+            prom.reject(error);
+        } else {
+            prom.resolve(token);
+        }
+    });
+    failedQueue = [];
+};
+
 axiosClient.interceptors.response.use(
-    (response) => {
-        return response.data;
-    },
-    (error) => {
+    (response) => response.data,
+    async (error) => {
+        const originalRequest = error.config;
+
         if (error.response) {
             const status = error.response.status;
 
+            if (status === 401 && !originalRequest._retry) {
+                if (originalRequest.url.includes('/auth/refresh-token')) {
+                    handleAuthFailure();
+                    return Promise.reject(error);
+                }
+
+                if (isRefreshing) {
+                    return new Promise(function(resolve, reject) {
+                        failedQueue.push({ resolve, reject });
+                    }).then(token => {
+                        originalRequest.headers['Authorization'] = `Bearer ${token.replace(/['"]+/g, '')}`; 
+                        return axiosClient(originalRequest);
+                    }).catch(err => Promise.reject(err));
+                }
+
+                originalRequest._retry = true;
+                isRefreshing = true;
+
+                const refreshToken = authStorage.getRefreshToken();
+                
+                if (!refreshToken) {
+                    console.error("Không tìm thấy Refresh Token trong kho!");
+                    handleAuthFailure();
+                    return Promise.reject(error);
+                }
+
+                return new Promise(function (resolve, reject) {
+                    axios.post(`${axiosClient.defaults.baseURL}/auth/refresh-token`, 
+                        { refreshToken: refreshToken }, 
+                        { headers: {'Content-Type': 'application/json'}, withCredentials: true }
+                    )
+                    .then(({ data }) => {
+                        const newAccessToken = data.accessToken;
+                        
+                        authStorage.setToken(newAccessToken, true); 
+                        
+                        originalRequest.headers['Authorization'] = `Bearer ${newAccessToken.replace(/['"]+/g, '')}`; 
+                        processQueue(null, newAccessToken);
+                        resolve(axiosClient(originalRequest));
+                    })
+                    .catch((err) => {
+                        console.error("Refresh Token xịt ròi:", err);
+                        processQueue(err, null);
+                        handleAuthFailure();
+                        reject(err);
+                    })
+                    .finally(() => {
+                        isRefreshing = false;
+                    });
+                });
+            }
+
             switch (status) {
-                case 401:
-                    console.error("Lỗi 401: Chưa đăng nhập hoặc phiên làm việc hết hạn!");
-                    // Future để: localStorage.removeItem('accessToken'); window.location.href = '/login';
-                    break;
                 case 403:
                     console.error("Lỗi 403: Bạn không có quyền truy cập tính năng này!");
                     break;
@@ -51,5 +112,12 @@ axiosClient.interceptors.response.use(
         return Promise.reject(error);
     }
 );
+
+const handleAuthFailure = () => {
+    authStorage.clearAll();
+    const currentPath = window.location.pathname
+    const isStaffRoute = currentPath.startsWith('/management') || currentPath.startsWith('/staff');
+    window.location.href = isStaffRoute ? "/staff/login" : "/login";
+}
 
 export default axiosClient;
