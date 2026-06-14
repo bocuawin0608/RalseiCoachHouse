@@ -91,7 +91,7 @@ export default function CoachTypeCreatePage() {
 
             await coachTypeApi.createCoachType(payload);
             
-            navigate('/manager/coach-types');
+            navigate('/management/coach-types');
         } catch (error) {
             console.error("Lỗi tạo loại xe:", error);
             setErrorMsg(error.response?.data?.message || 'Có lỗi xảy ra khi lưu vào hệ thống.');
@@ -105,7 +105,7 @@ export default function CoachTypeCreatePage() {
             
             <Button 
                 variant="link" 
-                onClick={() => navigate('/manager/coach-types')}
+                onClick={() => navigate('/management/coach-types')}
                 className="text-decoration-none text-secondary p-0 mb-3 d-flex align-items-center gap-2 fw-medium"
             >
                 <BsArrowLeft size={18}/> Quay lại danh sách

@@ -31,7 +31,7 @@ export default function CoachTypePage() {
                 <Button 
                     variant="primary" 
                     className="fw-medium shadow-sm"
-                    onClick={() => navigate('/manager/coach-types/create')}
+                    onClick={() => navigate('/management/coach-types/create')}
                 >
                     + Thêm loại xe mới
                 </Button>
@@ -58,7 +58,7 @@ export default function CoachTypePage() {
                         onViewDetail={(row) => setModalState({ type: 'VIEW_DETAIL', data: row})}
                         onEditInfo={(row) => setModalState({ type: 'EDIT_INFO', data: row })}
                         onEditPrice = {(row) => setModalState({ type: 'EDIT_PRICE', data: row })}
-                        onEditSeatMap={(row) => navigate(`/manager/coach-types/${row.coachTypeId}/seat-map`)} 
+                        onEditSeatMap={(row) => navigate(`/management/coach-types/${row.coachTypeId}/seat-map`)} 
                     />
                     
                     <div className="d-flex justify-content-center py-4 bg-white border-top">

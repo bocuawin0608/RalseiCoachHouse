@@ -5,14 +5,6 @@ export default function AuthLayout() {
   return (
     <Container fluid className="vh-100 p-0" style={{ backgroundColor: '#f8fafc' }}>
       <style>{`
-        :root {
-          --ralsei-green: #9cf0d3;
-          --ralsei-dark: #1a1a1a;
-          --ralsei-white: #ffffff;
-          --ralsei-black: #0a4030; 
-          --ralsei-footer: #51c9a7; 
-        }
-
         .custom-card {
           background: var(--ralsei-white);
           border-top: 5px solid var(--ralsei-black) !important; 
