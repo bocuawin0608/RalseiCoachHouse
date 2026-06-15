@@ -17,8 +17,8 @@ public class WebConfig {
             public void addCorsMappings(@NonNull CorsRegistry registry) {
                 registry.addMapping("/api/**") // Áp dụng cho tất cả endpoint /api/
                         .allowedOrigins(
-                            "https://localhost:5173", // Vite default
-                            "https://localhost:3000" // CRA fallback
+                            "http://localhost:2999", // staff frontend
+                            "https://localhost:3000" // customer frontend 
                         )
                         .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
