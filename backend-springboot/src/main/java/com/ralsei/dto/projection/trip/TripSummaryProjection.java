@@ -1,5 +1,7 @@
 package com.ralsei.dto.projection.trip;
 
-public class TripSummaryProjection {
+import java.time.LocalDate;
 
+public class TripSummaryProjection {
+    LocalDate getDepartureDate;
 }
