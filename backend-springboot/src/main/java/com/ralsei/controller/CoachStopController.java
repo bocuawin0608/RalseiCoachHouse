@@ -1,8 +1,8 @@
 package com.ralsei.controller;
 
-import com.ralsei.dto.request.CoachStopRequest;
-import com.ralsei.dto.response.CoachStopResponse;
+import com.ralsei.dto.request.CoachAndRouteStop.CoachStopRequest;
 import com.ralsei.dto.response.PagedResponse;
+import com.ralsei.dto.response.CoachAndRouteStop.CoachStopResponse;
 import com.ralsei.service.CoachStopService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,14 +25,14 @@ public class CoachStopController {
 
     @PutMapping("/{id}")
     public ResponseEntity<CoachStopResponse> updateCoachStop(
-            @PathVariable Integer id,
+            @PathVariable int id,
             @Valid @RequestBody CoachStopRequest request) {
         CoachStopResponse response = coachStopService.updateCoachStop(id, request);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<CoachStopResponse> getCoachStopById(@PathVariable Integer id) {
+    public ResponseEntity<CoachStopResponse> getCoachStopById(@PathVariable int id) {
         CoachStopResponse response = coachStopService.getCoachStopById(id);
         return ResponseEntity.ok(response);
     }
@@ -48,13 +48,13 @@ public class CoachStopController {
     }
 
     @PatchMapping("/{id}/soft-delete")
-    public ResponseEntity<Void> deleteCoachStop(@PathVariable Integer id) {
-        coachStopService.deleteCoachStop(id);
+    public ResponseEntity<Void> softDeleteCoachStop(@PathVariable int id) {
+        coachStopService.softDeleteCoachStop(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/restore")
-    public ResponseEntity<Void> restoreCoachStop(@PathVariable Integer id) {
+    public ResponseEntity<Void> restoreCoachStop(@PathVariable int id) {
         coachStopService.restoreCoachStop(id);
         return ResponseEntity.noContent().build();
     }
