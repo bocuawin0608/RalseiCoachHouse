@@ -114,23 +114,22 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
 
     // Manager site - view all trip summaries
     @Query(value = """
-            SELECT
-                t.tripId,
-                t.[status] AS "TRANG THAI CHUYEN DI",
+            SELECT t.tripId,
+                t.[status] AS [TRANG THAI CHUYEN DI],
                 c.manufacturer,
                 ct.coachTypeName,
                 c.licensePlate,
-                c.[status] AS "TINH TRANG XE",
+                c.[status] AS [TINH TRANG XE],
                 CAST(t.departureTime AS DATE) AS departureDate,
                 CAST(t.departureTime AS TIME) AS departureTime,
-                (SELECT COUNT(*) FROM trip_seat ts WHERE ts.tripId = t.tripId AND ts.status = 'Available') AS availableSeats,
+                (SELECT COUNT(*) FROM trip_seat ts WHERE ts.tripId = t.tripId AND ts.[status] = 'AVAILABLE') AS availableSeats,
                 (SELECT COUNT(*) FROM trip_seat ts WHERE ts.tripId = t.tripId) AS totalSeats
             FROM trip t
-            JOIN coach c ON c.coachId = t.coachId
-            JOIN coach_type ct ON ct.coachTypeId = c.coachTypeId
-            WHERE CAST(t.departureTime AS DATE) = :departureDate
-            ORDER BY t.departureTime ASC
-            """, countQuery = """
+                JOIN coach c ON c.coachId = t.coachId
+                JOIN coach_type ct ON ct.coachTypeId = c.coachTypeId
+                        WHERE CAST(t.departureTime AS DATE) = :departureDate
+                        ORDER BY t.departureTime ASC
+                        """, countQuery = """
             SELECT COUNT(*) FROM trip t
             WHERE CAST(t.departureTime AS DATE) = :departureDate
             """, nativeQuery = true)
