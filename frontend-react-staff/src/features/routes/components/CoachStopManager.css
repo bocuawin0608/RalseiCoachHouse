@@ -1,0 +1,274 @@
+.coach-stop-manager {
+    padding: 1rem;
+    animation: fadeIn 0.4s ease-out forwards;
+}
+
+.coach-stop-manager-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.back-btn {
+    background: var(--secondary);
+    color: var(--primary);
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.back-btn:hover {
+    background: var(--primary);
+    color: white;
+}
+
+.coach-stop-manager-content {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 2rem;
+}
+
+@media (max-width: 900px) {
+    .coach-stop-manager-content {
+        grid-template-columns: 1fr;
+    }
+}
+
+.coach-stop-form-container,
+.coach-stop-list-container {
+    background: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px black;
+    border: 1px solid var(--border-color);
+}
+
+.coach-stop-form-container h3,
+.coach-stop-list-container h3 {
+    margin-bottom: 1.5rem;
+    font-size: 1.25rem;
+    color: var(--text-main);
+}
+
+.form-group {
+    margin-bottom: 1.25rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-family: inherit;
+    transition: var(--transition);
+    background: #9cf0d3;
+    color: black;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--secondary);
+}
+
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.save-btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    flex: 1;
+    transition: var(--transition);
+}
+
+.save-btn:hover {
+    background: var(--primary-hover);
+}
+
+.cancel-btn {
+    background: #f1f5f9;
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    flex: 1;
+    transition: var(--transition);
+}
+
+.cancel-btn:hover {
+    background: #e2e8f0;
+}
+
+.coach-stop-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.search-input {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    width: 200px;
+    background: #9cf0d3;
+    color: black;
+    font-family: inherit;
+    transition: width 0.4s ease-in-out, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+
+.search-input:focus {
+    outline: none;
+    width: 300px;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--secondary);
+}
+
+
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+.coach-stop-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.coach-stop-table th,
+.coach-stop-table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.coach-stop-table th {
+    background: #f8fafc;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.coach-stop-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.status-badge.active {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.status-badge.inactive {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.actions-cell {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.edit-btn,
+.disable-btn,
+.restore-btn {
+    padding: 0.4rem 0.75rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.edit-btn {
+    background: var(--secondary);
+    color: var(--primary);
+}
+
+.edit-btn:hover {
+    background: var(--primary);
+    color: white;
+}
+
+.disable-btn {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.disable-btn:hover {
+    background: #dc2626;
+    color: white;
+}
+
+.restore-btn {
+    background: #e0f2fe;
+    color: #0284c7;
+    border: none;
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.restore-btn:hover {
+    background: #0284c7;
+    color: white;
+}
+
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.pagination button {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    background: grey;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.pagination button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.text-center {
+    text-align: center;
+}
