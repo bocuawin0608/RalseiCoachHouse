@@ -294,6 +294,7 @@ CREATE TABLE [cargo_type_price] (
 
 CREATE TABLE [coach] (
     [coachId] INT IDENTITY(1,1) PRIMARY KEY,
+    [routeId] INT NULL,
     [coachTypeId] INT NOT NULL,
     [licensePlate] VARCHAR(20) NOT NULL UNIQUE,
     [status] VARCHAR(50) NOT NULL DEFAULT 'ACTIVE', 
@@ -304,6 +305,7 @@ CREATE TABLE [coach] (
     [updatedAt] DATETIME DEFAULT GETDATE(),
     [updatedBy] INT NULL,
     FOREIGN KEY ([coachTypeId]) REFERENCES [coach_type] ([coachTypeId]),
+    FOREIGN KEY ([routeId]) REFERENCES [route] ([routeId]),
 
 	CONSTRAINT CK_Coach_Status CHECK ([status] IN ('ACTIVE', 'MAINTENANCE', 'RETIRED'))
 );
