@@ -2,8 +2,8 @@ package com.ralsei.model;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -35,7 +35,7 @@ public class Route extends BaseEntity {
     @Column(name = "isActive", nullable = false)
     private boolean isActive;
 
-    @OneToMany(mappedBy = "route", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "route", cascade = { CascadeType.PERSIST, CascadeType.MERGE }, orphanRemoval = true)
     @Builder.Default
-    private List<RouteStop> routeStops = new ArrayList<>();
+    private Set<RouteStop> routeStops = new HashSet<>();
 }

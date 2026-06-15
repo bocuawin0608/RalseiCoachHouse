@@ -1,4 +1,4 @@
-package com.ralsei.dto.response;
+package com.ralsei.dto.response.CoachAndRouteStop;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -21,7 +21,6 @@ public class RouteStopResponse {
     private int stopOrder;
     private BigDecimal kilometersFromStart;
     private int minutesFromStart;
-    private boolean isActive;
     private LocalDateTime createdAt;
     private Integer createdBy;
     private LocalDateTime updatedAt;

@@ -1,4 +1,4 @@
-package com.ralsei.dto.response;
+package com.ralsei.dto.response.CoachAndRouteStop;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
