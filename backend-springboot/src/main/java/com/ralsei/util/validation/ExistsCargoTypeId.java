@@ -1,4 +1,4 @@
-package com.ralsei.validation;
+package com.ralsei.util.validation;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

@@ -1,5 +1,4 @@
-package com.ralsei.validation;
-
+package com.ralsei.util.validation;
 
 import com.ralsei.repository.CargoTypeRepository;
 
