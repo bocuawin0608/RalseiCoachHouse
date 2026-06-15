@@ -55,7 +55,7 @@ const AppRouter = () => {
                     {coachRoutes}
                     {routeRoutes}
                     {cargoRoutes}
-
+                    {voucherRoutes}
                     {/* route dưới thì chỉ admin vào đc, manager thì ko */}
                     <Route element={<RoleGuard allowedRoles={['ADMIN']} />}>
                         <Route path="system-config" element={<div>Cấu hình hệ thống</div>} />
