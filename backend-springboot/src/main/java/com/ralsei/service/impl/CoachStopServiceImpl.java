@@ -1,8 +1,8 @@
 package com.ralsei.service.impl;
 
-import com.ralsei.dto.request.CoachStopRequest;
-import com.ralsei.dto.response.CoachStopResponse;
+import com.ralsei.dto.request.CoachAndRouteStop.CoachStopRequest;
 import com.ralsei.dto.response.PagedResponse;
+import com.ralsei.dto.response.CoachAndRouteStop.CoachStopResponse;
 import com.ralsei.model.CoachStop;
 import com.ralsei.model.RouteStop;
 import com.ralsei.repository.CoachStopRepository;
@@ -31,9 +31,14 @@ public class CoachStopServiceImpl implements CoachStopService {
     @Override
     @Transactional
     public CoachStopResponse createCoachStop(CoachStopRequest request) {
+        if (coachStopRepository.existsByAddressIgnoreCaseAndCityIgnoreCase(request.getAddress().trim(), request.getCity().trim())) {
+            throw new IllegalArgumentException("Đã tồn tại điểm dừng với địa chỉ và thành phố này.");
+        }
+
         CoachStop coachStop = CoachStop.builder()
-                .stopPointName(request.getStopPointName())
-                .address(request.getAddress())
+                .stopPointName(request.getStopPointName().trim())
+                .address(request.getAddress().trim())
+                .city(request.getCity().trim())
                 .isActive(true)
                 .build();
         CoachStop saved = coachStopRepository.save(Objects.requireNonNull(coachStop));
@@ -46,8 +51,18 @@ public class CoachStopServiceImpl implements CoachStopService {
         CoachStop coachStop = coachStopRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("CoachStop not found with ID: " + id));
 
-        coachStop.setStopPointName(request.getStopPointName());
-        coachStop.setAddress(request.getAddress());
+        boolean addressChanged = !coachStop.getAddress().equalsIgnoreCase(request.getAddress().trim());
+        boolean cityChanged = !coachStop.getCity().equalsIgnoreCase(request.getCity().trim());
+
+        if (addressChanged || cityChanged) {
+            if (coachStopRepository.existsByAddressIgnoreCaseAndCityIgnoreCase(request.getAddress().trim(), request.getCity().trim())) {
+                throw new IllegalArgumentException("Đã tồn tại điểm dừng với địa chỉ và thành phố này.");
+            }
+        }
+
+        coachStop.setStopPointName(request.getStopPointName().trim());
+        coachStop.setAddress(request.getAddress().trim());
+        coachStop.setCity(request.getCity().trim());
 
         CoachStop updated = coachStopRepository.save(coachStop);
         return mapToResponse(updated);
@@ -65,7 +80,8 @@ public class CoachStopServiceImpl implements CoachStopService {
     @Transactional(readOnly = true)
     public PagedResponse<CoachStopResponse> getAllCoachStops(String search, Boolean isActive, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("stopPointId").descending());
-        Page<CoachStop> coachStopPage = coachStopRepository.searchCoachStops(search, isActive, pageable);
+        String safeSearch = search != null ? search.trim() : null;
+        Page<CoachStop> coachStopPage = coachStopRepository.searchCoachStops(safeSearch, isActive, pageable);
 
         List<CoachStopResponse> content = coachStopPage.getContent().stream()
                 .map(this::mapToResponse)
@@ -82,20 +98,13 @@ public class CoachStopServiceImpl implements CoachStopService {
 
     @Override
     @Transactional
-    public void deleteCoachStop(int id) {
+    public void softDeleteCoachStop(int id) {
         CoachStop coachStop = coachStopRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("CoachStop not found with ID: " + id));
 
         // Soft delete the coach stop
         coachStop.setActive(false);
         coachStopRepository.save(coachStop);
-
-        // Cascade soft delete to associated coach stops
-        List<RouteStop> routeStops = routeStopRepository.findByCoachStop_StopPointId(id);
-        for (RouteStop routeStop : routeStops) {
-            routeStop.setActive(false);
-            routeStopRepository.save(routeStop);
-        }
     }
 
     @Override
@@ -107,13 +116,6 @@ public class CoachStopServiceImpl implements CoachStopService {
         // Restore the coachStop itself
         coachStop.setActive(true);
         coachStopRepository.save(coachStop);
-
-        // Cascade restore to associated route stops
-        List<RouteStop> routeStops = routeStopRepository.findByCoachStop_StopPointId(id);
-        for (RouteStop routeStop : routeStops) {
-            routeStop.setActive(true);
-            routeStopRepository.save(routeStop);
-        }
     }
 
     private CoachStopResponse mapToResponse(CoachStop coachStop) {
@@ -124,6 +126,7 @@ public class CoachStopServiceImpl implements CoachStopService {
                 .stopPointId(coachStop.getStopPointId())
                 .stopPointName(coachStop.getStopPointName())
                 .address(coachStop.getAddress())
+                .city(coachStop.getCity())
                 .isActive(coachStop.isActive())
                 .build();
     }

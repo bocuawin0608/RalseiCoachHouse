@@ -41,6 +41,10 @@ public class Coach extends BaseEntity {
     @JoinColumn(name = "coachTypeId", nullable = false)
     private CoachType coachType;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "routeId")
+    private Route route;
+
     @Column(name = "licensePlate", nullable = false, unique = true)
     private String licensePlate;
 

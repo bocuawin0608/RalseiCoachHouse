@@ -1,8 +1,8 @@
 package com.ralsei.controller;
 
-import com.ralsei.dto.request.RouteRequest;
-import com.ralsei.dto.response.RouteResponse;
+import com.ralsei.dto.request.CoachAndRouteStop.RouteRequest;
 import com.ralsei.dto.response.PagedResponse;
+import com.ralsei.dto.response.CoachAndRouteStop.RouteResponse;
 import com.ralsei.service.RouteService;
 
 import jakarta.validation.Valid;
@@ -26,14 +26,14 @@ public class RouteController {
 
     @PutMapping("/{id}")
     public ResponseEntity<RouteResponse> updateRoute(
-            @PathVariable Integer id,
+            @PathVariable int id,
             @Valid @RequestBody RouteRequest request) {
         RouteResponse response = routeService.updateRoute(id, request);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<RouteResponse> getRouteById(@PathVariable Integer id) {
+    public ResponseEntity<RouteResponse> getRouteById(@PathVariable int id) {
         RouteResponse response = routeService.getRouteById(id);
         return ResponseEntity.ok(response);
     }
@@ -49,13 +49,13 @@ public class RouteController {
     }
 
     @PatchMapping("/{id}/soft-delete")
-    public ResponseEntity<Void> deleteRoute(@PathVariable Integer id) {
-        routeService.deleteRoute(id);
+    public ResponseEntity<Void> softDeleteRoute(@PathVariable int id) {
+        routeService.softDeleteRoute(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/restore")
-    public ResponseEntity<Void> restoreRoute(@PathVariable Integer id) {
+    public ResponseEntity<Void> restoreRoute(@PathVariable int id) {
         routeService.restoreRoute(id);
         return ResponseEntity.noContent().build();
     }

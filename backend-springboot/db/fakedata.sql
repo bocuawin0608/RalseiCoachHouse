@@ -78,11 +78,11 @@ INSERT INTO [voucher] (voucherCode, discountValue, startEffectiveDate, endEffect
 ('HE2026', 10.00, '2026-01-01', '2028-12-31', 'PERCENT', 50000.00, 200000.00, 1000), 
 ('GIAM50K', 50000.00, '2026-01-01', '2028-12-31', 'FIXED', 50000.00, 0.00, 1000);
 
-INSERT INTO [coach_stop] (stopPointName, address) VALUES 
-(N'Bến Xe Nước Ngầm (Hà Nội)', N'Số 1 Ngọc Hồi, Hoàng Mai, Hà Nội'),        
-(N'Trạm Dừng Nghỉ Ninh Bình', N'Quốc Lộ 1A, TP. Ninh Bình'),               
-(N'Bến Xe Vinh (Nghệ An)', N'Số 77 Lê Lợi, TP. Vinh, Nghệ An'),            
-(N'Văn Phòng Đồng Hới (Quảng Bình)', N'Trần Hưng Đạo, Đồng Hới, Quảng Bình');
+INSERT INTO [coach_stop] (stopPointName, address, city) VALUES 
+(N'Bến Xe Nước Ngầm (Hà Nội)', N'Số 1 Ngọc Hồi, Hoàng Mai', N'Hà Nội'),        
+(N'Trạm Dừng Nghỉ Ninh Bình', N'Quốc Lộ 1A',  N'Ninh Bình'),               
+(N'Bến Xe Vinh (Nghệ An)', N'Số 77 Lê Lợi', N'Nghệ An'),            
+(N'Văn Phòng Đồng Hới (Quảng Bình)', N'Trần Hưng Đạo, Đồng Hới', N'Quảng Bình');
 
 INSERT INTO [route] (routeName, totalKilometers, totalMinutes) VALUES 
 (N'Hà Nội - Quảng Bình', 500.00, 600), 
@@ -560,4 +560,4 @@ SELECT * FROM [passenger_ticket_detail];
 SELECT * FROM [cargo_ticket_detail];
 SELECT * FROM [payment];
 SELECT * FROM [accompanied_child];
-SELECT * FROM [refund];    
+SELECT * FROM [refund];

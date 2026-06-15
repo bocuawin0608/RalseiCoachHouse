@@ -1,4 +1,4 @@
-﻿USE master;
+USE master;
 GO
 
 -- Xóa theo thứ tự từ LEVEL cao xuống LEVEL thấp để không dính Foreign Key Constraints
@@ -126,6 +126,7 @@ CREATE TABLE [coach_stop] (
     [stopPointId] INT IDENTITY(1,1) PRIMARY KEY,
     [stopPointName] NVARCHAR(255) NOT NULL,
     [address] NVARCHAR(MAX) NOT NULL,
+    [city] NVARCHAR(255) NOT NULL,
     [isActive] BIT NOT NULL DEFAULT 1,
     [createdAt] DATETIME DEFAULT GETDATE(),
     [createdBy] INT NULL,
@@ -245,7 +246,6 @@ CREATE TABLE [route_stop] (
     [stopOrder] INT NOT NULL, -- Thứ tự điểm dừng
     [kilometersFromStart] DECIMAL(8, 2) NOT NULL,
     [minutesFromStart] INT NOT NULL,
-    [isActive] BIT NOT NULL DEFAULT 1,
     [createdAt] DATETIME DEFAULT GETDATE(),
     [createdBy] INT NULL,
     [updatedAt] DATETIME DEFAULT GETDATE(),
@@ -294,6 +294,7 @@ CREATE TABLE [cargo_type_price] (
 
 CREATE TABLE [coach] (
     [coachId] INT IDENTITY(1,1) PRIMARY KEY,
+    [routeId] INT NULL,
     [coachTypeId] INT NOT NULL,
     [licensePlate] VARCHAR(20) NOT NULL UNIQUE,
     [status] VARCHAR(50) NOT NULL DEFAULT 'ACTIVE', 
@@ -304,6 +305,7 @@ CREATE TABLE [coach] (
     [updatedAt] DATETIME DEFAULT GETDATE(),
     [updatedBy] INT NULL,
     FOREIGN KEY ([coachTypeId]) REFERENCES [coach_type] ([coachTypeId]),
+    FOREIGN KEY ([routeId]) REFERENCES [route] ([routeId]),
 
 	CONSTRAINT CK_Coach_Status CHECK ([status] IN ('ACTIVE', 'MAINTENANCE', 'RETIRED'))
 );

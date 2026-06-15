@@ -25,7 +25,7 @@ public class CargoType extends BaseEntity {
     @Column(name = "cargoTypeId")
     private int cargoTypeId;
 
-    @Column(name = "cargoTypeName", nullable = false)
+    @Column(name = "cargoTypeName", nullable = false, unique = true)
     private String cargoTypeName;
 
     @Column(name = "isActive", nullable = false)

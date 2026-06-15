@@ -1,9 +1,9 @@
 package com.ralsei.service.impl;
 
-import com.ralsei.dto.request.RouteRequest;
-import com.ralsei.dto.response.RouteResponse;
-import com.ralsei.dto.response.RouteStopResponse;
+import com.ralsei.dto.request.CoachAndRouteStop.RouteRequest;
 import com.ralsei.dto.response.PagedResponse;
+import com.ralsei.dto.response.CoachAndRouteStop.RouteResponse;
+import com.ralsei.dto.response.CoachAndRouteStop.RouteStopResponse;
 import com.ralsei.model.Route;
 import com.ralsei.model.RouteStop;
 import com.ralsei.repository.RouteRepository;
@@ -11,7 +11,7 @@ import com.ralsei.repository.RouteStopRepository;
 import com.ralsei.service.RouteService;
 import com.ralsei.exception.ResourceNotFoundException;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -38,7 +38,7 @@ public class RouteServiceImpl implements RouteService {
                 .totalKilometers(request.getTotalKilometers())
                 .totalMinutes(request.getTotalMinutes())
                 .isActive(true)
-                .routeStops(new ArrayList<>())
+                .routeStops(new HashSet<>())
                 .build();
         Route saved = routeRepository.save(Objects.requireNonNull(route));
         return mapToResponse(saved);
@@ -70,7 +70,8 @@ public class RouteServiceImpl implements RouteService {
     @Transactional(readOnly = true)
     public PagedResponse<RouteResponse> getAllRoutes(String search, Boolean isActive, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("routeId").descending());
-        Page<Route> routePage = routeRepository.searchRoutes(search, isActive, pageable);
+        String safeSearch = search != null ? search.trim() : null;
+        Page<Route> routePage = routeRepository.searchRoutes(safeSearch, isActive, pageable);
 
         List<RouteResponse> content = routePage.getContent().stream()
                 .map(this::mapToResponse)
@@ -87,20 +88,13 @@ public class RouteServiceImpl implements RouteService {
 
     @Override
     @Transactional
-    public void deleteRoute(int id) {
+    public void softDeleteRoute(int id) {
         Route route = routeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Route not found with ID: " + id));
 
         // Soft delete the route itself
         route.setActive(false);
         routeRepository.save(route);
-
-        // Cascade soft delete to associated route stops
-        List<RouteStop> routeStops = routeStopRepository.findByRoute_RouteIdOrderByStopOrderAsc(id);
-        for (RouteStop routeStop : routeStops) {
-            routeStop.setActive(false);
-            routeStopRepository.save(routeStop);
-        }
     }
 
     @Override
@@ -112,13 +106,6 @@ public class RouteServiceImpl implements RouteService {
         // Restore the route itself
         route.setActive(true);
         routeRepository.save(route);
-
-        // Cascade restore to associated route stops
-        List<RouteStop> routeStops = routeStopRepository.findByRoute_RouteIdOrderByStopOrderAsc(id);
-        for (RouteStop routeStop : routeStops) {
-            routeStop.setActive(true);
-            routeStopRepository.save(routeStop);
-        }
     }
 
     private RouteResponse mapToResponse(Route route) {
@@ -159,7 +146,6 @@ public class RouteServiceImpl implements RouteService {
                 .stopOrder(rs.getStopOrder())
                 .kilometersFromStart(rs.getKilometersFromStart())
                 .minutesFromStart(rs.getMinutesFromStart())
-                .isActive(rs.isActive())
                 .build();
     }
 }

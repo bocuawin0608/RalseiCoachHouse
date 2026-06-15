@@ -1,8 +1,8 @@
 package com.ralsei.service.impl;
 
-import com.ralsei.dto.request.RouteStopRequest;
-import com.ralsei.dto.response.RouteStopResponse;
+import com.ralsei.dto.request.CoachAndRouteStop.RouteStopRequest;
 import com.ralsei.dto.response.PagedResponse;
+import com.ralsei.dto.response.CoachAndRouteStop.RouteStopResponse;
 import com.ralsei.model.CoachStop;
 import com.ralsei.model.Route;
 import com.ralsei.model.RouteStop;
@@ -11,7 +11,9 @@ import com.ralsei.repository.RouteRepository;
 import com.ralsei.repository.RouteStopRepository;
 import com.ralsei.service.RouteStopService;
 import com.ralsei.exception.ResourceNotFoundException;
+import com.ralsei.dto.request.route.RouteStopOrderUpdateRequest;
 
+import java.util.ArrayList;
 import java.util.Objects;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -42,13 +44,29 @@ public class RouteStopServiceImpl implements RouteStopService {
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "CoachStop not found with ID: " + request.getStopPointId()));
 
+                boolean orderExists = route.getRouteStops().stream()
+                                .anyMatch(rs -> rs.getStopOrder() == request.getStopOrder());
+                if (orderExists) {
+                        throw new IllegalArgumentException(
+                                        "Stop order " + request.getStopOrder() + " already exists in this route.");
+                }
+
+                if (request.getKilometersFromStart() != null
+                                && request.getKilometersFromStart().compareTo(route.getTotalKilometers()) > 0) {
+                        throw new IllegalArgumentException(
+                                        "Kilometers from start cannot be larger than route's total kilometers.");
+                }
+                if (request.getMinutesFromStart() > route.getTotalMinutes()) {
+                        throw new IllegalArgumentException(
+                                        "Minutes from start cannot be larger than route's total minutes.");
+                }
+
                 RouteStop routeStop = RouteStop.builder()
                                 .route(route)
                                 .coachStop(coachStop)
                                 .stopOrder(request.getStopOrder())
                                 .kilometersFromStart(request.getKilometersFromStart())
                                 .minutesFromStart(request.getMinutesFromStart())
-                                .isActive(true)
                                 .build();
 
                 RouteStop saved = routeStopRepository.save(Objects.requireNonNull(routeStop));
@@ -69,6 +87,24 @@ public class RouteStopServiceImpl implements RouteStopService {
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "CoachStop not found with ID: " + request.getStopPointId()));
 
+                boolean orderExists = route.getRouteStops().stream()
+                                .anyMatch(rs -> rs.getRouteStopId() != id
+                                                && rs.getStopOrder() == request.getStopOrder());
+                if (orderExists) {
+                        throw new IllegalArgumentException(
+                                        "Stop order " + request.getStopOrder() + " already exists in this route.");
+                }
+
+                if (request.getKilometersFromStart() != null
+                                && request.getKilometersFromStart().compareTo(route.getTotalKilometers()) > 0) {
+                        throw new IllegalArgumentException(
+                                        "Kilometers from start cannot be larger than route's total kilometers.");
+                }
+                if (request.getMinutesFromStart() > route.getTotalMinutes()) {
+                        throw new IllegalArgumentException(
+                                        "Minutes from start cannot be larger than route's total minutes.");
+                }
+
                 routeStop.setRoute(route);
                 routeStop.setCoachStop(coachStop);
                 routeStop.setStopOrder(request.getStopOrder());
@@ -87,12 +123,11 @@ public class RouteStopServiceImpl implements RouteStopService {
                 return mapToResponse(routeStop);
         }
 
-        @Override
-        @Transactional(readOnly = true)
-        public PagedResponse<RouteStopResponse> getAllRouteStops(int routeId, int stopPointId, Boolean isActive,
-                        int page, int size) {
+        public PagedResponse<RouteStopResponse> getAllRouteStops(int routeId, int stopPointId, int page, int size) {
                 Pageable pageable = PageRequest.of(page, size, Sort.by("stopOrder").ascending());
-                Page<RouteStop> routeStopPage = routeStopRepository.searchRouteStops(routeId, stopPointId, isActive,
+                Page<RouteStop> routeStopPage = routeStopRepository.searchRouteStops(
+                                routeId,
+                                stopPointId,
                                 pageable);
 
                 List<RouteStopResponse> content = routeStopPage.getContent().stream()
@@ -114,8 +149,45 @@ public class RouteStopServiceImpl implements RouteStopService {
                 RouteStop routeStop = routeStopRepository.findById(id)
                                 .orElseThrow(() -> new ResourceNotFoundException("RouteStop not found with ID: " + id));
 
-                routeStop.setActive(false);
-                routeStopRepository.save(routeStop);
+                routeStopRepository.delete(routeStop);
+        }
+
+        @Override
+        @Transactional
+        public List<RouteStopResponse> bulkUpdateOrders(List<RouteStopOrderUpdateRequest> requests) {
+                if (requests == null || requests.isEmpty()) {
+                        return new ArrayList<>();
+                }
+
+                // Fetch all RouteStops that need updating
+                List<Integer> ids = requests.stream().map(RouteStopOrderUpdateRequest::getRouteStopId)
+                                .collect(Collectors.toList());
+                List<RouteStop> routeStops = routeStopRepository.findAllById(ids);
+
+                if (routeStops.size() != requests.size()) {
+                        throw new ResourceNotFoundException("One or more RouteStops not found.");
+                }
+
+                // Make sure all routeStops belong to the same route
+                Integer routeId = routeStops.get(0).getRoute().getRouteId();
+                boolean allSameRoute = routeStops.stream().allMatch(rs -> rs.getRoute().getRouteId() == routeId);
+                if (!allSameRoute) {
+                        throw new IllegalArgumentException("All RouteStops must belong to the same route.");
+                }
+
+                // Update orders in memory
+                for (RouteStop rs : routeStops) {
+                        for (RouteStopOrderUpdateRequest req : requests) {
+                                if (rs.getRouteStopId() == req.getRouteStopId()) {
+                                        rs.setStopOrder(req.getStopOrder());
+                                        break;
+                                }
+                        }
+                }
+
+                // Save all
+                List<RouteStop> saved = routeStopRepository.saveAll(routeStops);
+                return saved.stream().map(this::mapToResponse).collect(Collectors.toList());
         }
 
         private RouteStopResponse mapToResponse(RouteStop rs) {
@@ -132,7 +204,6 @@ public class RouteStopServiceImpl implements RouteStopService {
                                 .stopOrder(rs.getStopOrder())
                                 .kilometersFromStart(rs.getKilometersFromStart())
                                 .minutesFromStart(rs.getMinutesFromStart())
-                                .isActive(rs.isActive())
                                 .build();
         }
 }
