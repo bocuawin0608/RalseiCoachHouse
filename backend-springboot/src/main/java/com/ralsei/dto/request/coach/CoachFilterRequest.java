@@ -15,5 +15,8 @@ public record CoachFilterRequest(
     List<CoachStatus> statuses,
 
     @Positive(message = "ID loại xe phải là số dương.")
-    Integer coachTypeId
+    Integer coachTypeId,
+
+    @Size(max = 255, message = "Tên tuyến đường tìm kiếm không được vượt quá 255 ký tự.")
+    String routeName
 ) {}
