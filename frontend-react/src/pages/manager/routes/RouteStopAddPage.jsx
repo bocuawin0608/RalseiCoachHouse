@@ -14,7 +14,7 @@ export default function RouteStopAddPage() {
     const [existingOrders, setExistingOrders] = useState([]);
     const [routeTotalKilometers, setRouteTotalKilometers] = useState(0);
     const [routeTotalMinutes, setRouteTotalMinutes] = useState(0);
-    
+
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -94,7 +94,7 @@ export default function RouteStopAddPage() {
             navigate('/management/routes');
         } catch (error) {
             console.error("Lỗi thêm điểm dừng vào tuyến:", error);
-            setErrorMsg(error.response?.data?.message || 'Có lỗi xảy ra khi lưu vào hệ thống.');
+            setErrorMsg(error.response.data.message || 'Có lỗi xảy ra khi lưu vào hệ thống.');
         } finally {
             setIsSubmitting(false);
         }

@@ -68,12 +68,19 @@ export default function CoachStopCreatePage() {
     const handleSelectAddress = (prediction) => {
         const fullAddress = prediction.description;
         const parts = fullAddress.split(',');
-        let cityPart = parts.length > 1 ? parts[parts.length - 1].trim() : '';
+
+        let cityPart = '';
+        let addressPart = fullAddress;
+
+        if (parts.length > 1) {
+            cityPart = parts.pop().trim();
+            addressPart = parts.join(',').trim();
+        }
 
         setSelectedFromDropdown(true);
         setFormData(prev => ({
             ...prev,
-            address: fullAddress,
+            address: addressPart,
             city: cityPart
         }));
         setShowDropdown(false);
@@ -172,13 +179,13 @@ export default function CoachStopCreatePage() {
                                             className="py-2"
                                             autoComplete="off"
                                         />
-                                        
+
                                         {showDropdown && predictions.length > 0 && (
                                             <ListGroup className="position-absolute w-100 shadow-lg mt-1" style={{ zIndex: 1000, maxHeight: '250px', overflowY: 'auto' }}>
                                                 {predictions.map((p) => (
-                                                    <ListGroup.Item 
-                                                        key={p.place_id} 
-                                                        action 
+                                                    <ListGroup.Item
+                                                        key={p.place_id}
+                                                        action
                                                         onClick={() => handleSelectAddress(p)}
                                                         className="py-2 px-3 text-start"
                                                     >
