@@ -24,6 +24,8 @@ import com.ralsei.dto.response.coachtype.CoachTypeResponse;
 import com.ralsei.exception.ResourceNotFoundException;
 import com.ralsei.model.CoachType;
 import com.ralsei.model.CoachTypePrice;
+import com.ralsei.model.enums.CoachStatus;
+import com.ralsei.repository.CoachRepository;
 import com.ralsei.repository.CoachTypeRepository;
 import com.ralsei.service.CoachTypeService;
 
@@ -34,6 +36,7 @@ import lombok.RequiredArgsConstructor;
 public class CoachTypeServiceImpl implements CoachTypeService {
 
     private final CoachTypeRepository coachTypeRepo;
+    private final CoachRepository coachRepo;
     private final ObjectMapper objectMapper;
 
     private final LocalDateTime infiniteDateTime = LocalDateTime.of(9999, 12, 31, 23, 59, 59);
@@ -99,9 +102,10 @@ public class CoachTypeServiceImpl implements CoachTypeService {
         int calculatedTotalSeat = 0;
         try {
             JsonNode rootNode = objectMapper.readTree(rawSeatLayout);
+            int totalFloors = rootNode.path("totalFloors").asInt(0);
             int declaredRows = rootNode.path("rows").asInt(0);
             int declaredCols = rootNode.path("cols").asInt(0);
-            JsonNode matrixNode = rootNode.get("matrix");
+            JsonNode floorsNode = rootNode.get("floors");
 
             if (declaredRows < 1 || declaredRows > 11) {
                 throw new IllegalArgumentException("Số hàng trong sơ đồ ghế phải nằm trong khoảng từ 1 đến 11.");
@@ -110,30 +114,28 @@ public class CoachTypeServiceImpl implements CoachTypeService {
                 throw new IllegalArgumentException("Số cột trong sơ đồ ghế phải nằm trong khoảng từ 1 đến 5.");
             }
 
-            if (matrixNode == null || !matrixNode.isArray()) {
-                throw new IllegalArgumentException("Sơ đồ ghế bị thiếu hoặc sai định dạng.");
+            if (totalFloors < 1 || totalFloors > 2) {
+                throw new IllegalArgumentException("Số tầng trong sơ đồ phải nằm trong khoảng từ 1 đến 2.");
             }
 
-            if (matrixNode.size() != declaredRows) {
-                throw new IllegalArgumentException("Số hàng trong sơ đồ ghế không khớp với giá trị khai báo.");
+            if (floorsNode == null || !floorsNode.isArray() || floorsNode.size() != totalFloors) {
+                throw new IllegalArgumentException("Dữ liệu tầng ghế bị thiếu hoặc không khớp.");
             }
 
-            for (JsonNode rowNode : matrixNode) {
-                if (rowNode.size() != declaredCols) {
-                    throw new IllegalArgumentException("Số cột trong sơ đồ ghế không khớp với giá trị khai báo.");
-                }
-            }
+            for(JsonNode floor : floorsNode) {
 
-            for (JsonNode rowNode : matrixNode) {
-                for (JsonNode cellNode : rowNode) {
-                    if (cellNode.asText().equals("SEAT")) {
-                        calculatedTotalSeat++;
+                for (JsonNode rowNode : floor) {
+                    for (JsonNode cellNode : rowNode) {
+                        if (cellNode.asText().equals("SEAT")) {
+                            calculatedTotalSeat++;
+                        }
                     }
                 }
+                //TODO: chưa có cơ chế check 1 cột/hàng bất kỳ trống hoàn toàn ghế (kiểu đang dùng cols/rows cho các tầng -> sẽ có nơi bị trống full)
             }
 
-            if (calculatedTotalSeat == 0) {
-                throw new IllegalArgumentException("Sơ đồ ghế không thể có 0 ghế.");
+            if (calculatedTotalSeat < 1 || calculatedTotalSeat > 44) {
+                throw new IllegalArgumentException("Sơ đồ ghế không thể <1 hoặc >44 ghế.");
             }
 
             return new ProcessedSeatLayout(calculatedTotalSeat, rootNode.toString());
@@ -182,9 +184,11 @@ public class CoachTypeServiceImpl implements CoachTypeService {
             coachType.setCoachTypeName(updateRequest.coachTypeName());
         }
 
+        if(coachRepo.existsByCoachType_CoachTypeIdAndStatusNot(id, CoachStatus.RETIRED) && !updateRequest.isActive()) {
+            throw new IllegalArgumentException("Không thể tắt loại xe vẫn còn xe hoạt động!");
+        }
+
         coachType.setActive(updateRequest.isActive());
-        // TODO: nếu đã có coach dùng coach_type này đang active -> ko đc đưa về
-        // inactive
     }
 
     @Transactional
@@ -226,7 +230,9 @@ public class CoachTypeServiceImpl implements CoachTypeService {
             return;
         }
         
-        //TODO: nếu đã có xe dùng coach_type này thì ko đc đổi layout
+        if(coachRepo.existsByCoachType_CoachTypeIdAndStatusNot(id, CoachStatus.RETIRED)) {
+            throw new IllegalArgumentException("Không thể thay đổi sơ đồ ghế của loại xe vẫn còn xe hoạt động!");
+        }
         
         ProcessedSeatLayout newSeatLayout = validateSeatLayout(updateRequest.seatLayout());
         coachType.setTotalSeat(newSeatLayout.totalSeat());
