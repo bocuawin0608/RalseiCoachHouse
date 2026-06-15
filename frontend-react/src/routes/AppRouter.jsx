@@ -1,6 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 // Layouts
-import PublicLayout from '../components/layout/PublicLayout/PublicLayout'; 
+import PublicLayout from '../components/layout/PublicLayout/PublicLayout';
 import AuthLayout from '../components/layout/AuthLayout/AuthLayout';
 import StaffAuthLayout from '../components/layout/AuthLayout/StaffAuthLayout';
 import DesktopLayout from '../components/layout/DesktopStaffLayout/DesktopLayout';
@@ -16,6 +16,7 @@ import StaffLogin from '../pages/auth/StaffLogin';
 // Nested routes
 import { publicTripRoutes } from '../features/trips';
 import { routeRoutes } from '../features/routes';
+import { cargoRoutes } from '../features/cargo';
 import { coachRoutes } from '../features/coaches';
 import { voucherRoutes } from '../features/vouchers';
 
@@ -53,8 +54,8 @@ const AppRouter = () => {
                     <Route path="dashboard" element={<div>Bảng điều khiển quản trị</div>} />
                     {coachRoutes}
                     {routeRoutes}
-                    {voucherRoutes}
-                    
+                    {cargoRoutes}
+
                     {/* route dưới thì chỉ admin vào đc, manager thì ko */}
                     <Route element={<RoleGuard allowedRoles={['ADMIN']} />}>
                         <Route path="system-config" element={<div>Cấu hình hệ thống</div>} />
@@ -66,7 +67,7 @@ const AppRouter = () => {
 
             <Route path="/staff">
                 <Route element={<RoleGuard allowedRoles={['TICKET_STAFF']} />}>
-                    <Route element={<DesktopLayout />}> 
+                    <Route element={<DesktopLayout />}>
                         <Route path="ticket/sell" element={<div>Bán vé</div>} />
                         <Route path="ticket/history" element={<div>Lịch sử bán</div>} />
                         {voucherRoutes}
@@ -74,7 +75,7 @@ const AppRouter = () => {
                 </Route>
 
                 <Route element={<RoleGuard allowedRoles={['TRIP_STAFF']} />}>
-                    <Route element={<MobileLayout />}> 
+                    <Route element={<MobileLayout />}>
                         <Route path="trip/scan" element={<div>Quét vé</div>} />
                         <Route path="trip/status" element={<div>Cập nhật trạng thái xe</div>} />
                     </Route>
