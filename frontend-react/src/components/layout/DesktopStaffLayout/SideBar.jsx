@@ -132,6 +132,13 @@ export default function Sidebar() {
                         </div>
                     )}
 
+                    {hasAccess(['TICKET_STAFF']) && (
+                        <NavLink to="/staff/ticket/vouchers" className={navLinkClass}>
+                            <BsTags size={20} className="flex-shrink-0" />
+                            <span>Quản lý voucher</span>
+                        </NavLink>
+                    )}
+
                 </nav>
             </div>
         </aside>

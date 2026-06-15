@@ -69,6 +69,7 @@ const AppRouter = () => {
                     <Route element={<DesktopLayout />}> 
                         <Route path="ticket/sell" element={<div>Bán vé</div>} />
                         <Route path="ticket/history" element={<div>Lịch sử bán</div>} />
+                        {voucherRoutes}
                     </Route>
                 </Route>
 
