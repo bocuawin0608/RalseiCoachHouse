@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BsArrowLeft, BsCheckCircle, BsExclamationTriangleFill } from 'react-icons/bs';
 import { coachStopApi } from '../../../features/coachStops';
-import { Alert, Button, Card, Col, Container, Form, Row } from 'react-bootstrap';
+import { Alert, Button, Card, Col, Container, Form, Row, ListGroup, Spinner } from 'react-bootstrap';
+import axios from 'axios';
+import { useDebounce } from '../../../hooks/useDebounce';
 
 export default function CoachStopCreatePage() {
     const navigate = useNavigate();
@@ -16,6 +18,66 @@ export default function CoachStopCreatePage() {
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
+
+    const [predictions, setPredictions] = useState([]);
+    const [showDropdown, setShowDropdown] = useState(false);
+    const [isSearching, setIsSearching] = useState(false);
+    const [selectedFromDropdown, setSelectedFromDropdown] = useState(false);
+
+    const dropdownRef = useRef(null);
+    const debouncedAddress = useDebounce(formData.address, 500);
+
+    useEffect(() => {
+        if (debouncedAddress && !selectedFromDropdown) {
+            fetchPredictions(debouncedAddress);
+        } else if (selectedFromDropdown) {
+            setSelectedFromDropdown(false);
+        } else {
+            setPredictions([]);
+            setShowDropdown(false);
+        }
+    }, [debouncedAddress]);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setShowDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const fetchPredictions = async (input) => {
+        setIsSearching(true);
+        try {
+            const apiKey = import.meta.env.VITE_GOONG_API_KEY;
+            if (!apiKey) return;
+            const res = await axios.get(`https://rsapi.goong.io/v2/place/autocomplete?api_key=${apiKey}&input=${encodeURIComponent(input)}`);
+            if (res.data && res.data.predictions) {
+                setPredictions(res.data.predictions);
+                setShowDropdown(true);
+            }
+        } catch (err) {
+            console.error("Goong autocomplete error:", err);
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    const handleSelectAddress = (prediction) => {
+        const fullAddress = prediction.description;
+        const parts = fullAddress.split(',');
+        let cityPart = parts.length > 1 ? parts[parts.length - 1].trim() : '';
+
+        setSelectedFromDropdown(true);
+        setFormData(prev => ({
+            ...prev,
+            address: fullAddress,
+            city: cityPart
+        }));
+        setShowDropdown(false);
+    };
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -44,7 +106,7 @@ export default function CoachStopCreatePage() {
             navigate('/management/coach-stops');
         } catch (error) {
             console.error("Lỗi tạo điểm dừng:", error);
-            setErrorMsg(error.response?.data?.message || 'Có lỗi xảy ra khi lưu vào hệ thống.');
+            setErrorMsg(error.response.data.message || 'Có lỗi xảy ra khi lưu vào hệ thống.');
         } finally {
             setIsSubmitting(false);
         }
@@ -55,7 +117,7 @@ export default function CoachStopCreatePage() {
 
             <Button
                 variant="link"
-                onClick={() => navigate('/manager/coach-stops')}
+                onClick={() => navigate('/management/coach-stops')}
                 className="text-decoration-none text-secondary p-0 mb-3 d-flex align-items-center gap-2 fw-medium"
             >
                 <BsArrowLeft size={18} /> Quay lại danh sách
@@ -95,18 +157,47 @@ export default function CoachStopCreatePage() {
                             <Col md={12}>
                                 <Form.Group>
                                     <Form.Label className="fw-semibold text-secondary mb-1">Địa chỉ chi tiết <span className="text-danger">*</span></Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        name="address"
-                                        required
-                                        maxLength={200}
-                                        placeholder="Ví dụ: 20 Phạm Hùng, Mỹ Đình, Nam Từ Liêm"
-                                        value={formData.address}
-                                        onChange={handleInputChange}
-                                        className="py-2"
-                                    />
-                                    <small className="text-muted">
-                                        Định dạng: "Số nhà tên đường phố, huyện"
+                                    <div className="position-relative" ref={dropdownRef}>
+                                        <Form.Control
+                                            type="text"
+                                            name="address"
+                                            required
+                                            maxLength={200}
+                                            placeholder="Nhập địa chỉ để tìm kiếm..."
+                                            value={formData.address}
+                                            onChange={handleInputChange}
+                                            onFocus={() => {
+                                                if (predictions.length > 0) setShowDropdown(true);
+                                            }}
+                                            className="py-2"
+                                            autoComplete="off"
+                                        />
+                                        
+                                        {showDropdown && predictions.length > 0 && (
+                                            <ListGroup className="position-absolute w-100 shadow-lg mt-1" style={{ zIndex: 1000, maxHeight: '250px', overflowY: 'auto' }}>
+                                                {predictions.map((p) => (
+                                                    <ListGroup.Item 
+                                                        key={p.place_id} 
+                                                        action 
+                                                        onClick={() => handleSelectAddress(p)}
+                                                        className="py-2 px-3 text-start"
+                                                    >
+                                                        <div className="fw-medium text-dark">{p.structured_formatting?.main_text || p.description}</div>
+                                                        {p.structured_formatting?.secondary_text && (
+                                                            <small className="text-muted">{p.structured_formatting.secondary_text}</small>
+                                                        )}
+                                                    </ListGroup.Item>
+                                                ))}
+                                            </ListGroup>
+                                        )}
+                                        {isSearching && (
+                                            <div className="position-absolute end-0 top-50 translate-middle-y pe-3">
+                                                <Spinner animation="border" size="sm" variant="secondary" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <small className="text-muted mt-1 d-block">
+                                        Vui lòng chọn địa chỉ từ danh sách gợi ý để đảm bảo tính chính xác
                                     </small>
                                 </Form.Group>
                             </Col>
