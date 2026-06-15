@@ -20,7 +20,7 @@ public class CargoTypePriceRequest {
 
     @NotNull(message = "Cargo type ID is required")
     @Min(value = 1, message = "Cargo type ID must be greater than or equal to 1")
-    @com.ralsei.validation.ExistsCargoTypeId
+    @com.ralsei.util.validation.ExistsCargoTypeId
     private int cargoTypeId;
 
     @NotBlank(message = "Unit is required")
