@@ -4,7 +4,7 @@ import { Collapse } from 'react-bootstrap';
 import {
     BsList, BsGrid1X2, BsBusFront, BsSignpostSplit,
     BsChevronDown, BsChevronRight, BsTags, BsGeoAlt,
-    BsBoxSeam, BsCashCoin
+    BsBoxSeam, BsCashCoin, BsGift
 } from 'react-icons/bs';
 import { useAuth } from '../../../features/auth';
 
@@ -159,6 +159,13 @@ export default function Sidebar() {
                                 </div>
                             </Collapse>
                         </div>
+                    )}
+
+                    {hasAccess(['ADMIN', 'MANAGER']) && (
+                        <NavLink to="/management/vouchers" className={navLinkClass} end>
+                            <BsGift size={20} className="flex-shrink-0" />
+                            <span>Quản lý voucher</span>
+                        </NavLink>
                     )}
 
                 </nav>
