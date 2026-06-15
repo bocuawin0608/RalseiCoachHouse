@@ -15,10 +15,14 @@ import lombok.NoArgsConstructor;
 @Builder
 public class RouteStopRequest {
     @NotNull(message = "Route ID is required")
-    private Integer routeId;
+    @Min(value = 1, message = "Route ID must be at least 1")
+    @Max(value = 2147483647, message = "Route ID must be less than 2147483647")
+    private int routeId;
 
     @NotNull(message = "Coach stop ID is required")
-    private Integer stopPointId;
+    @Min(value = 1, message = "Coach stop ID must be at least 1")
+    @Max(value = 2147483647, message = "Coach stop ID must be less than 2147483647")
+    private int stopPointId;
 
     @Min(value = 1, message = "Stop order must be at least 1")
     @Max(value = 2147483647, message = "Stop order must be less than 2147483647")

@@ -44,7 +44,7 @@ export default function RouteCreatePage() {
             navigate('/management/routes');
         } catch (error) {
             console.error("Lỗi tạo tuyến xe:", error);
-            setErrorMsg(error.response?.data?.message || 'Có lỗi xảy ra khi lưu vào hệ thống.');
+            setErrorMsg(error.response.data.message || 'Có lỗi xảy ra khi lưu vào hệ thống.');
         } finally {
             setIsSubmitting(false);
         }
