@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { coachStopApi } from "../api/coachStopApi";
-import { Alert, Button, Col, Form, Modal, Row } from "react-bootstrap";
+import { Alert, Button, Col, Form, Modal, Row, ListGroup, Spinner } from "react-bootstrap";
 import { BsExclamationTriangleFill } from "react-icons/bs";
+import axios from "axios";
+import { useDebounce } from "../../../hooks/useDebounce";
 
 const INITIAL_FORM_DATA = {
     stopPointName: '',
@@ -16,8 +18,17 @@ export default function CoachStopUpdateInfoModal({ isOpen, data, onClose, onSucc
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState(null);
 
+    const [predictions, setPredictions] = useState([]);
+    const [showDropdown, setShowDropdown] = useState(false);
+    const [isSearching, setIsSearching] = useState(false);
+    const [selectedFromDropdown, setSelectedFromDropdown] = useState(false);
+
+    const dropdownRef = useRef(null);
+    const debouncedAddress = useDebounce(formData.address, 500);
+
     useEffect(() => {
         if (isOpen && data) {
+            setSelectedFromDropdown(true); // Prevent fetching immediately on open
             setFormData({
                 stopPointName: data.stopPointName || '',
                 address: data.address || '',
@@ -27,8 +38,71 @@ export default function CoachStopUpdateInfoModal({ isOpen, data, onClose, onSucc
             setError(null);
         } else {
             setFormData(INITIAL_FORM_DATA);
+            setPredictions([]);
+            setShowDropdown(false);
         }
     }, [data, isOpen]);
+
+    // Click outside listener
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setShowDropdown(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // Fetch predictions
+    useEffect(() => {
+        if (debouncedAddress && !selectedFromDropdown && isOpen) {
+            fetchPredictions(debouncedAddress);
+        } else if (selectedFromDropdown) {
+            setSelectedFromDropdown(false);
+        } else {
+            setPredictions([]);
+            setShowDropdown(false);
+        }
+    }, [debouncedAddress, isOpen]);
+
+    const fetchPredictions = async (input) => {
+        setIsSearching(true);
+        try {
+            const apiKey = import.meta.env.VITE_GOONG_API_KEY;
+            if (!apiKey) return;
+            const res = await axios.get(`https://rsapi.goong.io/v2/place/autocomplete?api_key=${apiKey}&input=${encodeURIComponent(input)}`);
+            if (res.data && res.data.predictions) {
+                setPredictions(res.data.predictions);
+                setShowDropdown(true);
+            }
+        } catch (err) {
+            console.error("Goong autocomplete error:", err);
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    const handleSelectAddress = (prediction) => {
+        const fullAddress = prediction.description;
+        const parts = fullAddress.split(',');
+
+        let cityPart = '';
+        let addressPart = fullAddress;
+
+        if (parts.length > 1) {
+            cityPart = parts.pop().trim();
+            addressPart = parts.join(',').trim();
+        }
+
+        setSelectedFromDropdown(true);
+        setFormData(prev => ({
+            ...prev,
+            address: addressPart,
+            city: cityPart
+        }));
+        setShowDropdown(false);
+    };
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -105,16 +179,48 @@ export default function CoachStopUpdateInfoModal({ isOpen, data, onClose, onSucc
                         <Col md={12}>
                             <Form.Group>
                                 <Form.Label className="fw-semibold text-secondary mb-1">Địa chỉ chi tiết <span className="text-danger">*</span></Form.Label>
-                                <Form.Control
-                                    type="text"
-                                    name="address"
-                                    required
-                                    maxLength={200}
-                                    placeholder="Ví dụ: 20 Phạm Hùng, Mỹ Đình, Nam Từ Liêm"
-                                    value={formData.address}
-                                    onChange={handleInputChange}
-                                    className="py-2"
-                                />
+                                <div className="position-relative" ref={dropdownRef}>
+                                    <Form.Control
+                                        type="text"
+                                        name="address"
+                                        required
+                                        maxLength={200}
+                                        placeholder="Nhập địa chỉ để tìm kiếm..."
+                                        value={formData.address}
+                                        onChange={handleInputChange}
+                                        onFocus={() => {
+                                            if (predictions.length > 0) setShowDropdown(true);
+                                        }}
+                                        className="py-2"
+                                        autoComplete="off"
+                                    />
+
+                                    {showDropdown && predictions.length > 0 && (
+                                        <ListGroup className="position-absolute w-100 shadow-lg mt-1" style={{ zIndex: 1000, maxHeight: '250px', overflowY: 'auto' }}>
+                                            {predictions.map((p) => (
+                                                <ListGroup.Item
+                                                    key={p.place_id}
+                                                    action
+                                                    onClick={() => handleSelectAddress(p)}
+                                                    className="py-2 px-3 text-start"
+                                                >
+                                                    <div className="fw-medium text-dark">{p.structured_formatting?.main_text || p.description}</div>
+                                                    {p.structured_formatting?.secondary_text && (
+                                                        <small className="text-muted">{p.structured_formatting.secondary_text}</small>
+                                                    )}
+                                                </ListGroup.Item>
+                                            ))}
+                                        </ListGroup>
+                                    )}
+                                    {isSearching && (
+                                        <div className="position-absolute end-0 top-50 translate-middle-y pe-3">
+                                            <Spinner animation="border" size="sm" variant="secondary" />
+                                        </div>
+                                    )}
+                                </div>
+                                <small className="text-muted mt-1 d-block">
+                                    Vui lòng chọn địa chỉ từ danh sách gợi ý để đảm bảo tính chính xác
+                                </small>
                             </Form.Group>
                         </Col>
                     </Row>
