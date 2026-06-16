@@ -31,5 +31,10 @@ export const routeApi = {
     /**
      * @param {number|string} id
      */
-    restoreRoute: (id) => { return axiosClient.patch(`${BASE}/${id}/restore`); }
+    restoreRoute: (id) => { return axiosClient.patch(`${BASE}/${id}/restore`); },
+
+    /**
+     * lấy danh sách routes (id, name) để hiển thị dropdown
+     */
+    getRoutesForDropdown: () => { return axiosClient.get(`${BASE}/dropdown`) }
 };
