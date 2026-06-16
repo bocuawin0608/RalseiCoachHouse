@@ -13,8 +13,10 @@ import com.ralsei.dto.response.coach.CoachResponse;
 import com.ralsei.exception.ResourceNotFoundException;
 import com.ralsei.model.Coach;
 import com.ralsei.model.CoachType;
+import com.ralsei.model.Route;
 import com.ralsei.repository.CoachRepository;
 import com.ralsei.repository.CoachTypeRepository;
+import com.ralsei.repository.RouteRepository;
 import com.ralsei.service.CoachService;
 
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,7 @@ public class CoachServiceImpl implements CoachService {
 
     private final CoachTypeRepository coachTypeRepo;
     private final CoachRepository coachRepo;
+    private final RouteRepository routeRepo;
 
     @Transactional(readOnly = true)
     @Override
@@ -38,16 +41,19 @@ public class CoachServiceImpl implements CoachService {
         CoachType coachType = coachTypeRepo.findByCoachTypeIdAndIsActiveTrue(request.coachTypeId())
             .orElseThrow(() -> new ResourceNotFoundException("Loại xe không tồn tại hoặc không hợp lệ!"));
 
+        Route route = routeRepo.findByRouteIdAndIsActiveTrue(request.routeId())
+            .orElseThrow(() -> new ResourceNotFoundException("Tuyến đường không tồn tại hoặc không hợp lệ!"));
+
         if(coachRepo.existsByLicensePlateIgnoreCase(request.licensePlate())) {
             throw new IllegalArgumentException("Biển số xe này đã tồn tại trong hệ thống!");
         }
 
         Coach newCoach = Coach.builder()
             .coachType(coachType)
+            .route(route)
             .licensePlate(request.licensePlate())
             .manufacturer(request.manufacturer())
             .year(request.year())
-            .status(request.status())
             .seats(new ArrayList<>())
             .build();
 
