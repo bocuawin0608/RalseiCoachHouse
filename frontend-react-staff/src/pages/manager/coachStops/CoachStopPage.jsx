@@ -1,44 +1,43 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-    useCoaches, 
-    CoachTable, 
-    CoachFilter, 
-    CoachUpdateInfoModal, 
-    CoachViewDetailModal 
-} from '../../../features/coaches';
+import {
+    useCoachStops,
+    CoachStopTable,
+    CoachStopFilter,
+    CoachStopUpdateInfoModal,
+    CoachStopViewDetailModal
+} from '../../../features/coachStops';
 import Pagination from '../../../components/common/Pagination';
 import { Alert, Button, Card, Container } from 'react-bootstrap';
 import { BsExclamationTriangleFill } from 'react-icons/bs';
 
-export default function CoachPage() {
+export default function CoachStopPage() {
     const navigate = useNavigate();
-    
-    const { 
-        coaches, loading, pageInfo, setPageInfo, refetch,
-        filters, handleFilterChange, handleReset, handleCheckboxChange, error
-    } = useCoaches();
-    
+
+    const {
+        coachStops, loading, pageInfo, setPageInfo, refetch,
+        filters, handleFilterChange, handleReset, error
+    } = useCoachStops();
+
     const [modalState, setModalState] = useState({ type: null, data: null });
     const closeModal = () => setModalState({ type: null, data: null });
 
     return (
         <Container fluid className="py-4" style={{ maxWidth: '1200px' }}>
-            
+
             <div className="d-flex justify-content-between align-items-center mb-4">
-                <h2 className="m-0 fw-bold text-dark">Quản lý danh sách xe</h2>
-                <Button 
+                <h2 className="m-0 fw-bold text-dark">Quản lý điểm dừng</h2>
+                <Button
                     className="fw-medium shadow-sm custom-btn-general"
-                    onClick={() => navigate('/management/coaches/create')}
+                    onClick={() => navigate('/management/coach-stops/create')}
                 >
-                    + Thêm xe mới
+                    + Thêm điểm dừng mới
                 </Button>
             </div>
 
-            <CoachFilter 
-                filters={filters} 
+            <CoachStopFilter
+                filters={filters}
                 onFilterChange={handleFilterChange}
-                onCheckboxChange={handleCheckboxChange}
                 onReset={handleReset}
             />
 
@@ -50,32 +49,31 @@ export default function CoachPage() {
             )}
 
             <Card className="shadow-sm border-0">
-                <Card.Body className="p-0"> 
-                    <CoachTable 
-                        data={coaches} 
+                <Card.Body className="p-0">
+                    <CoachStopTable
+                        data={coachStops}
                         loading={loading}
-                        onViewDetail={(row) => setModalState({ type: 'VIEW_DETAIL', data: row})}
+                        onViewDetail={(row) => setModalState({ type: 'VIEW_DETAIL', data: row })}
                         onEditInfo={(row) => setModalState({ type: 'EDIT_INFO', data: row })}
-                        onEditSeatMap={(row) => navigate(`/management/coaches/${row.coachId}/seat-map`)} 
                     />
-                    
+
                     <div className="d-flex justify-content-center py-4 bg-white border-top">
                         <Pagination pageInfo={pageInfo} onPageChange={setPageInfo} />
                     </div>
                 </Card.Body>
             </Card>
 
-            <CoachUpdateInfoModal 
-                isOpen={modalState.type === 'EDIT_INFO'} 
-                data={modalState.data} 
-                onClose={closeModal} 
-                onSuccess={refetch} 
+            <CoachStopUpdateInfoModal
+                isOpen={modalState.type === 'EDIT_INFO'}
+                data={modalState.data}
+                onClose={closeModal}
+                onSuccess={refetch}
             />
 
-            <CoachViewDetailModal 
-                isOpen={modalState.type === 'VIEW_DETAIL'} 
-                data={modalState.data} 
-                onClose={closeModal} 
+            <CoachStopViewDetailModal
+                isOpen={modalState.type === 'VIEW_DETAIL'}
+                data={modalState.data}
+                onClose={closeModal}
             />
 
         </Container>

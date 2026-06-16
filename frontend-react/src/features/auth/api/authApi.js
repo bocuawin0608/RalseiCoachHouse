@@ -52,14 +52,6 @@ export const authApi = {
     }
   },
 
-  // STAFF: trang login # bên customer (dùng local auth), ko có trang register
-  staffLogin: async (credentials) => {
-    return await axiosClient.post('/auth/staff/login', {
-      username: credentials.username,
-      password: credentials.password
-    });
-  },
-
   // CHUNG để logout
   logout: async (refreshToken) => {
     return await axiosClient.post('/auth/logout', { refreshToken });

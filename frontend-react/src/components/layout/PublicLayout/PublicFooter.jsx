@@ -1,34 +1,114 @@
-import { Container, Row, Col, Badge } from 'react-bootstrap';
+import { Container, Row, Col } from 'react-bootstrap';
+import { 
+  FaFacebookF, FaInstagram, FaYoutube, FaPhone, FaMapMarkerAlt, FaEnvelope 
+} from 'react-icons/fa';
 
 export default function PublicFooter() {
-    return (
-        <footer style={{ backgroundColor: 'var(--ralsei-footer)' }} className="pt-5 pb-3 text-white mt-auto">
-            <Container>
-                <Row className="gy-4">
-                    {/* Cột Thương hiệu */}
-                    <Col md={6} className="d-flex flex-column align-items-start">
-                        <img src="/images/ralseiiii.jpg" alt="Logo" height="60" className="rounded mb-3 bg-white p-1 shadow-sm" />
-                        <h6 className="fw-bold text-uppercase mb-0">Công ty TNHH Du lịch Hola Ralsei</h6>
-                    </Col>
+  return (
+    <footer style={{ backgroundColor: 'var(--ralsei-green)', color: 'var(--ralsei-black)' }} className="pt-5 pb-4 mt-auto">
+      <Container>
+        <Row className="gy-5">
+          
+          {/* Cột 1: Logo + Giới thiệu */}
+          <Col lg={5} md={6}>
+            <div className="d-flex align-items-center mb-3">
+              <img 
+                src="/images/ralseiiii.jpg" 
+                alt="Ralsei Logo" 
+                height="65" 
+                className="rounded me-3 bg-white shadow-sm" 
+              />
+              <div>
+                <h5 className="fw-bold mb-0 text-uppercase">HOLA RALSEI</h5>
+                <small className="opacity-75">Du lịch - Xe khách chất lượng cao</small>
+              </div>
+            </div>
+            
+            <p className="opacity-80 mb-4" style={{ fontSize: '0.95rem', lineHeight: '1.7' }}>
+              Nhà xe Ralsei tự hào mang đến dịch vụ vận chuyển hành khách uy tín, 
+              an toàn và tiện nghi nhất trên các tuyến đường lớn.
+            </p>
 
-                    {/* Cột Thông tin */}
-                    <Col md={6}>
-                        <Badge bg="light" text="dark" className="px-3 py-2 rounded-pill mb-3" style={{ color: 'var(--ralsei-black)' }}>
-                            CÔNG TY CHỦ QUẢN
-                        </Badge>
-                        <ul className="list-unstyled mb-0" style={{ fontSize: '0.9rem', lineHeight: '1.8' }}>
-                            <li>👤 <strong>Chịu trách nhiệm:</strong> Đoàn Ngọc Đức</li>
-                            <li>📍 <strong>Địa chỉ:</strong> FPT University, Hòa Lạc, Thạch Thất, Hà Nội</li>
-                        </ul>
-                    </Col>
-                </Row>
-                
-                <hr className="border-white opacity-25 my-4" />
-                
-                <div className="text-center opacity-75" style={{ fontSize: '0.85rem' }}>
-                    © Bản quyền thuộc về <strong>CÔNG TY TNHH DU LỊCH HOLA RALSEI</strong>
-                </div>
-            </Container>
-        </footer>
-    );
+            <div className="d-flex gap-3">
+              <a href="#" className="hover-opacity-100">
+                <FaFacebookF size={20} />
+              </a>
+              <a href="#" className="hover-opacity-100">
+                <FaInstagram size={20} />
+              </a>
+              <a href="#" className="hover-opacity-100">
+                <FaYoutube size={20} />
+              </a>
+            </div>
+          </Col>
+
+          {/* Cột 2: Liên kết nhanh */}
+          <Col lg={2} md={6} sm={6}>
+            <h6 className="fw-bold mb-3 text-uppercase">Dịch vụ</h6>
+            <ul className="list-unstyled mb-0" style={{ fontSize: '0.95rem', lineHeight: '2' }}>
+              <li><a href="/routes" className="text-decoration-none">Lịch trình</a></li>
+              <li><a href="/booking" className="text-decoration-none">Đặt vé</a></li>
+              <li><a href="#" className="text-decoration-none">Vé tháng</a></li>
+              <li><a href="#" className="text-decoration-none">Xe VIP</a></li>
+            </ul>
+          </Col>
+
+          {/* Cột 3: Hỗ trợ */}
+          <Col lg={2} md={6} sm={6}>
+            <h6 className="fw-bold mb-3 text-uppercase">Hỗ trợ</h6>
+            <ul className="list-unstyled mb-0" style={{ fontSize: '0.95rem', lineHeight: '2' }}>
+              <li><a href="#" className="text-decoration-none">Điều khoản sử dụng</a></li>
+              <li><a href="#" className="text-decoration-none">Chính sách hoàn vé</a></li>
+              <li><a href="#" className="text-decoration-none">Câu hỏi thường gặp</a></li>
+              <li><a href="#" className="text-decoration-none">Liên hệ</a></li>
+            </ul>
+          </Col>
+
+          {/* Cột 4: Thông tin liên hệ */}
+          <Col lg={3} md={6}>
+            <h6 className="fw-bold mb-3 text-uppercase">Liên hệ</h6>
+            
+            <div className="d-flex align-items-start gap-3 mb-3">
+              <FaMapMarkerAlt className="mt-1" />
+              <div style={{ fontSize: '0.95rem' }}>
+                FPT University, Hòa Lạc, Thạch Thất, Hà Nội
+              </div>
+            </div>
+
+            <div className="d-flex align-items-center gap-3 mb-3">
+              <FaPhone className="" />
+              <div>
+                <a href="tel:19001234" className="text-decoration-none">
+                  1900 1234
+                </a>
+              </div>
+            </div>
+
+            <div className="d-flex align-items-center gap-3">
+              <FaEnvelope className="" />
+              <a href="mailto:info@ralsei.vn" className="text-decoration-none">
+                info@ralsei.vn
+              </a>
+            </div>
+          </Col>
+        </Row>
+
+        <hr className="border-dark opacity-25 my-4" />
+
+        {/* Bottom Bar */}
+        <Row className="align-items-center">
+          <Col md={6} className="text-center text-md-start mb-3 mb-md-0">
+            <small className="opacity-75">
+              © {new Date().getFullYear()} Công ty TNHH Du lịch Hola Ralsei. All rights reserved.
+            </small>
+          </Col>
+          <Col md={6} className="text-center text-md-end">
+            <small className="opacity-75">
+              Chịu trách nhiệm nội dung: Ralsei Team
+            </small>
+          </Col>
+        </Row>
+      </Container>
+    </footer>
+  );
 }

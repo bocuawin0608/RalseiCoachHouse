@@ -11,6 +11,8 @@ import StaffLogin from '../pages/auth/StaffLogin';
 // Nested routes
 import { routeRoutes } from '../features/routes';
 import { coachRoutes } from '../features/coaches';
+import { voucherRoutes } from '../features/vouchers';
+import { cargoRoutes } from '../features/cargo';
 
 const AppRouter = () => {
     return (
@@ -28,6 +30,8 @@ const AppRouter = () => {
                     <Route path="dashboard" element={<div>Bảng điều khiển quản trị</div>} />
                     {coachRoutes}
                     {routeRoutes}
+                    {cargoRoutes}
+                    {voucherRoutes}
                     
                     {/* route dưới thì chỉ admin vào đc, manager thì ko */}
                     <Route element={<RoleGuard allowedRoles={['ADMIN']} />}>

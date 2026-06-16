@@ -22,16 +22,6 @@ export function AuthProvider({ children }) {
     return response;
   };
 
-  const loginStaff = async (credentials) => {
-    setLoading(true);
-    try {
-      const response = await authApi.staffLogin(credentials);
-      return processAuthSuccess(response, true); // Staff mặc định giữ phiên
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const logout = () => {
     authApi.logout(authStorage.getRefreshToken());
     authStorage.clearAll();
@@ -42,7 +32,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{ 
       user, token, loading, setLoading,          
-      processAuthSuccess, loginStaff, logout 
+      processAuthSuccess, logout 
     }}>
       {children}
     </AuthContext.Provider>

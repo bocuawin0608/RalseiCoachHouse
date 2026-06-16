@@ -1,9 +1,9 @@
 import { Alert, Button, Form, Modal } from 'react-bootstrap'
 import { useState, useEffect } from 'react';
-import { coachTypeApi } from '../api/coachTypeApi';
+import { cargoTypeApi } from '../api/cargoTypeApi';
 import { BsExclamationTriangleFill } from 'react-icons/bs';
 
-export default function CoachTypeUpdateInfoModal({ isOpen, data, onClose, onSuccess }) {
+export default function CargoTypeUpdateInfoModal({ isOpen, data, onClose, onSuccess }) {
     const [name, setName] = useState('');
     const [isActive, setIsActive] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -12,15 +12,15 @@ export default function CoachTypeUpdateInfoModal({ isOpen, data, onClose, onSucc
     useEffect(() => {
         const load = () => {
             if (data && isOpen) {
-                setName(data.coachTypeName);
-                setIsActive(data.isActive);
+                setName(data.cargoTypeName);
+                setIsActive(data.active);
                 setError(null);
             }    
         }
         load();
     }, [data, isOpen]);
 
-    const hasAnyChange = data && (data.coachTypeName !== name || data.isActive !== isActive);
+    const hasAnyChange = data && (data.cargoTypeName !== name || data.active !== isActive);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -33,7 +33,12 @@ export default function CoachTypeUpdateInfoModal({ isOpen, data, onClose, onSucc
         setIsSubmitting(true);
         setError(null);
         try {
-            await coachTypeApi.updateCoachTypeInfo(data.coachTypeId, { coachTypeName: name, isActive });
+            await cargoTypeApi.updateCargoTypeInfo(data.cargoTypeId, { cargoTypeName: name, active: isActive });
+            
+            if (data.active !== isActive) {
+                await cargoTypeApi.toggleCargoTypeStatus(data.cargoTypeId, isActive);
+            }
+
             onSuccess(); 
             onClose();   
         } catch (error) {
@@ -49,16 +54,16 @@ export default function CoachTypeUpdateInfoModal({ isOpen, data, onClose, onSucc
         <Modal show={isOpen} onHide={onClose} centered backdrop="static">
             <Modal.Header closeButton>
                 <Modal.Title className="fs-5 fw-bold text-primary">
-                    Cập nhật thông tin loại xe
+                    Cập nhật thông tin loại hàng
                 </Modal.Title>
             </Modal.Header>
 
             <Modal.Body className="px-4 pb-0">
-                <Form id="update-coach-form" onSubmit={handleSubmit}>
+                <Form id="update-cargo-form" onSubmit={handleSubmit}>
                     
                     <Form.Group className="mb-4">
                         <Form.Label className="fw-semibold text-secondary">
-                            Tên loại xe <span className="text-danger">*</span>
+                            Tên loại hàng <span className="text-danger">*</span>
                         </Form.Label>
                         <Form.Control 
                             type="text"
@@ -107,7 +112,7 @@ export default function CoachTypeUpdateInfoModal({ isOpen, data, onClose, onSucc
                 <Button variant="outline-secondary" onClick={onClose} disabled={isSubmitting} className="px-4">
                     Hủy bỏ
                 </Button>
-                <Button type="submit" form="update-coach-form" disabled={isSubmitting} className="px-4 custom-btn-general">
+                <Button type="submit" form="update-cargo-form" disabled={isSubmitting} className="px-4 custom-btn-general">
                     {isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}
                 </Button>
             </Modal.Footer>
