@@ -520,17 +520,17 @@ PRINT N'-> Đang đồng bộ hóa dữ liệu cấu trúc Seat Layout JSON cho 
 
 -- 1. Xe Limousine VIP 20 phòng (10 hàng x 3 cột, có lối đi ở giữa)
 UPDATE [coach_type]
-SET [seatLayout] = '{"rows":10,"cols":3,"matrix":[["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"]]}'
+SET [seatLayout] = '{"totalFloors":1,"rows":10,"cols":3,"floors":[[["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"]]]}'
 WHERE [coachTypeId] = 1;
 
 -- 2. Xe Giường Nằm Luxury 32 chỗ (16 hàng x 3 cột, có lối đi ở giữa)
 UPDATE [coach_type]
-SET [seatLayout] = '{"rows":16,"cols":3,"matrix":[["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"]]}'
+SET [seatLayout] = '{"totalFloors":1,"rows":16,"cols":3,"floors":[[["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"]]]}'
 WHERE [coachTypeId] = 2;
 
 -- 3. Xe Khách Truyền Thống 38 chỗ (19 hàng x 3 cột, có lối đi ở giữa)
 UPDATE [coach_type]
-SET [seatLayout] = '{"rows":19,"cols":3,"matrix":[["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"]]}'
+SET [seatLayout] = '{"totalFloors":1,"rows":19,"cols":3,"floors":[[["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"]]]}'
 WHERE [coachTypeId] = 3;
 
 PRINT N'-> Cập nhật Seat Layout thành công!';
