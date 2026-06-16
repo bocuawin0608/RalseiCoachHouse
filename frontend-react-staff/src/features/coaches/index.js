@@ -11,5 +11,6 @@ export { default as CoachTypeUpdatePriceModal } from './components/CoachTypeUpda
 export { default as SeatMapBuilder } from './components/SeatMapBuilder'
 export { default as CoachFilter } from './components/CoachFilter';
 export { default as CoachTable } from './components/CoachTable';
+export { default as CoachCreateModal } from './components/CoachCreateModal'
 export { default as CoachUpdateInfoModal } from './components/CoachUpdateInfoModal';
 export { default as CoachViewDetailModal } from './components/CoachViewDetailModal';

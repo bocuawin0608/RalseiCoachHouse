@@ -1,15 +1,27 @@
 package com.ralsei.controller;
 
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.ralsei.dto.request.CoachAndRouteStop.RouteRequest;
-import com.ralsei.dto.response.PagedResponse;
+import com.ralsei.dto.response.CoachAndRouteStop.RouteDropdownDTO;
 import com.ralsei.dto.response.CoachAndRouteStop.RouteResponse;
+import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.service.RouteService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/routes")
@@ -32,7 +44,12 @@ public class RouteController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/dropdown")
+    public ResponseEntity<List<RouteDropdownDTO>> searchRoutesForDropdown() {
+        return ResponseEntity.ok(routeService.findRoutesForDropdown());
+    }
+
+    @GetMapping("/{id:\\d+}")
     public ResponseEntity<RouteResponse> getRouteById(@PathVariable int id) {
         RouteResponse response = routeService.getRouteById(id);
         return ResponseEntity.ok(response);

@@ -33,5 +33,10 @@ export const coachTypeApi = {
      * @param {number|string} id - ID của CoachType cần sửa
      * @param {Object} data - Chứa thông tin cần cập nhật (seatLayout)
      */
-    updateCoachTypeSeatMap: (id, data) => { return axiosClient.patch(`${BASE}/${id}/seat-layout`, data); }
+    updateCoachTypeSeatMap: (id, data) => { return axiosClient.patch(`${BASE}/${id}/seat-layout`, data); },
+
+    /**
+     * nhận về danh sách coach type (id, name) để xổ ra dropdown
+     */
+    getCoachTypesDropdown: () => { return axiosClient.get(`${BASE}/dropdown`); }
 };

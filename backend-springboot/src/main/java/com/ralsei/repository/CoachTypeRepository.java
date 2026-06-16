@@ -1,6 +1,7 @@
 package com.ralsei.repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -11,6 +12,7 @@ import org.springframework.data.repository.query.Param;
 
 import com.ralsei.dto.projection.CoachTypeProjection;
 import com.ralsei.dto.request.coachtype.CoachTypeFilterRequest;
+import com.ralsei.dto.response.coachtype.CoachTypeDropdownDTO;
 import com.ralsei.model.CoachType;
 
 public interface CoachTypeRepository extends JpaRepository<CoachType, Integer> {
@@ -50,4 +52,7 @@ public interface CoachTypeRepository extends JpaRepository<CoachType, Integer> {
 
     boolean existsByCoachTypeNameIgnoreCase(String coachTypeName);
     Optional<CoachType> findByCoachTypeIdAndIsActiveTrue(Integer id);
+    
+    @Query("SELECT new com.ralsei.dto.response.coachtype.CoachTypeDropdownDTO(ct.coachTypeId, ct.coachTypeName) FROM CoachType ct WHERE ct.isActive = true ORDER BY ct.coachTypeName")
+    List<CoachTypeDropdownDTO> findActiveCoachTypesForDropdown();
 }

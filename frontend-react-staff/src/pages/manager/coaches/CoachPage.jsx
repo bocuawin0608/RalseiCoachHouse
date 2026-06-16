@@ -5,7 +5,8 @@ import {
     CoachTable, 
     CoachFilter, 
     CoachUpdateInfoModal, 
-    CoachViewDetailModal 
+    CoachViewDetailModal, 
+    CoachCreateModal
 } from '../../../features/coaches';
 import Pagination from '../../../components/common/Pagination';
 import { Alert, Button, Card, Container } from 'react-bootstrap';
@@ -29,7 +30,7 @@ export default function CoachPage() {
                 <h2 className="m-0 fw-bold text-dark">Quản lý danh sách xe</h2>
                 <Button 
                     className="fw-medium shadow-sm custom-btn-general"
-                    onClick={() => navigate('/management/coaches/create')}
+                    onClick={() => setModalState({ type: 'CREATE', data: null })}
                 >
                     + Thêm xe mới
                 </Button>
@@ -64,6 +65,12 @@ export default function CoachPage() {
                     </div>
                 </Card.Body>
             </Card>
+
+            <CoachCreateModal 
+                isOpen={modalState.type === 'CREATE'}
+                onClose={closeModal}
+                onSuccess={refetch}
+            />
 
             <CoachUpdateInfoModal 
                 isOpen={modalState.type === 'EDIT_INFO'} 

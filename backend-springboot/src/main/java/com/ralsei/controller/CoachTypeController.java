@@ -1,5 +1,7 @@
 package com.ralsei.controller;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -22,6 +24,7 @@ import com.ralsei.dto.request.coachtype.CoachTypeUpdateInfoRequest;
 import com.ralsei.dto.request.coachtype.CoachTypeUpdatePriceRequest;
 import com.ralsei.dto.request.coachtype.CoachTypeUpdateSeatmapRequest;
 import com.ralsei.dto.response.coachtype.CoachTypeDetailResponse;
+import com.ralsei.dto.response.coachtype.CoachTypeDropdownDTO;
 import com.ralsei.dto.response.coachtype.CoachTypeResponse;
 import com.ralsei.service.CoachTypeService;
 
@@ -51,8 +54,14 @@ public class CoachTypeController {
         Integer newId = coachTypeService.createCoachType(createRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(newId);
     }
+    
+    @GetMapping("/dropdown")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<List<CoachTypeDropdownDTO>> getActiveCoachTypesForDropdown() {
+        return ResponseEntity.ok(coachTypeService.findActiveCoachTypesForDropdown());
+    }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id:\\d+}")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<CoachTypeDetailResponse> viewCoachTypeDetail(@PathVariable @Min(value = 1, message = "ID của Loại xe phải lớn hơn 0.") Integer id) {
         return ResponseEntity.ok(coachTypeService.getCoachTypeDetail(id));
