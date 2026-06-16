@@ -73,10 +73,10 @@ input:focus, textarea:focus, select:focus {
 }
 
 .custom-btn-general {
-    background-color: var(--ralsei-primary) !important;
-    border-color: var(--ralsei-primary) !important;
-}
-.custom-btn-general:hover {
     background-color: var(--ralsei-primary-light) !important;
     border-color: var(--ralsei-primary-light) !important;
+}
+.custom-btn-general:hover {
+    background-color: var(--ralsei-primary) !important;
+    border-color: var(--ralsei-primary) !important;
 }
