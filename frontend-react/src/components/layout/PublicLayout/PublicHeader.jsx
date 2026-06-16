@@ -29,8 +29,6 @@ export default function PublicHeader() {
                     <Nav className="me-auto gap-2">
                         <Button variant="link" className="text-decoration-none fw-bold" style={{ color: 'var(--ralsei-black)' }} onClick={() => navigate('/')}>Trang chủ</Button>
                         <Button variant="link" className="text-decoration-none fw-bold" style={{ color: 'var(--ralsei-black)' }} onClick={() => navigate('/tra-cuu')}>Tra cứu đơn</Button>
-                        <Button variant="link" className="text-decoration-none fw-bold" style={{ color: 'var(--ralsei-black)' }} onClick={() => navigate('/thue-xe')}>Thuê xe</Button>
-                        <Button variant="link" className="text-decoration-none fw-bold" style={{ color: 'var(--ralsei-black)' }} onClick={() => navigate('/tin-tuc')}>Tin tức</Button>
                     </Nav>
 
                     <Nav className="align-items-lg-center gap-2 mt-3 mt-lg-0">

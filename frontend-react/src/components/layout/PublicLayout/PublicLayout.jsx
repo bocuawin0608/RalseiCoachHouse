@@ -33,9 +33,6 @@ export default function PublicLayout() {
                     background-color: var(--ralsei-pink) !important; 
                     border-color: var(--ralsei-pink) !important;
                     color: var(--ralsei-white) !important;
-                    transform: translateY(-2px);
-                    /* Thêm bóng đổ đồng màu với màu hồng để tạo chiều sâu */
-                    box-shadow: 0 6px 15px rgba(255, 71, 163, 0.4) !important;
                 }
 
                 /* 3. Nút Đăng ký - Unique & Nổi bật */
@@ -52,9 +49,6 @@ export default function PublicLayout() {
                     background-color: var(--ralsei-pink) !important; 
                     border-color: var(--ralsei-pink) !important;
                     color: var(--ralsei-white) !important;
-                    transform: translateY(-2px);
-                    /* Thêm bóng đổ đồng màu với màu hồng để tạo chiều sâu */
-                    box-shadow: 0 6px 15px rgba(255, 71, 163, 0.4) !important;
                 }
             `}</style>
             <PublicHeader />

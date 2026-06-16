@@ -23,6 +23,10 @@
   --ralsei-black: #0a4030; 
   --ralsei-footer: #51c9a7; 
   --ralsei-pink: #ff47a3;
+  
+  
+  --ralsei-primary: #246148;
+  --ralsei-primary-light: #2d6a4f;
 
   /* Thông số layout */
   --border-radius-sm: 4px;
@@ -66,4 +70,12 @@ input, button, textarea, select {
 /* Bỏ viền xanh lè mặc định khi focus vào ô input của trình duyệt */
 input:focus, textarea:focus, select:focus {
   outline: none;
+}
+
+.custom-btn-general {
+    background-color: var(--ralsei-primary-light) !important;
+    border-color: var(--ralsei-primary-light) !important;
+}
+.custom-btn-general:hover {
+    filter: brightness(90%); 
 }
