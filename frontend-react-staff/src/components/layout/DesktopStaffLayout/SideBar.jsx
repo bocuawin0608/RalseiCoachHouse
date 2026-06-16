@@ -36,7 +36,7 @@ export default function Sidebar() {
         <aside
             style={{
                 width: isCollapsed ? '75px' : '260px',
-                background: 'var(--ralsei-primary)',
+                background: '#1a2e26',
                 minHeight: '100vh',
                 transition: 'width 0.3s ease',
                 overflow: 'hidden', // Quan trọng: Chặn mọi thứ trồi ra ngoài
