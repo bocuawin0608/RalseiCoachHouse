@@ -1,5 +1,5 @@
 -- CRE: NIKO(Gemini Agent) - UPDATE: ĐỒNG BỘ THIẾT KẾ DDL MỚI
--- FIX: SQL Server UNIQUE NULL (firebaseUid), Seat Matrix ColIndex, Strict Timeline Pricing, Booking Logic Concurrency
+-- FIX: Thêm trường floorIndex vào logic sinh tự động Seat, đồng bộ JSON Layout 1 tầng.
 
 USE VeXeDB;
 GO
@@ -129,7 +129,6 @@ DECLARE @dobStr DATE;
 DECLARE @cccdStr VARCHAR(20);
 DECLARE @emailStr VARCHAR(100);
 
--- Bypass UNIQUE NULL Constraint in SQL Server bằng NEWID()
 -- Admin Hệ Thống
 INSERT INTO [account] (username, passwordHash, isActive) OUTPUT inserted.accountId INTO @IdOutput VALUES ('0901111111', '$2a$10$G1TCgI4zgHQpN1hyuRMEaOOvGeoSg7MCMQDapcuLl0NsIZNn104w2', 1);
 SELECT TOP 1 @GeneratedId = Id FROM @IdOutput; DELETE FROM @IdOutput;
@@ -237,7 +236,7 @@ INSERT INTO [cargo_type_price] (cargoTypeId, unit, pricePerUnit, startEffectiveD
 -- ============================================================================
 -- LEVEL 3: GENERATING COACHES & SEATS
 -- ============================================================================
-PRINT N'-> Đang lắp ráp hạ tầng 365 xe khách và tự động cấu hình ma trận ghế...';
+PRINT N'-> Đang lắp ráp hạ tầng 365 xe khách và tự động cấu hình ma trận ghế (Thêm floorIndex)...';
 
 DECLARE @ManufacturerTable TABLE (Id INT IDENTITY(1,1), Brand NVARCHAR(100));
 INSERT INTO @ManufacturerTable (Brand) VALUES 
@@ -268,14 +267,14 @@ BEGIN
     
     SET @NewCoachId = SCOPE_IDENTITY();
 
-    -- Sửa logic ColIndex thành "3 ELSE 1" để đồng bộ với JSON (Cột 1 và Cột 3 là ghế, cột 2 lối đi)
+    -- Bổ sung trường floorIndex = 1 cho toàn bộ ghế sinh ra
     SET @s = 1;
     IF @TargetCoachTypeId = 1
     BEGIN
         WHILE @s <= 20 
         BEGIN 
-            INSERT INTO [seat] (coachId, seatCode, rowIndex, colIndex) 
-            VALUES (@NewCoachId, 'L' + RIGHT('0' + CAST(@s AS VARCHAR(2)), 2), (@s+1)/2, CASE WHEN @s%2=0 THEN 3 ELSE 1 END); 
+            INSERT INTO [seat] (coachId, seatCode, rowIndex, colIndex, floorIndex) 
+            VALUES (@NewCoachId, 'L' + RIGHT('0' + CAST(@s AS VARCHAR(2)), 2), (@s+1)/2, CASE WHEN @s%2=0 THEN 3 ELSE 1 END, 1); 
             SET @s = @s + 1; 
         END;
     END
@@ -283,8 +282,8 @@ BEGIN
     BEGIN
         WHILE @s <= 32 
         BEGIN 
-            INSERT INTO [seat] (coachId, seatCode, rowIndex, colIndex) 
-            VALUES (@NewCoachId, 'LX' + RIGHT('0' + CAST(@s AS VARCHAR(2)), 2), (@s+1)/2, CASE WHEN @s%2=0 THEN 3 ELSE 1 END); 
+            INSERT INTO [seat] (coachId, seatCode, rowIndex, colIndex, floorIndex) 
+            VALUES (@NewCoachId, 'LX' + RIGHT('0' + CAST(@s AS VARCHAR(2)), 2), (@s+1)/2, CASE WHEN @s%2=0 THEN 3 ELSE 1 END, 1); 
             SET @s = @s + 1; 
         END;
     END
@@ -292,8 +291,8 @@ BEGIN
     BEGIN
         WHILE @s <= 38 
         BEGIN 
-            INSERT INTO [seat] (coachId, seatCode, rowIndex, colIndex) 
-            VALUES (@NewCoachId, 'T' + RIGHT('0' + CAST(@s AS VARCHAR(2)), 2), (@s+1)/2, CASE WHEN @s%2=0 THEN 3 ELSE 1 END); 
+            INSERT INTO [seat] (coachId, seatCode, rowIndex, colIndex, floorIndex) 
+            VALUES (@NewCoachId, 'T' + RIGHT('0' + CAST(@s AS VARCHAR(2)), 2), (@s+1)/2, CASE WHEN @s%2=0 THEN 3 ELSE 1 END, 1); 
             SET @s = @s + 1; 
         END;
     END
