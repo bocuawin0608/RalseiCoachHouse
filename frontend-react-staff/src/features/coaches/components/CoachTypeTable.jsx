@@ -60,8 +60,7 @@ export default function CoachTypeTable({
                             <td className="px-3">
                                 <div className="d-flex gap-2 justify-content-center align-items-center">
                                     <Button 
-                                        variant="primary" 
-                                        className="d-flex align-items-center"
+                                        className="d-flex align-items-center custom-btn-general"
                                         onClick={() => onViewDetail(item)}
                                         title="Xem chi tiết"
                                     >
@@ -69,8 +68,7 @@ export default function CoachTypeTable({
                                     </Button>
 
                                     <Button 
-                                        variant="primary" 
-                                        className="d-flex align-items-center"
+                                        className="d-flex align-items-center custom-btn-general"
                                         onClick={() => onEditInfo(item)}
                                         title="Sửa thông tin"
                                     >
@@ -78,8 +76,7 @@ export default function CoachTypeTable({
                                     </Button>
 
                                     <Button 
-                                        variant="primary" 
-                                        className="d-flex align-items-center"
+                                        className="d-flex align-items-center custom-btn-general"
                                         onClick={() => onEditPrice(item)}
                                         title="Sửa giá"
                                     >
@@ -87,8 +84,7 @@ export default function CoachTypeTable({
                                     </Button>
 
                                     <Button 
-                                        variant="primary"
-                                        className="d-flex align-items-center"
+                                        className="d-flex align-items-center custom-btn-general"
                                         onClick={() => onEditSeatMap(item)}
                                         title="Sửa sơ đồ ghế"
                                     >

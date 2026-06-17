@@ -50,6 +50,9 @@ public class Seat extends BaseEntity {
     @Column(name = "colIndex", nullable = false)
     private int colIndex;
 
+    @Column(name = "floorIndex", nullable = false)
+    private int floorIndex;
+
     @Column(name = "isActive", nullable = false)
     private boolean isActive;
 }

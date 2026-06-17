@@ -1,0 +1,64 @@
+import React from 'react';
+import { Form, Row, Col } from 'react-bootstrap';
+
+const VoucherFilter = ({ filters, onFilterChange, onReset }) => {
+  return (
+    <div className="voucher-filter-card">
+      <Form>
+        <Row className="g-3 align-items-end">
+          <Col md={3}>
+            <Form.Group>
+              <Form.Label>Tìm kiếm</Form.Label>
+              <Form.Control
+                type="text"
+                placeholder="Mã voucher…"
+                value={filters.search || ''}
+                onChange={(e) => onFilterChange('search', e.target.value)}
+              />
+            </Form.Group>
+          </Col>
+          <Col md={2}>
+            <Form.Group>
+              <Form.Label>Loại giảm</Form.Label>
+              <Form.Select
+                value={filters.discountType || ''}
+                onChange={(e) => onFilterChange('discountType', e.target.value)}
+              >
+                <option value="">Tất cả</option>
+                <option value="PERCENT">Phần trăm</option>
+                <option value="FIXED">Cố định</option>
+              </Form.Select>
+            </Form.Group>
+          </Col>
+          <Col md={3}>
+            <Form.Group>
+              <Form.Label>Từ ngày</Form.Label>
+              <Form.Control
+                type="datetime-local"
+                value={filters.fromDate || ''}
+                onChange={(e) => onFilterChange('fromDate', e.target.value)}
+              />
+            </Form.Group>
+          </Col>
+          <Col md={3}>
+            <Form.Group>
+              <Form.Label>Đến ngày</Form.Label>
+              <Form.Control
+                type="datetime-local"
+                value={filters.toDate || ''}
+                onChange={(e) => onFilterChange('toDate', e.target.value)}
+              />
+            </Form.Group>
+          </Col>
+          <Col md={1}>
+            <button type="button" className="voucher-btn-secondary w-100" onClick={onReset}>
+              Reset
+            </button>
+          </Col>
+        </Row>
+      </Form>
+    </div>
+  );
+};
+
+export default VoucherFilter;

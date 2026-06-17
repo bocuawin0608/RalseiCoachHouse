@@ -49,17 +49,16 @@ export default function CoachTable({ data, loading, onViewDetail, onEditInfo, on
                         </td>
                         <td className="px-3">
                             <div className="d-flex gap-2 justify-content-center align-items-center">
-                                <Button variant="primary" className="d-flex align-items-center" 
+                                <Button className="d-flex align-items-center custom-btn-general" 
                                     onClick={() => onViewDetail(coach)} title='Xem chi tiết'>
                                         <BsEye size={16} />
                                 </Button>
-                                <Button variant="primary" className="d-flex align-items-center" 
+                                <Button className="d-flex align-items-center custom-btn-general" 
                                     onClick={() => onEditInfo(coach)} title='Sửa thông tin'>
                                         <BsPencilFill size={16} />
                                 </Button>
                                 <Button 
-                                    variant="primary"
-                                    className="d-flex align-items-center"
+                                    className="d-flex align-items-center custom-btn-general"
                                     onClick={() => onEditSeatMap?.(coach)}
                                     title="Sửa sơ đồ ghế của xe"
                                 >

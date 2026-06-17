@@ -317,6 +317,7 @@ CREATE TABLE [seat] (
     [seatCode] VARCHAR(10) NOT NULL,
     [rowIndex] INT NOT NULL,
     [colIndex] INT NOT NULL,
+    [floorIndex] INT NOT NULL,
     [isActive] BIT NOT NULL DEFAULT 1,
     [createdAt] DATETIME DEFAULT GETDATE(),
     [createdBy] INT NULL,
@@ -327,7 +328,7 @@ CREATE TABLE [seat] (
 	CONSTRAINT CK_Seat_Coordinates CHECK ([rowIndex] >= 1 AND [colIndex] >= 1)
 );
 
-ALTER TABLE [seat] ADD CONSTRAINT UQ_Seat_Matrix UNIQUE ([coachId], [rowIndex], [colIndex]);
+ALTER TABLE [seat] ADD CONSTRAINT UQ_Seat_Matrix UNIQUE ([coachId], [floorIndex], [rowIndex], [colIndex]);
 ALTER TABLE [seat] ADD CONSTRAINT UQ_Seat_Code UNIQUE ([coachId], [seatCode]);
 
 -- ============================================================================

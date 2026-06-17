@@ -115,9 +115,7 @@ axiosClient.interceptors.response.use(
 
 const handleAuthFailure = () => {
     authStorage.clearAll();
-    const currentPath = window.location.pathname
-    const isStaffRoute = currentPath.startsWith('/management') || currentPath.startsWith('/staff');
-    window.location.href = isStaffRoute ? "/staff/login" : "/login";
+    window.location.href = "/login";
 }
 
 export default axiosClient;

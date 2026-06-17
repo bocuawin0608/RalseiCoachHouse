@@ -15,7 +15,7 @@ export default function CoachTypeUpdateSeatmapPage() {
 
             <Button 
                 variant="link" 
-                onClick={() => navigate('/manager/coach-types')}
+                onClick={() => navigate('/management/coach-types')}
                 className="text-decoration-none text-secondary p-0 mb-3 d-flex align-items-center gap-2 fw-medium"
             >
                 <BsArrowLeft size={18}/> Quay lại danh sách

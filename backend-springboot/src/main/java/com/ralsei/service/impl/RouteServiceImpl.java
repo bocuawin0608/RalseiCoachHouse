@@ -1,27 +1,30 @@
 package com.ralsei.service.impl;
 
-import com.ralsei.dto.request.CoachAndRouteStop.RouteRequest;
-import com.ralsei.dto.response.PagedResponse;
-import com.ralsei.dto.response.CoachAndRouteStop.RouteResponse;
-import com.ralsei.dto.response.CoachAndRouteStop.RouteStopResponse;
-import com.ralsei.model.Route;
-import com.ralsei.model.RouteStop;
-import com.ralsei.repository.RouteRepository;
-import com.ralsei.repository.RouteStopRepository;
-import com.ralsei.service.RouteService;
-import com.ralsei.exception.ResourceNotFoundException;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.ralsei.dto.request.CoachAndRouteStop.RouteRequest;
+import com.ralsei.dto.response.CoachAndRouteStop.RouteDropdownDTO;
+import com.ralsei.dto.response.CoachAndRouteStop.RouteResponse;
+import com.ralsei.dto.response.CoachAndRouteStop.RouteStopResponse;
+import com.ralsei.dto.response.PagedResponse;
+import com.ralsei.exception.ResourceNotFoundException;
+import com.ralsei.model.Route;
+import com.ralsei.model.RouteStop;
+import com.ralsei.repository.RouteRepository;
+import com.ralsei.repository.RouteStopRepository;
+import com.ralsei.service.RouteService;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -147,5 +150,10 @@ public class RouteServiceImpl implements RouteService {
                 .kilometersFromStart(rs.getKilometersFromStart())
                 .minutesFromStart(rs.getMinutesFromStart())
                 .build();
+    }
+
+    @Override
+    public List<RouteDropdownDTO> findRoutesForDropdown() {
+        return routeRepository.findRoutesForDropdown();
     }
 }

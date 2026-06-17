@@ -20,6 +20,7 @@ import com.ralsei.dto.request.coachtype.CoachTypeUpdateInfoRequest;
 import com.ralsei.dto.request.coachtype.CoachTypeUpdatePriceRequest;
 import com.ralsei.dto.request.coachtype.CoachTypeUpdateSeatmapRequest;
 import com.ralsei.dto.response.coachtype.CoachTypeDetailResponse;
+import com.ralsei.dto.response.coachtype.CoachTypeDropdownDTO;
 import com.ralsei.dto.response.coachtype.CoachTypeResponse;
 import com.ralsei.exception.ResourceNotFoundException;
 import com.ralsei.model.CoachType;
@@ -237,6 +238,11 @@ public class CoachTypeServiceImpl implements CoachTypeService {
         ProcessedSeatLayout newSeatLayout = validateSeatLayout(updateRequest.seatLayout());
         coachType.setTotalSeat(newSeatLayout.totalSeat());
         coachType.setSeatLayout(newSeatLayout.seatLayout());
+    }
+
+    @Override
+    public List<CoachTypeDropdownDTO> findActiveCoachTypesForDropdown() {
+        return coachTypeRepo.findActiveCoachTypesForDropdown();
     }
 
 }
