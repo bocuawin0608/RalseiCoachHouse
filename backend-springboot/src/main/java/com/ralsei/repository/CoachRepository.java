@@ -38,7 +38,8 @@ public interface CoachRepository extends JpaRepository<Coach, Integer> {
                     WHEN 'MAINTENANCE' THEN 2
                     WHEN 'RETIRED' THEN 3
                     ELSE 4
-                END ASC
+                END ASC,
+                c.coachId DESC
         """)
     Page<CoachResponse> searchCoaches(
         @Param("filter") CoachFilterRequest filter,

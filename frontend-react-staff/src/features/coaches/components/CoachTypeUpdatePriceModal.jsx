@@ -98,7 +98,7 @@ export default function CoachTypeUpdatePriceModal({ isOpen, data, onClose, onSuc
                 <Button variant="outline-secondary" onClick={onClose} disabled={isSubmitting} className="px-4">
                     Hủy bỏ
                 </Button>
-                <Button variant="primary" type="submit" form="update-price-form" disabled={isSubmitting} className="px-4">
+                <Button type="submit" form="update-price-form" disabled={isSubmitting} className="px-4 custom-btn-general">
                     {isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}
                 </Button>
             </Modal.Footer>

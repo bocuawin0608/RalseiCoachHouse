@@ -23,7 +23,7 @@ export default function CoachFilter({filters, onFilterChange, onReset, onCheckbo
 
                     <Form.Control 
                         name="routeName" 
-                        placeholder="Tuyến xe..." 
+                        placeholder="Tuyến đường..." 
                         value={filters.routeName || ''}
                         onChange={onFilterChange}
                         style={{ width: '150px' }} maxLength={255}

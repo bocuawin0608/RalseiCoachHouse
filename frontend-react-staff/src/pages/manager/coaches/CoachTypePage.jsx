@@ -29,8 +29,7 @@ export default function CoachTypePage() {
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <h2 className="m-0 fw-bold text-dark">Quản lý các loại xe</h2>
                 <Button 
-                    variant="primary" 
-                    className="fw-medium shadow-sm"
+                    className="fw-medium shadow-sm custom-btn-general"
                     onClick={() => navigate('/management/coach-types/create')}
                 >
                     + Thêm loại xe mới

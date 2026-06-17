@@ -241,9 +241,8 @@ export default function CoachTypeCreatePage() {
 
                                 <Button 
                                     type="submit" 
-                                    variant="primary" 
                                     disabled={isSubmitting}
-                                    className="w-100 py-2 mt-3 fw-medium d-flex justify-content-center align-items-center gap-2"
+                                    className="w-100 py-2 mt-3 fw-medium d-flex justify-content-center align-items-center gap-2 custom-btn-general"
                                 >
                                     <BsCheckCircle size={18}/> 
                                     {isSubmitting ? 'Đang lưu hệ thống...' : 'Lưu & Kích hoạt'}

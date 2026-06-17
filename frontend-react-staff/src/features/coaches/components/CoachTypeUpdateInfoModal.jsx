@@ -107,7 +107,7 @@ export default function CoachTypeUpdateInfoModal({ isOpen, data, onClose, onSucc
                 <Button variant="outline-secondary" onClick={onClose} disabled={isSubmitting} className="px-4">
                     Hủy bỏ
                 </Button>
-                <Button variant="primary" type="submit" form="update-coach-form" disabled={isSubmitting} className="px-4">
+                <Button type="submit" form="update-coach-form" disabled={isSubmitting} className="px-4 custom-btn-general">
                     {isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}
                 </Button>
             </Modal.Footer>

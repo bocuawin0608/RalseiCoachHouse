@@ -15,8 +15,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ralsei.dto.request.cargotype.CargoTypeRequest;
-import com.ralsei.dto.response.cargotype.CargoTypeResponse;
 import com.ralsei.dto.response.PagedResponse;
+import com.ralsei.dto.response.cargotype.CargoTypeResponse;
 import com.ralsei.service.CargoTypeService;
 
 import jakarta.validation.Valid;
