@@ -141,8 +141,14 @@ public class CoachServiceImpl implements CoachService {
         coachToUpdate.setManufacturer(request.manufacturer());
         coachToUpdate.setYear(request.year());
 
-        // if(coachToUpdate.getStatus())
-        //check status: doi tu active -> maintenance/retired thi tu hien tai-8 den future co chuyen nao la !cancelled || !completed
+        if(coachToUpdate.getStatus().equals(CoachStatus.ACTIVE) && 
+            ((request.status().equals(CoachStatus.MAINTENANCE) || request.status().equals(CoachStatus.RETIRED)))) {
+                if(tripRepo.checkIfCoachHasTodoTrips(id)) {
+                    throw new BusinessRuleException("Không thể ngừng hoạt động hoặc bảo trì xe do đang có lịch trình chuyến đi phát sinh cần thực hiện/hoàn thành!");
+                }
+                coachToUpdate.setStatus(request.status());
+        }
+
         return true;
     }
 }
