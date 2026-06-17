@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { BsArrowLeft, BsCheckCircle, BsExclamationTriangleFill } from 'react-icons/bs';
 import { coachStopApi } from '../../../features/coachStops';
 import { Alert, Button, Card, Col, Container, Form, Row, ListGroup, Spinner } from 'react-bootstrap';
-import axios from 'axios';
+import axiosClient from '../../../api/axiosClient';
 import { useDebounce } from '../../../hooks/useDebounce';
 
 export default function CoachStopCreatePage() {
@@ -51,11 +51,9 @@ export default function CoachStopCreatePage() {
     const fetchPredictions = async (input) => {
         setIsSearching(true);
         try {
-            const apiKey = import.meta.env.VITE_GOONG_API_KEY;
-            if (!apiKey) return;
-            const res = await axios.get(`https://rsapi.goong.io/v2/place/autocomplete?api_key=${apiKey}&input=${encodeURIComponent(input)}`);
-            if (res.data && res.data.predictions) {
-                setPredictions(res.data.predictions);
+            const res = await axiosClient.get(`/v2/goong/place/autocomplete?input=${encodeURIComponent(input)}`);
+            if (res && res.predictions) {
+                setPredictions(res.predictions);
                 setShowDropdown(true);
             }
         } catch (err) {
