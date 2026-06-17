@@ -1,11 +1,7 @@
 package com.ralsei.repository;
 
-import com.ralsei.dto.projection.trip.TripDetailProjection;
-import com.ralsei.dto.projection.trip.TripSummaryProjection;
-import com.ralsei.dto.projection.trip.TripFilterProjection;
-import com.ralsei.model.Trip;
-
-import jakarta.transaction.Transactional;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,8 +10,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.query.Procedure;
 import org.springframework.data.repository.query.Param;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import com.ralsei.dto.projection.trip.TripDetailProjection;
+import com.ralsei.dto.projection.trip.TripFilterProjection;
+import com.ralsei.dto.projection.trip.TripSummaryProjection;
+import com.ralsei.model.Trip;
+
+import jakarta.transaction.Transactional;
 
 public interface TripRepository extends JpaRepository<Trip, Integer> {
 
@@ -144,4 +144,14 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
     @Procedure(name = "sp_AutoGenerateWeeklySchedule_Final")
     public void autoGenerateWeeklySchedule(@Param("StartDate") String startDate);
 
+    @Query(value = """
+        SELECT CASE WHEN EXISTS (
+            SELECT 1 FROM coach c WHERE c.coachId = :coachId AND EXISTS (
+                SELECT 1 FROM trip t WHERE t.coachId = c.coachId 
+                    AND departureTime >= DATEADD(hour, -8, GETDATE()) 
+                    AND t.status NOT IN ('CANCELLED', 'COMPLETED')
+            ) 
+        ) THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END        
+    """, nativeQuery = true)
+    boolean checkIfCoachHasTodoTrips(@Param("coachId")Integer coachId);
 }

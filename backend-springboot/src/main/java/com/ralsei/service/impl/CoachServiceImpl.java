@@ -2,6 +2,7 @@ package com.ralsei.service.impl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,6 +15,7 @@ import com.ralsei.dto.request.coach.CoachFilterRequest;
 import com.ralsei.dto.request.coach.CoachUpdateInfoRequest;
 import com.ralsei.dto.response.coach.CoachResponse;
 import com.ralsei.dto.response.coach.SeatLayoutDTO;
+import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.exception.ResourceNotFoundException;
 import com.ralsei.model.Coach;
 import com.ralsei.model.CoachType;
@@ -23,6 +25,7 @@ import com.ralsei.model.enums.CoachStatus;
 import com.ralsei.repository.CoachRepository;
 import com.ralsei.repository.CoachTypeRepository;
 import com.ralsei.repository.RouteRepository;
+import com.ralsei.repository.TripRepository;
 import com.ralsei.service.CoachService;
 
 import lombok.RequiredArgsConstructor;
@@ -34,6 +37,7 @@ public class CoachServiceImpl implements CoachService {
     private final CoachTypeRepository coachTypeRepo;
     private final CoachRepository coachRepo;
     private final RouteRepository routeRepo;
+    private final TripRepository tripRepo;
     private final ObjectMapper objectMapper;
 
     @Transactional(readOnly = true)
@@ -110,7 +114,35 @@ public class CoachServiceImpl implements CoachService {
 
     @Transactional
     @Override
-    public void updateCoachInfo(Integer id, CoachUpdateInfoRequest request) {
+    public boolean updateCoachInfo(Integer id, CoachUpdateInfoRequest request) {
+        Coach coachToUpdate = coachRepo.findById(id).orElseThrow(
+            () -> new ResourceNotFoundException("Không tìm thấy xe có ID là: " + id));
         
+        if(coachToUpdate.getCoachType().getCoachTypeId() != request.coachTypeId()) {
+            CoachType newCoachType = coachTypeRepo.findByCoachTypeIdAndIsActiveTrue(request.coachTypeId()).orElseThrow(
+                () -> new ResourceNotFoundException("Loại xe không tồn tại hoặc đã ngưng hoạt động!"));
+            coachToUpdate.setCoachType(newCoachType);
+        }
+
+        Integer oldRouteId = coachToUpdate.getRoute() != null ? coachToUpdate.getRoute().getRouteId() : null;
+        if(!Objects.equals(oldRouteId, request.routeId())) {
+            Route newRoute = request.routeId() != null ? routeRepo.findByRouteIdAndIsActiveTrue(request.routeId()).orElseThrow(
+                () -> new ResourceNotFoundException("Tuyến đường không tồn tại hoặc ngưng hoạt động!")) : null;
+            coachToUpdate.setRoute(newRoute);
+        }
+
+        if(!coachToUpdate.getLicensePlate().equalsIgnoreCase(request.licensePlate())) {
+            if(coachRepo.existsByLicensePlateIgnoreCase(request.licensePlate())) {
+                throw new BusinessRuleException("Biển số xe này đã tồn tại trong hệ thống!");
+            }
+            coachToUpdate.setLicensePlate(request.licensePlate());
+        }
+
+        coachToUpdate.setManufacturer(request.manufacturer());
+        coachToUpdate.setYear(request.year());
+
+        // if(coachToUpdate.getStatus())
+        //check status: doi tu active -> maintenance/retired thi tu hien tai-8 den future co chuyen nao la !cancelled || !completed
+        return true;
     }
 }
