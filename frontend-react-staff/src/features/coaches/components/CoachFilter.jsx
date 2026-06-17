@@ -1,5 +1,6 @@
 import { BsArrowClockwise } from 'react-icons/bs';
 import { Badge, Button, Card, Dropdown, Form } from 'react-bootstrap';
+import React from 'react';
 
 const statusLabels = {
         ACTIVE: { text: 'Đang hoạt động', bg: 'success' },
@@ -7,7 +8,7 @@ const statusLabels = {
         RETIRED: { text: 'Ngừng hoạt động', bg: 'danger' }
     };
 
-export default function CoachFilter({filters, onFilterChange, onReset, onCheckboxChange}) {
+function CoachFilter({filters, onFilterChange, onReset, onCheckboxChange, coachTypesDropdown, coachTypesDropdownLoading}) {
     return (
         <Card className="mb-4 shadow-sm border-0">
             <Card.Body className="p-4">
@@ -29,19 +30,20 @@ export default function CoachFilter({filters, onFilterChange, onReset, onCheckbo
                         style={{ width: '150px' }} maxLength={255}
                     />
 
-                        <Form.Select
-                            style={{ width: '150px' }}
-                            name="coachTypeId"
-                            value={filters.coachTypeId || ''}
-                            onChange={onFilterChange}
-                        >
-                            <option value="">Tất cả loại xe</option>
-                            {/* {coachTypes?.map(type => (
-                                <option key={type.coachTypeId} value={type.coachTypeId}>
-                                    {type.coachTypeName} ({type.totalSeat} ghế)
-                                </option>
-                            ))} */}
-                        </Form.Select>
+                    <Form.Select
+                        className='w-auto'
+                        name="coachTypeId"
+                        value={filters.coachTypeId || ''}
+                        onChange={onFilterChange}
+                        disabled={coachTypesDropdownLoading}
+                    >
+                        <option value="">Tất cả loại xe</option>
+                        {coachTypesDropdown?.map(type => (
+                            <option key={type.coachTypeId} value={type.coachTypeId}>
+                                {type.coachTypeName}
+                            </option>
+                        ))}
+                    </Form.Select>
                     
                     <Form.Group>
                         <Dropdown style={{ width: '180px' }}>
@@ -95,3 +97,5 @@ export default function CoachFilter({filters, onFilterChange, onReset, onCheckbo
         </Card>
     )
 }
+
+export default React.memo(CoachFilter);

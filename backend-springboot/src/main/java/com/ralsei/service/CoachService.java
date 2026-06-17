@@ -11,5 +11,5 @@ import com.ralsei.dto.response.coach.CoachResponse;
 public interface CoachService {
     Page<CoachResponse> filterCoaches(CoachFilterRequest filterRequest, Pageable pageable);
     Integer createCoach(CoachCreateRequest request);
-    void updateCoachInfo(Integer id, CoachUpdateInfoRequest request);
+    boolean updateCoachInfo(Integer id, CoachUpdateInfoRequest request);
 }

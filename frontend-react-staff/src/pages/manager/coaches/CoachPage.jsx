@@ -11,6 +11,7 @@ import {
 import Pagination from '../../../components/common/Pagination';
 import { Alert, Button, Card, Container } from 'react-bootstrap';
 import { BsExclamationTriangleFill } from 'react-icons/bs';
+import { useCoachTypeDropdown } from '../../../hooks/useCoachTypeDropdown';
 
 export default function CoachPage() {
     const navigate = useNavigate();
@@ -19,6 +20,8 @@ export default function CoachPage() {
         coaches, loading, pageInfo, setPageInfo, refetch,
         filters, handleFilterChange, handleReset, handleCheckboxChange, error
     } = useCoaches();
+
+    const {coachTypes, coachTypesLoading, errorFromDropdown} = useCoachTypeDropdown(true);
     
     const [modalState, setModalState] = useState({ type: null, data: null });
     const closeModal = () => setModalState({ type: null, data: null });
@@ -41,12 +44,14 @@ export default function CoachPage() {
                 onFilterChange={handleFilterChange}
                 onCheckboxChange={handleCheckboxChange}
                 onReset={handleReset}
+                coachTypesDropdown={coachTypes}
+                coachTypesDropdownLoading={coachTypesLoading}
             />
 
-            {error && (
+            {error || errorFromDropdown && (
                 <Alert variant="danger" className="shadow-sm border-0 d-flex align-items-center gap-2">
                     <BsExclamationTriangleFill />
-                    <span>{error}</span>
+                    <span>{error || errorFromDropdown}</span>
                 </Alert>
             )}
 
