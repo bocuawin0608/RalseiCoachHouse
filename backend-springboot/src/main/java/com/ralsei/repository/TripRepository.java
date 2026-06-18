@@ -154,4 +154,6 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
         ) THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END        
     """, nativeQuery = true)
     boolean checkIfCoachHasTodoTrips(@Param("coachId")Integer coachId);
+
+    boolean existsByCoach_CoachId(Integer coachId);
 }

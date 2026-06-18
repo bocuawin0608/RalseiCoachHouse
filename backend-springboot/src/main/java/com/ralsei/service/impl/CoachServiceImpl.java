@@ -28,6 +28,7 @@ import com.ralsei.model.enums.CoachStatus;
 import com.ralsei.repository.CoachRepository;
 import com.ralsei.repository.CoachTypeRepository;
 import com.ralsei.repository.RouteRepository;
+import com.ralsei.repository.SeatRepository;
 import com.ralsei.repository.TripRepository;
 import com.ralsei.service.CoachService;
 
@@ -41,6 +42,7 @@ public class CoachServiceImpl implements CoachService {
     private final CoachRepository coachRepo;
     private final RouteRepository routeRepo;
     private final TripRepository tripRepo;
+    private final SeatRepository seatRepo;
     private final ObjectMapper objectMapper;
 
     @Transactional(readOnly = true)
@@ -72,6 +74,14 @@ public class CoachServiceImpl implements CoachService {
             .seats(new ArrayList<>())
             .build();
 
+        
+        newCoach.setSeats(generateSeats(newCoach, coachType));
+        
+        coachRepo.save(newCoach);
+        return newCoach.getCoachId();
+    }
+
+    private List<Seat> generateSeats(Coach newCoach, CoachType coachType) {
         SeatLayoutDTO seatLayout;
         try {
             String jsonSeatLayout = coachType.getSeatLayout();
@@ -109,10 +119,8 @@ public class CoachServiceImpl implements CoachService {
                 }
             }
         }
-        newCoach.setSeats(generatedSeats);
-        
-        coachRepo.save(newCoach);
-        return newCoach.getCoachId();
+
+        return generatedSeats;
     }
 
     @Transactional
@@ -122,10 +130,20 @@ public class CoachServiceImpl implements CoachService {
             () -> new ResourceNotFoundException("Không tìm thấy xe có ID là: " + id));
         
         if(coachToUpdate.getCoachType().getCoachTypeId() != request.coachTypeId()) {
+            if(tripRepo.existsByCoach_CoachId(id)) {
+                throw new BusinessRuleException("Không thể thay đổi loại xe do xe này đang có lịch trình chuyến đi phát sinh!");
+            }
+
             CoachType newCoachType = coachTypeRepo.findByCoachTypeIdAndIsActiveTrue(request.coachTypeId()).orElseThrow(
                 () -> new ResourceNotFoundException("Loại xe không tồn tại hoặc đã ngưng hoạt động!"));
+            
+            coachToUpdate.getSeats().clear();
+            seatRepo.bulkDeleteByCoachId(id);
+            
             coachToUpdate.setCoachType(newCoachType);
+            coachToUpdate.getSeats().addAll(generateSeats(coachToUpdate, newCoachType));
         }
+        //vì thằng bulkDelete kia có @Modifying nên nó sẽ đc chạy trước, rồi sau đó con hibernate mới soi coachToUpdate có gì thay đổi thì nó tổng hợp để chạy lệnh save() ngầm dưới DB
 
         Integer oldRouteId = coachToUpdate.getRoute() != null ? coachToUpdate.getRoute().getRouteId() : null;
         if(!Objects.equals(oldRouteId, request.routeId())) {
@@ -149,8 +167,8 @@ public class CoachServiceImpl implements CoachService {
                 if(tripRepo.checkIfCoachHasTodoTrips(id)) {
                     throw new BusinessRuleException("Không thể ngừng hoạt động hoặc bảo trì xe do đang có lịch trình chuyến đi phát sinh cần thực hiện/hoàn thành!");
                 }
-                coachToUpdate.setStatus(request.status());
-        }
+            }
+        coachToUpdate.setStatus(request.status());
 
         return true;
     }
