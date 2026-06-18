@@ -2,13 +2,9 @@ import { BsArrowClockwise } from 'react-icons/bs';
 import { Badge, Button, Card, Dropdown, Form } from 'react-bootstrap';
 import React from 'react';
 
-const statusLabels = {
-        ACTIVE: { text: 'Đang hoạt động', bg: 'success' },
-        MAINTENANCE: { text: 'Đang bảo trì', bg: 'warning' },
-        RETIRED: { text: 'Ngừng hoạt động', bg: 'danger' }
-    };
 
-function CoachFilter({filters, onFilterChange, onReset, onCheckboxChange, coachTypesDropdown, coachTypesDropdownLoading}) {
+
+function CoachFilter({filters, onFilterChange, onReset, onCheckboxChange, coachTypesDropdown, coachTypesDropdownLoading, statusLabels}) {
     return (
         <Card className="mb-4 shadow-sm border-0">
             <Card.Body className="p-4">
