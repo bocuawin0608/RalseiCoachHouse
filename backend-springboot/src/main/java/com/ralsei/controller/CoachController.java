@@ -18,7 +18,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ralsei.dto.request.coach.CoachCreateRequest;
 import com.ralsei.dto.request.coach.CoachFilterRequest;
 import com.ralsei.dto.request.coach.CoachUpdateInfoRequest;
+import com.ralsei.dto.response.coach.CoachEditFormResponse;
 import com.ralsei.dto.response.coach.CoachResponse;
+import com.ralsei.dto.response.coach.CoachViewDetailResponse;
 import com.ralsei.service.CoachService;
 
 import jakarta.validation.Valid;
@@ -52,5 +54,17 @@ public class CoachController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<Boolean> updateCoachInfo(@PathVariable @Min(value = 1, message = "ID của Xe phải lớn hơn 0.") Integer id, @Valid @RequestBody CoachUpdateInfoRequest request) {
         return ResponseEntity.ok(coachService.updateCoachInfo(id, request));
+    }
+
+    @GetMapping(path = {"/{id:\\d+}/detail/view"})
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<CoachViewDetailResponse> getCoachDetailForView(@PathVariable @Min(value = 1, message = "ID của Xe phải lớn hơn 0.") Integer id) {
+        return ResponseEntity.ok(coachService.getCoachDetailForView(id));
+    }
+
+    @GetMapping(path = {"/{id:\\d+}/detail/edit"})
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<CoachEditFormResponse> getCoachDetailForEdit(@PathVariable @Min(value = 1, message = "ID của Xe phải lớn hơn 0.") Integer id) {
+        return ResponseEntity.ok(coachService.getCoachDetailForEdit(id));
     }
 }

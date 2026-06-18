@@ -13,7 +13,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ralsei.dto.request.coach.CoachCreateRequest;
 import com.ralsei.dto.request.coach.CoachFilterRequest;
 import com.ralsei.dto.request.coach.CoachUpdateInfoRequest;
+import com.ralsei.dto.response.coach.CoachEditFormResponse;
 import com.ralsei.dto.response.coach.CoachResponse;
+import com.ralsei.dto.response.coach.CoachViewDetailResponse;
+import com.ralsei.dto.response.coach.SeatDTO;
 import com.ralsei.dto.response.coach.SeatLayoutDTO;
 import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.exception.ResourceNotFoundException;
@@ -150,5 +153,54 @@ public class CoachServiceImpl implements CoachService {
         }
 
         return true;
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public CoachViewDetailResponse getCoachDetailForView(Integer id) {
+        Coach coachToView = coachRepo.findCoachWithRelationsByCoachId(id).orElseThrow(
+            () -> new ResourceNotFoundException("Không tìm thấy xe có ID là: " + id));
+        
+        List<SeatDTO> seats = coachToView.getSeats().stream()
+            .map(seat -> new SeatDTO(
+                seat.getSeatId(),
+                seat.getSeatCode(),
+                seat.getRowIndex(),
+                seat.getColIndex(),
+                seat.getFloorIndex(),
+                seat.isActive()
+            )).toList();
+
+        Integer activeSeatCount = (int) seats.stream().filter(s -> s.isActive()).count(); 
+        String routeName = coachToView.getRoute() != null ? coachToView.getRoute().getRouteName() : "Chưa có tuyến đường";
+
+        return new CoachViewDetailResponse(
+            coachToView.getCoachId(),
+            routeName,
+            coachToView.getCoachType().getCoachTypeName(),
+            coachToView.getLicensePlate(),
+            coachToView.getManufacturer(),
+            coachToView.getYear(),
+            coachToView.getStatus(),
+            activeSeatCount,
+            seats
+        );
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public CoachEditFormResponse getCoachDetailForEdit(Integer id) {
+        Coach coachToUpdate = coachRepo.findCoachWithRelationsByCoachId(id).orElseThrow(
+            () -> new ResourceNotFoundException("Không tìm thấy xe có ID là: " + id));
+        
+        return new CoachEditFormResponse(
+            coachToUpdate.getCoachId(),
+            coachToUpdate.getRoute() != null ? coachToUpdate.getRoute().getRouteId() : null,
+            coachToUpdate.getCoachType().getCoachTypeId(),
+            coachToUpdate.getLicensePlate(),
+            coachToUpdate.getManufacturer(),
+            coachToUpdate.getYear(),
+            coachToUpdate.getStatus()
+        );
     }
 }
