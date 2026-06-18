@@ -1,0 +1,24 @@
+package com.ralsei.service;
+
+import java.util.List;
+
+import com.ralsei.dto.request.CoachAndRouteStop.RouteRequest;
+import com.ralsei.dto.response.CoachAndRouteStop.RouteDropdownDTO;
+import com.ralsei.dto.response.CoachAndRouteStop.RouteResponse;
+import com.ralsei.dto.response.PagedResponse;
+
+public interface RouteService {
+    RouteResponse createRoute(RouteRequest request);
+
+    RouteResponse updateRoute(int id, RouteRequest request);
+
+    RouteResponse getRouteById(int id);
+
+    PagedResponse<RouteResponse> getAllRoutes(String search, Boolean isActive, int page, int size);
+
+    void softDeleteRoute(int id);
+
+    void restoreRoute(int id);
+
+    List<RouteDropdownDTO> findRoutesForDropdown();
+}

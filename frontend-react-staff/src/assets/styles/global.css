@@ -1,0 +1,82 @@
+/* =========================================
+   1. ĐỊNH NGHĨA BIẾN TOÀN CỤC (VARIABLES)
+   ========================================= */
+:root {
+  /* Bảng màu Brand (Primary) */
+  --color-primary: #2563eb;       /* Xanh dương chủ đạo */
+  --color-primary-hover: #1d4ed8;
+
+  /* Bảng màu Trạng thái (Semantic) */
+  --color-success: #16a34a;       /* Thành công, Trống ghế */
+  --color-warning: #eab308;       /* Cảnh báo, Đang chọn */
+  --color-danger: #dc2626;        /* Lỗi, Hủy, Ghế đã bán */
+
+  /* Text & Background */
+  --color-text-main: #1e293b;
+  --color-text-muted: #64748b;
+  --color-bg-body: #f8fafc;
+  --color-bg-white: #ffffff;
+
+  --ralsei-green: #9cf0d3;
+  --ralsei-dark: #1a1a1a;
+  --ralsei-white: #ffffff;
+  --ralsei-black: #0a4030; 
+  --ralsei-footer: #51c9a7; 
+  --ralsei-pink: #ff47a3;
+  
+  
+  --ralsei-primary: #1b4332;
+  --ralsei-primary-light: #2d6a4f;
+
+  /* Thông số layout */
+  --border-radius-sm: 4px;
+  --border-radius-md: 8px;
+  --box-shadow-card: 0 1px 3px rgba(0,0,0,0.1);
+  --font-family-main: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* =========================================
+   2. CSS RESET
+   ========================================= */
+*, *::before, *::after {
+  box-sizing: border-box; /* Cực kỳ quan trọng để padding không làm phình thẻ */
+  margin: 0;
+  padding: 0;
+}
+
+/* =========================================
+   3. GLOBAL TYPOGRAPHY & BODY SETUP
+   ========================================= */
+body {
+  font-family: var(--font-family-main);
+  background-color: var(--color-bg-body);
+  color: var(--color-text-main);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased; /* Giúp chữ render trên Mac mượt hơn */
+}
+
+/* Bỏ gạch chân thẻ a và mặc định màu kế thừa */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Chuẩn hóa font cho các input, button (Mặc định nó không lấy theo body) */
+input, button, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* Bỏ viền xanh lè mặc định khi focus vào ô input của trình duyệt */
+input:focus, textarea:focus, select:focus {
+  outline: none;
+}
+
+.custom-btn-general {
+    background-color: var(--ralsei-primary-light) !important;
+    border-color: var(--ralsei-primary-light) !important;
+}
+.custom-btn-general:hover {
+    background-color: var(--ralsei-primary) !important;
+    border-color: var(--ralsei-primary) !important;
+}
