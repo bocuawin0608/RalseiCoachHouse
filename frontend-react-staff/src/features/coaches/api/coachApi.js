@@ -11,4 +11,10 @@ export const coachApi = {
      * @param {Object} data - Chứa thông tin tạo mới (coachTypeId, routeId, licensePlate, manufacturer, year)
      */
     createCoach: (data) => { return axiosClient.post(BASE, data); },
+
+    /**
+     * @param {number|string} id - ID của Coach cần sửa
+     * @param {Object} data - Chứa thông tin cần cập nhật (routeId, coachTypeId, licensePlate, manufacturer, year, status)
+     */
+    updateCoachInfo: (id, data) => { return axiosClient.put(`${BASE}/${id}`, data); },
 }
