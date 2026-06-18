@@ -97,6 +97,7 @@ export default function CoachPage() {
                 isOpen={modalState.type === 'VIEW_DETAIL'} 
                 data={modalState.data} 
                 onClose={closeModal} 
+                statusLabels={statusLabels}
             />
 
         </Container>
