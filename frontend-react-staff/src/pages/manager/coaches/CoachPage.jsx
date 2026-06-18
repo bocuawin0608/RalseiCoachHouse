@@ -13,6 +13,12 @@ import { Alert, Button, Card, Container } from 'react-bootstrap';
 import { BsExclamationTriangleFill } from 'react-icons/bs';
 import { useCoachTypeDropdown } from '../../../hooks/useCoachTypeDropdown';
 
+const statusLabels = {
+    ACTIVE: { text: 'Đang hoạt động', bg: 'success' },
+    MAINTENANCE: { text: 'Đang bảo trì', bg: 'warning' },
+    RETIRED: { text: 'Ngừng hoạt động', bg: 'danger' }
+};
+
 export default function CoachPage() {
     const navigate = useNavigate();
     
@@ -46,6 +52,7 @@ export default function CoachPage() {
                 onReset={handleReset}
                 coachTypesDropdown={coachTypes}
                 coachTypesDropdownLoading={coachTypesLoading}
+                statusLabels={statusLabels}
             />
 
             {error || errorFromDropdown && (
@@ -60,6 +67,7 @@ export default function CoachPage() {
                     <CoachTable 
                         data={coaches} 
                         loading={loading}
+                        statusLabels={statusLabels}
                         onViewDetail={(row) => setModalState({ type: 'VIEW_DETAIL', data: row})}
                         onEditInfo={(row) => setModalState({ type: 'EDIT_INFO', data: row })}
                         onEditSeatMap={(row) => navigate(`/management/coaches/${row.coachId}/seat-map`)} 
