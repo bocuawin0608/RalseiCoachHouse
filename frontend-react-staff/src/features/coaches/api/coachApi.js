@@ -17,4 +17,8 @@ export const coachApi = {
      * @param {Object} data - Chứa thông tin cần cập nhật (routeId, coachTypeId, licensePlate, manufacturer, year, status)
      */
     updateCoachInfo: (id, data) => { return axiosClient.put(`${BASE}/${id}`, data); },
+
+    getCoachDetailForView: (id) => { return axiosClient.get(`${BASE}/${id}/view-detail`)},
+
+    getCoachDetailForEdit: (id) => { return axiosClient.get(`${BASE}/${id}/view-edit`) },
 }

@@ -55,7 +55,7 @@ export default function CoachPage() {
                 statusLabels={statusLabels}
             />
 
-            {error || errorFromDropdown && (
+            {(error || errorFromDropdown) && (
                 <Alert variant="danger" className="shadow-sm border-0 d-flex align-items-center gap-2">
                     <BsExclamationTriangleFill />
                     <span>{error || errorFromDropdown}</span>
@@ -90,6 +90,7 @@ export default function CoachPage() {
                 data={modalState.data} 
                 onClose={closeModal} 
                 onSuccess={refetch} 
+                statusLabels={statusLabels}
             />
 
             <CoachViewDetailModal 

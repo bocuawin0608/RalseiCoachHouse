@@ -56,13 +56,13 @@ public class CoachController {
         return ResponseEntity.ok(coachService.updateCoachInfo(id, request));
     }
 
-    @GetMapping(path = {"/{id:\\d+}/detail/view"})
+    @GetMapping(path = {"/{id:\\d+}/view-detail"})
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<CoachViewDetailResponse> getCoachDetailForView(@PathVariable @Min(value = 1, message = "ID của Xe phải lớn hơn 0.") Integer id) {
         return ResponseEntity.ok(coachService.getCoachDetailForView(id));
     }
 
-    @GetMapping(path = {"/{id:\\d+}/detail/edit"})
+    @GetMapping(path = {"/{id:\\d+}/view-edit"})
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<CoachEditFormResponse> getCoachDetailForEdit(@PathVariable @Min(value = 1, message = "ID của Xe phải lớn hơn 0.") Integer id) {
         return ResponseEntity.ok(coachService.getCoachDetailForEdit(id));
