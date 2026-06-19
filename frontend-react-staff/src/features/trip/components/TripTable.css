@@ -1,0 +1,48 @@
+.trip-table-loading {
+    text-align: center;
+    padding: 3rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.trip-table-empty {
+    text-align: center;
+    padding: 3rem;
+    color: #6c757d;
+}
+
+.trip-table-id {
+    font-weight: 500;
+    color: #6c757d;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+}
+
+.trip-table-status {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+}
+
+.trip-table-cell {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+}
+
+.trip-table-bold {
+    font-weight: 700;
+    color: #212529;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+}
+
+.trip-table-actions {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+}
+
+.trip-table-action-group {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    align-items: center;
+}

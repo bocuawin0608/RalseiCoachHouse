@@ -145,3 +145,159 @@ SELECT t.tripId, t.routeId, t.departureTime, t.createdBy
 FROM [trip] t
 WHERE CAST(t.departureTime AS DATE) >= @NextScheduleDate
 ORDER BY t.departureTime ASC;
+
+
+SELECT COUNT(DISTINCT CAST(departureTime AS DATE)) AS [SO_NGAY_CO_LICH]
+FROM [trip]
+WHERE CAST(departureTime AS DATE) BETWEEN '2026-06-16' AND '2026-06-28';
+
+
+USE VeXeDB;
+GO
+
+BEGIN TRANSACTION;
+BEGIN TRY
+
+    -- ============================================================================
+    -- STEP 1: TẠO DỮ LIỆU CHA VỚI ID = 1000 (Bật IDENTITY_INSERT để ép ID)
+    -- ============================================================================
+    
+    -- 1. Tạo Tuyến đường ID = 1000
+    SET IDENTITY_INSERT [route] ON;
+    INSERT INTO [route] (routeId, routeName, totalKilometers, totalMinutes, isActive)
+    VALUES (1000, N'Tuyến Đường Thử Nghiệm 1000', 350.00, 300, 1);
+    SET IDENTITY_INSERT [route] OFF;
+
+    -- 2. Tạo Loại xe ID = 1000
+    SET IDENTITY_INSERT [coach_type] ON;
+    INSERT INTO [coach_type] (coachTypeId, coachTypeName, totalSeat, isActive)
+    VALUES (1000, N'Xe Phòng Nằm Thượng Hạng 1000', 22, 1);
+    SET IDENTITY_INSERT [coach_type] OFF;
+
+    -- 3. Tạo Xe cụ thể ID = 1000 (Gán vào Route 1000 và CoachType 1000)
+    SET IDENTITY_INSERT [coach] ON;
+    INSERT INTO [coach] (coachId, routeId, coachTypeId, licensePlate, [status], manufacturer, [year])
+    VALUES (1000, 1000, 1000, '30K-999.00', 'ACTIVE', N'Thaco Mobihome', 2026);
+    SET IDENTITY_INSERT [coach] OFF;
+
+
+    -- ============================================================================
+    -- STEP 2: HÀNH VI C-U-D CHO THẰNG TRIP 1000
+    -- ============================================================================
+
+    -- [CREATE] - Thêm mới Trip ID = 1000
+   USE VeXeDB;
+GO
+
+-- Xóa theo thứ tự từ ngọn xuống gốc để không dính Foreign Key
+DELETE FROM [trip_seat] WHERE [tripId] = 1000;
+DELETE FROM [passenger_ticket] WHERE [tripId] = 1000;
+DELETE FROM [trip] WHERE [tripId] = 1000;
+
+DELETE FROM [coach] WHERE [coachId] = 1000;
+DELETE FROM [coach_type] WHERE [coachTypeId] = 1000;
+DELETE FROM [route] WHERE [routeId] = 1000;
+
+PRINT '=== ĐÃ DỌN SẠCH DỮ LIỆU RÁC ID 1000! CHỜ ANH TEST LẠI ===';
+GO
+    PRINT '1. [CREATE] Tạo thành công Trip ID = 1000';
+
+
+    -- [UPDATE] - Sửa đổi trạng thái của Trip 1000
+    UPDATE [trip]
+    SET [status] = 'IN_PROGRESS',
+        [updatedAt] = GETDATE(),
+        [updatedBy] = 999
+    WHERE [tripId] = 1000;
+    PRINT '2. [UPDATE] Cập nhật thành công trạng thái Trip 1000';
+
+
+    -- [DELETE] - Dọn dẹp sạch sẽ Trip 1000 (Và các bảng con của nó nếu có phát sinh ghé/vé)
+    DELETE FROM [trip_seat] WHERE [tripId] = 983475893475894375893475;
+
+SET IDENTITY_INSERT [trip] ON;
+INSERT INTO [trip] (
+    [tripId], [routeId], [coachId], [departureTime], [status], [driverId], [attendantId], [createdBy]
+)
+VALUES (
+    1000, 1000, 1000, '2026-06-25 14:00:00', 'SCHEDULED', NULL, NULL, 999
+);
+SET IDENTITY_INSERT [trip] OFF;
+
+PRINT '=== ĐÃ INSERT TRIP 1000 THÀNH CÔNG! ===';
+SELECT * FROM [trip] WHERE [tripId] = 1000;
+GO
+
+USE VeXeDB;
+GO
+
+-- 1. Bật tính năng ép ID để tạo Staff 1001 (Tài xế)
+SET IDENTITY_INSERT [staff] ON;
+INSERT INTO [staff] (
+    [staffId], [staffName], [phone], [staffPosition], [hireDate], [isActive]
+)
+VALUES (
+    1001, N'Nguyễn Văn Lái', '0912345678', 'DRIVER', '2026-01-01', 1
+);
+
+-- 2. Tạo Staff 1002 (Phụ xe)
+INSERT INTO [staff] (
+    [staffId], [staffName], [phone], [staffPosition], [hireDate], [isActive]
+)
+VALUES (
+    1002, N'Trần Văn Phụ', '0987654321', 'ATTENDANT', '2026-01-01', 1
+);
+SET IDENTITY_INSERT [staff] OFF;
+
+PRINT '=== ĐÃ TẠO XONG NHÂN SỰ MẪU 1001 VÀ 1002 ===';
+GO
+
+USE VeXeDB;
+GO
+
+-- Lệnh INSERT sử dụng dữ liệu nền có sẵn từ Script Seed của anh
+INSERT INTO [trip] (
+    [routeId],         -- Nhận giá trị 1 (Tuyến Hà Nội - Quảng Bình) hoặc 2
+    [coachId],         -- Chọn xe ID = 50 (Nằm trong dải 1 đến 365 chắc chắn tồn tại)
+    [departureTime],   -- Giờ khởi hành
+    [status],          -- Trạng thái ban đầu
+    [driverId],        -- Tạm thời để NULL để điều phối sau giống logic sinh tự động của anh
+    [attendantId],     -- Tạm thời để NULL
+    [createdBy]        -- 1 (ID tài khoản Admin Hệ Thống)
+)
+VALUES (
+    1, 
+    50, 
+    '2026-01-20 08:30:00', -- Ngày nằm ngoài dải snapshot để tránh xung đột lịch trình
+    'SCHEDULED', 
+    NULL, 
+    NULL, 
+    1
+);
+USE VeXeDB;
+GO
+
+SELECT * FROM [trip] 
+WHERE [driverId] IS NULL;
+SELECT * FROM TRIP-- Lấy ra ID của chuyến xe vừa sinh ra để anh dùng debug tiếp
+SELECT SCOPE_IDENTITY() AS CurrentTestTripId;
+
+
+INSERT INTO [trip] (
+    [routeId],         -- 1: Tuyến Hà Nội - Quảng Bình (Đã có sẵn)
+    [coachId],         -- 50: Xe số 50 thuộc dải xe từ 1 đến 365 (Đã có sẵn)
+    [departureTime],   -- Thời gian khởi hành (Nằm ngoài dải seed để dễ check)
+    [status],          -- 'SCHEDULED' (Theo ràng buộc CK_Trip_Status)
+    [driverId],        -- 3: ID của Tài xế số 1 trong bảng staff (Từ 3 đến 82)
+    [attendantId],     -- 83: ID của Phụ xe số 1 trong bảng staff (Từ 83 đến 162)
+    [createdBy]        -- 1: ID người tạo (Admin)
+)
+VALUES (
+    1, 
+    50, 
+    '2026-07-20 08:30:00', 
+    'SCHEDULED', 
+    3, 
+    83, 
+    1
+);
