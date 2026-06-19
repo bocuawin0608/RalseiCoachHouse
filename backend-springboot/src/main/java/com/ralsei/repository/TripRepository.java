@@ -18,7 +18,6 @@ import com.ralsei.model.Trip;
 import jakarta.transaction.Transactional;
 
 public interface TripRepository extends JpaRepository<Trip, Integer> {
-
     @Query(value = """
             SELECT
                 t.tripId AS tripId,
@@ -114,23 +113,25 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
 
     // Manager site - view all trip summaries
     @Query(value = """
-            SELECT t.tripId,
-                t.[status] AS [TRANG THAI CHUYEN DI],
-                c.manufacturer,
-                ct.coachTypeName,
-                c.licensePlate,
-                c.[status] AS [TINH TRANG XE],
+            SELECT
+                t.tripId AS tripId,
+                t.[status] AS tripStatus,
+                c.manufacturer AS manufacturer,
+                ct.coachTypeName AS coachTypeName,
+                c.licensePlate AS licensePlate,
+                c.[status] AS coachStatus,
                 CAST(t.departureTime AS DATE) AS departureDate,
                 CAST(t.departureTime AS TIME) AS departureTime,
                 (SELECT COUNT(*) FROM trip_seat ts WHERE ts.tripId = t.tripId AND ts.[status] = 'AVAILABLE') AS availableSeats,
                 (SELECT COUNT(*) FROM trip_seat ts WHERE ts.tripId = t.tripId) AS totalSeats
             FROM trip t
-                JOIN coach c ON c.coachId = t.coachId
-                JOIN coach_type ct ON ct.coachTypeId = c.coachTypeId
-                        WHERE CAST(t.departureTime AS DATE) = :departureDate
-                        ORDER BY t.departureTime ASC
-                        """, countQuery = """
-            SELECT COUNT(*) FROM trip t
+            LEFT JOIN coach c ON t.coachId = c.coachId
+            LEFT JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId
+            WHERE CAST(t.departureTime AS DATE) = :departureDate
+            ORDER BY t.departureTime ASC
+            """, countQuery = """
+            SELECT COUNT(*)
+            FROM trip t
             WHERE CAST(t.departureTime AS DATE) = :departureDate
             """, nativeQuery = true)
     Page<TripSummaryProjection> viewAllTripSummaries(
@@ -145,15 +146,11 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
     public void autoGenerateWeeklySchedule(@Param("StartDate") String startDate);
 
     @Query(value = """
-        SELECT CASE WHEN EXISTS (
-            SELECT 1 FROM coach c WHERE c.coachId = :coachId AND EXISTS (
-                SELECT 1 FROM trip t WHERE t.coachId = c.coachId 
-                    AND departureTime >= DATEADD(hour, -8, GETDATE()) 
-                    AND t.status NOT IN ('CANCELLED', 'COMPLETED')
-            ) 
-        ) THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END        
-    """, nativeQuery = true)
-    boolean checkIfCoachHasTodoTrips(@Param("coachId")Integer coachId);
-
-    boolean existsByCoach_CoachId(Integer coachId);
+            SELECT COUNT(DISTINCT CAST(departureTime AS DATE))
+            FROM trip
+            WHERE departureTime >= :startOfDay
+              AND departureTime <= :endOfPeriod
+            """, nativeQuery = true)
+    int countDistinctDaysWithSchedule(@Param("startOfDay") LocalDateTime startOfDay,
+            @Param("endOfPeriod") LocalDateTime endOfPeriod);
 }

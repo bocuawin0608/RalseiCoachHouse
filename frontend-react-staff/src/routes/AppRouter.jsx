@@ -13,6 +13,7 @@ import { routeRoutes } from '../features/routes';
 import { coachRoutes } from '../features/coaches';
 import { voucherRoutes } from '../features/vouchers';
 import { cargoRoutes } from '../features/cargo';
+import { tripRoutes } from '../features/trip';
 
 const AppRouter = () => {
     return (
@@ -32,6 +33,7 @@ const AppRouter = () => {
                     {routeRoutes}
                     {cargoRoutes}
                     {voucherRoutes}
+                    {tripRoutes}
                     
                     {/* route dưới thì chỉ admin vào đc, manager thì ko */}
                     <Route element={<RoleGuard allowedRoles={['ADMIN']} />}>
