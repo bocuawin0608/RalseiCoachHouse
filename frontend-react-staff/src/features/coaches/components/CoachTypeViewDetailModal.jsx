@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { coachTypeApi } from "../api/coachTypeApi";
 import { Alert, Badge, Button, Col, Modal, Row, Spinner } from "react-bootstrap";
 import SeatMapBuilder from "./SeatMapBuilder";
@@ -19,34 +19,30 @@ export default function CoachTypeViewDetailModal({isOpen, data, onClose}) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const fetchCoachTypeDetail = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            if(isOpen && data) {
-                const res = await coachTypeApi.getCoachTypeDetail(data.coachTypeId)
-                setDetail({
-                    coachTypeId: res.coachTypeId,
-                    coachTypeName: res.coachTypeName,
-                    totalSeat: res.totalSeat,
-                    currentPrice: res.currentPrice,
-                    isActive: res.isActive,
-                    seatLayout: res.seatLayout
-                });
-            }
-        } catch(error) {
-            setError(error.response?.data?.message || "Có lỗi xảy ra khi lấy dữ liệu.");
-        } finally {
-            setLoading(false);
-        }
-    }, [data, isOpen])
-
     useEffect(() => {
-        const load = () => {
-            fetchCoachTypeDetail();
+        const fetchCoachTypeDetail = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                if(isOpen && data) {
+                    const res = await coachTypeApi.getCoachTypeDetail(data.coachTypeId)
+                    setDetail({
+                        coachTypeId: res.coachTypeId,
+                        coachTypeName: res.coachTypeName,
+                        totalSeat: res.totalSeat,
+                        currentPrice: res.currentPrice,
+                        isActive: res.isActive,
+                        seatLayout: res.seatLayout
+                    });
+                }
+            } catch(error) {
+                setError(error.response?.data?.message || "Có lỗi xảy ra khi lấy dữ liệu.");
+            } finally {
+                setLoading(false);
+            }
         }
-        load();
-    }, [fetchCoachTypeDetail])
+        fetchCoachTypeDetail();
+    }, [data, isOpen])
 
     const parsedLayout = useMemo(() => {
         if (!detail.seatLayout) return null;

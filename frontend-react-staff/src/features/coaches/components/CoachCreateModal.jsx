@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Alert, Button, Form, Modal } from "react-bootstrap";
 import { BsExclamationTriangleFill } from "react-icons/bs";
-import { coachTypeApi } from "../api/coachTypeApi";
-import { routeApi } from "../../routes";
 import { coachApi } from "../api/coachApi";
+import { useCoachTypeDropdown } from "../../../hooks/useCoachTypeDropdown";
+import { useRouteDropdown } from "../../../hooks/useRouteDropdown";
 
 const INITIAL_FORM = {
     coachTypeId: '',
@@ -17,32 +17,20 @@ export default function CoachCreateModal({isOpen, onClose, onSuccess}) {
     const [formData, setFormData] = useState(INITIAL_FORM);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState(null);
-    const [coachTypes, setCoachTypes] = useState([]);
-    const [routes, setRoutes] = useState([]);
-    const [loading, setLoading] = useState(false);
+
+    const { coachTypes, loadingCoachTypes } = useCoachTypeDropdown(isOpen);
+    const { routes, loadingRoutes } = useRouteDropdown(isOpen);
+
+    const isDropdownLoading = loadingCoachTypes || loadingRoutes;
 
     useEffect(() => {
-        if(!isOpen) return;
-
-        const fetchDropdownData = async () => {
-            setLoading(true);
-            setError(null);
-
-            try {
-                const [coachTypesRes, routesRes] = await Promise.all([
-                    coachTypeApi.getCoachTypesDropdown(),
-                    routeApi.getRoutesForDropdown()
-                ]);
-                setCoachTypes(coachTypesRes || []);
-                setRoutes(routesRes || []);
-            } catch (error) {
-                setError(error.response?.data?.message || "Có lỗi xảy ra khi tải dữ liệu.");
-            } finally {
-                setLoading(false);
+        const load = () => {
+            if (isOpen) {
+                setFormData(INITIAL_FORM);
+                setError(null);
             }
-        };
-
-        fetchDropdownData();
+        }
+        load();
     }, [isOpen]);
 
     const handleInputChange = (e) => {
@@ -140,7 +128,7 @@ export default function CoachCreateModal({isOpen, onClose, onSuccess}) {
                                 name="coachTypeId"
                                 onChange={handleInputChange}
                                 required
-                                disabled={loading}
+                                disabled={isDropdownLoading}
                                 className="py-2"
                             >
                                 <option value="">-- Chọn loại xe --</option>
@@ -157,7 +145,7 @@ export default function CoachCreateModal({isOpen, onClose, onSuccess}) {
                                 value={formData.routeId}
                                 name="routeId"
                                 onChange={handleInputChange}
-                                disabled={loading}
+                                disabled={isDropdownLoading}
                                 className="py-2"
                             >
                                 <option value="">-- Chọn tuyến xe --</option>

@@ -2,6 +2,7 @@ package com.ralsei.service.impl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,8 +13,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ralsei.dto.request.coach.CoachCreateRequest;
 import com.ralsei.dto.request.coach.CoachFilterRequest;
 import com.ralsei.dto.request.coach.CoachUpdateInfoRequest;
+import com.ralsei.dto.response.coach.CoachEditFormResponse;
 import com.ralsei.dto.response.coach.CoachResponse;
+import com.ralsei.dto.response.coach.CoachViewDetailResponse;
+import com.ralsei.dto.response.coach.SeatDTO;
 import com.ralsei.dto.response.coach.SeatLayoutDTO;
+import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.exception.ResourceNotFoundException;
 import com.ralsei.model.Coach;
 import com.ralsei.model.CoachType;
@@ -23,6 +28,8 @@ import com.ralsei.model.enums.CoachStatus;
 import com.ralsei.repository.CoachRepository;
 import com.ralsei.repository.CoachTypeRepository;
 import com.ralsei.repository.RouteRepository;
+import com.ralsei.repository.SeatRepository;
+import com.ralsei.repository.TripRepository;
 import com.ralsei.service.CoachService;
 
 import lombok.RequiredArgsConstructor;
@@ -34,6 +41,8 @@ public class CoachServiceImpl implements CoachService {
     private final CoachTypeRepository coachTypeRepo;
     private final CoachRepository coachRepo;
     private final RouteRepository routeRepo;
+    private final TripRepository tripRepo;
+    private final SeatRepository seatRepo;
     private final ObjectMapper objectMapper;
 
     @Transactional(readOnly = true)
@@ -65,6 +74,14 @@ public class CoachServiceImpl implements CoachService {
             .seats(new ArrayList<>())
             .build();
 
+        
+        newCoach.setSeats(generateSeats(newCoach, coachType));
+        
+        coachRepo.save(newCoach);
+        return newCoach.getCoachId();
+    }
+
+    private List<Seat> generateSeats(Coach newCoach, CoachType coachType) {
         SeatLayoutDTO seatLayout;
         try {
             String jsonSeatLayout = coachType.getSeatLayout();
@@ -102,15 +119,106 @@ public class CoachServiceImpl implements CoachService {
                 }
             }
         }
-        newCoach.setSeats(generatedSeats);
-        
-        coachRepo.save(newCoach);
-        return newCoach.getCoachId();
+
+        return generatedSeats;
     }
 
     @Transactional
     @Override
-    public void updateCoachInfo(Integer id, CoachUpdateInfoRequest request) {
+    public boolean updateCoachInfo(Integer id, CoachUpdateInfoRequest request) {
+        Coach coachToUpdate = coachRepo.findById(id).orElseThrow(
+            () -> new ResourceNotFoundException("Không tìm thấy xe có ID là: " + id));
         
+        if(coachToUpdate.getCoachType().getCoachTypeId() != request.coachTypeId()) {
+            if(tripRepo.existsByCoach_CoachId(id)) {
+                throw new BusinessRuleException("Không thể thay đổi loại xe do xe này đang có lịch trình chuyến đi phát sinh!");
+            }
+
+            CoachType newCoachType = coachTypeRepo.findByCoachTypeIdAndIsActiveTrue(request.coachTypeId()).orElseThrow(
+                () -> new ResourceNotFoundException("Loại xe không tồn tại hoặc đã ngưng hoạt động!"));
+            
+            coachToUpdate.getSeats().clear();
+            seatRepo.bulkDeleteByCoachId(id);
+            
+            coachToUpdate.setCoachType(newCoachType);
+            coachToUpdate.getSeats().addAll(generateSeats(coachToUpdate, newCoachType));
+        }
+        //vì thằng bulkDelete kia có @Modifying nên nó sẽ đc chạy trước, rồi sau đó con hibernate mới soi coachToUpdate có gì thay đổi thì nó tổng hợp để chạy lệnh save() ngầm dưới DB
+
+        Integer oldRouteId = coachToUpdate.getRoute() != null ? coachToUpdate.getRoute().getRouteId() : null;
+        if(!Objects.equals(oldRouteId, request.routeId())) {
+            Route newRoute = request.routeId() != null ? routeRepo.findByRouteIdAndIsActiveTrue(request.routeId()).orElseThrow(
+                () -> new ResourceNotFoundException("Tuyến đường không tồn tại hoặc ngưng hoạt động!")) : null;
+            coachToUpdate.setRoute(newRoute);
+        }
+
+        if(!coachToUpdate.getLicensePlate().equalsIgnoreCase(request.licensePlate())) {
+            if(coachRepo.existsByLicensePlateIgnoreCase(request.licensePlate())) {
+                throw new BusinessRuleException("Biển số xe này đã tồn tại trong hệ thống!");
+            }
+            coachToUpdate.setLicensePlate(request.licensePlate());
+        }
+
+        coachToUpdate.setManufacturer(request.manufacturer());
+        coachToUpdate.setYear(request.year());
+
+        if(coachToUpdate.getStatus().equals(CoachStatus.ACTIVE) && 
+            ((request.status().equals(CoachStatus.MAINTENANCE) || request.status().equals(CoachStatus.RETIRED)))) {
+                if(tripRepo.checkIfCoachHasTodoTrips(id)) {
+                    throw new BusinessRuleException("Không thể ngừng hoạt động hoặc bảo trì xe do đang có lịch trình chuyến đi phát sinh cần thực hiện/hoàn thành!");
+                }
+            }
+        coachToUpdate.setStatus(request.status());
+
+        return true;
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public CoachViewDetailResponse getCoachDetailForView(Integer id) {
+        Coach coachToView = coachRepo.findCoachWithRelationsByCoachId(id).orElseThrow(
+            () -> new ResourceNotFoundException("Không tìm thấy xe có ID là: " + id));
+        
+        List<SeatDTO> seats = coachToView.getSeats().stream()
+            .map(seat -> new SeatDTO(
+                seat.getSeatId(),
+                seat.getSeatCode(),
+                seat.getRowIndex(),
+                seat.getColIndex(),
+                seat.getFloorIndex(),
+                seat.isActive()
+            )).toList();
+
+        Integer activeSeatCount = (int) seats.stream().filter(s -> s.isActive()).count(); 
+        String routeName = coachToView.getRoute() != null ? coachToView.getRoute().getRouteName() : "Chưa có tuyến đường";
+
+        return new CoachViewDetailResponse(
+            coachToView.getCoachId(),
+            routeName,
+            coachToView.getCoachType().getCoachTypeName(),
+            coachToView.getLicensePlate(),
+            coachToView.getManufacturer(),
+            coachToView.getYear(),
+            coachToView.getStatus(),
+            activeSeatCount,
+            seats
+        );
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public CoachEditFormResponse getCoachDetailForEdit(Integer id) {
+        Coach coachToUpdate = coachRepo.findCoachWithRelationsByCoachId(id).orElseThrow(
+            () -> new ResourceNotFoundException("Không tìm thấy xe có ID là: " + id));
+        
+        return new CoachEditFormResponse(
+            coachToUpdate.getCoachId(),
+            coachToUpdate.getRoute() != null ? coachToUpdate.getRoute().getRouteId() : null,
+            coachToUpdate.getCoachType().getCoachTypeId(),
+            coachToUpdate.getLicensePlate(),
+            coachToUpdate.getManufacturer(),
+            coachToUpdate.getYear(),
+            coachToUpdate.getStatus()
+        );
     }
 }
