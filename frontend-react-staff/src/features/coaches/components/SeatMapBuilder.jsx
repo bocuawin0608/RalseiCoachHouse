@@ -92,12 +92,8 @@ export default function SeatMapBuilder({ mode = 'CREATE', rows, cols, initialMat
                     if (isWalkway) {
                         return (
                             <div 
-                            key={`${rIndex}-${cIndex}`}
-                            style={{
-                                width: '50px',
-                                height: '70px', 
-                                backgroundColor: 'transparent' 
-                            }}
+                                key={`${rIndex}-${cIndex}`}
+                                style={{ width: '50px', height: '70px' }}
                             />
                         );
                     }
