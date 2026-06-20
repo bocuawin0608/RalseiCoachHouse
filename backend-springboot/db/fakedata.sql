@@ -1,5 +1,6 @@
 -- CRE: NIKO(Gemini Agent) - UPDATE: ĐỒNG BỘ THIẾT KẾ DDL MỚI
--- FIX: Thêm trường floorIndex vào logic sinh tự động Seat, đồng bộ JSON Layout 1 tầng.
+-- FIX NEW DDL: Đồng bộ các trường Snapshot (pickupStopName, dropoffStopName, seatCodeSnapshot) và Token QR Code.
+-- FIX BIRTH YEAR: Đã xóa trường birthYear khỏi passenger_ticket_detail theo thiết kế tối giản.
 
 USE VeXeDB;
 GO
@@ -200,7 +201,7 @@ BEGIN
     SET @idx = @idx + 1;
 END;
 
--- Khách hàng hệ thống 
+-- Khách hàng hệ thống (Bảng customer giữ nguyên dob theo dạng DATE cho CRM)
 SET @idx = 1;
 WHILE @idx <= 100
 BEGIN
@@ -405,7 +406,7 @@ END;
 PRINT N' -> Hoàn thành sinh ca trực & cấu hình Ghế Chuyến. Tổng số chuyến xe: ' + CAST(@TripCounter AS VARCHAR(10));
 
 -- ============================================================================
--- LEVEL 5.1: PASSENGER TRANSACTIONAL GENERATION
+-- LEVEL 5.1: PASSENGER TRANSACTIONAL GENERATION (🌟 ĐÃ XÓA TRƯỜNG BIRTH YEAR 🌟)
 -- ============================================================================
 PRINT N'-> Đang phân bổ ngẫu nhiên vé hành khách mẫu và đồng bộ hóa sang Trip_Seat...';
 
@@ -416,10 +417,22 @@ DECLARE @MinCusId INT = (SELECT MIN(customerId) FROM [customer]);
 DECLARE @MaxCusId INT = (SELECT MAX(customerId) FROM [customer]);
 DECLARE @TicketStaffId INT = (SELECT MIN(staffId) FROM [staff] WHERE staffPosition = 'TICKET_STAFF');
 
+-- Hoist các biến xử lý logic ra đầu khối để chạy tối ưu hiệu năng
 DECLARE @TargetTripId INT;
 DECLARE @TargetCoachTypeId2 INT;
 DECLARE @CalculatedTicketPrice DECIMAL(15,2);
 DECLARE @TargetTripSeatId INT;
+DECLARE @TargetCusId INT;
+DECLARE @TicketStatus VARCHAR(20);
+DECLARE @SeatStatusUpdate VARCHAR(20);
+DECLARE @SeatCodeSnapshot VARCHAR(10);
+DECLARE @NewPId INT;
+
+-- Lấy sẵn Tên trạm tương ứng ID 1 và 4 để đưa vào làm Snapshot
+DECLARE @PickupStopNameSnap NVARCHAR(255);
+DECLARE @DropoffStopNameSnap NVARCHAR(255);
+SELECT @PickupStopNameSnap = stopPointName FROM [coach_stop] WHERE stopPointId = 1;
+SELECT @DropoffStopNameSnap = stopPointName FROM [coach_stop] WHERE stopPointId = 4;
 
 WHILE @TicketIdx <= 500
 BEGIN
@@ -428,9 +441,9 @@ BEGIN
     SELECT @TargetCoachTypeId2 = c.coachTypeId FROM [trip] t JOIN [coach] c ON t.coachId = c.coachId WHERE t.tripId = @TargetTripId;
     SELECT @CalculatedTicketPrice = seatPrice FROM [coach_type_price] WHERE coachTypeId = @TargetCoachTypeId2;
 
-    DECLARE @TargetCusId INT = @MinCusId + (@TicketIdx % (@MaxCusId - @MinCusId + 1));
-    DECLARE @TicketStatus VARCHAR(20) = CASE WHEN @TicketIdx % 7 = 0 THEN 'PENDING' ELSE 'CONFIRMED' END;
-    DECLARE @SeatStatusUpdate VARCHAR(20) = CASE WHEN @TicketStatus = 'PENDING' THEN 'LOCKED' ELSE 'SOLD' END;
+    SET @TargetCusId = @MinCusId + (@TicketIdx % (@MaxCusId - @MinCusId + 1));
+    SET @TicketStatus = CASE WHEN @TicketIdx % 7 = 0 THEN 'PENDING' ELSE 'CONFIRMED' END;
+    SET @SeatStatusUpdate = CASE WHEN @TicketStatus = 'PENDING' THEN 'LOCKED' ELSE 'SOLD' END;
 
     -- Lọc chuẩn: Chỉ lấy những ghế thực sự CÒN TRỐNG để tránh duplicate logic đặt trùng 1 ghế
     SET @TargetTripSeatId = NULL;
@@ -441,16 +454,38 @@ BEGIN
 
     IF @TargetTripSeatId IS NOT NULL
     BEGIN
-        -- Cập nhật đồng bộ sang TripSeat
+        -- Cập nhật đồng bộ sang trạng thái Ghế Chuyến (TripSeat)
         UPDATE [trip_seat] SET [status] = @SeatStatusUpdate WHERE tripSeatId = @TargetTripSeatId;
 
-        INSERT INTO [passenger_ticket] (customerId, tripId, voucherId, soldBy, ticketCode, totalPrice, pickupStopId, dropoffStopId, [status])
-        VALUES (@TargetCusId, @TargetTripId, NULL, CASE WHEN @TicketIdx % 3 = 0 THEN @TicketStaffId ELSE NULL END, 'TK_SYS_' + RIGHT('0000' + CAST(@TicketIdx AS VARCHAR(4)), 4), @CalculatedTicketPrice, 1, 4, @TicketStatus);
+        -- Tìm chính xác seatCode vật lý để đưa vào làm Snapshot
+        SELECT @SeatCodeSnapshot = s.seatCode 
+        FROM [trip_seat] ts
+        JOIN [seat] s ON ts.seatId = s.seatId
+        WHERE ts.tripSeatId = @TargetTripSeatId;
 
-        DECLARE @NewPId INT = SCOPE_IDENTITY();
+        -- Bổ sung 3 cột snapshot: [pickupStopName], [dropoffStopName], [voucherCodeSnapshot]
+        INSERT INTO [passenger_ticket] (
+            customerId, tripId, voucherId, soldBy, ticketCode, totalPrice, 
+            pickupStopId, dropoffStopId, pickupStopName, dropoffStopName, voucherCodeSnapshot, [status]
+        )
+        VALUES (
+            @TargetCusId, @TargetTripId, NULL, 
+            CASE WHEN @TicketIdx % 3 = 0 THEN @TicketStaffId ELSE NULL END, 
+            'TK_SYS_' + RIGHT('0000' + CAST(@TicketIdx AS VARCHAR(4)), 4), 
+            @CalculatedTicketPrice, 1, 4, @PickupStopNameSnap, @DropoffStopNameSnap, NULL, @TicketStatus
+        );
 
-        INSERT INTO [passenger_ticket_detail] (passengerTicketId, tripSeatId, fullName, phone, dob, price, [status])
-        VALUES (@NewPId, @TargetTripSeatId, N'Hành Khách Ghế ' + CAST(@TicketIdx AS NVARCHAR(5)), '0985' + RIGHT('00000' + CAST(@TicketIdx AS VARCHAR(5)), 5), '1998-04-20', @CalculatedTicketPrice, @TicketStatus);
+        SET @NewPId = SCOPE_IDENTITY();
+
+        -- 🌟 FIX: Đã bóc tách hoàn toàn trường [birthYear] khỏi bảng detail theo yêu cầu thiết kế mới
+        INSERT INTO [passenger_ticket_detail] (passengerTicketId, tripSeatId, seatCodeSnapshot, qrcode, fullName, phone, price, [status])
+        VALUES (
+            @NewPId, @TargetTripSeatId, @SeatCodeSnapshot, 
+            'TOKEN_QR_SECURE_' + CAST(NEWID() AS VARCHAR(36)), 
+            N'Hành Khách Ghế ' + CAST(@TicketIdx AS NVARCHAR(5)), 
+            '0985' + RIGHT('00000' + CAST(@TicketIdx AS VARCHAR(5)), 5), 
+            @CalculatedTicketPrice, @TicketStatus
+        );
 
         INSERT INTO [payment] (passengerTicketId, cargoTicketId, amount, paymentMethod, transactionId, [status], paymentTime)
         VALUES (@NewPId, NULL, @CalculatedTicketPrice, 'VNPAY', 'TXN_P_' + CAST(@TicketIdx AS VARCHAR(5)), CASE WHEN @TicketStatus = 'CONFIRMED' THEN 'COMPLETED' ELSE 'PENDING' END, CASE WHEN @TicketStatus = 'CONFIRMED' THEN GETDATE() ELSE NULL END);
