@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 
 import com.ralsei.dto.response.passengerbooking.TripSeatResponse;
 import com.ralsei.model.TripSeat;
+import com.ralsei.model.enums.TripSeatStatus;
 
 public interface TripSeatRepository extends JpaRepository<TripSeat, Integer> {
     @Query(value = """
@@ -20,8 +21,11 @@ public interface TripSeatRepository extends JpaRepository<TripSeat, Integer> {
             ts.status
         )
         FROM TripSeat ts
-        LEFT JOIN Seat s ON s.seatId = ts.seatId
-        WHERE ts.tripId = :tripId
+        LEFT JOIN ts.seat s
+        WHERE ts.trip.tripId = :tripId
     """)
     public List<TripSeatResponse> getSeatMap(@Param("tripId") Integer tripId);
+
+    @Query(value = "SELECT ts.tripSeatId FROM TripSeat ts WHERE ts.trip.tripId = :tripId AND ts.status = :status")
+    public List<Integer> findTripSeatIdsByTripIdAndStatus(@Param("tripId") Integer tripId, @Param("status") TripSeatStatus status);
 }
