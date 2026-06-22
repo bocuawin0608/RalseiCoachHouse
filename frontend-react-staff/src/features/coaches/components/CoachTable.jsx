@@ -1,13 +1,7 @@
 import { Table, Badge, Button } from 'react-bootstrap';
 import { BsEye, BsLayoutSplit, BsPencilFill } from 'react-icons/bs';
 
-const STATUS_COLOR = {
-    ACTIVE: 'success',
-    MAINTENANCE: 'warning',
-    RETIRED: 'danger'
-}
-
-export default function CoachTable({ data, loading, onViewDetail, onEditInfo, onEditSeatMap }) {
+export default function CoachTable({ data, loading, statusLabels, onViewDetail, onEditInfo, onEditSeatMap }) {
     
     if (loading) {
         return (
@@ -43,8 +37,8 @@ export default function CoachTable({ data, loading, onViewDetail, onEditInfo, on
                         <td className="px-3">{coach.manufacturerAndYear}</td>
                         <td className="px-3">{coach.totalSeat}</td>
                         <td className="px-3">
-                            <Badge bg={STATUS_COLOR[coach.status || 'RETIRED']}>
-                                {coach.status}
+                            <Badge bg={statusLabels[coach.status || 'RETIRED'].bg}>
+                                {statusLabels[coach.status || 'RETIRED'].text}
                             </Badge>
                         </td>
                         <td className="px-3">
