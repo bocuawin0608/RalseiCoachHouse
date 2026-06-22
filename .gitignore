@@ -27,3 +27,6 @@ TestResults.xml
 .txt
 
 docs/
+
+# Secrets
+**/firebase-service-account.json
