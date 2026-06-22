@@ -1,11 +1,17 @@
 package com.ralsei.service.impl;
 
+import com.ralsei.dto.projection.coach.CoachLicensePlateProjection;
+import com.ralsei.dto.projection.staff.StaffProjection;
 import com.ralsei.dto.projection.trip.TripDetailProjection;
 import com.ralsei.dto.projection.trip.TripFilterProjection;
 import com.ralsei.dto.projection.trip.TripSummaryProjection;
+import com.ralsei.dto.request.trip.TripCreateRequest;
 import com.ralsei.dto.request.trip.TripUpdateRequest;
 import com.ralsei.dto.response.PagedResponse;
+import com.ralsei.dto.response.CoachAndRouteStop.RouteDropdownDTO;
 import com.ralsei.model.Trip;
+import com.ralsei.repository.RouteRepository;
+import com.ralsei.repository.StaffRepository;
 import com.ralsei.repository.TripRepository;
 import com.ralsei.service.TripService;
 import com.ralsei.util.FormatHandlerUtility;
@@ -28,6 +34,30 @@ import java.util.NoSuchElementException;
 public class TripServiceImpl implements TripService {
     private static final Logger LOGGER = LoggerFactory.getLogger(TripService.class);
     private final TripRepository tripRepository;
+    private final RouteRepository routeRepository;
+    private final StaffRepository staffRepository;
+    @Override
+    public String insertTrip(TripCreateRequest tripRequest) {
+        String prompt = "";
+        if (tripRequest.getDepartureTime() == null
+                || tripRequest.getDepartureTime().isBefore(java.time.LocalDateTime.now())) {
+            LOGGER.error(" Validation Failed: Mẹ mày ko hợp lệ hoặc ở quá khứ.");
+            prompt = "Không thể tạo chuyến xe trong quá khứ, vui lòng tạo lại.";
+        } else {
+            try {
+                tripRepository.insertTrip(tripRequest.getRouteId(), tripRequest.getCoachId(),
+                        tripRequest.getDepartureTime(), tripRequest.getStatus(), tripRequest.getDriverId(),
+                        tripRequest.getAttendantId());
+
+                LOGGER.info("Tạo chuyến xe mới thành công. ID: ");
+                prompt = "Tạo chuyến xe mới thành công";
+            } catch (Exception e) {
+                LOGGER.error("ERROR: Không thể ghi đè mẹ thằng hiếu xuống Database. Lý do: {}", e.getMessage());
+                prompt = "Lỗi hệ thống, tạo chuyến thất bại!";
+            }
+        }
+        return prompt;
+    }
 
     @Override
     @Transactional(readOnly = true)
@@ -151,7 +181,7 @@ public class TripServiceImpl implements TripService {
     public PagedResponse<TripSummaryProjection> getAllTripSummaries(LocalDate date, int page, int size) {
         LocalDate targetDate = (date != null) ? date : LocalDate.now();
         String departureDateStr = targetDate.toString();
-        Pageable pageable = PageRequest.of(page, size);        // thừa!
+        Pageable pageable = PageRequest.of(page, size); // thừa!
         Page<TripSummaryProjection> summaryPage = tripRepository.viewAllTripSummaries(departureDateStr, pageable);
 
         return new PagedResponse<>(
@@ -161,28 +191,6 @@ public class TripServiceImpl implements TripService {
                 summaryPage.getTotalElements(),
                 summaryPage.getTotalPages(),
                 summaryPage.isLast());
-    }
-
-    @Override
-    public String createTrip(Trip trip) {
-        String prompt = "";
-        if (trip.getDepartureTime() == null || trip.getDepartureTime().isBefore(java.time.LocalDateTime.now())) {
-            LOGGER.error(" Validation Failed: Mẹ mày ko hợp lệ hoặc ở quá khứ.");
-            prompt = "Không thể tạo chuyến xe trong quá khứ, vui lòng tạo lại.";
-        } else {
-            try {
-                trip.setStatus("SCHEDULED");
-                trip.setCreatedAt(java.time.LocalDateTime.now());
-                tripRepository.saveAndFlush(trip);
-
-                LOGGER.info("Tạo chuyến xe mới thành công. ID: {}", trip.getTripId());
-                prompt = "Tạo chuyến xe mới thành công";
-            } catch (Exception e) {
-                LOGGER.error("ERROR: Không thể ghi đè mẹ thằng hiếu xuống Database. Lý do: {}", e.getMessage());
-                prompt = "Lỗi hệ thống, tạo chuyến thất bại!";
-            }
-        }
-        return prompt;
     }
 
     @Scheduled(cron = "0 0 2 * * ?")
@@ -257,5 +265,24 @@ public class TripServiceImpl implements TripService {
         };
         return prompt;
     }
+
+    @Override
+    public List<RouteDropdownDTO> findRoutesForDropdown() {
+        return routeRepository.findRoutesForDropdown();
+    }
+    //TODO: sửa lại logic thằng của nợ này. 
+    @Override
+    public List<StaffProjection> getStaffNameDropDown(LocalDate date) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getStaffNameDropDown'");
+    }
+
+    @Override
+    public List<CoachLicensePlateProjection> getCoachInfoDropDown(LocalDate date) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getCoachInfoDropDown'");
+    }
+
+
 
 }

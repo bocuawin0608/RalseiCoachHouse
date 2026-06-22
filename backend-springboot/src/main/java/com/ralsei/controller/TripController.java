@@ -5,6 +5,7 @@ import com.ralsei.dto.request.trip.TripUpdateRequest;
 import com.ralsei.dto.projection.trip.TripDetailProjection;
 import com.ralsei.dto.projection.trip.TripFilterProjection;
 import com.ralsei.dto.projection.trip.TripSummaryProjection;
+import com.ralsei.dto.request.trip.TripCreateRequest;
 import com.ralsei.dto.request.trip.TripFilterRequest;
 import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.model.Trip;
@@ -84,10 +85,10 @@ public class TripController {
      * URL ĐÃ ĐỒNG BỘ: POST /api/v1/manager/trips/create
      */
     @PostMapping("/manager/trips/create") // NIKO: Đổi từ /admin/create thành /manager/trips/create
-    public ResponseEntity<String> createTrip(@RequestBody Trip trip) {
-        String result = tripService.createTrip(trip);
+    public ResponseEntity<String> insertTrip(@RequestBody TripCreateRequest tripRequest) {
+        String result = tripService.insertTrip(tripRequest);
 
-        if (result.contains("Không thể") || result.contains("thất bại")) {
+        if (result.contains("Không thể") || result.contains("thất bại"))    {
             return ResponseEntity.badRequest().body(result);
         }
         return ResponseEntity.ok(result);
@@ -130,7 +131,7 @@ public class TripController {
      * FUNCTION 6: ADMIN/MANAGER LẤY TOÀN BỘ DANH SÁCH CHUYẾN XE RÚT GỌN THEO NGÀY
      * URL ĐÃ ĐỒNG BỘ: GET /api/v1/manager/trips/summaries
      */
-    @GetMapping("/manager/trips/summaries") // NIKO: Đây chính là endpoint cứu rỗi lỗi 404/NoResourceFound ban nãy!
+    @GetMapping("/manager/trips/summaries") 
     public ResponseEntity<PagedResponse<TripSummaryProjection>> getAllTripSummaries(
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(defaultValue = "0") int page,
