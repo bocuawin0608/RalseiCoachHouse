@@ -235,9 +235,9 @@ INSERT INTO [cargo_type_price] (cargoTypeId, unit, pricePerUnit, startEffectiveD
 (3, N'Kiện', 150000.00, '2026-01-01', '2029-12-31');
 
 -- ============================================================================
--- LEVEL 3: GENERATING COACHES & SEATS
+-- LEVEL 3: GENERATING COACHES & SEATS (FIXED: MATCH SEAT LAYOUT MATRIX)
 -- ============================================================================
-PRINT N'-> Đang lắp ráp hạ tầng 365 xe khách và tự động cấu hình ma trận ghế (Thêm floorIndex)...';
+PRINT N'-> Đang lắp ráp hạ tầng 365 xe khách và đồng bộ tọa độ Ghế theo cấu trúc JSON...';
 
 DECLARE @ManufacturerTable TABLE (Id INT IDENTITY(1,1), Brand NVARCHAR(100));
 INSERT INTO @ManufacturerTable (Brand) VALUES 
@@ -251,7 +251,9 @@ DECLARE @coachStatus VARCHAR(20);
 DECLARE @pickedBrand NVARCHAR(100);
 DECLARE @TargetCoachTypeId INT;
 DECLARE @NewCoachId INT;
-DECLARE @s INT;
+
+-- Khai báo các biến chạy ma trận tọa độ
+DECLARE @f INT, @r INT, @c_idx INT, @seatCount INT;
 
 WHILE @c <= 365
 BEGIN
@@ -267,34 +269,93 @@ BEGIN
     VALUES (@TargetCoachTypeId, @generatedPlate, @coachStatus, @pickedBrand, 2024);
     
     SET @NewCoachId = SCOPE_IDENTITY();
+    SET @seatCount = 1;
 
-    -- Bổ sung trường floorIndex = 1 cho toàn bộ ghế sinh ra
-    SET @s = 1;
+    -- ==========================================
+    -- LOẠI 1: Xe Limousine VIP 20 phòng (2 Tầng x 5 Hàng x 2 Cột)
+    -- ==========================================
     IF @TargetCoachTypeId = 1
     BEGIN
-        WHILE @s <= 20 
-        BEGIN 
-            INSERT INTO [seat] (coachId, seatCode, rowIndex, colIndex, floorIndex) 
-            VALUES (@NewCoachId, 'L' + RIGHT('0' + CAST(@s AS VARCHAR(2)), 2), (@s+1)/2, CASE WHEN @s%2=0 THEN 3 ELSE 1 END, 1); 
-            SET @s = @s + 1; 
+        SET @f = 1;
+        WHILE @f <= 2
+        BEGIN
+            SET @r = 1;
+            WHILE @r <= 5
+            BEGIN
+                SET @c_idx = 1;
+                WHILE @c_idx <= 2
+                BEGIN
+                    INSERT INTO [seat] (coachId, seatCode, rowIndex, colIndex, floorIndex) 
+                    VALUES (@NewCoachId, 'L' + RIGHT('0' + CAST(@seatCount AS VARCHAR(2)), 2), @r, @c_idx, @f); 
+                    
+                    SET @seatCount = @seatCount + 1; 
+                    SET @c_idx = @c_idx + 1; 
+                END;
+                SET @r = @r + 1;
+            END;
+            SET @f = @f + 1;
         END;
     END
+    
+    -- ==========================================
+    -- LOẠI 2: Xe Giường Nằm Luxury 32 chỗ (2 Tầng x 6 Hàng x 3 Cột)
+    -- Hàng 1-5 full 3 cột. Hàng 6 chỉ có 1 ghế ở cột 2 (Cột 1, 3 là EMPTY)
+    -- ==========================================
     ELSE IF @TargetCoachTypeId = 2
     BEGIN
-        WHILE @s <= 32 
-        BEGIN 
-            INSERT INTO [seat] (coachId, seatCode, rowIndex, colIndex, floorIndex) 
-            VALUES (@NewCoachId, 'LX' + RIGHT('0' + CAST(@s AS VARCHAR(2)), 2), (@s+1)/2, CASE WHEN @s%2=0 THEN 3 ELSE 1 END, 1); 
-            SET @s = @s + 1; 
+        SET @f = 1;
+        WHILE @f <= 2
+        BEGIN
+            SET @r = 1;
+            WHILE @r <= 6
+            BEGIN
+                SET @c_idx = 1;
+                WHILE @c_idx <= 3
+                BEGIN
+                    -- Kiểm tra điều kiện vị trí có ghế thực tế
+                    IF (@r <= 5) OR (@r = 6 AND @c_idx = 2)
+                    BEGIN
+                        INSERT INTO [seat] (coachId, seatCode, rowIndex, colIndex, floorIndex) 
+                        VALUES (@NewCoachId, 'LX' + RIGHT('0' + CAST(@seatCount AS VARCHAR(2)), 2), @r, @c_idx, @f); 
+                        
+                        SET @seatCount = @seatCount + 1;
+                    END;
+                    SET @c_idx = @c_idx + 1;
+                END;
+                SET @r = @r + 1;
+            END;
+            SET @f = @f + 1;
         END;
     END
+    
+    -- ==========================================
+    -- LOẠI 3: Xe Khách Truyền Thống 38 chỗ (2 Tầng x 7 Hàng x 3 Cột)
+    -- Hàng 1-6 full 3 cột. Hàng 7 chỉ có 1 ghế ở cột 2 (Cột 1, 3 là EMPTY)
+    -- ==========================================
     ELSE
     BEGIN
-        WHILE @s <= 38 
-        BEGIN 
-            INSERT INTO [seat] (coachId, seatCode, rowIndex, colIndex, floorIndex) 
-            VALUES (@NewCoachId, 'T' + RIGHT('0' + CAST(@s AS VARCHAR(2)), 2), (@s+1)/2, CASE WHEN @s%2=0 THEN 3 ELSE 1 END, 1); 
-            SET @s = @s + 1; 
+        SET @f = 1;
+        WHILE @f <= 2
+        BEGIN
+            SET @r = 1;
+            WHILE @r <= 7
+            BEGIN
+                SET @c_idx = 1;
+                WHILE @c_idx <= 3
+                BEGIN
+                    -- Kiểm tra điều kiện vị trí có ghế thực tế
+                    IF (@r <= 6) OR (@r = 7 AND @c_idx = 2)
+                    BEGIN
+                        INSERT INTO [seat] (coachId, seatCode, rowIndex, colIndex, floorIndex) 
+                        VALUES (@NewCoachId, 'T' + RIGHT('0' + CAST(@seatCount AS VARCHAR(2)), 2), @r, @c_idx, @f); 
+                        
+                        SET @seatCount = @seatCount + 1;
+                    END;
+                    SET @c_idx = @c_idx + 1;
+                END;
+                SET @r = @r + 1;
+            END;
+            SET @f = @f + 1;
         END;
     END
 
@@ -552,22 +613,28 @@ GO
 -- ============================================================================
 PRINT N'-> Đang đồng bộ hóa dữ liệu cấu trúc Seat Layout JSON cho các loại xe...';
 
--- 1. Xe Limousine VIP 20 phòng (10 hàng x 3 cột, có lối đi ở giữa)
 UPDATE [coach_type]
-SET [seatLayout] = '{"totalFloors":1,"rows":10,"cols":3,"floors":[[["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"]]]}'
+SET [seatLayout] = '{"totalFloors":2,"rows":5,"cols":2,"floors":[
+    [["SEAT","SEAT"],["SEAT","SEAT"],["SEAT","SEAT"],["SEAT","SEAT"],["SEAT","SEAT"]],
+    [["SEAT","SEAT"],["SEAT","SEAT"],["SEAT","SEAT"],["SEAT","SEAT"],["SEAT","SEAT"]]
+]}'
 WHERE [coachTypeId] = 1;
 
--- 2. Xe Giường Nằm Luxury 32 chỗ (16 hàng x 3 cột, có lối đi ở giữa)
+-- 2. Xe Giường Nằm Luxury 32 chỗ (Mỗi tầng 16 chỗ: 5 hàng full 3 cột + 1 ghế giữa ở hàng cuối)
 UPDATE [coach_type]
-SET [seatLayout] = '{"totalFloors":1,"rows":16,"cols":3,"floors":[[["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"]]]}'
+SET [seatLayout] = '{"totalFloors":2,"rows":6,"cols":3,"floors":[
+    [["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["EMPTY","SEAT","EMPTY"]],
+    [["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["EMPTY","SEAT","EMPTY"]]
+]}'
 WHERE [coachTypeId] = 2;
 
--- 3. Xe Khách Truyền Thống 38 chỗ (19 hàng x 3 cột, có lối đi ở giữa)
+-- 3. Xe Khách Truyền Thống 38 chỗ (Mỗi tầng 19 chỗ: 6 hàng full 3 cột + 1 ghế giữa ở hàng cuối)
 UPDATE [coach_type]
-SET [seatLayout] = '{"totalFloors":1,"rows":19,"cols":3,"floors":[[["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"],["SEAT","EMPTY","SEAT"]]]}'
+SET [seatLayout] = '{"totalFloors":2,"rows":7,"cols":3,"floors":[
+    [["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["EMPTY","SEAT","EMPTY"]],
+    [["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["EMPTY","SEAT","EMPTY"]]
+]}'
 WHERE [coachTypeId] = 3;
-
-PRINT N'-> Cập nhật Seat Layout thành công!';
 
 -- RECHECK QUERY AFTER SEED
 SELECT * FROM [account];
