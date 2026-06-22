@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.query.Procedure;
 import org.springframework.data.repository.query.Param;
@@ -18,6 +19,20 @@ import com.ralsei.model.Trip;
 import jakarta.transaction.Transactional;
 
 public interface TripRepository extends JpaRepository<Trip, Integer> {
+    @Modifying
+    @Transactional
+    @Query(value = """
+            INSERT INTO [trip] (routeId, coachId, departureTime, [status], driverId, attendantId)
+            VALUES (:routeId, :coachId, :departureTime, :status, :driverId, :attendantId)
+            """, nativeQuery = true)
+    void insertTrip(
+            @Param("routeId") Integer routeId,
+            @Param("coachId") Integer coachId,
+            @Param("departureTime") LocalDateTime departureTime,
+            @Param("status") String status,
+            @Param("driverId") Integer driverId,
+            @Param("attendantId") Integer attendantId);
+
     @Query(value = """
             SELECT
                 t.tripId AS tripId,
@@ -144,6 +159,19 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
     @Transactional
     @Procedure(name = "sp_AutoGenerateWeeklySchedule_Final")
     public void autoGenerateWeeklySchedule(@Param("StartDate") String startDate);
+
+    @Query(value = """
+                SELECT CASE WHEN EXISTS (
+                    SELECT 1 FROM coach c WHERE c.coachId = :coachId AND EXISTS (
+                        SELECT 1 FROM trip t WHERE t.coachId = c.coachId
+                            AND departureTime >= DATEADD(hour, -8, GETDATE())
+                            AND t.status NOT IN ('CANCELLED', 'COMPLETED')
+                    )
+                ) THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END
+            """, nativeQuery = true)
+    boolean checkIfCoachHasTodoTrips(@Param("coachId") Integer coachId);
+
+    boolean existsByCoach_CoachId(Integer coachId);
 
     @Query(value = """
             SELECT COUNT(DISTINCT CAST(departureTime AS DATE))

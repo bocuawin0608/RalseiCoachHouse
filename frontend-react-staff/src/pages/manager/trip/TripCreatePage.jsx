@@ -10,11 +10,13 @@ export default function TripCreatePage() {
 
     /** Form state - fields align with the BE TripUpdateRequest / Trip model */
     const [formData, setFormData] = useState({
+        routeId: '',
         coachId: '',
         departureDate: '',
         departureTime: '',
-        routeId: '',
-        tripStatus: 'SCHEDULED'
+        status: 'SCHEDULED',
+        driverId: '',
+        attendantId: ''
     });
 
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,13 +32,15 @@ export default function TripCreatePage() {
     const validate = () => {
         if (!formData.coachId) return 'Vui lòng nhập ID xe khách!';
         if (!formData.routeId) return 'Vui lòng nhập ID tuyến đường!';
+        if (!formData.driverId) return 'Vui lòng nhập ID tài xế!';
+        if (!formData.attendantId) return 'Vui lòng nhập ID phụ xe!';
         if (!formData.departureDate) return 'Vui lòng chọn ngày khởi hành!';
         if (!formData.departureTime) return 'Vui lòng chọn giờ khởi hành!';
         return null;
     };
 
     /** Build payload and POST to the create endpoint */
-    const handleSubmit = async (e) => {
+   const handleSubmit = async (e) => {
         e.preventDefault();
         setErrorMsg('');
 
@@ -48,21 +52,16 @@ export default function TripCreatePage() {
 
         setIsSubmitting(true);
         try {
-            /**
-             * Spring LocalTime deserializer requires strict HH:mm:ss format.
-             * The <input type="time"> returns "HH:mm"; append ":00" for seconds.
-             * Guard against empty string to avoid a parse error at index 0.
-             */
-            const timeValue = formData.departureTime
-                ? `${formData.departureTime}:00`
-                : null;
+            // Combine date and time cleanly into ISO-8601 format: YYYY-MM-DDTHH:mm:00
+            const combinedDepartureTime = `${formData.departureDate}T${formData.departureTime}:00`;
 
             const payload = {
-                coachId: parseInt(formData.coachId),
-                routeId: parseInt(formData.routeId),
-                departureDate: formData.departureDate,
-                departureTime: timeValue,
-                tripStatus: formData.tripStatus
+                coachId: parseInt(formData.coachId, 10),
+                routeId: parseInt(formData.routeId, 10),
+                departureTime: combinedDepartureTime, 
+                status: formData.status,
+                driverId: parseInt(formData.driverId, 10),
+                attendantId: parseInt(formData.attendantId, 10)
             };
 
             await tripApi.createTrip(payload);
@@ -140,6 +139,40 @@ export default function TripCreatePage() {
                                     />
                                 </Form.Group>
 
+                                {/* Driver ID */}
+                                <Form.Group>
+                                    <Form.Label className="fw-semibold text-secondary mb-1">
+                                        ID Tài xế <span className="text-danger">*</span>
+                                    </Form.Label>
+                                    <Form.Control
+                                        type="number"
+                                        name="driverId"
+                                        required
+                                        min="1"
+                                        placeholder="Ví dụ: 12"
+                                        value={formData.driverId}
+                                        onChange={handleInputChange}
+                                        className="py-2"
+                                    />
+                                </Form.Group>
+
+                                {/* Attendant ID */}
+                                <Form.Group>
+                                    <Form.Label className="fw-semibold text-secondary mb-1">
+                                        ID Phụ xe <span className="text-danger">*</span>
+                                    </Form.Label>
+                                    <Form.Control
+                                        type="number"
+                                        name="attendantId"
+                                        required
+                                        min="1"
+                                        placeholder="Ví dụ: 8"
+                                        value={formData.attendantId}
+                                        onChange={handleInputChange}
+                                        className="py-2"
+                                    />
+                                </Form.Group>
+
                                 {/* Departure Date */}
                                 <Form.Group>
                                     <Form.Label className="fw-semibold text-secondary mb-1">
@@ -175,17 +208,12 @@ export default function TripCreatePage() {
                                     <Form.Label className="fw-semibold text-secondary mb-1">
                                         Trạng thái chuyến
                                     </Form.Label>
-                                    <Form.Select
-                                        name="tripStatus"
-                                        value={formData.tripStatus}
-                                        onChange={handleInputChange}
-                                        className="py-2"
-                                    >
-                                        <option value="SCHEDULED">Đã lên lịch</option>
-                                        <option value="ACTIVE">Đang hoạt động</option>
-                                        <option value="COMPLETED">Hoàn thành</option>
-                                        <option value="CANCELLED">Đã hủy</option>
-                                    </Form.Select>
+                            <Form.Select name="status" value={formData.status} onChange={handleInputChange}>
+                                <option value="SCHEDULED">Đã lên lịch</option>
+                                <option value="ACTIVE">Đang hoạt động</option> {/* HUNG THỦ ĐÂY RỒI */}
+                                <option value="COMPLETED">Hoàn thành</option>
+                                <option value="CANCELLED">Đã hủy</option>
+                            </Form.Select>
                                 </Form.Group>
 
                                 {/* Submit */}

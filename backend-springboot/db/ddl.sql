@@ -1,4 +1,4 @@
-USE master;
+﻿USE master;
 GO
 
 -- Xóa theo thứ tự từ LEVEL cao xuống LEVEL thấp để không dính Foreign Key Constraints
