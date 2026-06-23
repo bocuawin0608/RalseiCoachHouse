@@ -196,7 +196,6 @@ CREATE TABLE [customer] (
     [phone] VARCHAR(20) NULL,
     [email] VARCHAR(100) NULL,
     [dob] DATE NULL,
-    [address] NVARCHAR(MAX) NULL,
     [isActive] BIT NOT NULL DEFAULT 1,
     [createdAt] DATETIME DEFAULT GETDATE(),
     [createdBy] INT NULL,
@@ -381,12 +380,15 @@ CREATE TABLE [passenger_ticket] (
     [passengerTicketId] INT IDENTITY(1,1) PRIMARY KEY,
     [customerId] INT NULL, -- Khách vãng lai
     [tripId] INT NOT NULL,
-    [voucherId] INT NULL,
     [soldBy] INT NULL, -- ID Staff bán tại quầy
     [ticketCode] VARCHAR(50) NOT NULL UNIQUE,
     [totalPrice] DECIMAL(15, 2) NOT NULL,
+    [voucherId] INT NULL,
     [pickupStopId] INT NOT NULL,
     [dropoffStopId] INT NOT NULL,
+    [pickupStopName] NVARCHAR(255) NOT NULL,  --snapshot
+    [dropoffStopName] NVARCHAR(255) NOT NULL, --snapshot
+    [voucherCodeSnapshot] VARCHAR(50) NULL, --snapshot
     [status] VARCHAR(50) NOT NULL DEFAULT 'PENDING', 
     [createdAt] DATETIME DEFAULT GETDATE(),
     [createdBy] INT NULL,
@@ -394,8 +396,10 @@ CREATE TABLE [passenger_ticket] (
     [updatedBy] INT NULL,
     FOREIGN KEY ([customerId]) REFERENCES [customer] ([customerId]),
     FOREIGN KEY ([tripId]) REFERENCES [trip] ([tripId]),
-    FOREIGN KEY ([voucherId]) REFERENCES [voucher] ([voucherId]),
     FOREIGN KEY ([soldBy]) REFERENCES [staff] ([staffId]),
+    FOREIGN KEY ([voucherId]) REFERENCES [voucher] ([voucherId]) ON DELETE SET NULL,
+    FOREIGN KEY ([pickupStopId]) REFERENCES [coach_stop] ([stopPointId]),
+    FOREIGN KEY ([dropoffStopId]) REFERENCES [coach_stop] ([stopPointId]),
 
 	CONSTRAINT CK_PassengerTicket_Price CHECK ([totalPrice] >= 0),
     CONSTRAINT CK_PassengerTicket_Status CHECK ([status] IN ('PENDING', 'CONFIRMED', 'CHANGED', 'CANCELLED')),
@@ -448,11 +452,11 @@ CREATE TABLE [cargo_ticket] (
 CREATE TABLE [passenger_ticket_detail] (
     [ticketDetailId] INT IDENTITY(1,1) PRIMARY KEY,
     [passengerTicketId] INT NOT NULL,
-    [tripSeatId] INT NOT NULL,
+    [tripSeatId] INT NULL,
+    [seatCodeSnapshot] VARCHAR(10) NOT NULL,
     [qrcode] VARCHAR(MAX) NULL,
     [fullName] NVARCHAR(100) NOT NULL,
     [phone] VARCHAR(20) NOT NULL,
-    [dob] DATE NOT NULL,
     [email] VARCHAR(100) NULL,
     [price] DECIMAL(15, 2) NOT NULL,
     [status] VARCHAR(50) NOT NULL DEFAULT 'PENDING', 
@@ -462,7 +466,7 @@ CREATE TABLE [passenger_ticket_detail] (
     [updatedAt] DATETIME DEFAULT GETDATE(),
     [updatedBy] INT NULL,
     FOREIGN KEY ([passengerTicketId]) REFERENCES [passenger_ticket] ([passengerTicketId]) ON DELETE CASCADE,
-    FOREIGN KEY ([tripSeatId]) REFERENCES [trip_seat] ([tripSeatId]),
+    FOREIGN KEY ([tripSeatId]) REFERENCES [trip_seat] ([tripSeatId]) ON DELETE SET NULL,
 
 	CONSTRAINT CK_PassengerDetail_Price CHECK ([price] >= 0),
     CONSTRAINT CK_PassengerDetail_Status CHECK ([status] IN ('PENDING', 'CONFIRMED', 'CHECKED_IN', 'CANCELLED', 'EXPIRED'))
@@ -524,7 +528,7 @@ CREATE TABLE [accompanied_child] (
     [accompaniedChildId] INT IDENTITY(1,1) PRIMARY KEY,
     [ticketDetailId] INT NOT NULL,
     [fullname] NVARCHAR(100) NOT NULL,
-    [dob] DATE NOT NULL,
+    [birthYear] INT NOT NULL,
     [createdAt] DATETIME DEFAULT GETDATE(),
     [createdBy] INT NULL,
     [updatedAt] DATETIME DEFAULT GETDATE(),
@@ -532,7 +536,8 @@ CREATE TABLE [accompanied_child] (
     FOREIGN KEY ([ticketDetailId]) REFERENCES [passenger_ticket_detail] ([ticketDetailId]) ON DELETE CASCADE,
 	
 	-- 1 trẻ em chỉ đc ngồi cùng ghế 1 ng lớn
-	CONSTRAINT UQ_AccompaniedChild_TicketDetail UNIQUE ([ticketDetailId])
+	CONSTRAINT UQ_AccompaniedChild_TicketDetail UNIQUE ([ticketDetailId]),
+    CONSTRAINT CK_AccompaniedChild_BirthYear CHECK ([birthYear] >= 1900 AND [birthYear] <= YEAR(GETDATE()))
 );
 
 CREATE TABLE [refund] (

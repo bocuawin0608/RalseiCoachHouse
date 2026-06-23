@@ -1,7 +1,6 @@
 package com.ralsei.model;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
@@ -32,8 +31,11 @@ public class PassengerTicketDetail extends BaseEntity {
     @Column(name = "passengerTicketId", nullable = false)
     private int passengerTicketId;
 
-    @Column(name = "tripSeatId", nullable = false)
+    @Column(name = "tripSeatId")
     private int tripSeatId;
+
+    @Column(name = "seatCodeSnapshot", nullable = false)
+    private String seatCodeSnapshot;
 
     @Column(name = "qrcode", columnDefinition = "VARCHAR(MAX)")
     private String qrcode;
@@ -43,9 +45,6 @@ public class PassengerTicketDetail extends BaseEntity {
 
     @Column(name = "phone", nullable = false)
     private String phone;
-
-    @Column(name = "dob", nullable = false)
-    private LocalDate dob;
 
     @Column(name = "email")
     private String email;

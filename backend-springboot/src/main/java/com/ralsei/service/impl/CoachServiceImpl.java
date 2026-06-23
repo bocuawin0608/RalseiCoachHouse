@@ -190,7 +190,7 @@ public class CoachServiceImpl implements CoachService {
             )).toList();
 
         Integer activeSeatCount = (int) seats.stream().filter(s -> s.isActive()).count(); 
-        String routeName = coachToView.getRoute() != null ? coachToView.getRoute().getRouteName() : "Chưa có tuyến đường";
+        String routeName = coachToView.getRoute() != null ? coachToView.getRoute().getRouteName() : "Chưa được xếp tuyến";
 
         return new CoachViewDetailResponse(
             coachToView.getCoachId(),
