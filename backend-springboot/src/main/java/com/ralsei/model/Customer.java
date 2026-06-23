@@ -42,9 +42,6 @@ public class Customer extends BaseEntity {
     @Column(name = "dob")
     private LocalDate dob;
 
-    @Column(name = "address")
-    private String address;
-
     @Column(name = "isActive", nullable = false)
     private boolean isActive;
 

@@ -1,0 +1,9 @@
+package com.ralsei.service.passengerbooking;
+
+import java.util.List;
+
+public interface SeatHoldService {
+    boolean isSeatLocked(Integer tripSeatId);
+    boolean lockSeats(List<Integer> tripSeatIds, String holdToken, long ttlSeconds);
+    boolean releaseSeats(List<Integer> tripSeatIds, String holdToken);
+}
