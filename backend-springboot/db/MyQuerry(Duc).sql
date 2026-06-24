@@ -112,7 +112,7 @@ WHERE tripId = 10;
 GO
 
 -- Giả sử Manager số 2 thực hiện sinh lịch tự động cho 1 tuần từ ngày 01/06/2026
-EXEC sp_AutoGenerateWeeklySchedule_Final @StartDate = '2026-06-15';
+EXEC sp_AutoGenerateWeeklySchedule_Final @StartDate = '2026-06-23';
 
 -- Lệnh 1: Kiểm tra tổng số lượng chuyến xe sinh ra trong ngày đầu tiên xem có chạm mốc 20 chuyến không
 SELECT CAST(departureTime AS DATE) AS NgayChay, COUNT(*) AS TongSoChuyenTrongNgay
