@@ -181,7 +181,7 @@ public class TripServiceImpl implements TripService {
     public PagedResponse<TripSummaryProjection> getAllTripSummaries(LocalDate date, int page, int size) {
         LocalDate targetDate = (date != null) ? date : LocalDate.now();
         String departureDateStr = targetDate.toString();
-        Pageable pageable = PageRequest.of(page, size); // thừa!
+        Pageable pageable = PageRequest.of(page, size);
         Page<TripSummaryProjection> summaryPage = tripRepository.viewAllTripSummaries(departureDateStr, pageable);
 
         return new PagedResponse<>(

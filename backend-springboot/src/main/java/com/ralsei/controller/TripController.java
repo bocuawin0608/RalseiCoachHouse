@@ -131,7 +131,7 @@ public class TripController {
      * FUNCTION 6: ADMIN/MANAGER LẤY TOÀN BỘ DANH SÁCH CHUYẾN XE RÚT GỌN THEO NGÀY
      * URL ĐÃ ĐỒNG BỘ: GET /api/v1/manager/trips/summaries
      */
-    @GetMapping("/manager/trips/summaries") 
+    @GetMapping("/manager/trips/summaries") // NIKO: Đây chính là endpoint cứu rỗi lỗi 404/NoResourceFound ban nãy!
     public ResponseEntity<PagedResponse<TripSummaryProjection>> getAllTripSummaries(
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(defaultValue = "0") int page,

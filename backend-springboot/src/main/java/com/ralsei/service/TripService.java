@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+
 public interface TripService {
         /**
          * This interface class use to get all trip in the day customer site
