@@ -10,4 +10,5 @@ import com.ralsei.model.Payment;
 @Repository
 public interface PaymentRepository extends JpaRepository<Payment, Integer> {
     Optional<Payment> findByTransactionIdAndStatus(String transactionId, String status);
+    boolean existsByTransactionId(String transactionId);
 }

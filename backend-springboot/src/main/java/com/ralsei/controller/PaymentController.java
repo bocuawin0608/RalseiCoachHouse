@@ -25,7 +25,7 @@ public class PaymentController {
 
     private final PaymentService paymentService;
 
-    @Value("${sepay.api-token}")
+    @Value("${sepay.api.token}")
     private String sepayApiToken;
 
     @PostMapping("/checkout")

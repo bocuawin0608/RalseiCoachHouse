@@ -3,7 +3,6 @@ package com.ralsei.service.impl;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -16,6 +15,7 @@ import com.ralsei.dto.request.sePay.SepayWebhookRequest;
 import com.ralsei.model.Payment;
 import com.ralsei.repository.PaymentRepository;
 import com.ralsei.service.PaymentService;
+import com.ralsei.service.TransactionIdGenerator;
 
 import lombok.RequiredArgsConstructor;
 
@@ -25,11 +25,11 @@ public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final ObjectMapper objectMapper;
+    private final TransactionIdGenerator transactionIdGenerator;
 
     @Override
     public Payment initializePayment(PaymentCheckoutRequest request) {
-        // format SePay is PAYxxxxxx
-        String transactionId = "PAY" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+        String transactionId = transactionIdGenerator.generateUniqueTransactionId();
 
         Payment payment = Payment.builder()
                 .passengerTicketId(request.getPassengerTicketId())
@@ -81,6 +81,7 @@ public class PaymentServiceImpl implements PaymentService {
                 }
 
                 paymentRepository.save(payment);
+
             } else {
                 throw new IllegalArgumentException("Transfer amount is less than required payment amount");
             }
