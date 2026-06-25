@@ -35,3 +35,4 @@ docs/
 ./documents/changelog-cargo-tracking.md
 ./documents/test-cases-cargo-tracking.md.md
 ./documents/usecase-cargo-tracking.md
+./documents/USECASE_PassengerTicket_Payment_Refund.md
