@@ -20,8 +20,6 @@ public class SepayWebhookRequest {
     private String transferType;
     private BigDecimal transferAmount;
     private BigDecimal accumulated;
-    private String code;
     private String content;
     private String referenceCode;
-    private String description;
 }

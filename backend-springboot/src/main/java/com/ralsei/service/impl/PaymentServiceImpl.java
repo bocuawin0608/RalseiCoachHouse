@@ -16,6 +16,11 @@ import com.ralsei.model.Payment;
 import com.ralsei.repository.PaymentRepository;
 import com.ralsei.service.PaymentService;
 import com.ralsei.service.TransactionIdGenerator;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,6 +31,9 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentRepository paymentRepository;
     private final ObjectMapper objectMapper;
     private final TransactionIdGenerator transactionIdGenerator;
+    private final SimpMessagingTemplate messagingTemplate;
+
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     @Override
     public Payment initializePayment(PaymentCheckoutRequest request) {
@@ -37,12 +45,25 @@ public class PaymentServiceImpl implements PaymentService {
                 .amount(request.getAmount())
                 .paymentMethod(request.getPaymentMethod() != null ? request.getPaymentMethod() : "bank_transfer")
                 .transactionId(transactionId)
-                .status("pending")
+                .status("PENDING")
                 .refundAmount(BigDecimal.ZERO)
                 .isActive(true)
                 .build();
 
-        return paymentRepository.save(payment);
+        Payment savedPayment = paymentRepository.save(payment);
+
+        if ("PENDING".equals(savedPayment.getStatus())) {
+            // Schedule auto-cancellation after 5 minutes
+            scheduler.schedule(() -> {
+                try {
+                    cancelPayment(transactionId);
+                } catch (Exception e) {
+                    // Ignore if already deleted or not found
+                }
+            }, 5, TimeUnit.MINUTES);
+        }
+
+        return savedPayment;
     }
 
     @Override
@@ -65,13 +86,13 @@ public class PaymentServiceImpl implements PaymentService {
             throw new IllegalArgumentException("Could not extract transactionId from content");
         }
 
-        Optional<Payment> paymentOpt = paymentRepository.findByTransactionIdAndStatus(transactionId, "pending");
+        Optional<Payment> paymentOpt = paymentRepository.findByTransactionIdAndStatus(transactionId, "PENDING");
         if (paymentOpt.isPresent()) {
             Payment payment = paymentOpt.get();
 
             // Verify transfer amount
             if (payment.getAmount().compareTo(request.getTransferAmount()) <= 0) {
-                payment.setStatus("completed");
+                payment.setStatus("COMPLETED");
                 payment.setPaymentTime(LocalDateTime.now());
 
                 try {
@@ -80,7 +101,10 @@ public class PaymentServiceImpl implements PaymentService {
                     payment.setCallbackData(request.toString());
                 }
 
-                paymentRepository.save(payment);
+                Payment savedPayment = paymentRepository.save(payment);
+
+                // Broadcast payment completion to frontend
+                messagingTemplate.convertAndSend("/topic/payment/" + transactionId, savedPayment);
 
             } else {
                 throw new IllegalArgumentException("Transfer amount is less than required payment amount");
@@ -88,6 +112,41 @@ public class PaymentServiceImpl implements PaymentService {
         } else {
             throw new IllegalArgumentException(
                     "Payment not found or already processed for transactionId: " + transactionId);
+        }
+    }
+
+    @Override
+    public Payment getPaymentByTransactionId(String transactionId) {
+        return paymentRepository.findByTransactionId(transactionId)
+                .orElseThrow(
+                        () -> new IllegalArgumentException("Payment not found for transactionId: " + transactionId));
+    }
+
+    @Override
+    public void softDeletePayment(int paymentId) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new IllegalArgumentException("Payment not found with id: " + paymentId));
+        payment.setActive(false);
+        paymentRepository.save(payment);
+    }
+
+    @Override
+    public void restorePayment(int paymentId) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new IllegalArgumentException("Payment not found with id: " + paymentId));
+        payment.setActive(true);
+        paymentRepository.save(payment);
+    }
+
+    @Override
+    public void cancelPayment(String transactionId) {
+        Payment payment = paymentRepository.findByTransactionId(transactionId)
+                .orElseThrow(
+                        () -> new IllegalArgumentException("Payment not found with transactionId: " + transactionId));
+        if (!"COMPLETED".equals(payment.getStatus())) {
+            payment.setStatus("FAILED");
+            Payment savedPayment = paymentRepository.save(payment);
+            messagingTemplate.convertAndSend("/topic/payment/" + transactionId, savedPayment);
         }
     }
 }
