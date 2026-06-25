@@ -51,6 +51,15 @@ public class PassengerTicket extends BaseEntity {
     @Column(name = "dropoffStopId", nullable = false)
     private int dropoffStopId;
 
+    @Column(name = "pickupStopName", nullable = false)
+    private String pickupStopName;
+
+    @Column(name = "dropoffStopName", nullable = false)
+    private String dropoffStopName;
+
+    @Column(name = "voucherCodeSnapshot")
+    private String voucherCodeSnapshot;
+
     @Column(name = "status", nullable = false)
     private String status;
 
