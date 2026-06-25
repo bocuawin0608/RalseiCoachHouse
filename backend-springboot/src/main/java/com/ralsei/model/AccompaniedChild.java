@@ -1,7 +1,5 @@
 package com.ralsei.model;
 
-import java.time.LocalDate;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -33,7 +31,7 @@ public class AccompaniedChild extends BaseEntity {
     @Column(name = "fullname", nullable = false)
     private String fullname;
 
-    @Column(name = "dob", nullable = false)
-    private LocalDate dob;
+    @Column(name = "birthYear", nullable = false)
+    private Integer birthYear;
 
 }
