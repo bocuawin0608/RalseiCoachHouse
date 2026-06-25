@@ -1,15 +1,5 @@
-/* =========================================
-   1. ĐỊNH NGHĨA BIẾN TOÀN CỤC (VARIABLES)
-   ========================================= */
-:root {
-  /* Bảng màu Brand (Primary) */
-  --color-primary: #2563eb;       /* Xanh dương chủ đạo */
-  --color-primary-hover: #1d4ed8;
 
-  /* Bảng màu Trạng thái (Semantic) */
-  --color-success: #16a34a;       /* Thành công, Trống ghế */
-  --color-warning: #eab308;       /* Cảnh báo, Đang chọn */
-  --color-danger: #dc2626;        /* Lỗi, Hủy, Ghế đã bán */
+:root {
 
   /* Text & Background */
   --color-text-main: #1e293b;
@@ -35,7 +25,7 @@
    2. CSS RESET
    ========================================= */
 *, *::before, *::after {
-  box-sizing: border-box; /* Cực kỳ quan trọng để padding không làm phình thẻ */
+  box-sizing: border-box; 
   margin: 0;
   padding: 0;
 }
@@ -48,10 +38,9 @@ body {
   background-color: var(--color-bg-body);
   color: var(--color-text-main);
   line-height: 1.5;
-  -webkit-font-smoothing: antialiased; /* Giúp chữ render trên Mac mượt hơn */
+  -webkit-font-smoothing: antialiased; 
 }
 
-/* Bỏ gạch chân thẻ a và mặc định màu kế thừa */
 a {
   text-decoration: none;
   color: inherit;
@@ -66,4 +55,23 @@ input, button, textarea, select {
 /* Bỏ viền xanh lè mặc định khi focus vào ô input của trình duyệt */
 input:focus, textarea:focus, select:focus {
   outline: none;
+}
+
+/* =========================================
+   4. CUSTOMIZATION
+   ========================================= */
+.booking-btn-general {
+    background-color: var(--ralsei-black) !important;
+    border-color: var(--ralsei-black) !important;
+    color: white !important;
+    transition: transform 0.2s ease-in-out, opacity 0.2s ease-in-out !important;
+}
+
+.booking-btn-general:hover:not(:disabled) {
+    transform: scale(1.05);
+}
+
+.booking-btn-general:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
