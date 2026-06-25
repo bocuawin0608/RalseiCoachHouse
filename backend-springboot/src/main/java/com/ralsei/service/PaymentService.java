@@ -9,4 +9,12 @@ public interface PaymentService {
     public Payment initializePayment(PaymentCheckoutRequest request);
 
     public void processWebhook(SepayWebhookRequest request);
+
+    public Payment getPaymentByTransactionId(String transactionId);
+
+    public void softDeletePayment(int paymentId);
+
+    public void restorePayment(int paymentId);
+
+    public void cancelPayment(String transactionId);
 }

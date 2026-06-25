@@ -37,6 +37,8 @@ public class SecurityConfig {
 
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/payment/**").permitAll()
+                        .requestMatchers("/ws-payment/**").permitAll()
+                        .requestMatchers("/ws-payment-sockjs/**").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)

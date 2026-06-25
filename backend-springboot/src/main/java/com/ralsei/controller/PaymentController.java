@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 
 import com.ralsei.dto.request.payment.PaymentCheckoutRequest;
 import com.ralsei.dto.request.sePay.SepayWebhookRequest;
@@ -34,7 +37,8 @@ public class PaymentController {
             Payment payment = paymentService.initializePayment(request);
             return ResponseEntity.ok(Map.of(
                     "transactionId", payment.getTransactionId(),
-                    "amount", payment.getAmount()));
+                    "amount", payment.getAmount(),
+                    "status", payment.getStatus()));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -57,6 +61,42 @@ public class PaymentController {
         try {
             paymentService.processWebhook(request);
             return ResponseEntity.ok(Map.of("success", true));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/transaction/{transactionId}")
+    public ResponseEntity<?> getPaymentByTransactionId(@PathVariable String transactionId) {
+        try {
+            Payment payment = paymentService.getPaymentByTransactionId(transactionId);
+            return ResponseEntity.ok(payment);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/{paymentId}/soft-delete")
+    public ResponseEntity<?> softDeletePayment(@PathVariable int paymentId) {
+        try {
+            paymentService.softDeletePayment(paymentId);
+            return ResponseEntity.ok(Map.of("success", true, "message", "Payment deleted successfully"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/{paymentId}/restore")
+    public ResponseEntity<?> restorePayment(@PathVariable int paymentId) {
+        try {
+            paymentService.restorePayment(paymentId);
+            return ResponseEntity.ok(Map.of("success", true, "message", "Payment restored successfully"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {

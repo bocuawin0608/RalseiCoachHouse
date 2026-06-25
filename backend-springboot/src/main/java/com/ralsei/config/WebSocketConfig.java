@@ -22,7 +22,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // The endpoint React will connect to
         registry.addEndpoint("/ws-payment")
-                .setAllowedOrigins("https://localhost:3000") // Allow your React app
+                .setAllowedOriginPatterns("*"); // Raw WebSocket
+        registry.addEndpoint("/ws-payment-sockjs")
+                .setAllowedOriginPatterns("*")
                 .withSockJS(); // Fallback for browsers that don't support WebSockets
     }
 }
