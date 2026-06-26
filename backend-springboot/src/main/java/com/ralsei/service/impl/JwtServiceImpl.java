@@ -1,15 +1,5 @@
 package com.ralsei.service.impl;
 
-import com.ralsei.model.Account;
-import com.ralsei.service.JwtService;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Service;
-
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
@@ -19,8 +9,29 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Service;
+
+import com.ralsei.model.Account;
+import com.ralsei.service.JwtService;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
+
 @Service
 public class JwtServiceImpl implements JwtService {
+
+    @Override
+    public Integer extractAccountId(String token) {
+        if (token == null || !token.startsWith("Bearer ")) {
+            return null;
+        }
+
+        return extractClaim(token.substring(7), claims -> claims.get("accountId", Integer.class));
+    }
 
     @Override
     public List<String> extractRoles(String token) {

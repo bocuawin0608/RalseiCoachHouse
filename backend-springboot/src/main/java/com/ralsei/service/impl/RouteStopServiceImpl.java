@@ -1,8 +1,22 @@
 package com.ralsei.service.impl;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.ralsei.dto.request.CoachAndRouteStop.RouteStopRequest;
-import com.ralsei.dto.response.PagedResponse;
+import com.ralsei.dto.request.route.RouteStopOrderUpdateRequest;
 import com.ralsei.dto.response.CoachAndRouteStop.RouteStopResponse;
+import com.ralsei.dto.response.PagedResponse;
+import com.ralsei.exception.ResourceNotFoundException;
 import com.ralsei.model.CoachStop;
 import com.ralsei.model.Route;
 import com.ralsei.model.RouteStop;
@@ -10,20 +24,8 @@ import com.ralsei.repository.CoachStopRepository;
 import com.ralsei.repository.RouteRepository;
 import com.ralsei.repository.RouteStopRepository;
 import com.ralsei.service.RouteStopService;
-import com.ralsei.exception.ResourceNotFoundException;
-import com.ralsei.dto.request.route.RouteStopOrderUpdateRequest;
 
-import java.util.ArrayList;
-import java.util.Objects;
-import java.util.List;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -205,5 +207,11 @@ public class RouteStopServiceImpl implements RouteStopService {
                                 .kilometersFromStart(rs.getKilometersFromStart())
                                 .minutesFromStart(rs.getMinutesFromStart())
                                 .build();
+        }
+
+        @Transactional(readOnly = true)
+        @Override
+        public List<RouteStop> getStopsByTripId(Integer tripId) {
+                return routeStopRepository.findByTripIdWithCoachStop(tripId);
         }
 }
