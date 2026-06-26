@@ -1,9 +1,20 @@
 package com.ralsei.service.impl;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.ralsei.dto.request.voucher.CreateVoucherRequest;
 import com.ralsei.dto.request.voucher.UpdateVoucherRequest;
 import com.ralsei.dto.request.voucher.VoucherFilterRequest;
 import com.ralsei.dto.response.PagedResponse;
+import com.ralsei.dto.response.passengerbooking.VoucherDTO;
 import com.ralsei.dto.response.voucher.VoucherMetricsResponse;
 import com.ralsei.dto.response.voucher.VoucherResponse;
 import com.ralsei.exception.BusinessRuleException;
@@ -12,15 +23,8 @@ import com.ralsei.model.Voucher;
 import com.ralsei.repository.PassengerTicketRepository;
 import com.ralsei.repository.VoucherRepository;
 import com.ralsei.service.VoucherService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -211,5 +215,26 @@ public class VoucherServiceImpl implements VoucherService {
         if (start != null && end != null && start.isAfter(end)) {
             throw new BusinessRuleException("Start effective date must be before end effective date");
         }
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<VoucherDTO> getEligibleVouchers() {
+        List<Voucher> vouchers = voucherRepository.getEligibleVouchers();
+        return vouchers.stream().map(voucher -> new VoucherDTO(
+            voucher.getVoucherId(),
+            voucher.getVoucherCode(),
+            voucher.getDiscountType(),
+            voucher.getDiscountValue(),
+            voucher.getMaxDiscountValue(),
+            voucher.getMinOrderValue(),
+            voucher.getEndEffectiveDate()
+        )).toList();
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public Voucher getEligibleVoucher(Integer voucherId, BigDecimal currentOrderValue) {
+        return voucherRepository.getEligibleVoucher(voucherId, currentOrderValue);
     }
 }
