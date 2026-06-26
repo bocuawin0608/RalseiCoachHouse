@@ -1,90 +1,414 @@
-import { useState } from 'react';
-import { Form, Button, Row, Col, Alert } from 'react-bootstrap';
+import { useState, useEffect } from 'react';
+import { Row, Col, Form, Card, Alert, Spinner, OverlayTrigger, Tooltip, InputGroup, Button, Modal } from 'react-bootstrap';
+import { BsExclamationTriangleFill, BsPersonFill, BsMapFill, BsTicketPerforatedFill, BsInfoCircle, BsCashStack } from "react-icons/bs";
+import { useDispatch, useSelector } from 'react-redux';
+import { useForm, useFieldArray } from 'react-hook-form';
+import { setStep, setPassengerInfo } from '../reducers/bookingSlice';
+import { useStep2InitData } from '../hooks/useStep2InitData';
+import { usePriceCalculation } from '../hooks/usePriceCalculation';
+import { formatCurrency, formatDateTime } from '../../../utils/formatters';
 
-export default function Step2PassengerInfo({ tripId, seatIds, initialInfo, onNext, onBack }) {
-    const [info, setInfo] = useState({
-        fullName: initialInfo.fullName || '',
-        phone: initialInfo.phone || '',
-        email: initialInfo.email || ''
+export default function Step2PassengerInfo({ tripId }) {
+    const dispatch = useDispatch();
+    const { selectedSeats, holdToken } = useSelector(state => state.booking);
+
+    const { initData, loading, error } = useStep2InitData(tripId, holdToken);
+
+    const [showVoucherModal, setShowVoucherModal] = useState(false);
+    const [typedVoucherCode, setTypedVoucherCode] = useState('');
+    
+    const { register, handleSubmit, control, watch, setValue, formState: { errors } } = useForm({
+        defaultValues: {
+            pickupStopId: '',
+            dropoffStopId: '',
+            voucherId: '',
+            passengers: selectedSeats.map(seatObj => ({
+                tripSeatId: seatObj.tripSeatId,
+                seatCode: seatObj.seatCode,
+                fullname: '',
+                phone: '',
+                email: '',
+                hasChild: false, 
+                childName: '',
+                childBirthYear: ''
+            }))
+        }
     });
 
-    const handleChange = (e) => {
-        setInfo({ ...info, [e.target.name]: e.target.value });
+    const { fields } = useFieldArray({ control, name: 'passengers' });
+
+    const currentVoucherId = watch('voucherId');
+    const pickupStopId = watch('pickupStopId');
+    const dropoffStopId = watch('dropoffStopId');
+
+    const { priceData, loading: priceLoading, error: priceError } = usePriceCalculation(tripId, holdToken, {
+        pickupStopId,
+        dropoffStopId,
+        voucherId: currentVoucherId,
+    });
+
+    const seatCount = selectedSeats.length;
+
+    useEffect(() => {
+        if (!currentVoucherId) {
+            setTypedVoucherCode('');
+            return;
+        }
+        const selected = initData.vouchers?.find(v => v.voucherId == currentVoucherId);
+        if (selected) {
+            setTypedVoucherCode(selected.voucherCode);
+        }
+    }, [currentVoucherId, initData.vouchers]);
+
+    const handleSelectVoucher = (voucher) => {
+        setValue('voucherId', voucher.voucherId);
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        onNext(info);
+    const handleClearVoucher = () => {
+        setValue('voucherId', '');
+        setTypedVoucherCode('');
     };
+    
+    const formatDiscountBadge = (voucher) => {
+        return voucher.discountType === 'PERCENT' ? `${voucher.discountValue}%` : `${voucher.discountValue / 1000}K`;
+    };
+
+    const handleApplyManualVoucher = () => {
+        if (!typedVoucherCode.trim()) return;
+        const matched = initData.vouchers?.find(v => v.voucherCode.toLowerCase() === typedVoucherCode.trim().toLowerCase());
+        if (matched) {
+            setValue('voucherId', matched.voucherId);
+            alert(`Áp dụng mã ${matched.voucherCode} thành công!`);
+        } else {
+            alert("Mã giảm giá không tồn tại hoặc đã hết hạn.");
+        }
+    };
+
+    const onSubmit = (formData) => {
+        const formattedPassengers = formData.passengers.map(p => ({
+            tripSeatId: p.tripSeatId,
+            seatCode: p.seatCode,
+            fullname: p.fullname,
+            phone: p.phone,
+            email: p.email,
+            accompaniedChild: p.hasChild ? { fullname: p.childName, birthYear: Number(p.childBirthYear) } : null
+        }));
+
+        const payload = {
+            pickupStopId: Number(formData.pickupStopId),
+            dropoffStopId: Number(formData.dropoffStopId),
+            voucherId: formData.voucherId ? Number(formData.voucherId) : null,
+            passengers: formattedPassengers
+        };
+
+        dispatch(setPassengerInfo(payload));
+        dispatch(setStep(3)); 
+    };
+
+    if (loading) return <div className="text-center py-5"><Spinner animation="border" /></div>;
 
     return (
         <div>
-            <Alert variant="info" className="mb-4 text-center fw-bold">
-                Ghế của bạn đang được giữ trong 10 phút. Vui lòng điền thông tin!
-            </Alert>
-            
-            <Row className="justify-content-center">
-                <Col md={8}>
-                    <Form onSubmit={handleSubmit} className="p-4 border rounded-3 bg-light">
-                        <Form.Group className="mb-3">
-                            <Form.Label className="fw-bold">Họ và tên <span className="text-danger">*</span></Form.Label>
-                            <Form.Control 
-                                type="text" 
-                                name="fullName"
-                                value={info.fullName} 
-                                onChange={handleChange} 
-                                required 
-                                placeholder="VD: Nguyen Van A"
-                            />
-                        </Form.Group>
+            {error && (
+                <Alert variant='danger' className="mb-4 d-flex align-items-center gap-2 rounded-3 border-0 shadow-sm" style={{ fontSize: '0.9rem' }}>
+                    <BsExclamationTriangleFill /> {error}
+                </Alert>
+            )}
 
-                        <Row>
-                            <Col md={6}>
-                                <Form.Group className="mb-3">
-                                    <Form.Label className="fw-bold">Số điện thoại <span className="text-danger">*</span></Form.Label>
-                                    <Form.Control 
-                                        type="tel" 
-                                        name="phone"
-                                        value={info.phone} 
-                                        onChange={handleChange} 
-                                        required 
-                                        placeholder="VD: 0912345678"
-                                    />
-                                </Form.Group>
-                            </Col>
-                            <Col md={6}>
-                                <Form.Group className="mb-4">
-                                    <Form.Label className="fw-bold">Email</Form.Label>
-                                    <Form.Control 
-                                        type="email" 
-                                        name="email"
-                                        value={info.email} 
-                                        onChange={handleChange} 
-                                        placeholder="Để nhận vé điện tử"
-                                    />
-                                </Form.Group>
-                            </Col>
-                        </Row>
-
-                        <div className="d-flex justify-content-between mt-4">
-                            <Button 
-                                variant="outline-dark" 
-                                className="fw-bold px-4"
-                                onClick={onBack}
-                            >
-                                Quay lại
-                            </Button>
-                            <Button 
-                                type="submit" 
-                                className="fw-bold border-0 px-4"
-                                style={{ backgroundColor: 'var(--ralsei-black)', color: 'white' }}
-                            >
-                                Thanh toán
-                            </Button>
+            {/* Hook form lo việc handleSubmit và ngăn e.preventDefault tự động */}
+            <Form onSubmit={handleSubmit(onSubmit)}>
+                <Row className="g-4">
+                    {/* CỘT TRÁI */}
+                    <Col lg={8} md={12}>
+                        {/* THÔNG TIN HÀNH KHÁCH */}
+                        <div className=" ms-2 fw-bold d-flex align-items-center gap-2 mb-3" style={{ fontSize: '1.05rem', color: 'var(--ralsei-black)' }}>
+                            <BsPersonFill size={18} /> Thông tin hành khách
                         </div>
-                    </Form>
-                </Col>
-            </Row>
+                        
+                        {fields.map((field, index) => (
+                            <Card key={field.id} className="border-0 rounded-3 mb-3 bg-white overflow-hidden" style={{ border: '1px solid #f0f0f0', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08)' }}>
+                                <Card.Header className="bg-white p-3 fw-semibold text-secondary d-flex justify-content-between align-items-center" style={{ fontSize: '0.9rem' }}>
+                                    <span>Hành khách ngồi <span className="fw-bold" style={{ color: 'var(--ralsei-black)' }}>vị trí {field.seatCode}</span></span>
+                                    <span className="badge rounded-pill fw-normal text-white" style={{ backgroundColor: 'var(--ralsei-black)' }}>
+                                        Ghế {field.seatCode}
+                                    </span>
+                                </Card.Header>
+                                <Card.Body className="p-3">
+                                    <Row className="g-3">
+                                        <Form.Group as={Col} md={6}>
+                                            <Form.Label className="fw-medium text-muted mb-1" style={{ fontSize: '0.85rem' }}>Họ và tên <span className="text-danger">*</span></Form.Label>
+                                            <Form.Control 
+                                                {...register(`passengers.${index}.fullname`, { required: 'Vui lòng nhập họ tên' })}
+                                                isInvalid={!!errors.passengers?.[index]?.fullname}
+                                                type="text" placeholder="VD: Nguyễn Văn A" className="rounded-3 shadow-none" style={{ fontSize: '0.9rem' }}
+                                            />
+                                            <Form.Control.Feedback type="invalid">{errors.passengers?.[index]?.fullname?.message}</Form.Control.Feedback>
+                                        </Form.Group>
+
+                                        <Form.Group as={Col} md={6}>
+                                            <Form.Label className="fw-medium text-muted mb-1" style={{ fontSize: '0.85rem' }}>Số điện thoại <span className="text-danger">*</span></Form.Label>
+                                            <Form.Control 
+                                                {...register(`passengers.${index}.phone`, { 
+                                                    required: 'Vui lòng nhập số điện thoại',
+                                                    pattern: { value: /^[0-9]{10,11}$/, message: 'SĐT không hợp lệ' }
+                                                })}
+                                                isInvalid={!!errors.passengers?.[index]?.phone}
+                                                type="tel" placeholder="VD: 0912345678" className="rounded-3 shadow-none" style={{ fontSize: '0.9rem' }}
+                                            />
+                                            <Form.Control.Feedback type="invalid">{errors.passengers?.[index]?.phone?.message}</Form.Control.Feedback>
+                                        </Form.Group>
+
+                                        <Form.Group as={Col} md={12}>
+                                            <Form.Label className="fw-medium text-muted mb-1" style={{ fontSize: '0.85rem' }}>Email (Nhận vé điện tử)</Form.Label>
+                                            <Form.Control 
+                                                {...register(`passengers.${index}.email`)}
+                                                type="email" placeholder="name@example.com" className="rounded-3 shadow-none" style={{ fontSize: '0.9rem' }}
+                                            />
+                                        </Form.Group>
+                                    </Row>
+
+                                    {/* PHẦN TRẺ EM ĐI KÈM */}
+                                    <div className="mt-3 pt-3 border-top">
+                                        <Form.Check 
+                                            {...register(`passengers.${index}.hasChild`)}
+                                            type="switch"
+                                            id={`child-check-${field.id}`}
+                                            label="Có trẻ nhỏ đi cùng (Chiều cao từ 1m1 trở xuống)"
+                                            className="fw-medium text-muted" style={{ fontSize: '0.85rem' }}
+                                        />
+
+                                        {/* RHF Watch: Lắng nghe trạng thái checkbox của hành khách hiện tại để render form trẻ em */}
+                                        {watch(`passengers.${index}.hasChild`) && (
+                                            <Row className="g-2 mt-2 bg-light p-3 rounded-3 border border-dashed" style={{ borderColor: '#e0e0e0' }}>
+                                                <Form.Group as={Col} md={7}>
+                                                    <Form.Label className="fw-medium text-muted mb-1" style={{ fontSize: '0.85rem' }}>Họ tên bé <span className="text-danger">*</span></Form.Label>
+                                                    <Form.Control 
+                                                        {...register(`passengers.${index}.childName`, { required: 'Vui lòng nhập tên bé' })}
+                                                        isInvalid={!!errors.passengers?.[index]?.childName}
+                                                        type="text" placeholder="Tên của bé" className="bg-white rounded-3 shadow-none" style={{ fontSize: '0.9rem' }}
+                                                    />
+                                                </Form.Group>
+                                                <Form.Group as={Col} md={5}>
+                                                    <Form.Label className="fw-medium text-muted mb-1" style={{ fontSize: '0.85rem' }}>Năm sinh <span className="text-danger">*</span></Form.Label>
+                                                    <Form.Control 
+                                                        {...register(`passengers.${index}.childBirthYear`, { 
+                                                            required: 'Nhập năm sinh',
+                                                            min: { value: 2020, message: 'Năm sinh không hợp lệ' },
+                                                            max: { value: new Date().getFullYear(), message: 'Năm sinh không hợp lệ' }
+                                                        })}
+                                                        isInvalid={!!errors.passengers?.[index]?.childBirthYear}
+                                                        type="number" className="bg-white rounded-3 shadow-none" style={{ fontSize: '0.9rem' }}
+                                                    />
+                                                </Form.Group>
+                                            </Row>
+                                        )}
+                                    </div>
+                                </Card.Body>
+                            </Card>
+                        ))}
+
+                        {/* ĐIỂM ĐÓN VÀ TRẢ */}
+                        <div className="mt-4 pt-2">
+                            <div className="ms-2 fw-bold d-flex align-items-center gap-2 mb-3" style={{ fontSize: '1.05rem', color: 'var(--ralsei-black)' }}>
+                                <BsMapFill size={16} /> Chặng đường di chuyển
+                            </div>
+                            <Card className="border-0 rounded-3 bg-white p-3" style={{ border: '1px solid #f0f0f0', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08)' }}>
+                                <Row className="g-3">
+                                    <Col md={6}>
+                                        <Form.Group>
+                                            <Form.Label className="fw-medium text-muted mb-1" style={{ fontSize: '0.85rem' }}>Điểm đón khách <span className="text-danger">*</span></Form.Label>
+                                            <Form.Select 
+                                                {...register('pickupStopId', { required: 'Vui lòng chọn điểm đón' })}
+                                                isInvalid={!!errors.pickupStopId}
+                                                className="rounded-3 py-2 shadow-none" style={{ fontSize: '0.9rem' }}
+                                            >
+                                                <option value="">Chọn điểm đón</option>
+                                                {initData.pickupStopPoints?.map(point => (
+                                                    <option key={point.stopPointId} value={point.stopPointId}>{point.stopPointName}</option>
+                                                ))}
+                                            </Form.Select>
+                                            <Form.Control.Feedback type="invalid">{errors.pickupStopId?.message}</Form.Control.Feedback>
+                                        </Form.Group>
+                                    </Col>
+                                    <Col md={6}>
+                                        <Form.Group>
+                                            <Form.Label className="fw-medium text-muted mb-1" style={{ fontSize: '0.85rem' }}>Điểm trả khách <span className="text-danger">*</span></Form.Label>
+                                            <Form.Select 
+                                                {...register('dropoffStopId', { required: 'Vui lòng chọn điểm trả' })}
+                                                isInvalid={!!errors.dropoffStopId}
+                                                className="rounded-3 py-2 shadow-none" style={{ fontSize: '0.9rem' }}
+                                            >
+                                                <option value="">Chọn điểm trả</option>
+                                                {initData.dropoffStopPoints?.map(point => (
+                                                    <option key={point.stopPointId} value={point.stopPointId}>{point.stopPointName}</option>
+                                                ))}
+                                            </Form.Select>
+                                            <Form.Control.Feedback type="invalid">{errors.dropoffStopId?.message}</Form.Control.Feedback>
+                                        </Form.Group>
+                                    </Col>
+                                </Row>
+                            </Card>
+                        </div>
+                    </Col>
+
+                    {/* CỘT PHẢI: VOUCHER */}
+                    <Col lg={4} md={12}>
+                        <Card className="border-0 rounded-4 shadow-sm bg-white p-4 sticky-top" style={{ top: '20px', zIndex: 10, border: '1px solid #f0f0f0' }}>
+                            <div className="d-flex justify-content-between align-items-center mb-3">
+                                <div className="fw-bold m-0 d-flex align-items-center gap-2" style={{ fontSize: '1.05rem', color: 'var(--ralsei-black)' }}>
+                                    <BsTicketPerforatedFill size={18} /> Mã giảm giá
+                                </div>
+                                <span className="fw-semibold" style={{ fontSize: '0.85rem', color: 'var(--ralsei-black)', cursor: 'pointer' }} onClick={() => setShowVoucherModal(true)}>
+                                    Xem tất cả
+                                </span>
+                            </div>
+
+                            <InputGroup className="mb-3">
+                                <Form.Control
+                                    placeholder="Nhập mã giảm giá..."
+                                    className="rounded-start-3 shadow-none border-end-0" style={{ fontSize: '0.9rem' }}
+                                    value={typedVoucherCode} onChange={e => setTypedVoucherCode(e.target.value)}
+                                />
+                                <Button className="rounded-end-3 fw-semibold border-start-0 booking-btn-general2" style={{ fontSize: '0.9rem' }} onClick={handleApplyManualVoucher}>
+                                    Áp dụng
+                                </Button>
+                            </InputGroup>
+
+                            <div className="voucher-list d-flex flex-column gap-2 mb-4">
+                                {initData.vouchers?.slice(0, 2).map(voucher => {
+                                    const isSelected = currentVoucherId == voucher.voucherId;
+                                    return (
+                                        <div 
+                                            key={voucher.voucherId} 
+                                            className={`d-flex border rounded-3 overflow-hidden align-items-center ${isSelected ? 'bg-light' : ''}`}
+                                            style={{ cursor: 'pointer', transition: 'all 0.2s', borderColor: isSelected ? 'var(--ralsei-black)' : '#e0e0e0', borderWidth: isSelected ? '2px' : '1px' }}
+                                            onClick={() => handleSelectVoucher(voucher)} 
+                                        >
+                                            <div className="text-white fw-bold d-flex align-items-center justify-content-center p-2 h-100" style={{ minWidth: '65px', minHeight: '70px', fontSize: '0.95rem', backgroundColor: isSelected ? 'var(--ralsei-black)' : '#8c8c8c' }}>
+                                                {formatDiscountBadge(voucher)}
+                                            </div>
+                                            <div className="p-2 flex-grow-1 position-relative">
+                                                <div className="fw-bold text-dark mb-0" style={{ fontSize: '0.85rem' }}>{voucher.voucherCode}</div>
+                                                <div className="text-muted" style={{ fontSize: '0.75rem' }}>Đơn tối thiểu {voucher.minOrderValue.toLocaleString()}đ</div>
+                                                <OverlayTrigger placement="top" overlay={<Tooltip style={{ fontSize: '0.75rem' }}>HSD: {new Date(voucher.endEffectiveDate).toLocaleDateString('vi-VN')}</Tooltip>}>
+                                                    <span className="position-absolute bg-transparent text-secondary" style={{ bottom: '8px', right: '8px', fontSize: '0.85rem' }}><BsInfoCircle /></span>
+                                                </OverlayTrigger>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {currentVoucherId && (
+                                <div className="text-end mb-3">
+                                    <span className="text-danger fw-medium" style={{ cursor: 'pointer', fontSize: '0.8rem' }} onClick={handleClearVoucher}>
+                                        Hủy chọn mã hiện tại ✕
+                                    </span>
+                                </div>
+                            )}
+
+                            <hr className="my-3" style={{ borderColor: '#e0e0e0' }} />
+
+                            {/* CHI TIẾT GIÁ */}
+                            <div className="mb-3">
+                                <div className="fw-bold mb-3 d-flex align-items-center gap-2" style={{ fontSize: '1.05rem', color: 'var(--ralsei-black)' }}>
+                                    <BsCashStack size={18} /> Chi tiết thanh toán
+                                </div>
+
+                                {priceError && (
+                                    <Alert variant="warning" className="py-2 px-3 mb-2 rounded-3 border-0" style={{ fontSize: '0.8rem' }}>
+                                        {priceError}
+                                    </Alert>
+                                )}
+
+                                {priceLoading ? (
+                                    <div className="text-center py-3">
+                                        <Spinner animation="border" size="sm" />
+                                        <span className="ms-2 text-muted" style={{ fontSize: '0.85rem' }}>Đang tính giá...</span>
+                                    </div>
+                                ) : priceData ? (
+                                    <div className="d-flex flex-column gap-2" style={{ fontSize: '0.85rem' }}>
+                                        <div className="d-flex justify-content-between text-muted">
+                                            <span>Giá vé ({seatCount} ghế × {formatCurrency(priceData.basePrice)})</span>
+                                            <span>{formatCurrency(priceData.basePrice * seatCount)}</span>
+                                        </div>
+
+                                        {Number(priceData.baseSurcharge) > 0 && (
+                                            <div className="d-flex justify-content-between text-muted">
+                                                <span>Phụ phí chặng ({seatCount} ghế × {formatCurrency(priceData.baseSurcharge)})</span>
+                                                <span>{formatCurrency(priceData.baseSurcharge * seatCount)}</span>
+                                            </div>
+                                        )}
+
+                                        <div className="d-flex justify-content-between text-muted">
+                                            <span>Tạm tính</span>
+                                            <span>{formatCurrency(priceData.totalRawPrice)}</span>
+                                        </div>
+
+                                        <div className="d-flex justify-content-between text-success">
+                                            <span>Ưu đãi</span>
+                                            <span>-{formatCurrency(priceData.discountAmount)}</span>
+                                        </div>
+
+                                        <hr className="my-1" style={{ borderColor: '#e0e0e0' }} />
+
+                                        <div className="d-flex justify-content-between fw-bold" style={{ fontSize: '1rem', color: 'var(--ralsei-black)' }}>
+                                            <span>Tổng thanh toán</span>
+                                            <span style={{ color: 'var(--ralsei-black)' }}>{formatCurrency(priceData.totalFinalPrice)}</span>
+                                        </div>
+
+                                        {!pickupStopId || !dropoffStopId ? (
+                                            <div className="text-muted fst-italic" style={{ fontSize: '0.75rem' }}>
+                                                * Chọn điểm đón/trả để cập nhật phụ phí chặng (nếu có)
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                ) : (
+                                    <div className="text-muted text-center py-2" style={{ fontSize: '0.85rem' }}>
+                                        Chưa có thông tin giá
+                                    </div>
+                                )}
+                            </div>
+
+                            <hr className="my-3" style={{ borderColor: '#e0e0e0' }} />
+
+                            <div className="d-flex justify-content-center pt-2">
+                                <button type="submit" className="fw-bold border-0 px-5 py-2 rounded-pill shadow-sm booking-btn-general" >
+                                    Thanh toán
+                                </button>
+                            </div>
+                        </Card>
+                    </Col>
+                </Row>
+            </Form>
+
+            {/* MODAL VOUCHER */}
+            <Modal show={showVoucherModal} onHide={() => setShowVoucherModal(false)} centered size="md">
+                <Modal.Header closeButton className="border-bottom-0 pb-0">
+                    <Modal.Title className="fw-bold text-dark" style={{ fontSize: '1.1rem' }}>Danh sách mã giảm giá</Modal.Title>
+                </Modal.Header>
+                <Modal.Body style={{ maxHeight: '450px', overflowY: 'auto' }} className="pt-3">
+                    <div className="d-flex flex-column gap-3">
+                        {initData.vouchers?.map(voucher => (
+                            <div key={voucher.voucherId} className={`d-flex border rounded-3 overflow-hidden align-items-center position-relative ${currentVoucherId == voucher.voucherId ? 'bg-light' : ''}`} style={{ borderColor: currentVoucherId == voucher.voucherId ? 'var(--ralsei-black)' : '#e0e0e0', borderWidth: currentVoucherId == voucher.voucherId ? '2px' : '1px' }}>
+                                <div className="text-white fw-bold d-flex align-items-center justify-content-center p-3" style={{ minWidth: '80px', minHeight: '85px', fontSize: '1.1rem', backgroundColor: currentVoucherId == voucher.voucherId ? 'var(--ralsei-black)' : '#8c8c8c' }}>
+                                    {formatDiscountBadge(voucher)}
+                                </div>
+                                <div className="p-3 flex-grow-1">
+                                    <div className="fw-bold text-dark mb-1" style={{ fontSize: '0.95rem' }}>{voucher.voucherCode}</div>
+                                    <div className="text-muted mb-1" style={{ fontSize: '0.8rem' }}>Đơn tối thiểu: {voucher.minOrderValue.toLocaleString()}đ</div>
+                                    <div className="text-muted mb-1" style={{ fontSize: '0.8rem' }}>Giảm tối đa: {formatCurrency(voucher.maxDiscountValue)}</div>
+                                    <div className='text-danger mb-1' style={{ fontSize: '0.8rem' }}>Hạn sử dụng: {formatDateTime(voucher.endEffectiveDate)}</div>
+                                </div>
+                                <Button size="sm" className="position-absolute end-0 bottom-0 m-3 rounded-pill px-3 fw-medium" style={{ backgroundColor: currentVoucherId == voucher.voucherId ? 'var(--ralsei-black)' : 'transparent', color: currentVoucherId == voucher.voucherId ? '#fff' : 'var(--ralsei-black)', borderColor: 'var(--ralsei-black)', fontSize: '0.8rem' }} 
+                                    onClick={() => { handleSelectVoucher(voucher); setShowVoucherModal(false); }}>
+                                    {currentVoucherId == voucher.voucherId ? "Đang chọn" : "Chọn"}
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                </Modal.Body>
+            </Modal>
         </div>
     );
 }

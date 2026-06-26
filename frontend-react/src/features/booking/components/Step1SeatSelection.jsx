@@ -14,7 +14,7 @@ export default function Step1SeatSelection({ tripId }) {
     const [isLocking, setIsLocking] = useState(false);
 
     const dispatch = useDispatch();
-    const { holdToken, selectedSeatIds } = useSelector(state => state.booking);
+    const { holdToken, selectedSeats } = useSelector(state => state.booking);
 
     const fetchInitialData = useCallback(async () => {
         setLoading(true);
@@ -38,22 +38,22 @@ export default function Step1SeatSelection({ tripId }) {
     const toggleSeat = (seat) => {
         if (seat.status !== 'AVAILABLE') return;
         
-        if (selectedSeatIds.includes(seat.tripSeatId)) {
-            dispatch(setSelectedSeats(selectedSeatIds.filter(id => id !== seat.tripSeatId)));
+        if (selectedSeats.map(seatObj => seatObj.tripSeatId).includes(seat.tripSeatId)) {
+            dispatch(setSelectedSeats(selectedSeats.filter(seatObj => seatObj.tripSeatId !== seat.tripSeatId)));
         } else {
-            if (selectedSeatIds.length >= 10) {
+            if (selectedSeats.length >= 10) {
                 alert("Chỉ được chọn tối đa 10 ghế!");
                 return;
             }
-            dispatch(setSelectedSeats([...selectedSeatIds, seat.tripSeatId]));
+            dispatch(setSelectedSeats([...selectedSeats, {tripSeatId: seat.tripSeatId, seatCode: seat.seatCode}]));
         }
     };
 
     const handleContinue = async () => {
-        if (selectedSeatIds.length === 0) return;
+        if (selectedSeats.length === 0) return;
         setIsLocking(true);
         try {
-            await bookingApi.lockSeats(tripId, { tripSeatIds: selectedSeatIds }, holdToken);
+            await bookingApi.lockSeats(tripId, { tripSeatIds: selectedSeats.map(seatObj => seatObj.tripSeatId) }, holdToken);
             dispatch(setStep(2));
         } catch (err) {
             setError(err.response?.data?.message || "Ghế đã được đặt hoặc lỗi hệ thống. Vui lòng tải lại trang!");
@@ -118,7 +118,7 @@ export default function Step1SeatSelection({ tripId }) {
                                             rows={parsedLayout.rows}
                                             cols={parsedLayout.cols}
                                             initialMatrix={parsedLayout.floors[index]}
-                                            selectedSeatIds={selectedSeatIds}
+                                            selectedSeatIds={selectedSeats.map(seatObj => seatObj.tripSeatId)}
                                             onSeatClick={toggleSeat}
                                         />
                                     </div>
@@ -145,9 +145,9 @@ export default function Step1SeatSelection({ tripId }) {
                         </div>
                     </div>
                     
-                    {selectedSeatIds.length > 0 && (
+                    {selectedSeats.length > 0 && (
                         <div className="mt-4 pt-3 border-top" style={{ fontSize: '14px' }}>
-                            <strong>Đang chọn:</strong> {selectedSeatIds.length} ghế
+                            <strong>Đang chọn:</strong> {selectedSeats.length} ghế
                         </div>
                     )}
 
@@ -155,7 +155,7 @@ export default function Step1SeatSelection({ tripId }) {
                         <button 
                             className="fw-bold border-0 px-5 py-2 rounded-pill shadow-sm booking-btn-general" 
                             
-                            disabled={selectedSeatIds.length === 0 || isLocking}
+                            disabled={selectedSeats.length === 0 || isLocking}
                             onClick={handleContinue}
                         >
                             {isLocking ? <Spinner size="sm" animation="border" /> : 'Tiếp tục'}

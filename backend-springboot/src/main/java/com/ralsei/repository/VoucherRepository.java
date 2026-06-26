@@ -1,17 +1,18 @@
 package com.ralsei.repository;
 
-import com.ralsei.model.Voucher;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
-import java.util.Optional;
+import com.ralsei.model.Voucher;
 
-@Repository
 public interface VoucherRepository extends JpaRepository<Voucher, Integer> {
     Optional<Voucher> findByVoucherCode(String voucherCode);
 
@@ -38,4 +39,22 @@ public interface VoucherRepository extends JpaRepository<Voucher, Integer> {
 
     @Query("SELECT COALESCE(SUM(v.usedCount), 0) FROM Voucher v")
     long sumTotalUsageCount();
+
+    @Query(value = """
+        SELECT v FROM Voucher v
+        WHERE v.endEffectiveDate > CURRENT_TIMESTAMP
+        AND v.startEffectiveDate <= CURRENT_TIMESTAMP
+        AND v.usageLimit > v.usedCount
+    """)
+    List<Voucher> getEligibleVouchers();
+
+    @Query(value = """
+        SELECT v FROM Voucher v
+        WHERE v.endEffectiveDate > CURRENT_TIMESTAMP
+        AND v.startEffectiveDate <= CURRENT_TIMESTAMP
+        AND v.usageLimit > v.usedCount
+        AND v.voucherId = :voucherId
+        AND v.minOrderValue <= :currentOrderValue
+    """)
+    Voucher getEligibleVoucher(@Param("voucherId") Integer voucherId, @Param("currentOrderValue") BigDecimal currentOrderValue);
 }

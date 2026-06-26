@@ -1,10 +1,12 @@
 package com.ralsei.service;
 
-import com.ralsei.dto.request.CoachAndRouteStop.RouteStopRequest;
-import com.ralsei.dto.response.PagedResponse;
-import com.ralsei.dto.response.CoachAndRouteStop.RouteStopResponse;
-import com.ralsei.dto.request.route.RouteStopOrderUpdateRequest;
 import java.util.List;
+
+import com.ralsei.dto.request.CoachAndRouteStop.RouteStopRequest;
+import com.ralsei.dto.request.route.RouteStopOrderUpdateRequest;
+import com.ralsei.dto.response.CoachAndRouteStop.RouteStopResponse;
+import com.ralsei.dto.response.PagedResponse;
+import com.ralsei.model.RouteStop;
 public interface RouteStopService {
     RouteStopResponse createRouteStop(RouteStopRequest request);
 
@@ -17,4 +19,6 @@ public interface RouteStopService {
     void deleteRouteStop(int id);
 
     List<RouteStopResponse> bulkUpdateOrders(List<RouteStopOrderUpdateRequest> requests);
+
+    List<RouteStop> getStopsByTripId(Integer tripId);
 }

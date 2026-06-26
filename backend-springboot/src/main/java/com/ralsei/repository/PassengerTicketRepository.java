@@ -1,12 +1,28 @@
 package com.ralsei.repository;
 
-import com.ralsei.model.PassengerTicket;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import java.util.Set;
 
-@Repository
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import com.ralsei.model.PassengerTicket;
+import com.ralsei.model.enums.PassengerTicketStatus;
+
 public interface PassengerTicketRepository extends JpaRepository<PassengerTicket, Integer> {
     boolean existsByVoucherId(int voucherId);
 
     long countByVoucherId(int voucherId);
+
+    //TODO: maybe phải sửa query nhẹ nếu sau dùng relationship annotation bên PassengerTicket.java
+    @Query(value = """
+       SELECT DISTINCT pt.voucherId
+       FROM PassengerTicket pt
+       JOIN Customer c ON pt.customerId = c.customerId
+       WHERE c.accountId = :accountId 
+            AND pt.status != :cancelledStatus  
+            AND pt.voucherId IS NOT NULL
+    """)
+    Set<Integer> getUsedVoucherIdsByAccountId(@Param("accountId") Integer accountId,
+                                              @Param("cancelledStatus") PassengerTicketStatus cancelledStatus);
 }

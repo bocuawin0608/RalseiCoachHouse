@@ -96,7 +96,8 @@ BEGIN
                 JOIN [coach] c ON s.coachId = c.coachId
                 JOIN [coach_type_price] ctp ON c.coachTypeId = ctp.coachTypeId
                 WHERE c.coachId = @PickedCoachId
-                  AND @DepartureTime BETWEEN ctp.startEffectiveDate AND ctp.endEffectiveDate;
+                  AND @DepartureTime BETWEEN ctp.startEffectiveDate AND ctp.endEffectiveDate
+                  AND s.isActive = 1;
             END
             ELSE
             BEGIN
@@ -173,7 +174,8 @@ BEGIN
                 JOIN [coach] c ON s.coachId = c.coachId
                 JOIN [coach_type_price] ctp ON c.coachTypeId = ctp.coachTypeId
                 WHERE c.coachId = @PickedCoachId2
-                  AND @DepartureTime BETWEEN ctp.startEffectiveDate AND ctp.endEffectiveDate;
+                  AND @DepartureTime BETWEEN ctp.startEffectiveDate AND ctp.endEffectiveDate
+                AND s.isActive = 1;
             END
             ELSE
             BEGIN

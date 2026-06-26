@@ -10,5 +10,17 @@ export const bookingApi = {
 
     releaseSeats: (tripId, data, holdToken) => { return axiosClient.post(`${BASE}/trips/${tripId}/seats/release`, data, {
         headers: {'X-Booking-Session':holdToken}
-    }) }
+    }) },
+
+    getStep2InitData: (tripId, holdToken) => {
+        return axiosClient.get(`${BASE}/trips/${tripId}/step2-init-data`, {
+            headers: { 'X-Booking-Session': holdToken }
+        });
+    },
+
+    calculatePrice: (tripId, data, holdToken) => {
+        return axiosClient.post(`${BASE}/trips/${tripId}/calculate-price`, data, {
+            headers: { 'X-Booking-Session': holdToken }
+        });
+    },
 }
