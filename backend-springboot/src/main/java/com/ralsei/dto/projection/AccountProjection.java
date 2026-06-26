@@ -8,5 +8,4 @@ public interface AccountProjection {
     String getAuthProvider();  
     Boolean getIsActive();
     String getRoleNames();
-    // cái địt con mẹ gì đây ơ địt mẹ thằng nào ném nó vào đây=)))))
 }
