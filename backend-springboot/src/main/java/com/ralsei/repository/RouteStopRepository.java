@@ -8,11 +8,9 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
 
 import com.ralsei.model.RouteStop;
 
-@Repository
 public interface RouteStopRepository extends JpaRepository<RouteStop, Integer> {
 
   @EntityGraph(attributePaths = { "route", "coachStop" })
@@ -30,4 +28,14 @@ public interface RouteStopRepository extends JpaRepository<RouteStop, Integer> {
       @Param("routeId") int routeId,
       @Param("stopPointId") int stopPointId,
       Pageable pageable);
+
+  @Query(value = """
+      SELECT rs FROM RouteStop rs
+      JOIN FETCH rs.coachStop cs
+      JOIN rs.route r
+      JOIN Trip t ON t.route = r
+      WHERE t.tripId = :tripId AND cs.isActive = true
+      ORDER BY rs.stopOrder ASC
+  """)
+  public List<RouteStop> findByTripIdWithCoachStop(@Param("tripId") Integer tripId);
 }

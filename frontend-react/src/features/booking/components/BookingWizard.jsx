@@ -7,51 +7,58 @@ import Step2PassengerInfo from './Step2PassengerInfo';
 import Step3Payment from './Step3Payment';
 import { bookingApi } from '../api/bookingApi';
 import { resetBooking, setStep } from '../reducers/bookingSlice'; 
+import axiosClient from '../../../api/axiosClient';
 
 export default function BookingWizard({tripId}) {
     const navigate = useNavigate();
     const dispatch = useDispatch();
-    const { step, holdToken, selectedSeatIds } = useSelector((state) => state.booking);
+    const { step, holdToken, selectedSeats } = useSelector((state) => state.booking);
 
-    const latestStateRef = useRef({ selectedSeatIds, step, holdToken, tripId });
+    const latestStateRef = useRef({ selectedSeats, step, holdToken, tripId });
 
     useEffect(() => {
-        latestStateRef.current = { selectedSeatIds, step, holdToken, tripId };
-    }, [selectedSeatIds, step, holdToken, tripId]);
+        latestStateRef.current = { selectedSeats, step, holdToken, tripId };
+    }, [selectedSeats, step, holdToken, tripId]);
 
     useEffect(() => {
         const handleBeforeUnload = () => {
-            const { selectedSeatIds: seats, holdToken: token, tripId: id } = latestStateRef.current;
+            const { selectedSeats: seats, holdToken: token, tripId: id } = latestStateRef.current;
             
             if (seats.length > 0) {
-                fetch(`/api/v1/bookings/trips/${id}/seats/release`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Booking-Session': token 
-                    },
-                    body: JSON.stringify({ tripSeatIds: seats }),
-                    keepalive: true 
-                });
+                const baseUrl = axiosClient.defaults.baseURL || '';
+                const fullUrl = `${baseUrl}/v1/bookings/trips/${id}/seats/release/beacon`;
+                
+                const params = new URLSearchParams({ session: token });
+                navigator.sendBeacon(fullUrl, params);
             }
         };
 
         window.addEventListener('beforeunload', handleBeforeUnload);
+        window.addEventListener('pagehide', handleBeforeUnload);
         
         return () => {
             window.removeEventListener('beforeunload', handleBeforeUnload);
-            const { selectedSeatIds: seats, step: currentStep, holdToken: token, tripId: id } = latestStateRef.current;
+            window.removeEventListener('pagehide', handleBeforeUnload);
+
+            const { selectedSeats: seats, step: currentStep, holdToken: token, tripId: id } = latestStateRef.current;
             
             if (seats.length > 0 && currentStep !== 3) {
-                bookingApi.releaseSeats(id, { tripSeatIds: seats }, token).catch(() => {});
+                bookingApi.releaseSeats(id, { tripSeatIds: seats.map(seatObj => seatObj.tripSeatId) }, token).catch(() => {});
             }
             
             dispatch(resetBooking()); 
         };
     }, [dispatch]);
 
-    const handleBack = () => {
+    const handleBack = async () => {
         if (step > 1) {
+            if(step === 2) {
+                try {
+                    await bookingApi.releaseSeats(tripId, {tripSeatIds: selectedSeats.map(seatObj => seatObj.tripSeatId)}, holdToken);
+                } catch(error) {
+                    console.error("Lỗi khi giải phóng ghế:" + error.response?.data?.message);
+                }
+            }
             dispatch(setStep(step - 1)); 
         } else {
             navigate(0); 
@@ -61,20 +68,7 @@ export default function BookingWizard({tripId}) {
     const renderStepContent = () => {
         switch (step) {
             case 1: return (<Step1SeatSelection tripId={tripId} />)
-            case 2: 
-                return (
-                    <div>Step2</div>
-                    // <Step2PassengerInfo 
-                    //     tripId={tripId} 
-                    //     seatIds={selectedSeatIds}
-                    //     initialInfo={passengerInfo}
-                    //     onNext={(info) => {
-                    //         dispatch(setPassengerInfo(info)); // Lưu info khách vào Redux
-                    //         dispatch(setStep(3));             // Chuyển sang Step 3
-                    //     }}
-                    //     onBack={() => dispatch(setStep(1))}   // Quay lại Step 1
-                    // />
-                );
+            case 2: return (<Step2PassengerInfo tripId={tripId} />);
             case 3: 
                 return (
                     <div>Step3</div>

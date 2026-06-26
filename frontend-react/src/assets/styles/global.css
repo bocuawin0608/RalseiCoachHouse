@@ -75,3 +75,14 @@ input:focus, textarea:focus, select:focus {
     opacity: 0.6;
     cursor: not-allowed;
 }
+
+.booking-btn-general2 {
+    background-color: var(--ralsei-black) !important;
+    border-color: var(--ralsei-black) !important;
+    color: white !important;
+    transition: transform 0.2s ease-in-out, opacity 0.2s ease-in-out !important;
+}
+
+.booking-btn-general2:hover:not(:disabled) {
+     filter: brightness(1.5);
+}
