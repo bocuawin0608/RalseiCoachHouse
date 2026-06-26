@@ -79,11 +79,12 @@ INSERT INTO [voucher] (voucherCode, discountValue, startEffectiveDate, endEffect
 ('HE2026', 10.00, '2026-01-01', '2028-12-31', 'PERCENT', 50000.00, 200000.00, 1000), 
 ('GIAM50K', 50000.00, '2026-01-01', '2028-12-31', 'FIXED', 50000.00, 0.00, 1000);
 
-INSERT INTO [coach_stop] (stopPointName, address, city) VALUES 
-(N'Bến Xe Nước Ngầm (Hà Nội)', N'Số 1 Ngọc Hồi, Hoàng Mai', N'Hà Nội'),        
-(N'Trạm Dừng Nghỉ Ninh Bình', N'Quốc Lộ 1A',  N'Ninh Bình'),               
-(N'Bến Xe Vinh (Nghệ An)', N'Số 77 Lê Lợi', N'Nghệ An'),            
-(N'Văn Phòng Đồng Hới (Quảng Bình)', N'Trần Hưng Đạo, Đồng Hới', N'Quảng Bình');
+INSERT INTO [coach_stop] (stopPointName, address, city, surcharge, isActive) VALUES 
+(N'Bến Xe Nước Ngầm', N'Số 1 Ngọc Hồi, Hoàng Mai', N'Hà Nội', 0.00, 1),        
+(N'Sảnh T1+T2 - Sân bay Nội Bài', N'Sảnh E, Nhà ga T1, Sóc Sơn', N'Hà Nội', 100000.00, 1),
+(N'Văn Phòng Đồng Hới', N'Trần Hưng Đạo, Đồng Hới', N'Quảng Bình', 0.00, 1),
+(N'Trạm Dừng Lệ Thủy', N'Quốc Lộ 1A, Lệ Thủy', N'Quảng Bình', 0.00, 1),
+(N'Trạm Dừng Ba Đồn', N'Phường Ba Đồn, Thị xã Ba Đồn', N'Quảng Bình', 0.00, 1);
 
 INSERT INTO [route] (routeName, totalKilometers, totalMinutes) VALUES 
 (N'Hà Nội - Quảng Bình', 500.00, 600), 
@@ -103,18 +104,11 @@ INSERT INTO [cargo_type] (cargoTypeName) VALUES
 PRINT N'-> Đang cấu hình mạng lưới 22 Đại lý/Phòng vé chiến lược...';
 
 INSERT INTO [ticket_agency] (stopPointId, ticketAgencyName) VALUES 
-(1, N'Phòng Vé Số 1 - Bến Xe Nước Ngầm'), (1, N'Phòng Vé Số 2 - Bến Xe Nước Ngầm'),
-(1, N'Văn Phòng Trung Chuyển Hoàn Kiếm (HN)'), (1, N'Văn Phòng Ký Gửi Hàng Hóa Cầu Giấy (HN)'),
-(1, N'Đại Lý Ủy Quyền Mỹ Đình (HN)'), (1, N'Trạm Thu Gom Bưu Kiện Thanh Xuân (HN)'),
-(2, N'Văn Phòng Đại Diện TP. Ninh Bình'), (2, N'Quầy Vé Di Động Trạm Dừng Ninh Bình'),
-(2, N'Đại Lý Nhượng Quyền Tam Điệp (NB)'), (2, N'Điểm Gom Hàng Huyện Gia Viễn (NB)'),
-(3, N'Phòng Vé Chính - Bến Xe Vinh'), (3, N'Văn Phòng Nhận Trả Hàng Lê Lợi (Vinh)'),
-(3, N'Đại Lý Vé Xe Buýt Liên Tỉnh Diễn Châu'), (3, N'Điểm Ký Gửi Chuyển Phát Nhanh Hoàng Mai (NA)'),
-(3, N'Đại Lý Ủy Quyền Thị Xã Cửa Lò (NA)'),
-(4, N'Phòng Vé Trung Tâm - Văn Phòng Đồng Hới'), (4, N'Văn Phòng Ký Gửi Hàng Hóa Ba Đồn (QB)'),
-(4, N'Đại Lý Phân Phối Vé Lệ Thủy (QB)'), (4, N'Trạm Thu Nhận Bưu Kiện Hoàn Lão (QB)'),
-(4, N'Điểm Giao Nhận Ký Gửi Huyện Quảng Trạch'), (4, N'Quầy Vé Số 2 - Văn Phòng Đồng Hới'),
-(4, N'Mạng Lưới Đại Lý Nhượng Quyền Tuyên Hóa (QB)');
+(1, N'Đại lý Bến Xe Nước Ngầm'),
+(2, N'Đại lý Sân Bay Nội Bài'),
+(3, N'Đại lý Văn Phòng Đồng Hới'),
+(4, N'Đại lý Lệ Thủy'),
+(5, N'Đại lý Ba Đồn');
 
 DECLARE @AgencyTable TABLE (RowIdx INT IDENTITY(1,1), AgencyId INT);
 INSERT INTO @AgencyTable (AgencyId) SELECT ticketAgencyId FROM [ticket_agency];
