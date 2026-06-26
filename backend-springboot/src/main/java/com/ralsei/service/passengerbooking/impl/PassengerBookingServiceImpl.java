@@ -190,7 +190,6 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
 
         BigDecimal baseSurcharge = BigDecimal.ZERO;
         if (request.pickupStopId() != null && request.dropoffStopId() != null) {
-            // dính líu DB nên tạm xử lý bằng cách này
             List<CoachStop> stopPointsFound = coachStopRepo.findAllById(Arrays.asList(request.dropoffStopId(), request.pickupStopId()));
             if (request.pickupStopId().equals(request.dropoffStopId()) || stopPointsFound.size() != 2) {
                 throw new BusinessRuleException("Điểm đón hoặc điểm trả không hợp lệ!");
