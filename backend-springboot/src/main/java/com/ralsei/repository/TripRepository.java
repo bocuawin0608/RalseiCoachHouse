@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.query.Procedure;
 import org.springframework.data.repository.query.Param;
@@ -18,6 +19,29 @@ import com.ralsei.model.Trip;
 import jakarta.transaction.Transactional;
 
 public interface TripRepository extends JpaRepository<Trip, Integer> {
+    
+    /***
+     * insertTrip: this method use to insert new trip from user
+     * @param routeId from FE
+     * @param coachId from FE
+     * @param departureTime from FE
+     * @param status from FE
+     * @param driverId from FE
+     * @param attendantId from FEs
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            INSERT INTO [trip] (routeId, coachId, departureTime, [status], driverId, attendantId)
+            VALUES (:routeId, :coachId, :departureTime, :status, :driverId, :attendantId)
+            """, nativeQuery = true)
+    void insertTrip(
+            @Param("routeId") Integer routeId,
+            @Param("coachId") Integer coachId,
+            @Param("departureTime") LocalDateTime departureTime,
+            @Param("status") String status,
+            @Param("driverId") Integer driverId,
+            @Param("attendantId") Integer attendantId);
 
     @Query(value = """
             SELECT
@@ -114,23 +138,25 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
 
     // Manager site - view all trip summaries
     @Query(value = """
-            SELECT t.tripId,
-                t.[status] AS [TRANG THAI CHUYEN DI],
-                c.manufacturer,
-                ct.coachTypeName,
-                c.licensePlate,
-                c.[status] AS [TINH TRANG XE],
+            SELECT
+                t.tripId AS tripId,
+                t.[status] AS tripStatus,
+                c.manufacturer AS manufacturer,
+                ct.coachTypeName AS coachTypeName,
+                c.licensePlate AS licensePlate,
+                c.[status] AS coachStatus,
                 CAST(t.departureTime AS DATE) AS departureDate,
                 CAST(t.departureTime AS TIME) AS departureTime,
                 (SELECT COUNT(*) FROM trip_seat ts WHERE ts.tripId = t.tripId AND ts.[status] = 'AVAILABLE') AS availableSeats,
                 (SELECT COUNT(*) FROM trip_seat ts WHERE ts.tripId = t.tripId) AS totalSeats
             FROM trip t
-                JOIN coach c ON c.coachId = t.coachId
-                JOIN coach_type ct ON ct.coachTypeId = c.coachTypeId
-                        WHERE CAST(t.departureTime AS DATE) = :departureDate
-                        ORDER BY t.departureTime ASC
-                        """, countQuery = """
-            SELECT COUNT(*) FROM trip t
+            LEFT JOIN coach c ON t.coachId = c.coachId
+            LEFT JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId
+            WHERE CAST(t.departureTime AS DATE) = :departureDate
+            ORDER BY t.departureTime ASC
+            """, countQuery = """
+            SELECT COUNT(*)
+            FROM trip t
             WHERE CAST(t.departureTime AS DATE) = :departureDate
             """, nativeQuery = true)
     Page<TripSummaryProjection> viewAllTripSummaries(
@@ -145,15 +171,24 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
     public void autoGenerateWeeklySchedule(@Param("StartDate") String startDate);
 
     @Query(value = """
-        SELECT CASE WHEN EXISTS (
-            SELECT 1 FROM coach c WHERE c.coachId = :coachId AND EXISTS (
-                SELECT 1 FROM trip t WHERE t.coachId = c.coachId 
-                    AND departureTime >= DATEADD(hour, -8, GETDATE()) 
-                    AND t.status NOT IN ('CANCELLED', 'COMPLETED')
-            ) 
-        ) THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END        
-    """, nativeQuery = true)
-    boolean checkIfCoachHasTodoTrips(@Param("coachId")Integer coachId);
+                SELECT CASE WHEN EXISTS (
+                    SELECT 1 FROM coach c WHERE c.coachId = :coachId AND EXISTS (
+                        SELECT 1 FROM trip t WHERE t.coachId = c.coachId
+                            AND departureTime >= DATEADD(hour, -8, GETDATE())
+                            AND t.status NOT IN ('CANCELLED', 'COMPLETED')
+                    )
+                ) THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END
+            """, nativeQuery = true)
+    boolean checkIfCoachHasTodoTrips(@Param("coachId") Integer coachId);
 
     boolean existsByCoach_CoachId(Integer coachId);
+
+    @Query(value = """
+            SELECT COUNT(DISTINCT CAST(departureTime AS DATE))
+            FROM trip
+            WHERE departureTime >= :startOfDay
+              AND departureTime <= :endOfPeriod
+            """, nativeQuery = true)
+    int countDistinctDaysWithSchedule(@Param("startOfDay") LocalDateTime startOfDay,
+            @Param("endOfPeriod") LocalDateTime endOfPeriod);
 }

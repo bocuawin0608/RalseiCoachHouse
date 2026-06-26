@@ -168,6 +168,16 @@ export default function Sidebar() {
                         </NavLink>
                     )}
 
+                    {hasAccess(['ADMIN', 'MANAGER']) && (
+                        <>
+                            {/* NIKO: Gắn thêm trục điều hướng Chuyến Xe vào đây */}
+                            <NavLink to="/management/trips" className={navLinkClass} end>
+                                <BsBusFront size={20} className="flex-shrink-0" />
+                                <span>Quản lý chuyến xe</span>
+                            </NavLink>
+                        </>
+                    )}
+
                 </nav>
             </div>
         </aside>
