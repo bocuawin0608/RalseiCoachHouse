@@ -196,8 +196,8 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
                 throw new BusinessRuleException("Điểm đón hoặc điểm trả không hợp lệ!");
             }
             for (CoachStop point : stopPointsFound) {
-                if (point.getStopPointName() != null && point.getStopPointName().toLowerCase().contains("sân bay nội bài")) {
-                    baseSurcharge = baseSurcharge.add(new BigDecimal("100000"));
+                if (point.getSurcharge() != null) {
+                    baseSurcharge = baseSurcharge.add(point.getSurcharge());
                 }
             }
         }
