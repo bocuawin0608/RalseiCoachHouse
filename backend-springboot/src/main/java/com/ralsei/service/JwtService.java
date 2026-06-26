@@ -1,13 +1,14 @@
 package com.ralsei.service;
 
-import io.jsonwebtoken.Claims;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+
 import org.springframework.security.core.userdetails.UserDetails;
 
 import com.ralsei.model.Account;
 
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
+import io.jsonwebtoken.Claims;
 public interface JwtService {
 // Sinh access token
 String generateToken(Account account);
@@ -24,4 +25,5 @@ boolean isTokenValid(String token, UserDetails userDetails);
 // Kiểm tra token có hết hạn chưa
 boolean isTokenExpired(String token);
 List<String> extractRoles(String token);
+Integer extractAccountId(String token);
 }
