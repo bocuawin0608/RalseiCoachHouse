@@ -1,0 +1,44 @@
+.trip-create-back-btn {
+    text-decoration: none;
+    color: #6c757d;
+    padding: 0;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.trip-create-title {
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+    color: #212529;
+}
+
+.trip-create-card {
+    border: 0;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    height: 100%;
+}
+
+.trip-create-card-header {
+    background-color: #fff;
+    border-bottom: 1px solid #dee2e6;
+    padding-top: 0.75rem;
+    padding-bottom: 0.5rem;
+}
+
+.trip-create-submit-btn {
+    width: 100%;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    margin-top: 1rem;
+    font-weight: 500;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+}

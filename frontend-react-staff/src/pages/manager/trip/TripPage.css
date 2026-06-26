@@ -1,0 +1,29 @@
+.trip-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.trip-page-title {
+    margin: 0;
+    font-weight: 700;
+    color: #212529;
+}
+
+.trip-page-card {
+    border: 0;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.trip-page-card-body {
+    padding: 0;
+}
+
+.trip-page-pagination {
+    display: flex;
+    justify-content: center;
+    padding: 1.5rem 0;
+    background-color: #fff;
+    border-top: 1px solid #dee2e6;
+}

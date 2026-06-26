@@ -33,6 +33,9 @@ docs/
 
 #Local docs
 ./documents/changelog-cargo-tracking.md
-./documents/test-cases-cargo-tracking.md.md
+./documents/test-cases-cargo-tracking.md
 ./documents/usecase-cargo-tracking.md
+./documents/changelog-voucher-crud.md
 ./documents/USECASE_PassengerTicket_Payment_Refund.md
+
+tracker/

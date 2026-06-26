@@ -2,8 +2,12 @@ package com.ralsei.model;
 
 import java.math.BigDecimal;
 
+import com.ralsei.model.enums.PassengerTicketStatus;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -60,8 +64,9 @@ public class PassengerTicket extends BaseEntity {
     @Column(name = "voucherCodeSnapshot")
     private String voucherCodeSnapshot;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
-    private String status;
+    private PassengerTicketStatus status;
 
    
 }
