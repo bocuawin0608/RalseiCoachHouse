@@ -4,11 +4,12 @@ import { v4 as uuidv4 } from 'uuid';
 const initialState = {
     step: 1,
     holdToken: uuidv4(), 
-    selectedSeatIds: [],
+    selectedSeats: [],
     passengerInfo: {
-        fullName: '',
-        phone: '',
-        email: ''
+        pickupStopId: null,
+        dropoffStopId: null,
+        voucherId: null,
+        passengers: []
     }
 };
 
@@ -22,7 +23,7 @@ const bookingSlice = createSlice({
         },
         
         setSelectedSeats: (state, action) => {
-            state.selectedSeatIds = action.payload;
+            state.selectedSeats = action.payload;
         },
         
         setPassengerInfo: (state, action) => {

@@ -26,17 +26,15 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // 1. CHÈN DÒNG NÀY VÀO: Bảo Security lấy cấu hình CORS từ WebConfig của anh qua
                 .cors(cors -> cors.configure(http))
-
                 .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                        // 2. CHÈN DÒNG NÀY VÀO: Cho phép tất cả request OPTIONS (Pre-flight) đi qua
-                        // không cần token
-                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
 
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/v1/bookings/**").permitAll()
                         .anyRequest().authenticated())
+
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
