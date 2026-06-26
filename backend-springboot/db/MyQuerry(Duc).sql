@@ -110,7 +110,7 @@ SELECT tripId, routeId, coachId, departureTime, status, updatedAt, updatedBy
 FROM trip
 WHERE tripId = 10;
 GO
-
+USE VeXeDB
 -- Giả sử Manager số 2 thực hiện sinh lịch tự động cho 1 tuần từ ngày 01/06/2026
 EXEC sp_AutoGenerateWeeklySchedule_Final @StartDate = '2026-06-23';
 
@@ -170,41 +170,26 @@ BEGIN TRY
     
     -- 1. Tạo Tuyến đường ID = 1000
     SET IDENTITY_INSERT [route] ON;
-<<<<<<< Updated upstream
     INSERT INTO [route]
     (routeId, routeName, totalKilometers, totalMinutes, isActive)
 VALUES
     (1000, N'Tuyến Đường Thử Nghiệm 1000', 350.00, 300, 1);
-=======
-    INSERT INTO [route] (routeId, routeName, totalKilometers, totalMinutes, isActive)
-    VALUES (1000, N'Tuyến Đường Thử Nghiệm 1000', 350.00, 300, 1);
->>>>>>> Stashed changes
     SET IDENTITY_INSERT [route] OFF;
 
     -- 2. Tạo Loại xe ID = 1000
     SET IDENTITY_INSERT [coach_type] ON;
-<<<<<<< Updated upstream
     INSERT INTO [coach_type]
     (coachTypeId, coachTypeName, totalSeat, isActive)
 VALUES
     (1000, N'Xe Phòng Nằm Thượng Hạng 1000', 22, 1);
-=======
-    INSERT INTO [coach_type] (coachTypeId, coachTypeName, totalSeat, isActive)
-    VALUES (1000, N'Xe Phòng Nằm Thượng Hạng 1000', 22, 1);
->>>>>>> Stashed changes
     SET IDENTITY_INSERT [coach_type] OFF;
 
     -- 3. Tạo Xe cụ thể ID = 1000 (Gán vào Route 1000 và CoachType 1000)
     SET IDENTITY_INSERT [coach] ON;
-<<<<<<< Updated upstream
     INSERT INTO [coach]
     (coachId, routeId, coachTypeId, licensePlate, [status], manufacturer, [year])
 VALUES
     (1000, 1000, 1000, '30K-999.00', 'ACTIVE', N'Thaco Mobihome', 2026);
-=======
-    INSERT INTO [coach] (coachId, routeId, coachTypeId, licensePlate, [status], manufacturer, [year])
-    VALUES (1000, 1000, 1000, '30K-999.00', 'ACTIVE', N'Thaco Mobihome', 2026);
->>>>>>> Stashed changes
     SET IDENTITY_INSERT [coach] OFF;
 
 
@@ -213,11 +198,7 @@ VALUES
     -- ============================================================================
 
     -- [CREATE] - Thêm mới Trip ID = 1000
-<<<<<<< Updated upstream
    USE VeXeDB
-=======
-   USE VeXeDB;
->>>>>>> Stashed changes
 GO
 
 -- Xóa theo thứ tự từ ngọn xuống gốc để không dính Foreign Key
@@ -231,24 +212,15 @@ DELETE FROM [route] WHERE [routeId] = 1000;
 
 PRINT '=== ĐÃ DỌN SẠCH DỮ LIỆU RÁC ID 1000! CHỜ ANH TEST LẠI ===';
 GO
-<<<<<<< Updated upstream
 PRINT '1. [CREATE] Tạo thành công Trip ID = 1000';
 
 
 -- [UPDATE] - Sửa đổi trạng thái của Trip 1000
 UPDATE [trip]
-=======
-    PRINT '1. [CREATE] Tạo thành công Trip ID = 1000';
-
-
-    -- [UPDATE] - Sửa đổi trạng thái của Trip 1000
-    UPDATE [trip]
->>>>>>> Stashed changes
     SET [status] = 'IN_PROGRESS',
         [updatedAt] = GETDATE(),
         [updatedBy] = 999
     WHERE [tripId] = 1000;
-<<<<<<< Updated upstream
 PRINT '2. [UPDATE] Cập nhật thành công trạng thái Trip 1000';
 
 
@@ -263,31 +235,13 @@ INSERT INTO [trip]
 VALUES
     (
         1000, 1000, 1000, '2026-06-25 14:00:00', 'SCHEDULED', NULL, NULL, 999
-=======
-    PRINT '2. [UPDATE] Cập nhật thành công trạng thái Trip 1000';
-
-
-    -- [DELETE] - Dọn dẹp sạch sẽ Trip 1000 (Và các bảng con của nó nếu có phát sinh ghé/vé)
-    DELETE FROM [trip_seat] WHERE [tripId] = 983475893475894375893475;
-
-SET IDENTITY_INSERT [trip] ON;
-INSERT INTO [trip] (
-    [tripId], [routeId], [coachId], [departureTime], [status], [driverId], [attendantId], [createdBy]
-)
-VALUES (
-    1000, 1000, 1000, '2026-06-25 14:00:00', 'SCHEDULED', NULL, NULL, 999
->>>>>>> Stashed changes
 );
 SET IDENTITY_INSERT [trip] OFF;
 
 PRINT '=== ĐÃ INSERT TRIP 1000 THÀNH CÔNG! ===';
-<<<<<<< Updated upstream
 SELECT *
 FROM [trip]
 WHERE [tripId] = 1000;
-=======
-SELECT * FROM [trip] WHERE [tripId] = 1000;
->>>>>>> Stashed changes
 GO
 
 USE VeXeDB;
@@ -295,7 +249,6 @@ GO
 
 -- 1. Bật tính năng ép ID để tạo Staff 1001 (Tài xế)
 SET IDENTITY_INSERT [staff] ON;
-<<<<<<< Updated upstream
 INSERT INTO [staff]
     (
     [staffId], [staffName], [phone], [staffPosition], [hireDate], [isActive]
@@ -313,21 +266,6 @@ INSERT INTO [staff]
 VALUES
     (
         1002, N'Trần Văn Phụ', '0987654321', 'ATTENDANT', '2026-01-01', 1
-=======
-INSERT INTO [staff] (
-    [staffId], [staffName], [phone], [staffPosition], [hireDate], [isActive]
-)
-VALUES (
-    1001, N'Nguyễn Văn Lái', '0912345678', 'DRIVER', '2026-01-01', 1
-);
-
--- 2. Tạo Staff 1002 (Phụ xe)
-INSERT INTO [staff] (
-    [staffId], [staffName], [phone], [staffPosition], [hireDate], [isActive]
-)
-VALUES (
-    1002, N'Trần Văn Phụ', '0987654321', 'ATTENDANT', '2026-01-01', 1
->>>>>>> Stashed changes
 );
 SET IDENTITY_INSERT [staff] OFF;
 
@@ -338,7 +276,6 @@ USE VeXeDB;
 GO
 
 -- Lệnh INSERT sử dụng dữ liệu nền có sẵn từ Script Seed của anh
-<<<<<<< Updated upstream
 INSERT INTO [trip]
     (
     [routeId], -- Nhận giá trị 1 (Tuyến Hà Nội - Quảng Bình) hoặc 2
@@ -358,30 +295,10 @@ VALUES
         NULL,
         NULL,
         1
-=======
-INSERT INTO [trip] (
-    [routeId],         -- Nhận giá trị 1 (Tuyến Hà Nội - Quảng Bình) hoặc 2
-    [coachId],         -- Chọn xe ID = 50 (Nằm trong dải 1 đến 365 chắc chắn tồn tại)
-    [departureTime],   -- Giờ khởi hành
-    [status],          -- Trạng thái ban đầu
-    [driverId],        -- Tạm thời để NULL để điều phối sau giống logic sinh tự động của anh
-    [attendantId],     -- Tạm thời để NULL
-    [createdBy]        -- 1 (ID tài khoản Admin Hệ Thống)
-)
-VALUES (
-    1, 
-    50, 
-    '2026-01-20 08:30:00', -- Ngày nằm ngoài dải snapshot để tránh xung đột lịch trình
-    'SCHEDULED', 
-    NULL, 
-    NULL, 
-    1
->>>>>>> Stashed changes
 );
 USE VeXeDB;
 GO
 
-<<<<<<< Updated upstream
 SELECT *
 FROM [trip]
 WHERE [driverId] IS NULL;
@@ -510,11 +427,12 @@ SELECT licensePlate, ct.coachTypeName
 FROM coach c JOIN coach_type ct 
 ON c.coachTypeId = ct.coachTypeId
 JOIN trip t ON t.coachId = c.coachId
+JOIN route rt ON rt.routeId = t.tripId;
 WHERE CAST(t.departureTime AS DATE) = '2026-01-01'
 
 
 
-
+USE VeXeDB
 
 SELECT s.staffName 
 FROM staff s
@@ -528,6 +446,27 @@ AND EXISTS (
     WHERE t.driverId = s.staffId 
     AND CAST(t.departureTime AS DATE) = '2026-01-01'
 );
+
+SELECT s.staffName 
+FROM staff s
+JOIN account a ON a.accountId = s.accountId
+JOIN account_role ar ON ar.accountId = a.accountId
+JOIN [role] r ON r.roleId = ar.roleId
+ 
+WHERE r.roleName = 'TRIP_STAFF' AND s.staffPosition = 'DRIVER' OR s.staffPosition = 'ATTENDANT'
+AND EXISTS (
+    SELECT 1 
+    FROM trip t 
+    WHERE t.driverId = s.staffId 
+    AND CAST(t.departureTime AS DATE) = '2026-01-01'
+);
+
+SELECT routeName FROM ROUTE WHERE routeName LIKE N'Hà Nội%'
+
+SELECT * FROM staff where staffPosition = 'ATTENDANT'
+
+SELECT routeName FROM ROUTE
+
 SELECT * FROM [role]
 SELECT * FROM STAFF
 SELECT * FROM account_role
@@ -536,29 +475,3 @@ SELECt * FROM account
 USE VeXeDB
 SELECT * FROM trip_seat ts 
 JOIN trip t ON t.tripId = ts.tripSeatId
-=======
-SELECT * FROM [trip] 
-WHERE [driverId] IS NULL;
-SELECT * FROM TRIP-- Lấy ra ID của chuyến xe vừa sinh ra để anh dùng debug tiếp
-SELECT SCOPE_IDENTITY() AS CurrentTestTripId;
-
-
-INSERT INTO [trip] (
-    [routeId],         -- 1: Tuyến Hà Nội - Quảng Bình (Đã có sẵn)
-    [coachId],         -- 50: Xe số 50 thuộc dải xe từ 1 đến 365 (Đã có sẵn)
-    [departureTime],   -- Thời gian khởi hành (Nằm ngoài dải seed để dễ check)
-    [status],          -- 'SCHEDULED' (Theo ràng buộc CK_Trip_Status)
-    [driverId],        -- 3: ID của Tài xế số 1 trong bảng staff (Từ 3 đến 82)
-    [attendantId],     -- 83: ID của Phụ xe số 1 trong bảng staff (Từ 83 đến 162)
-    [createdBy]        -- 1: ID người tạo (Admin)
-)
-VALUES (
-    1, 
-    50, 
-    '2026-07-20 08:30:00', 
-    'SCHEDULED', 
-    3, 
-    83, 
-    1
-);
->>>>>>> Stashed changes

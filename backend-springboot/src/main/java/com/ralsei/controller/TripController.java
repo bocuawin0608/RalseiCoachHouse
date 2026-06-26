@@ -8,7 +8,6 @@ import com.ralsei.dto.projection.trip.TripSummaryProjection;
 import com.ralsei.dto.request.trip.TripCreateRequest;
 import com.ralsei.dto.request.trip.TripFilterRequest;
 import com.ralsei.dto.response.PagedResponse;
-import com.ralsei.model.Trip;
 import com.ralsei.service.TripService;
 import lombok.RequiredArgsConstructor;
 
@@ -26,19 +25,17 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
+/***
+ * 
+ * TripController: nhớ comment vào nhá
+ */
 @RestController
-// NIKO: Rút ngắn gốc URL xuống đây để làm trục điều phối cho cả URL công khai và nội bộ
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:5173")
 public class TripController {
     private final TripService tripService;
 
-    /***
-     * FUNCTION 1: TÌM KIẾM CƠ BẢN TRANG CHỦ
-     * URL thực tế giữ nguyên: GET /api/v1/trips/home
-     */
     @GetMapping(value = "/trips/home", params = "!advanced") // NIKO: Bổ sung thêm /trips vào đây
     public ResponseEntity<PagedResponse<TripDetailProjection>> searchTrips(
             @ModelAttribute TripSearchRequest request) {
@@ -55,11 +52,7 @@ public class TripController {
         return ResponseEntity.ok(response);
     }
 
-    /***
-     * FUNCTION 2: TÌM KIẾM NÂNG CAO TRANG CHỦ
-     * URL thực tế giữ nguyên: GET /api/v1/trips/home?advanced=true
-     */
-    @GetMapping(value = "/trips/home", params = "advanced=true") // NIKO: Bổ sung thêm /trips vào đây
+    @GetMapping(value = "/trips/home", params = "advanced=true")
     public ResponseEntity<PagedResponse<TripFilterProjection>> filterTrips(
             @ModelAttribute TripFilterRequest request) {
 
@@ -80,44 +73,29 @@ public class TripController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * FUNCTION 3: ADMIN/MANAGER TẠO CHUYẾN XE MỚI THỦ CÔNG
-     * URL ĐÃ ĐỒNG BỘ: POST /api/v1/manager/trips/create
-     */
     @PostMapping("/manager/trips/create") // NIKO: Đổi từ /admin/create thành /manager/trips/create
     public ResponseEntity<String> insertTrip(@RequestBody TripCreateRequest tripRequest) {
         String result = tripService.insertTrip(tripRequest);
 
-        if (result.contains("Không thể") || result.contains("thất bại"))    {
+        if (result.contains("Không thể") || result.contains("thất bại")) {
             return ResponseEntity.badRequest().body(result);
         }
         return ResponseEntity.ok(result);
     }
 
-    /**
-     * FUNCTION 4: ADMIN/MANAGER CẬP NHẬT CHUYẾN XE
-     * URL ĐÃ ĐỒNG BỘ: PUT /api/v1/manager/trips/update/{tripId}
-     */
-    @PutMapping("/manager/trips/update/{tripId}") // NIKO: Đổi thành cấu trúc thống nhất
+    @PutMapping("/manager/trips/update/{tripId}")
     public ResponseEntity<String> updateTrip(
             @PathVariable Integer tripId,
             @RequestBody TripUpdateRequest updateRequest) {
 
         String result = tripService.updateTrip(tripId, updateRequest);
-
-        // NIKO: Chỗ này logic cũ của anh đang bị bẫy: chứa chữ "hoàn thành" (thành công) lại trả về badRequest?
-        // Em giữ nguyên để anh tự check lại business logic, chỉ đổi URL thôi nhé!
         if (result.contains("hoàn thành") || result.contains("thất bại")) {
             return ResponseEntity.badRequest().body(result);
         }
         return ResponseEntity.ok(result);
     }
 
-    /**
-     * FUNCTION 5: ADMIN/MANAGER XÓA MỀM CHUYẾN XE (HỦY CHUYẾN)
-     * URL ĐÃ ĐỒNG BỘ: DELETE /api/v1/manager/trips/delete/{tripId}
-     */
-    @DeleteMapping("/manager/trips/delete/{tripId}") // NIKO: Đổi thành cấu trúc thống nhất
+    @DeleteMapping("/manager/trips/delete/{tripId}")
     public ResponseEntity<String> deleteTrip(@PathVariable Integer tripId) {
         String result = tripService.deleteTrip(tripId);
 
@@ -127,10 +105,6 @@ public class TripController {
         return ResponseEntity.ok(result);
     }
 
-    /**
-     * FUNCTION 6: ADMIN/MANAGER LẤY TOÀN BỘ DANH SÁCH CHUYẾN XE RÚT GỌN THEO NGÀY
-     * URL ĐÃ ĐỒNG BỘ: GET /api/v1/manager/trips/summaries
-     */
     @GetMapping("/manager/trips/summaries") // NIKO: Đây chính là endpoint cứu rỗi lỗi 404/NoResourceFound ban nãy!
     public ResponseEntity<PagedResponse<TripSummaryProjection>> getAllTripSummaries(
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate date,
@@ -140,4 +114,40 @@ public class TripController {
         PagedResponse<TripSummaryProjection> response = tripService.getAllTripSummaries(date, page, size);
         return ResponseEntity.ok(response);
     }
+    // --- CÁC ENDPOINT TỰ ĐỘNG LẤY TÀI NGUYÊN DỰA VÀO NGÀY KHỞI HÀNH ---
+    //TODO: fix this later
+    // @GetMapping("/manager/trips/available-coaches")
+    // public ResponseEntity<?> getAvailableCoaches(
+    //         @RequestParam Integer routeId,
+    //         @RequestParam String departureTime) { // Nhận chuỗi "YYYY-MM-DDTHH:mm:00" từ React
+
+    //     // Bóc tách lấy riêng chuỗi Ngày (YYYY-MM-DD) trước ký tự 'T'
+    //     String dateStr = departureTime.split("T")[0];
+    //     java.time.LocalDate localDate = java.time.LocalDate.parse(dateStr); // Chuyển thành kiểu LocalDate để truy vấn
+
+    //     // Truyền ngày xuống Service để tìm xe rảnh trong ngày đó
+    //     return ResponseEntity.ok(tripService.getAvailableCoachesByDate(routeId, localDate));
+    // }
+    //TODO: fix this later
+    //@GetMapping("/manager/trips/available-drivers")
+    // public ResponseEntity<?> getAvailableDrivers(
+    //         @RequestParam String departureTime) {
+
+    //     String dateStr = departureTime.split("T")[0];
+    //     java.time.LocalDate localDate = java.time.LocalDate.parse(dateStr);
+
+    //     // Truyền ngày xuống Service để tìm tài xế rảnh trong ngày đó
+    //     return ResponseEntity.ok(tripService.getAvailableDriversByDate(localDate));
+    // }
+    // //TODO: fix this later
+    // @GetMapping("/manager/trips/available-attendants")
+    // public ResponseEntity<?> getAvailableAttendants(
+    //         @RequestParam String departureTime) {
+
+    //     String dateStr = departureTime.split("T")[0];
+    //     java.time.LocalDate localDate = java.time.LocalDate.parse(dateStr);
+
+    //     // Truyền ngày xuống Service để tìm phụ xe rảnh trong ngày đó
+    //     return ResponseEntity.ok(tripService.getAvailableAttendantsByDate(localDate));
+    // }
 }
