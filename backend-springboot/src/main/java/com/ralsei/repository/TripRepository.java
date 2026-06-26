@@ -19,6 +19,16 @@ import com.ralsei.model.Trip;
 import jakarta.transaction.Transactional;
 
 public interface TripRepository extends JpaRepository<Trip, Integer> {
+    
+    /***
+     * insertTrip: this method use to insert new trip from user
+     * @param routeId from FE
+     * @param coachId from FE
+     * @param departureTime from FE
+     * @param status from FE
+     * @param driverId from FE
+     * @param attendantId from FEs
+     */
     @Modifying
     @Transactional
     @Query(value = """
