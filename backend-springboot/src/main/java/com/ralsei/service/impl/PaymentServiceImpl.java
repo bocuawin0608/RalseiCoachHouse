@@ -16,7 +16,6 @@ import com.ralsei.model.Payment;
 import com.ralsei.repository.PaymentRepository;
 import com.ralsei.service.PaymentService;
 import com.ralsei.service.TransactionIdGenerator;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -31,7 +30,6 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentRepository paymentRepository;
     private final ObjectMapper objectMapper;
     private final TransactionIdGenerator transactionIdGenerator;
-    private final SimpMessagingTemplate messagingTemplate;
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
@@ -103,9 +101,6 @@ public class PaymentServiceImpl implements PaymentService {
 
                 Payment savedPayment = paymentRepository.save(payment);
 
-                // Broadcast payment completion to frontend
-                messagingTemplate.convertAndSend("/topic/payment/" + transactionId, savedPayment);
-
             } else {
                 throw new IllegalArgumentException("Transfer amount is less than required payment amount");
             }
@@ -145,8 +140,7 @@ public class PaymentServiceImpl implements PaymentService {
                         () -> new IllegalArgumentException("Payment not found with transactionId: " + transactionId));
         if (!"COMPLETED".equals(payment.getStatus())) {
             payment.setStatus("FAILED");
-            Payment savedPayment = paymentRepository.save(payment);
-            messagingTemplate.convertAndSend("/topic/payment/" + transactionId, savedPayment);
+            paymentRepository.save(payment);
         }
     }
 }

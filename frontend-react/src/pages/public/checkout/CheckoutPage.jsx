@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Container, Form, Button, Card, Row, Col, Alert } from 'react-bootstrap';
 import axiosClient from '../../../api/axiosClient';
-import { Client } from '@stomp/stompjs';
 
 const CheckoutPage = () => {
     const [formData, setFormData] = useState({
@@ -16,15 +15,6 @@ const CheckoutPage = () => {
     const [checkoutResult, setCheckoutResult] = useState(null);
     const [timeLeft, setTimeLeft] = useState(0);
     const [status, setStatus] = useState('idle'); // idle, pending, completed, cancelled
-    const stompClientRef = useRef(null);
-
-    useEffect(() => {
-        return () => {
-            if (stompClientRef.current) {
-                stompClientRef.current.deactivate();
-            }
-        };
-    }, []);
 
     useEffect(() => {
         let interval = null;
@@ -51,9 +41,6 @@ const CheckoutPage = () => {
     }, [timeLeft, status, checkoutResult]);
 
     const handleTimeout = () => {
-        if (stompClientRef.current) {
-            stompClientRef.current.deactivate();
-        }
         setStatus('FAILED');
     };
 
@@ -94,30 +81,6 @@ const CheckoutPage = () => {
                 setQrUrl(`https://qr.sepay.vn/img?bank=Vietcombank&acc=SBSEPAYHCNTZK98PS6F&template=compact&amount=${response.amount}&des=${response.transactionId}`);
 
                 setTimeLeft(300); // 5 minutes
-
-                const baseUrl = axiosClient.defaults.baseURL || 'https://localhost:9090/api';
-                const wsUrl = baseUrl.replace('http', 'ws').replace('/api', '/ws-payment');
-
-                const client = new Client({
-                    brokerURL: wsUrl,
-                    onConnect: () => {
-                        client.subscribe(`/topic/payment/${response.transactionId}`, (message) => {
-                            const paymentData = JSON.parse(message.body);
-                            setStatus(paymentData.status);
-                            if (paymentData.status === 'COMPLETED' || paymentData.status === 'FAILED') {
-                                setTimeLeft(0);
-                                client.deactivate();
-                            }
-                        });
-                    },
-                    onStompError: (frame) => {
-                        console.error('Broker reported error: ' + frame.headers['message']);
-                        console.error('Additional details: ' + frame.body);
-                    }
-                });
-
-                client.activate();
-                stompClientRef.current = client;
             }
         } catch (err) {
             console.error("Checkout error:", err);
