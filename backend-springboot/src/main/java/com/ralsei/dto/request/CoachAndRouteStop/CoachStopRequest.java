@@ -19,6 +19,7 @@ public class CoachStopRequest {
 
     @NotBlank(message = "Address is required")
     @Size(max = 255, message = "Address must be less than 255 characters")
+    @Pattern(regexp = "^[^,]+(,\\s+[^,]+)+$", message = "Địa chỉ không hợp lệ.")
     private String address;
 
     @NotBlank(message = "City is required")
