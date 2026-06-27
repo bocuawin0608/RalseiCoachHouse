@@ -74,4 +74,20 @@ public class SeatHoldServiceImpl implements SeatHoldService {
         }
         return members.stream().map(id -> Integer.valueOf(id)).toList();
     }
+
+    @Override
+    public boolean extendLock(List<Integer> tripSeatIds, String holdToken, long newTtlSeconds) {
+        for (Integer tripSeatId : tripSeatIds) {
+            String lockKey = buildLockKey(tripSeatId);
+            if (holdToken.equals(redisTemplate.opsForValue().get(lockKey))) {
+                redisTemplate.expire(lockKey, Duration.ofSeconds(newTtlSeconds));
+            }
+        }
+        
+        String sessionKey = buildSessionKey(holdToken);
+        if (Boolean.TRUE.equals(redisTemplate.hasKey(sessionKey))) {
+            redisTemplate.expire(sessionKey, Duration.ofSeconds(newTtlSeconds));
+        }
+        return true;
+    }
 }
