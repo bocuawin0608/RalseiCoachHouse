@@ -427,7 +427,7 @@ SELECT licensePlate, ct.coachTypeName
 FROM coach c JOIN coach_type ct 
 ON c.coachTypeId = ct.coachTypeId
 JOIN trip t ON t.coachId = c.coachId
-JOIN route rt ON rt.routeId = t.tripId;
+JOIN route rt ON rt.routeId = t.tripId
 WHERE CAST(t.departureTime AS DATE) = '2026-01-01'
 
 
