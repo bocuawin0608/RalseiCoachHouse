@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ralsei.dto.request.passengerbooking.BookingConfirmRequest;
+import com.ralsei.dto.request.passengerbooking.PassengerDTO;
 import com.ralsei.dto.request.passengerbooking.PriceCalculationRequest;
 import com.ralsei.dto.request.passengerbooking.SeatLockRequest;
 import com.ralsei.dto.response.passengerbooking.BookingConfirmResponse;
@@ -23,7 +24,12 @@ import com.ralsei.dto.response.passengerbooking.TripSeatResponse;
 import com.ralsei.dto.response.passengerbooking.VoucherDTO;
 import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.exception.ResourceNotFoundException;
+import com.ralsei.model.AccompaniedChild;
 import com.ralsei.model.CoachStop;
+import com.ralsei.model.Customer;
+import com.ralsei.model.PassengerTicket;
+import com.ralsei.model.PassengerTicketDetail;
+import com.ralsei.model.Payment;
 import com.ralsei.model.RouteStop;
 import com.ralsei.model.Voucher;
 import com.ralsei.model.enums.PassengerTicketStatus;
@@ -206,7 +212,7 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
         Integer tripId, String holdToken, Integer pickupStopId, 
         Integer dropoffStopId, Integer voucherId, String accessToken
     ) {
-
+        //TODO: check kỹ hơn tripId nào với status nào, departure time (now-8?) nào còn đc đặt vé. Chú ý, ở hàm step2InitData() có check tripId, nếu mà chỗ này check ngon hơn thì xóa chỗ check tripId đó ở hàm kia đi, dùng cái này là ổn r
         List<Integer> tripSeatIdsBooking = seatHoldService.getTripSeatIdsByToken(holdToken);
         if (tripSeatIdsBooking == null || tripSeatIdsBooking.isEmpty()) {
             throw new BusinessRuleException("Phiên giữ ghế đã hết hạn hoặc không hợp lệ. Vui lòng chọn lại ghế!");
@@ -293,8 +299,100 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
     @Transactional
     @Override
     public BookingConfirmResponse confirmBooking(Integer tripId, BookingConfirmRequest request, String holdToken, String accessToken) {
-        
-        
+        // // 1. Chạy Core Helper: Tính toán & Verify, móc luôn Entity lên đây
+        // CoreCalculationResult coreResult = performCorePriceCalculation(
+        //     tripId, holdToken, request.pickupStopId(), 
+        //     request.dropoffStopId(), request.voucherId(), accessToken
+        // );
+
+        // // 2. Định danh Account (Khách vãng lai = null)
+        // Integer customerId = null;
+        // if (accessToken != null && !accessToken.isBlank()) {
+        //     Integer accountId = jwtService.extractAccountId(accessToken);
+        //     if (accountId != null) {
+        //         customerId = customerRepo.findByAccountId(accountId)
+        //             .map(Customer::getCustomerId)
+        //             .orElse(null);
+        //     }
+        // }
+
+        // // 3. Xử lý Voucher Concurrent (Atomic Update chống Race Condition)
+        // String voucherCodeSnapshot = null;
+        // if (coreResult.voucherToBeUsed() != null && coreResult.discountAmount().compareTo(BigDecimal.ZERO) > 0) {
+        //     int rowsUpdated = voucherRepo.incrementUsedCountIfAvailable(coreResult.voucherToBeUsed().getVoucherId());
+        //     if (rowsUpdated == 0) {
+        //         throw new BusinessRuleException("Voucher vừa hết lượt sử dụng! Vui lòng chọn lại.");
+        //     }
+        //     voucherCodeSnapshot = coreResult.voucherToBeUsed().getVoucherCode();
+        // }
+
+        // // 4. Khởi tạo Passenger Ticket (Vé Tổng)
+        // String ticketCode = "TK" + System.currentTimeMillis(); 
+        // PassengerTicket ticket = PassengerTicket.builder()
+        //     .customerId(customerId)
+        //     .tripId(tripId)
+        //     .ticketCode(ticketCode)
+        //     .totalPrice(coreResult.totalFinalPrice())
+        //     .voucherId(request.voucherId())
+        //     // TẬN DỤNG LUÔN Entity từ CoreResult mà không cần Query lại
+        //     .pickupStopId(coreResult.pickupStop().getStopPointId())
+        //     .dropoffStopId(coreResult.dropoffStop().getStopPointId())
+        //     .pickupStopName(coreResult.pickupStop().getStopPointName())
+        //     .dropoffStopName(coreResult.dropoffStop().getStopPointName())
+        //     .voucherCodeSnapshot(voucherCodeSnapshot)
+        //     .status(PassengerTicketStatus.PENDING.getValue())
+        //     .build();
+        // PassengerTicket savedTicket = ticketRepo.save(ticket);
+
+        // // 5. Khởi tạo Passenger Ticket Detail & Accompanied Child
+        // LocalDateTime expiredAt = LocalDateTime.now().plusSeconds(PAYMENT_HOLD_TTL_SECONDS); 
+        // BigDecimal pricePerSeat = coreResult.basePrice().add(coreResult.baseSurcharge());
+
+        // for (PassengerDTO passenger : request.passengers()) {
+        //     PassengerTicketDetail detail = PassengerTicketDetail.builder()
+        //         .passengerTicketId(savedTicket.getPassengerTicketId())
+        //         .tripSeatId(passenger.tripSeatId())
+        //         .seatCodeSnapshot(passenger.seatCode())
+        //         .fullName(passenger.fullname())
+        //         .phone(passenger.phone())
+        //         .email(passenger.email())
+        //         .price(pricePerSeat)
+        //         .status(PassengerTicketStatus.PENDING.getValue())
+        //         .expiredAt(expiredAt)
+        //         .build();
+        //     PassengerTicketDetail savedDetail = ticketDetailRepo.save(detail);
+
+        //     if (passenger.accompaniedChild() != null) {
+        //         AccompaniedChild child = AccompaniedChild.builder()
+        //             .ticketDetailId(savedDetail.getTicketDetailId())
+        //             .fullname(passenger.accompaniedChild().fullname())
+        //             .birthYear(passenger.accompaniedChild().birthYear())
+        //             .build();
+        //         accompaniedChildRepo.save(child);
+        //     }
+        // }
+
+        // // 6. Giao tiếp với Module Payment (Tạo giao dịch PENDING chờ FE quét QR)
+        // PaymentCheckoutRequest paymentRequest = new PaymentCheckoutRequest(
+        //     savedTicket.getPassengerTicketId(),
+        //     null, // cargoTicketId = null
+        //     coreResult.totalFinalPrice(),
+        //     "BANK_TRANSFER"
+        // );
+        // Payment payment = paymentService.initializePayment(paymentRequest);
+
+        // // 7. Gia hạn Redis Lock cho khớp với thời gian chờ quét QR
+        // seatHoldService.extendLock(coreResult.lockedSeatIds(), holdToken, PAYMENT_HOLD_TTL_SECONDS);
+
+        // // 8. Trả Response về cho FE render QR
+        // return new BookingConfirmResponse(
+        //     savedTicket.getTicketCode(),
+        //     payment.getTransactionId(),
+        //     coreResult.totalFinalPrice(),
+        //     sepayBankAccount, 
+        //     sepayBankName,
+        //     expiredAt
+        // );
         return null;
     }
 
