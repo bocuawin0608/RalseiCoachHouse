@@ -11,8 +11,10 @@ import java.util.Set;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ralsei.dto.request.passengerbooking.BookingConfirmRequest;
 import com.ralsei.dto.request.passengerbooking.PriceCalculationRequest;
 import com.ralsei.dto.request.passengerbooking.SeatLockRequest;
+import com.ralsei.dto.response.passengerbooking.BookingConfirmResponse;
 import com.ralsei.dto.response.passengerbooking.CoachStopDropdownDTO;
 import com.ralsei.dto.response.passengerbooking.PriceCalculationResponse;
 import com.ralsei.dto.response.passengerbooking.SeatLockResponse;
@@ -174,13 +176,45 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
     @Override
     public PriceCalculationResponse calculatePrice(Integer tripId, PriceCalculationRequest request, String accessToken) {
 
-        List<Integer> tripSeatIdsBooking = seatHoldService.getTripSeatIdsByToken(request.holdToken());
+        CoreCalculationResult coreResult = performCorePriceCalculation(
+            tripId, request.holdToken(), request.pickupStopId(), 
+            request.dropoffStopId(), request.voucherId(), accessToken
+        );
+
+        return new PriceCalculationResponse(
+            coreResult.basePrice(),
+            coreResult.baseSurcharge(),
+            coreResult.totalRawPrice(),
+            coreResult.discountAmount(),
+            coreResult.totalFinalPrice()
+        );
+    }
+
+    private record CoreCalculationResult(
+        List<Integer> lockedSeatIds,
+        BigDecimal basePrice,
+        BigDecimal baseSurcharge,
+        BigDecimal totalRawPrice,
+        BigDecimal discountAmount,
+        BigDecimal totalFinalPrice,
+        CoachStop pickupStop,
+        CoachStop dropoffStop,
+        Voucher voucherToBeUsed
+    ) {}
+
+    private CoreCalculationResult performCorePriceCalculation(
+        Integer tripId, String holdToken, Integer pickupStopId, 
+        Integer dropoffStopId, Integer voucherId, String accessToken
+    ) {
+
+        List<Integer> tripSeatIdsBooking = seatHoldService.getTripSeatIdsByToken(holdToken);
         if (tripSeatIdsBooking == null || tripSeatIdsBooking.isEmpty()) {
             throw new BusinessRuleException("Phiên giữ ghế đã hết hạn hoặc không hợp lệ. Vui lòng chọn lại ghế!");
         }
-        
+
         List<Integer> availableSeatIds = tripSeatRepo.findTripSeatIdsByTripIdAndStatus(tripId, TripSeatStatus.AVAILABLE);
-        if(availableSeatIds.isEmpty() || !availableSeatIds.containsAll(tripSeatIdsBooking)) {
+        //bản chất là status LOCK ko đổ database, nên ở dưới đó nó vẫn là status available thôi
+        if (availableSeatIds.isEmpty() || !availableSeatIds.containsAll(tripSeatIdsBooking)) {
             throw new BusinessRuleException("Có ghế ngồi không hợp lệ hoặc đã được đặt! Vui lòng chọn lại!");
         }
 
@@ -189,26 +223,38 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin giá của ghế này!"));
 
         BigDecimal baseSurcharge = BigDecimal.ZERO;
-        if (request.pickupStopId() != null && request.dropoffStopId() != null) {
-            List<CoachStop> stopPointsFound = coachStopRepo.findAllById(Arrays.asList(request.dropoffStopId(), request.pickupStopId()));
-            if (request.pickupStopId().equals(request.dropoffStopId()) || stopPointsFound.size() != 2) {
-                throw new BusinessRuleException("Điểm đón hoặc điểm trả không hợp lệ!");
+        CoachStop pickupStop = null;
+        CoachStop dropoffStop = null;
+
+        if (pickupStopId != null && dropoffStopId != null) {
+            if (pickupStopId.equals(dropoffStopId)) {
+                throw new BusinessRuleException("Điểm đón và điểm trả không được trùng nhau!");
             }
-            for (CoachStop point : stopPointsFound) {
-                if (point.getSurcharge() != null) {
-                    baseSurcharge = baseSurcharge.add(point.getSurcharge());
-                }
+            
+            pickupStop = coachStopRepo.findById(pickupStopId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy điểm đón hợp lệ!"));
+            dropoffStop = coachStopRepo.findById(dropoffStopId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy điểm trả hợp lệ!"));
+
+            if (pickupStop.getSurcharge() != null) {
+                baseSurcharge = baseSurcharge.add(pickupStop.getSurcharge());
+            }
+            if (dropoffStop.getSurcharge() != null) {
+                baseSurcharge = baseSurcharge.add(dropoffStop.getSurcharge());
             }
         }
 
         BigDecimal totalRawPrice = basePrice.add(baseSurcharge).multiply(BigDecimal.valueOf(tripSeatIdsBooking.size()));
 
         BigDecimal discountAmount = BigDecimal.ZERO;
-        if (request.voucherId() != null) {
-            Voucher voucherToBeUsed = voucherService.getEligibleVoucher(request.voucherId(), totalRawPrice);
+        Voucher voucherToBeUsed = null;
+
+        if (voucherId != null) {
+            voucherToBeUsed = voucherService.getEligibleVoucher(voucherId, totalRawPrice);
             if (voucherToBeUsed == null) {
                 throw new BusinessRuleException("Mã giảm giá không hợp lệ hoặc không đáp ứng điều kiện đơn hàng!");
             }
+
             Integer accountId = jwtService.extractAccountId(accessToken);
             if (accountId != null) {
                 Set<Integer> usedVoucherIds = ticketRepo.getUsedVoucherIdsByAccountId(accountId, PassengerTicketStatus.CANCELLED);
@@ -216,6 +262,7 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
                     throw new BusinessRuleException("Không thành công, voucher này đã được sử dụng!");
                 }
             }
+
             discountAmount = voucherToBeUsed.getDiscountType().equals(VoucherType.FIXED.getValue()) 
                 ? voucherToBeUsed.getDiscountValue() 
                 : totalRawPrice.multiply(voucherToBeUsed.getDiscountValue()).divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
@@ -223,7 +270,6 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
             if (voucherToBeUsed.getMaxDiscountValue() != null && discountAmount.compareTo(voucherToBeUsed.getMaxDiscountValue()) > 0) {
                 discountAmount = voucherToBeUsed.getMaxDiscountValue();
             }
-
             if (discountAmount.compareTo(totalRawPrice) > 0) {
                 discountAmount = totalRawPrice;
             }
@@ -231,13 +277,25 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
         
         BigDecimal finalPrice = totalRawPrice.subtract(discountAmount).setScale(0, RoundingMode.HALF_UP);
 
-        return new PriceCalculationResponse(
-            basePrice,
-            baseSurcharge,
-            totalRawPrice,
-            discountAmount,
-            finalPrice.compareTo(BigDecimal.ZERO) >= 0 ? finalPrice : BigDecimal.ZERO
+        return new CoreCalculationResult(
+            tripSeatIdsBooking, 
+            basePrice, 
+            baseSurcharge, 
+            totalRawPrice, 
+            discountAmount, 
+            finalPrice.compareTo(BigDecimal.ZERO) >= 0 ? finalPrice : BigDecimal.ZERO, 
+            pickupStop, 
+            dropoffStop, 
+            voucherToBeUsed
         );
+    }
+
+    @Transactional
+    @Override
+    public BookingConfirmResponse confirmBooking(Integer tripId, BookingConfirmRequest request, String holdToken, String accessToken) {
+        
+        
+        return null;
     }
 
 }
