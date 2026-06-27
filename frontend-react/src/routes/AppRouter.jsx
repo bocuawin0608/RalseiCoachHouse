@@ -11,12 +11,14 @@ import Login from '../pages/auth/Login';
 import Register from '../pages/auth/Register';
 // Nested routes
 import { publicTripRoutes } from '../features/trips';
+import CheckoutPage from '../pages/public/checkout/CheckoutPage';
 
 const AppRouter = () => {
     return (
         <Routes>
             <Route element={<PublicLayout />}>
                 <Route path="/" element={<HomePage />} />
+                <Route path="/checkout" element={<CheckoutPage />} />
                 <Route path="/unauthorized" element={<div>401 - Unauthorized.</div>} />
                 <Route path="*" element={<div>404 - Page Not Found.</div>} />
                 {publicTripRoutes}
