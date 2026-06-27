@@ -7,4 +7,5 @@ public interface SeatHoldService {
     boolean lockSeats(List<Integer> tripSeatIds, String holdToken, long ttlSeconds);
     boolean releaseSeats(List<Integer> tripSeatIds, String holdToken);
     List<Integer> getTripSeatIdsByToken(String holdToken);
+    boolean extendLock(List<Integer> tripSeatIds, String holdToken, long newTtlSeconds);
 }
