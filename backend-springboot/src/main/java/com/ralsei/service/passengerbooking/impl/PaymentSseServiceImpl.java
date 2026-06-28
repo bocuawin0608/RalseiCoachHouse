@@ -15,10 +15,10 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 public class PaymentSseServiceImpl implements PaymentSseService {
     
-    private final Map<Integer, SseEmitter> emitters = new ConcurrentHashMap<>();
+    private final Map<String, SseEmitter> emitters = new ConcurrentHashMap<>();
 
     @Override
-    public SseEmitter createConnection(Integer transactionId) {
+    public SseEmitter createConnection(String transactionId) {
         SseEmitter emitter = new SseEmitter(15 * 60 * 1000L); 
         emitters.put(transactionId, emitter);
 
@@ -35,7 +35,7 @@ public class PaymentSseServiceImpl implements PaymentSseService {
     }
 
     @Override
-    public void sendStatusUpdate(Integer transactionId, String status) {
+    public void sendStatusUpdate(String transactionId, String status) {
         SseEmitter emitter = emitters.get(transactionId);
         if (emitter != null) {
             try {

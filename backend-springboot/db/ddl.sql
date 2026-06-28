@@ -505,7 +505,6 @@ CREATE TABLE [payment] (
     [refundAmount] DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
     [paymentTime] DATETIME NULL,
     [callbackData] NVARCHAR(MAX) NULL,
-    [isActive] BIT NOT NULL DEFAULT 1,
     [createdAt] DATETIME DEFAULT GETDATE(),
     [createdBy] INT NULL,
     [updatedAt] DATETIME DEFAULT GETDATE(),
@@ -518,7 +517,7 @@ CREATE TABLE [payment] (
         ([passengerTicketId] IS NULL AND [cargoTicketId] IS NOT NULL)
     ),
 	CONSTRAINT CK_Payment_Amount CHECK ([amount] > 0 AND [refundAmount] >= 0),
-    CONSTRAINT CK_Payment_Method CHECK ([paymentMethod] IN ('VNPAY', 'CASH', 'BANK_TRANSFER')),
+    CONSTRAINT CK_Payment_Method CHECK ([paymentMethod] IN ('SEPAY', 'CASH', 'BANK_TRANSFER')),
     CONSTRAINT CK_Payment_Status CHECK ([status] IN ('PENDING', 'COMPLETED', 'FAILED')),
 );
 

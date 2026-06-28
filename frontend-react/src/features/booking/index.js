@@ -1,3 +1,5 @@
 export { default as bookingReducer } from './reducers/bookingSlice'
 export * from './reducers/bookingSlice'
 export { default as BookingWizard } from './components/BookingWizard'
+export { default as BookingWizardShell } from './components/BookingWizardShell'
+export { default as Step3Payment } from './components/Step3Payment'
