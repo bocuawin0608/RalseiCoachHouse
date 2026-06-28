@@ -34,3 +34,7 @@ build/
 
 # Firebase service account key
 firebase-service-account.json
+
+# Cất file cấu hình đi (trừ -prod vì sẽ clear hết secret)
+**/application-*.properties
+!**/application-prod.properties

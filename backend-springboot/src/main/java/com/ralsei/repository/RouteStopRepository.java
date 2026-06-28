@@ -1,6 +1,7 @@
 package com.ralsei.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -38,4 +39,7 @@ public interface RouteStopRepository extends JpaRepository<RouteStop, Integer> {
       ORDER BY rs.stopOrder ASC
   """)
   public List<RouteStop> findByTripIdWithCoachStop(@Param("tripId") Integer tripId);
+
+  @Query("SELECT rs FROM RouteStop rs JOIN FETCH rs.coachStop WHERE rs.route.routeId = :routeId AND rs.coachStop.stopPointId = :stopPointId")
+  Optional<RouteStop> findByRouteIdAndStopPointId(@Param("routeId") Integer routeId, @Param("stopPointId") Integer stopPointId);
 }

@@ -17,6 +17,7 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "payment")
+@org.hibernate.annotations.Check(constraints = "(passengerTicketId IS NOT NULL AND cargoTicketId IS NULL) OR (passengerTicketId IS NULL AND cargoTicketId IS NOT NULL)")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -40,7 +41,7 @@ public class Payment extends BaseEntity {
     @Column(name = "paymentMethod", nullable = false)
     private String paymentMethod;
 
-    @Column(name = "transactionId", nullable = false)
+    @Column(name = "transactionId", nullable = false, unique = true)
     private String transactionId;
 
     @Column(name = "status", nullable = false)
@@ -54,6 +55,4 @@ public class Payment extends BaseEntity {
 
     @Column(name = "callbackData", columnDefinition = "NVARCHAR(MAX)")
     private String callbackData;
-
-   
 }

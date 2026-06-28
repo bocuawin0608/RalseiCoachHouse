@@ -127,6 +127,7 @@ CREATE TABLE [coach_stop] (
     [stopPointName] NVARCHAR(255) NOT NULL,
     [address] NVARCHAR(MAX) NOT NULL,
     [city] NVARCHAR(255) NOT NULL,
+    [surcharge] DECIMAL(15,2) NOT NULL DEFAULT 0.00,
     [isActive] BIT NOT NULL DEFAULT 1,
     [createdAt] DATETIME DEFAULT GETDATE(),
     [createdBy] INT NULL,
@@ -516,7 +517,7 @@ CREATE TABLE [payment] (
         ([passengerTicketId] IS NULL AND [cargoTicketId] IS NOT NULL)
     ),
 	CONSTRAINT CK_Payment_Amount CHECK ([amount] > 0 AND [refundAmount] >= 0),
-    CONSTRAINT CK_Payment_Method CHECK ([paymentMethod] IN ('VNPAY', 'CASH', 'BANK_TRANSFER')),
+    CONSTRAINT CK_Payment_Method CHECK ([paymentMethod] IN ('SEPAY', 'CASH', 'BANK_TRANSFER')),
     CONSTRAINT CK_Payment_Status CHECK ([status] IN ('PENDING', 'COMPLETED', 'FAILED')),
 );
 
