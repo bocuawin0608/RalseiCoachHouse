@@ -27,4 +27,5 @@ public interface VoucherService {
 
     List<VoucherDTO> getEligibleVouchers();
     Voucher getEligibleVoucher(Integer voucherId, BigDecimal currentOrderValue);
+    int incrementUsedCountIfAvailable(Integer voucherId);
 }

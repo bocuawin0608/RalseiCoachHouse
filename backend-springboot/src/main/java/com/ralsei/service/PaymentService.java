@@ -12,9 +12,5 @@ public interface PaymentService {
 
     public Payment getPaymentByTransactionId(String transactionId);
 
-    public void softDeletePayment(int paymentId);
-
-    public void restorePayment(int paymentId);
-
     public void cancelPayment(String transactionId);
 }

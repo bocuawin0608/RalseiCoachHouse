@@ -5,12 +5,14 @@ import com.ralsei.model.Customer;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+<<<<<<< HEAD
 import org.springframework.stereotype.Repository;
 import org.springframework.data.jpa.repository.Query;
 
 import com.ralsei.dto.projection.cargoticket.CargoTicketCustomerOptionProjection;
+=======
+>>>>>>> 289738e (partial update to passenger booking module)
 
-@Repository
 public interface CustomerRepository extends JpaRepository<Customer, Integer> {
     @Query(value = """
             SELECT customerId AS customerId, customerName AS customerName
