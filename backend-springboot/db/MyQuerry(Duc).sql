@@ -475,3 +475,5 @@ SELECt * FROM account
 USE VeXeDB
 SELECT * FROM trip_seat ts 
 JOIN trip t ON t.tripId = ts.tripSeatId
+
+SELECT * FROM account_role ar JOIN account a ON ar.accountId = a.accountId 

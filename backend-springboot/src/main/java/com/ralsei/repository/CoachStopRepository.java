@@ -7,8 +7,15 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.ralsei.model.CoachStop;
+import com.ralsei.dto.projection.cargoticket.CargoTicketStopOptionProjection;
 
 public interface CoachStopRepository extends JpaRepository<CoachStop, Integer> {
+
+  @Query(value = """
+      SELECT stopPointId AS stopPointId, stopPointName AS stopPointName
+      FROM coach_stop WHERE isActive = 1 ORDER BY stopPointName
+      """, nativeQuery = true)
+  java.util.List<CargoTicketStopOptionProjection> findCargoTicketStopOptions();
 
   @Query("""
       SELECT c FROM CoachStop c

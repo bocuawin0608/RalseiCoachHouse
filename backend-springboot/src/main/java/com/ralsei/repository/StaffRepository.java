@@ -8,9 +8,22 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.ralsei.dto.projection.staff.StaffProjection;
+import com.ralsei.dto.projection.cargoticket.CargoTicketStaffOptionProjection;
 import com.ralsei.model.Staff;
 
 public interface StaffRepository extends JpaRepository<Staff, Integer> {
+    @Query(value = "SELECT staffId, staffName FROM staff WHERE isActive = 1 AND staffPosition = 'TICKET_STAFF' ORDER BY staffName", nativeQuery = true)
+    List<CargoTicketStaffOptionProjection> findCargoTicketSellerOptions();
+
+    @Query(value = "SELECT staffId, staffName FROM staff WHERE isActive = 1 AND staffPosition IN ('ATTENDANT', 'TICKET_STAFF') ORDER BY staffName", nativeQuery = true)
+    List<CargoTicketStaffOptionProjection> findCargoTicketHandlerOptions();
+
+    @Query(value = "SELECT staffId, staffName FROM staff WHERE isActive = 1 AND staffPosition = 'DRIVER' ORDER BY staffName", nativeQuery = true)
+    List<CargoTicketStaffOptionProjection> findCargoTicketDriverOptions();
+
+    boolean existsByStaffIdAndIsActiveTrueAndStaffPosition(int staffId, String staffPosition);
+
+    boolean existsByStaffIdAndIsActiveTrueAndStaffPositionIn(int staffId, java.util.Collection<String> positions);
     @Query(value = """
                 SELECT s.staffName AS staffName
                 FROM staff s
