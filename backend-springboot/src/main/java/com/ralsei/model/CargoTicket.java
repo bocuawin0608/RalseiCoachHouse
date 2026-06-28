@@ -27,8 +27,8 @@ public class CargoTicket extends BaseEntity {
     @Column(name = "cargoTicketId")
     private int cargoTicketId;
 
-    @Column(name = "tripId", nullable = false)
-    private int tripId;
+    @Column(name = "tripId")
+    private Integer tripId;
 
     @Column(name = "customerId")
     private Integer customerId;
