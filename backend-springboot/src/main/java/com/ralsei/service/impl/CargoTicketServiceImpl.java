@@ -181,10 +181,10 @@ public class CargoTicketServiceImpl implements CargoTicketService {
         ticket.setPickupStopId(request.getPickupStopId());
         ticket.setDropoffStopId(request.getDropoffStopId());
         ticket.setStatus(request.getStatus());
-        ticket.setSoldBy(request.getSoldBy());
-        ticket.setLoadedBy(request.getLoadedBy());
-        ticket.setUnloadedBy(request.getUnloadedBy());
-        ticket.setDeliveredBy(request.getDeliveredBy());
+        ticket.setSoldBy(staffRepository.findById(request.getSoldBy()).orElse(null));
+        ticket.setLoadedBy(request.getLoadedBy() != null ? staffRepository.findById(request.getLoadedBy()).orElse(null) : null);
+        ticket.setUnloadedBy(request.getUnloadedBy() != null ? staffRepository.findById(request.getUnloadedBy()).orElse(null) : null);
+        ticket.setDeliveredBy(request.getDeliveredBy() != null ? staffRepository.findById(request.getDeliveredBy()).orElse(null) : null);
     }
 
     private String trimToNull(String value) {
@@ -213,10 +213,10 @@ public class CargoTicketServiceImpl implements CargoTicketService {
                 .pickupStopId(ticket.getPickupStopId())
                 .dropoffStopId(ticket.getDropoffStopId())
                 .status(ticket.getStatus())
-                .soldBy(ticket.getSoldBy())
-                .loadedBy(ticket.getLoadedBy())
-                .unloadedBy(ticket.getUnloadedBy())
-                .deliveredBy(ticket.getDeliveredBy())
+                .soldBy(ticket.getSoldBy() != null ? ticket.getSoldBy().getStaffId() : 0)
+                .loadedBy(ticket.getLoadedBy() != null ? ticket.getLoadedBy().getStaffId() : null)
+                .unloadedBy(ticket.getUnloadedBy() != null ? ticket.getUnloadedBy().getStaffId() : null)
+                .deliveredBy(ticket.getDeliveredBy() != null ? ticket.getDeliveredBy().getStaffId() : null)
                 .createdAt(ticket.getCreatedAt())
                 .updatedAt(ticket.getUpdatedAt())
                 .build();
