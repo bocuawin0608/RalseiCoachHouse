@@ -16,9 +16,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import com.ralsei.dto.request.passengerbooking.BookingConfirmRequest;
 import com.ralsei.dto.request.passengerbooking.PriceCalculationRequest;
 import com.ralsei.dto.request.passengerbooking.SeatLockRequest;
+import com.ralsei.dto.response.passengerbooking.BookingConfirmResponse;
+import com.ralsei.dto.response.passengerbooking.BookingPaymentPageResponse;
 import com.ralsei.dto.response.passengerbooking.PriceCalculationResponse;
 import com.ralsei.dto.response.passengerbooking.SeatLockResponse;
 import com.ralsei.dto.response.passengerbooking.Step2InitResponse;
@@ -100,5 +104,39 @@ public class PassengerBookingController {
             request.voucherId()
         );
         return ResponseEntity.ok(bookingService.calculatePrice(tripId, fullRequest, accessToken));
+    }
+
+    @PostMapping("/trips/{tripId}/confirm")
+    @PreAuthorize("isAnonymous() or hasRole('CUSTOMER')")
+    public ResponseEntity<BookingConfirmResponse> confirmBooking(
+        @PathVariable @Min(value = 1, message = "ID của Chuyến phải lớn hơn 0.") Integer tripId,
+        @Valid @RequestBody BookingConfirmRequest request,
+        @RequestHeader("X-Booking-Session") String holdToken,
+        @RequestHeader(value ="Authorization", required=false) String accessToken
+    ) {
+        return ResponseEntity.ok(bookingService.confirmBooking(tripId, request, holdToken, accessToken));
+    }
+
+    @GetMapping("/payments/{transactionId}")
+    @PreAuthorize("isAnonymous() or hasRole('CUSTOMER')")
+    public ResponseEntity<BookingPaymentPageResponse> getPaymentPage(
+        @PathVariable String transactionId
+    ) {
+        bookingService.expirePendingPaymentIfOverdue(transactionId);
+        return ResponseEntity.ok(bookingService.getPaymentPage(transactionId));
+    }
+
+    @GetMapping(value = "/payments/{transactionId}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @PreAuthorize("isAnonymous() or hasRole('CUSTOMER')")
+    public SseEmitter streamPaymentStatus(@PathVariable String transactionId) {
+        bookingService.expirePendingPaymentIfOverdue(transactionId);
+        return bookingService.subscribePaymentStatus(transactionId);
+    }
+
+    @PostMapping("/payments/{transactionId}/expire")
+    @PreAuthorize("isAnonymous() or hasRole('CUSTOMER')")
+    public ResponseEntity<BookingPaymentPageResponse> expirePaymentIfOverdue(@PathVariable String transactionId) {
+        bookingService.expirePendingPaymentIfOverdue(transactionId);
+        return ResponseEntity.ok(bookingService.getPaymentPage(transactionId));
     }
 }
