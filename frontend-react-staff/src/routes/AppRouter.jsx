@@ -14,6 +14,7 @@ import { coachRoutes } from '../features/coaches';
 import { voucherRoutes } from '../features/vouchers';
 import { cargoRoutes } from '../features/cargo';
 import { tripRoutes } from '../features/trip';
+import { cargoTicketRoutes } from '../features/cargoTickets';
 
 const AppRouter = () => {
     return (
@@ -49,6 +50,9 @@ const AppRouter = () => {
                     <Route element={<DesktopLayout />}> 
                         <Route path="ticket/sell" element={<div>Bán vé</div>} />
                         <Route path="ticket/history" element={<div>Lịch sử bán</div>} />
+                        <Route path="ticket">
+                            {cargoTicketRoutes}
+                        </Route>
                     </Route>
                 </Route>
 
