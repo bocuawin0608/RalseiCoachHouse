@@ -101,5 +101,5 @@ public class CargoTicket extends BaseEntity {
     private List<Payment> payments;
 
     @OneToMany(mappedBy = "cargoTicket", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<CargoTicketDetail> cargoTicketDetails;<<<<<<<HEAD
-}=======}>>>>>>>d31984cd36f8aef30f907d723f5631eca5e2e6b1
+    private List<CargoTicketDetail> cargoTicketDetails;
+}
