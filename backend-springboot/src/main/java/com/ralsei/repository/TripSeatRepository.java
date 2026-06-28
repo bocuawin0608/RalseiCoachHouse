@@ -3,6 +3,7 @@ package com.ralsei.repository;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -28,4 +29,24 @@ public interface TripSeatRepository extends JpaRepository<TripSeat, Integer> {
 
     @Query(value = "SELECT ts.tripSeatId FROM TripSeat ts WHERE ts.trip.tripId = :tripId AND ts.status = :status")
     public List<Integer> findTripSeatIdsByTripIdAndStatus(@Param("tripId") Integer tripId, @Param("status") TripSeatStatus status);
+
+    @Query("""
+        SELECT ts
+        FROM TripSeat ts
+        JOIN FETCH ts.seat
+        WHERE ts.trip.tripId = :tripId
+        AND ts.tripSeatId IN :tripSeatIds
+    """)
+    List<TripSeat> findByTripIdAndTripSeatIdInWithSeat(@Param("tripId") Integer tripId,
+                                                       @Param("tripSeatIds") List<Integer> tripSeatIds);
+
+    @Modifying
+    @Query("""
+        UPDATE TripSeat ts
+        SET ts.status = :status
+        WHERE ts.tripSeatId IN :tripSeatIds
+    """)
+    int updateStatusByTripSeatIds(@Param("tripSeatIds") List<Integer> tripSeatIds,
+                                  @Param("status") TripSeatStatus status);
+
 }

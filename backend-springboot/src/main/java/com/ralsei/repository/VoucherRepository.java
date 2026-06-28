@@ -8,6 +8,7 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -57,4 +58,12 @@ public interface VoucherRepository extends JpaRepository<Voucher, Integer> {
         AND v.minOrderValue <= :currentOrderValue
     """)
     Voucher getEligibleVoucher(@Param("voucherId") Integer voucherId, @Param("currentOrderValue") BigDecimal currentOrderValue);
+
+    @Modifying
+    @Query("""
+        UPDATE Voucher v SET v.usedCount = v.usedCount + 1 
+        WHERE v.voucherId = :id AND v.usedCount < v.usageLimit
+        AND CURRENT_TIMESTAMP BETWEEN v.startEffectiveDate AND v.endEffectiveDate
+    """)
+    int incrementUsedCountIfAvailable(@Param("id") Integer voucherId);
 }

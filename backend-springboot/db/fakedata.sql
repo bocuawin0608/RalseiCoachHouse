@@ -543,7 +543,7 @@ BEGIN
         );
 
         INSERT INTO [payment] (passengerTicketId, cargoTicketId, amount, paymentMethod, transactionId, [status], paymentTime)
-        VALUES (@NewPId, NULL, @CalculatedTicketPrice, 'VNPAY', 'TXN_P_' + CAST(@TicketIdx AS VARCHAR(5)), CASE WHEN @TicketStatus = 'CONFIRMED' THEN 'COMPLETED' ELSE 'PENDING' END, CASE WHEN @TicketStatus = 'CONFIRMED' THEN GETDATE() ELSE NULL END);
+        VALUES (@NewPId, NULL, @CalculatedTicketPrice, 'SEPAY', 'TXN_P_' + CAST(@TicketIdx AS VARCHAR(5)), CASE WHEN @TicketStatus = 'CONFIRMED' THEN 'COMPLETED' ELSE 'PENDING' END, CASE WHEN @TicketStatus = 'CONFIRMED' THEN GETDATE() ELSE NULL END);
     END
     
     SET @TicketIdx = @TicketIdx + 1;
