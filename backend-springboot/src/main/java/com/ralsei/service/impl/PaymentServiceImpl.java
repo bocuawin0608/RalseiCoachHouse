@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ralsei.dto.request.payment.PaymentCheckoutRequest;
 import com.ralsei.dto.request.sePay.SepayWebhookRequest;
 import com.ralsei.exception.BusinessRuleException;
+import com.ralsei.model.CargoTicket;
 import com.ralsei.model.Payment;
 import com.ralsei.model.enums.PassengerTicketStatus;
 import com.ralsei.model.enums.TripSeatStatus;
@@ -25,6 +26,8 @@ import com.ralsei.repository.TripSeatRepository;
 import com.ralsei.service.PaymentService;
 import com.ralsei.service.TransactionIdGenerator;
 import com.ralsei.service.passengerbooking.PaymentSseService;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 import lombok.RequiredArgsConstructor;
 
@@ -40,6 +43,9 @@ public class PaymentServiceImpl implements PaymentService {
     private final TransactionIdGenerator transactionIdGenerator;
     private final PaymentSseService paymentSseService;
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
     @Override
     @Transactional
     public Payment initializePayment(PaymentCheckoutRequest request) {
@@ -47,9 +53,13 @@ public class PaymentServiceImpl implements PaymentService {
 
         String transactionId = transactionIdGenerator.generateUniqueTransactionId();
 
+        CargoTicket ct = request.getCargoTicketId() != null 
+                ? entityManager.getReference(CargoTicket.class, request.getCargoTicketId()) 
+                : null;
+
         Payment payment = Payment.builder()
                 .passengerTicketId(request.getPassengerTicketId())
-                .cargoTicketId(request.getCargoTicketId())
+                .cargoTicket(ct)
                 .amount(request.getAmount())
                 .paymentMethod(request.getPaymentMethod())
                 .transactionId(transactionId)

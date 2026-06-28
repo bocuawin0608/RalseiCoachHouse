@@ -7,6 +7,12 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.FetchType;
+import java.util.List;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,8 +33,9 @@ public class CargoTicket extends BaseEntity {
     @Column(name = "cargoTicketId")
     private int cargoTicketId;
 
-    @Column(name = "tripId", nullable = false)
-    private int tripId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tripId")
+    private Trip trip;
 
     @Column(name = "customerId")
     private Integer customerId;
@@ -75,16 +82,25 @@ public class CargoTicket extends BaseEntity {
     @Column(name = "status", nullable = false)
     private String status;
 
-    @Column(name = "soldBy", nullable = false)
-    private int soldBy;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "soldBy")
+    private Staff soldBy;
 
-    @Column(name = "loadedBy")
-    private Integer loadedBy;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "loadedBy")
+    private Staff loadedBy;
 
-    @Column(name = "unloadedBy")
-    private Integer unloadedBy;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "unloadedBy")
+    private Staff unloadedBy;
 
-    @Column(name = "deliveredBy")
-    private Integer deliveredBy;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "deliveredBy")
+    private Staff deliveredBy;
 
+    @OneToMany(mappedBy = "cargoTicket", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Payment> payments;
+
+    @OneToMany(mappedBy = "cargoTicket", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<CargoTicketDetail> cargoTicketDetails;
 }
