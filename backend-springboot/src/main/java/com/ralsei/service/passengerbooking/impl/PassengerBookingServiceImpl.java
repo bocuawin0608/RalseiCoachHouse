@@ -3,6 +3,7 @@ package com.ralsei.service.passengerbooking.impl;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -172,6 +173,19 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
             eligibleVouchers = availableVouchers.stream().filter(voucher -> !usedVoucherIds.contains(voucher.voucherId())).toList();
         }
         return eligibleVouchers;
+    }
+
+    private void validatePassengerChildBirthYears(List<PassengerDTO> passengers) {
+        int currentYear = Year.now().getValue();
+        for (PassengerDTO passenger : passengers) {
+            if (passenger.accompaniedChild() == null) {
+                continue;
+            }
+            Integer birthYear = passenger.accompaniedChild().birthYear();
+            if (birthYear == null || birthYear > currentYear) {
+                throw new BusinessRuleException("Năm sinh của bé không hợp lệ!");
+            }
+        }
     }
 
     @Transactional(readOnly = true)
@@ -346,7 +360,8 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
     @Transactional
     @Override
     public BookingConfirmResponse confirmBooking(Integer tripId, BookingConfirmRequest request, String holdToken, String accessToken) {
-        
+        validatePassengerChildBirthYears(request.passengers());
+
         CoreCalculationResult coreResult = performCorePriceCalculation(
             tripId, holdToken, request.pickupStopId(), 
             request.dropoffStopId(), request.voucherId(), accessToken

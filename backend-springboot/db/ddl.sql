@@ -558,7 +558,7 @@ CREATE TABLE [refund] (
     FOREIGN KEY ([paymentId]) REFERENCES [payment] ([paymentId]),
 
 	CONSTRAINT CK_Refund_Amount CHECK ([amount] > 0),
-    CONSTRAINT CK_Refund_Method CHECK ([refundMethod] IN ('VNPAY', 'BANK_TRANSFER', 'CASH')),
+    CONSTRAINT CK_Refund_Method CHECK ([refundMethod] IN ('SEPAY', 'BANK_TRANSFER', 'CASH')),
     CONSTRAINT CK_Refund_Status CHECK ([status] IN ('PENDING', 'COMPLETED', 'FAILED'))
 );
 

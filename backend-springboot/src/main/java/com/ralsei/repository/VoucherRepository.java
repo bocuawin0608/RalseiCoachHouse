@@ -66,4 +66,11 @@ public interface VoucherRepository extends JpaRepository<Voucher, Integer> {
         AND CURRENT_TIMESTAMP BETWEEN v.startEffectiveDate AND v.endEffectiveDate
     """)
     int incrementUsedCountIfAvailable(@Param("id") Integer voucherId);
+
+    @Modifying
+    @Query("""
+        UPDATE Voucher v SET v.usedCount = v.usedCount - 1
+        WHERE v.voucherId = :id AND v.usedCount > 0
+    """)
+    int decrementUsedCountIfApplied(@Param("id") Integer voucherId);
 }

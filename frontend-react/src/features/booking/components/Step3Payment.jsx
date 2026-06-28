@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Badge, Button, Card, Col, Row, Spinner } from 'react-bootstrap';
-import { BsCheckCircleFill, BsClipboard, BsClock, BsExclamationTriangleFill, BsInfoCircle, BsQrCode } from 'react-icons/bs';
+import { Alert, Button, Card, Col, Row, Spinner } from 'react-bootstrap';
+import { BsCheckCircleFill, BsClipboard, BsClock, BsExclamationTriangleFill } from 'react-icons/bs';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import { bookingApi } from '../api/bookingApi';
@@ -206,16 +206,6 @@ export default function Step3Payment() {
                     <BsExclamationTriangleFill className="mt-1" />
                     <div>
                         Mã thanh toán đã hết hạn hoặc bị hủy. Ghế sẽ được giải phóng — vui lòng đặt lại vé nếu bạn chưa chuyển khoản.
-                    </div>
-                </Alert>
-            )}
-
-            {canPay && (
-                <Alert variant="info" className="rounded-3 border-0 shadow-sm d-flex gap-2 align-items-start">
-                    <BsInfoCircle className="mt-1" />
-                    <div>
-                        Trong thời gian còn lại, bạn có thể quét lại QR hoặc chuyển khoản thủ công nếu lần trước chưa thành công.
-                        Hệ thống sẽ tự cập nhật khi nhận được tiền.
                     </div>
                 </Alert>
             )}
