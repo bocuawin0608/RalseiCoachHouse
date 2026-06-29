@@ -39,7 +39,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
 
     @Override
     public PagedResponse<CargoTicketResponse> getAllCargoTickets(int page, int size) {
-        Page<CargoTicket> result = cargoTicketRepository.findAll(
+        Page<CargoTicket> result = cargoTicketRepository.findByIsActiveTrue(
                 PageRequest.of(page, size, Sort.by("cargoTicketId").descending()));
         return new PagedResponse<>(
                 result.map(this::mapToResponse).getContent(),
@@ -90,12 +90,22 @@ public class CargoTicketServiceImpl implements CargoTicketService {
 
     @Override
     @Transactional
-    public void deleteCargoTicket(int id) {
+    public void softDeleteCargoTicket(int id) {
         CargoTicket ticket = findByIdOrThrow(id);
         if (paymentRepository.existsByCargoTicketId(id)) {
             throw new BusinessRuleException("Không thể xóa vé hàng hóa đã có giao dịch thanh toán.");
         }
-        cargoTicketRepository.delete(ticket);
+        ticket.setActive(false);
+        cargoTicketRepository.save(ticket);
+    }
+
+    @Override
+    @Transactional
+    public void restoreCargoTicket(int id) {
+        CargoTicket ticket = cargoTicketRepository.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException("Không tìm thấy vé hàng hóa có ID là: " + id));
+        ticket.setActive(true);
+        cargoTicketRepository.save(ticket);
     }
 
     private void validateReferences(CargoTicketRequest request) {
@@ -160,7 +170,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
     }
 
     private CargoTicket findByIdOrThrow(int id) {
-        return cargoTicketRepository.findById(id).orElseThrow(
+        return cargoTicketRepository.findByCargoTicketIdAndIsActiveTrue(id).orElseThrow(
                 () -> new ResourceNotFoundException("Không tìm thấy vé hàng hóa có ID là: " + id));
     }
 

@@ -65,9 +65,15 @@ public class CargoTicketController {
         return ResponseEntity.ok(cargoTicketService.updateCargoTicket(id, request));
     }
 
-    @DeleteMapping("/{id:\\d+}")
-    public ResponseEntity<Void> deleteCargoTicket(@PathVariable @Min(1) int id) {
-        cargoTicketService.deleteCargoTicket(id);
+    @PutMapping("/{id:\\d+}/soft-delete")
+    public ResponseEntity<Void> softDeleteCargoTicket(@PathVariable @Min(1) int id) {
+        cargoTicketService.softDeleteCargoTicket(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id:\\d+}/restore")
+    public ResponseEntity<Void> restoreCargoTicket(@PathVariable @Min(1) int id) {
+        cargoTicketService.restoreCargoTicket(id);
         return ResponseEntity.noContent().build();
     }
 }
