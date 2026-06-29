@@ -92,7 +92,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
     @Transactional
     public void softDeleteCargoTicket(int id) {
         CargoTicket ticket = findByIdOrThrow(id);
-        if (paymentRepository.existsByCargoTicketId(id)) {
+        if (paymentRepository.existsByCargoTicket_CargoTicketId(id)) {
             throw new BusinessRuleException("Không thể xóa vé hàng hóa đã có giao dịch thanh toán.");
         }
         ticket.setActive(false);
