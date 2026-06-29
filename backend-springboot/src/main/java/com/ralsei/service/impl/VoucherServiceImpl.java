@@ -243,4 +243,10 @@ public class VoucherServiceImpl implements VoucherService {
     public int incrementUsedCountIfAvailable(Integer voucherId) {
         return voucherRepository.incrementUsedCountIfAvailable(voucherId);
     }
+
+    @Transactional
+    @Override
+    public int decrementUsedCountIfApplied(Integer voucherId) {
+        return voucherRepository.decrementUsedCountIfApplied(voucherId);
+    }
 }
