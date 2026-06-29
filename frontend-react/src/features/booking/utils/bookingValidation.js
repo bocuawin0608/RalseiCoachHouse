@@ -1,7 +1,7 @@
 export const BOOKING_VALIDATION = {
     FULL_NAME_REGEX: /^[\p{L}][\p{L}\s'.-]{1,99}$/u,
     PHONE_REGEX: /^0(3|5|7|8|9)[0-9]{8}$/,
-    EMAIL_REGEX: /^$|^[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}$/
+    EMAIL_REGEX: /^$|^[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}$/
 };
 
 export const getChildBirthYearMax = () => new Date().getFullYear();
