@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Card, Col, Row, Spinner } from 'react-bootstrap';
 import { BsCheckCircleFill, BsClipboard, BsClock, BsExclamationTriangleFill } from 'react-icons/bs';
 import { useDispatch, useSelector } from 'react-redux';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { bookingApi } from '../api/bookingApi';
 import { usePaymentSse } from '../hooks/usePaymentSse';
 import { setPaymentInfo, setPaymentStatus } from '../reducers/bookingSlice';
@@ -47,6 +47,7 @@ const buildQrUrl = (paymentInfo) => {
 
 export default function Step3Payment() {
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const { transactionId } = useParams();
     const storedPaymentInfo = useSelector((state) => state.booking.paymentInfo);
 
@@ -161,6 +162,16 @@ export default function Step3Payment() {
         expirePayment();
     }, [dispatch, isExpired, isPending, transactionId]);
 
+    useEffect(() => {
+        if (isCompleted) {
+            const timer = setTimeout(() => {
+                navigate('/'); 
+            }, 15000);
+
+            return () => clearTimeout(timer); 
+        }
+    }, [isCompleted, navigate]);
+
     usePaymentSse(transactionId, {
         enabled: Boolean(transactionId && isPending && !isExpired),
         onStatusChange: applyPaymentStatus,
@@ -197,7 +208,11 @@ export default function Step3Payment() {
             {isCompleted && (
                 <Alert variant="success" className="rounded-3 border-0 shadow-sm d-flex gap-2 align-items-center">
                     <BsCheckCircleFill />
-                    Thanh toán thành công. Hệ thống đã xác nhận vé của bạn.
+                    <div>
+                        Thanh toán thành công. Hệ thống đã xác nhận vé của bạn. 
+                        <br />
+                        <strong>Hệ thống sẽ tự động điều hướng sang trang chủ sau 15 giây...</strong>
+                    </div>
                 </Alert>
             )}
 
