@@ -15,5 +15,5 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
 
     boolean existsByTransactionId(String transactionId);
 
-    boolean existsByCargoTicketId(Integer cargoTicketId);
+    boolean existsByCargoTicket_CargoTicketId(Integer cargoTicketId);
 }
