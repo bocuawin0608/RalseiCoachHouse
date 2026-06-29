@@ -15,7 +15,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ralsei.dto.request.payment.PaymentCheckoutRequest;
 import com.ralsei.dto.request.sePay.SepayWebhookRequest;
 import com.ralsei.exception.BusinessRuleException;
+import com.ralsei.model.PassengerTicket;
 import com.ralsei.model.Payment;
+import com.ralsei.model.enums.PassengerTicketDetailStatus;
 import com.ralsei.model.enums.PassengerTicketStatus;
 import com.ralsei.model.enums.TripSeatStatus;
 import com.ralsei.repository.PassengerTicketDetailRepository;
@@ -24,10 +26,13 @@ import com.ralsei.repository.PaymentRepository;
 import com.ralsei.repository.TripSeatRepository;
 import com.ralsei.service.PaymentService;
 import com.ralsei.service.TransactionIdGenerator;
+import com.ralsei.service.VoucherService;
 import com.ralsei.service.passengerbooking.PaymentSseService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
@@ -39,6 +44,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final ObjectMapper objectMapper;
     private final TransactionIdGenerator transactionIdGenerator;
     private final PaymentSseService paymentSseService;
+    private final VoucherService voucherService;
 
     @Override
     @Transactional
@@ -97,7 +103,15 @@ public class PaymentServiceImpl implements PaymentService {
                 }
 
                 paymentRepository.save(payment);
-                completePaymentTarget(payment);
+
+                if (payment.getPassengerTicketId() != null) {
+                    completePassengerPaymentTarget(payment);
+                } else if (payment.getCargoTicketId() != null) {
+                    completeCargoPaymentTarget(payment); 
+                } else {
+                    throw new BusinessRuleException("Dữ liệu thanh toán không hợp lệ!");
+                }
+
                 paymentSseService.sendStatusUpdate(transactionId, payment.getStatus());
 
             } else {
@@ -126,7 +140,15 @@ public class PaymentServiceImpl implements PaymentService {
         if (!"COMPLETED".equals(payment.getStatus())) {
             payment.setStatus("FAILED");
             paymentRepository.save(payment);
-            cancelPaymentTarget(payment);
+            
+            if (payment.getPassengerTicketId() != null) {
+                cancelPassengerPaymentTarget(payment);
+            } else if (payment.getCargoTicketId() != null) {
+                cancelCargoPaymentTarget(payment); 
+            } else {
+                throw new BusinessRuleException("Dữ liệu thanh toán không hợp lệ!");
+            }
+
             paymentSseService.sendStatusUpdate(transactionId, payment.getStatus());
         }
     }
@@ -148,18 +170,19 @@ public class PaymentServiceImpl implements PaymentService {
         }
     }
 
-    private void completePaymentTarget(Payment payment) {
-        if (payment.getPassengerTicketId() == null) {
-            return;
-        }
-
-        passengerTicketRepository.updateStatusIfCurrent(
+    private void completePassengerPaymentTarget(Payment payment) {
+        int rowsAffected = passengerTicketRepository.updateStatusIfCurrent(
                 payment.getPassengerTicketId(),
                 PassengerTicketStatus.PENDING,
                 PassengerTicketStatus.CONFIRMED);
+
+        if (rowsAffected == 0) {
+            throw new BusinessRuleException("Thao tác thất bại: Vé không tồn tại hoặc trạng thái vé đã thay đổi trước đó!");
+        }
+
         passengerTicketDetailRepository.updateStatusByPassengerTicketId(
                 payment.getPassengerTicketId(),
-                PassengerTicketStatus.CONFIRMED.name());
+                PassengerTicketDetailStatus.CONFIRMED.name());
 
         List<Integer> tripSeatIds = passengerTicketDetailRepository
                 .findTripSeatIdsByPassengerTicketId(payment.getPassengerTicketId());
@@ -168,23 +191,42 @@ public class PaymentServiceImpl implements PaymentService {
         }
     }
 
-    private void cancelPaymentTarget(Payment payment) {
-        if (payment.getPassengerTicketId() == null) {
-            return;
-        }
-
+    private void cancelPassengerPaymentTarget(Payment payment) {
         passengerTicketRepository.updateStatusIfCurrent(
                 payment.getPassengerTicketId(),
                 PassengerTicketStatus.PENDING,
                 PassengerTicketStatus.CANCELLED);
+
         passengerTicketDetailRepository.updateStatusByPassengerTicketId(
                 payment.getPassengerTicketId(),
-                "EXPIRED");
+                PassengerTicketDetailStatus.EXPIRED.name());
 
         List<Integer> tripSeatIds = passengerTicketDetailRepository
                 .findTripSeatIdsByPassengerTicketId(payment.getPassengerTicketId());
         if (!tripSeatIds.isEmpty()) {
             tripSeatRepository.updateStatusByTripSeatIds(tripSeatIds, TripSeatStatus.AVAILABLE);
         }
+
+        passengerTicketRepository.findById(payment.getPassengerTicketId()).ifPresent(ticket -> {
+            releaseVoucherUsageIfApplied(ticket);
+        });
+    }
+
+    private void releaseVoucherUsageIfApplied(PassengerTicket ticket) {
+        if (ticket.getVoucherId() == null || ticket.getVoucherCodeSnapshot() == null) {
+            return;
+        }
+        int rowsUpdated = voucherService.decrementUsedCountIfApplied(ticket.getVoucherId());
+        if (rowsUpdated == 0) {
+            log.warn("Không thể hoàn lượt voucher id={} khi hủy vé {}", ticket.getVoucherId(), ticket.getTicketCode());
+        }
+    }
+
+    private void completeCargoPaymentTarget(Payment payment) {
+        return;
+    }
+
+    private void cancelCargoPaymentTarget(Payment payment) {
+        return;
     }
 }

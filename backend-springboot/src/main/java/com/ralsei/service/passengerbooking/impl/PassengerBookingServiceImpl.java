@@ -3,6 +3,7 @@ package com.ralsei.service.passengerbooking.impl;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -84,7 +85,7 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
     private final JwtService jwtService;
 
     private static final long BROWSING_HOLD_TTL_SECONDS = 600;
-    private static final long PAYMENT_HOLD_TTL_SECONDS = 300;
+    private static final long PAYMENT_HOLD_TTL_SECONDS = 60;
     private static final String BANK_TRANSFER_METHOD = "SEPAY";
 
     @Value("${sepay.bank.account}")
@@ -157,23 +158,6 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
         return releaseSeats(tripSeatIds, holdToken);
     }
 
-    private List<CoachStopDropdownDTO> getStopPointDropdown(List<RouteStop> stopPointList, String province){
-        return stopPointList.stream().filter(stop -> stop.getCoachStop().getCity().trim().equalsIgnoreCase(province)).map(stop -> new CoachStopDropdownDTO(
-            stop.getCoachStop().getStopPointId(), stop.getCoachStop().getStopPointName()
-        )).toList();
-    }
-
-    private List<VoucherDTO> getEligibleVouchers(String accessToken) {
-        Integer accountId = jwtService.extractAccountId(accessToken);
-        List<VoucherDTO> eligibleVouchers = new ArrayList<>();
-        if(accountId != null) {
-            List<VoucherDTO> availableVouchers = voucherService.getEligibleVouchers();
-            Set<Integer> usedVoucherIds = ticketRepo.getUsedVoucherIdsByAccountId(accountId, PassengerTicketStatus.CANCELLED);
-            eligibleVouchers = availableVouchers.stream().filter(voucher -> !usedVoucherIds.contains(voucher.voucherId())).toList();
-        }
-        return eligibleVouchers;
-    }
-
     @Transactional(readOnly = true)
     @Override
     public Step2InitResponse getStep2InitData(Integer tripId, String holdToken, String accessToken) {
@@ -219,228 +203,42 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
         );
     }
 
-    private record CoreCalculationResult(
-        List<Integer> lockedSeatIds,
-        BigDecimal basePrice,
-        BigDecimal baseSurcharge,
-        BigDecimal totalRawPrice,
-        BigDecimal discountAmount,
-        BigDecimal totalFinalPrice,
-        CoachStop pickupStop,
-        CoachStop dropoffStop,
-        Voucher voucherToBeUsed,
-        Map<Integer, TripSeat> tripSeatMap
-    ) {}
-
-    private CoreCalculationResult performCorePriceCalculation(
-        Integer tripId, String holdToken, Integer pickupStopId, 
-        Integer dropoffStopId, Integer voucherId, String accessToken
-    ) {
-        Integer routeId = tripRepo.findById(tripId).map(trip -> trip.getRouteId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyến xe có ID là: " + tripId));
-        //TODO: check kỹ hơn tripId nào với status nào, departure time (now-8?) nào còn đc đặt vé
-
-        List<Integer> tripSeatIdsBooking = seatHoldService.getTripSeatIdsByToken(holdToken);
-        if (tripSeatIdsBooking == null || tripSeatIdsBooking.isEmpty()) {
-            throw new BusinessRuleException("Phiên giữ ghế đã hết hạn hoặc không hợp lệ. Vui lòng chọn lại ghế!");
-        }
-
-        List<TripSeat> bookedSeats = tripSeatRepo.findByTripIdAndTripSeatIdInWithSeat(tripId, tripSeatIdsBooking);
-
-        if (bookedSeats.size() != tripSeatIdsBooking.size()) {
-            throw new BusinessRuleException("Có ghế ngồi không hợp lệ hoặc đã bị thay đổi! Vui lòng chọn lại!");
-        }
-
-        // Kiểm tra trạng thái AVAILABLE từ DB (vì trạng thái LOCK chỉ lưu ở Redis)
-        boolean isAllAvailable = bookedSeats.stream()
-            .allMatch(seat -> TripSeatStatus.AVAILABLE.equals(seat.getStatus()));
-        if (!isAllAvailable) {
-            throw new BusinessRuleException("Có ghế ngồi đã được đặt bởi người khác! Vui lòng chọn lại!");
-        }
-
-        BigDecimal basePrice = bookedSeats.get(0).getPrice();
-        if (basePrice == null) {
-            throw new ResourceNotFoundException("Không tìm thấy thông tin giá của ghế này!");
-        }
-
-        BigDecimal baseSurcharge = BigDecimal.ZERO;
-        CoachStop pickupStop = null;
-        CoachStop dropoffStop = null;
-
-        if (pickupStopId != null && dropoffStopId != null) {
-            if (pickupStopId.equals(dropoffStopId)) {
-                throw new BusinessRuleException("Điểm đón và điểm trả không được trùng nhau!");
-            }
-            
-            RouteStop pickupRouteStop = routeStopRepo.findByRouteIdAndStopPointId(routeId, pickupStopId)
-                .orElseThrow(() -> new BusinessRuleException("Điểm đón không hợp lệ hoặc không thuộc tuyến đường này!"));
-                
-            RouteStop dropoffRouteStop = routeStopRepo.findByRouteIdAndStopPointId(routeId, dropoffStopId)
-                .orElseThrow(() -> new BusinessRuleException("Điểm trả không hợp lệ hoặc không thuộc tuyến đường này!"));
-
-            if (pickupRouteStop.getStopOrder() >= dropoffRouteStop.getStopOrder()) {
-                throw new BusinessRuleException("Lộ trình không hợp lệ: Điểm đón phải nằm trước điểm trả!");
-            }
-
-            pickupStop = pickupRouteStop.getCoachStop();
-            dropoffStop = dropoffRouteStop.getCoachStop();
-
-            if (pickupStop.getSurcharge() != null) {
-                baseSurcharge = baseSurcharge.add(pickupStop.getSurcharge());
-            }
-            if (dropoffStop.getSurcharge() != null) {
-                baseSurcharge = baseSurcharge.add(dropoffStop.getSurcharge());
-            }
-        }
-
-        BigDecimal totalRawPrice = basePrice.add(baseSurcharge).multiply(BigDecimal.valueOf(tripSeatIdsBooking.size()));
-
-        BigDecimal discountAmount = BigDecimal.ZERO;
-        Voucher voucherToBeUsed = null;
-
-        if (voucherId != null) {
-            voucherToBeUsed = voucherService.getEligibleVoucher(voucherId, totalRawPrice);
-            if (voucherToBeUsed == null) {
-                throw new BusinessRuleException("Mã giảm giá không hợp lệ hoặc không đáp ứng điều kiện đơn hàng!");
-            }
-
-            Integer accountId = jwtService.extractAccountId(accessToken);
-            if (accountId != null) {
-                Set<Integer> usedVoucherIds = ticketRepo.getUsedVoucherIdsByAccountId(accountId, PassengerTicketStatus.CANCELLED);
-                if (usedVoucherIds.contains(voucherToBeUsed.getVoucherId())) {
-                    throw new BusinessRuleException("Không thành công, voucher này đã được sử dụng!");
-                }
-            }
-
-            discountAmount = voucherToBeUsed.getDiscountType().equals(VoucherType.FIXED.getValue()) 
-                ? voucherToBeUsed.getDiscountValue() 
-                : totalRawPrice.multiply(voucherToBeUsed.getDiscountValue()).divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
-            
-            if (voucherToBeUsed.getMaxDiscountValue() != null && discountAmount.compareTo(voucherToBeUsed.getMaxDiscountValue()) > 0) {
-                discountAmount = voucherToBeUsed.getMaxDiscountValue();
-            }
-            if (discountAmount.compareTo(totalRawPrice) > 0) {
-                discountAmount = totalRawPrice;
-            }
-        }
-        
-        BigDecimal finalPrice = totalRawPrice.subtract(discountAmount).setScale(0, RoundingMode.HALF_UP);
-
-        Map<Integer, TripSeat> tripSeatMap = bookedSeats.stream()
-            .collect(Collectors.toMap(tripSeat -> tripSeat.getTripSeatId(), Function.identity()));
-
-        return new CoreCalculationResult(
-            tripSeatIdsBooking, 
-            basePrice, 
-            baseSurcharge, 
-            totalRawPrice, 
-            discountAmount, 
-            finalPrice.compareTo(BigDecimal.ZERO) >= 0 ? finalPrice : BigDecimal.ZERO, 
-            pickupStop, 
-            dropoffStop, 
-            voucherToBeUsed,
-            tripSeatMap
-        );
-    }
-
     @Transactional
     @Override
     public BookingConfirmResponse confirmBooking(Integer tripId, BookingConfirmRequest request, String holdToken, String accessToken) {
-        
+        validatePassengerChildBirthYears(request.passengers());
+
         CoreCalculationResult coreResult = performCorePriceCalculation(
             tripId, holdToken, request.pickupStopId(), 
             request.dropoffStopId(), request.voucherId(), accessToken
         );
 
-        Integer customerId = null;
-        if (accessToken != null && !accessToken.isBlank()) {
-            Integer accountId = jwtService.extractAccountId(accessToken);
-            if (accountId != null) {
-                customerId = customerRepo.findByAccountId(accountId)
-                    .map(customer -> customer.getCustomerId())
-                    .orElse(null);
-            }
-        }
+        validateRequestSeatsMatchLockedSeats(request, coreResult.lockedSeatIds());
 
-        String voucherCodeSnapshot = null;
-        if (coreResult.voucherToBeUsed() != null && coreResult.discountAmount().compareTo(BigDecimal.ZERO) > 0) {
-            int rowsUpdated = voucherService.incrementUsedCountIfAvailable(coreResult.voucherToBeUsed().getVoucherId());
-            if (rowsUpdated == 0) {
-                throw new BusinessRuleException("Voucher vừa hết lượt sử dụng! Vui lòng chọn lại.");
-            }
-            voucherCodeSnapshot = coreResult.voucherToBeUsed().getVoucherCode();
-        }
+        String voucherCodeSnapshot = processVoucherUsage(coreResult.voucherToBeUsed());
 
-        Set<Integer> lockedSeatIds = Set.copyOf(coreResult.lockedSeatIds());
-        Set<Integer> requestedSeatIds = request.passengers().stream()
-            .map(passenger -> passenger.tripSeatId())
-            .collect(Collectors.toSet());
-        if (requestedSeatIds.size() != request.passengers().size() || !requestedSeatIds.equals(lockedSeatIds)) {
-            throw new BusinessRuleException("Danh sách hành khách không khớp với ghế đang giữ!");
-        }
+        Integer customerId = resolveCustomerId(accessToken);
 
-        Map<Integer, TripSeat> tripSeatById = coreResult.tripSeatMap();
+        PassengerTicket ticket = saveMasterTicket(tripId, request, coreResult, customerId, voucherCodeSnapshot);
 
-        String ticketCode = ticketCodeGenerator.generatePassengerTicketCode(); 
-        PassengerTicket ticket = PassengerTicket.builder()
-            .customerId(customerId)
-            .tripId(tripId)
-            .ticketCode(ticketCode)
-            .totalPrice(coreResult.totalFinalPrice())
-            .voucherId(request.voucherId())
-            .pickupStopId(coreResult.pickupStop().getStopPointId())
-            .dropoffStopId(coreResult.dropoffStop().getStopPointId())
-            .pickupStopName(coreResult.pickupStop().getStopPointName())
-            .dropoffStopName(coreResult.dropoffStop().getStopPointName())
-            .voucherCodeSnapshot(voucherCodeSnapshot)
-            .status(PassengerTicketStatus.PENDING)
-            .build();
-        PassengerTicket savedTicket = ticketRepo.save(ticket);
+        saveTicketDetailsAndChildrenInBatch(ticket.getPassengerTicketId(), request.passengers(), coreResult);
 
-        LocalDateTime expiredAt = LocalDateTime.now().plusSeconds(PAYMENT_HOLD_TTL_SECONDS); 
-        BigDecimal pricePerSeat = coreResult.basePrice().add(coreResult.baseSurcharge());
-
-        for (PassengerDTO passenger : request.passengers()) {
-            PassengerTicketDetail detail = PassengerTicketDetail.builder()
-                .passengerTicketId(savedTicket.getPassengerTicketId())
-                .tripSeatId(passenger.tripSeatId())
-                .seatCodeSnapshot(tripSeatById.get(passenger.tripSeatId()).getSeat().getSeatCode())
-                .fullName(passenger.fullname())
-                .phone(passenger.phone())
-                .email(passenger.email())
-                .price(pricePerSeat)
-                .status(PassengerTicketDetailStatus.PENDING.name())
-                .expiredAt(expiredAt)
-                .build();
-            PassengerTicketDetail savedDetail = ticketDetailRepo.save(detail);
-
-            if (passenger.accompaniedChild() != null) {
-                AccompaniedChild child = AccompaniedChild.builder()
-                    .ticketDetailId(savedDetail.getTicketDetailId())
-                    .fullname(passenger.accompaniedChild().fullname())
-                    .birthYear(passenger.accompaniedChild().birthYear())
-                    .build();
-                accompaniedChildRepo.save(child);
-            }
-        }
-
-        PaymentCheckoutRequest paymentRequest = new PaymentCheckoutRequest(
-            savedTicket.getPassengerTicketId(),
+        Payment payment = paymentService.initializePayment(new PaymentCheckoutRequest(
+            ticket.getPassengerTicketId(),
             null, // cargoTicketId = null
             coreResult.totalFinalPrice(),
             BANK_TRANSFER_METHOD
-        );
-        Payment payment = paymentService.initializePayment(paymentRequest);
+        ));
 
         seatHoldService.extendLock(coreResult.lockedSeatIds(), holdToken, PAYMENT_HOLD_TTL_SECONDS);
 
         return new BookingConfirmResponse(
-            savedTicket.getTicketCode(),
+            ticket.getTicketCode(),
             payment.getTransactionId(),
             coreResult.totalFinalPrice(),
             sepayBankAccount, 
             sepayBankName,
-            expiredAt
+            LocalDateTime.now().plusSeconds(PAYMENT_HOLD_TTL_SECONDS)
         );
     }
 
@@ -483,25 +281,18 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
     @Transactional
     @Override
     public void expirePendingPaymentIfOverdue(String transactionId) {
-        Payment payment;
         try {
-            payment = paymentService.getPaymentByTransactionId(transactionId);
+            Payment payment = paymentService.getPaymentByTransactionId(transactionId);
+            if (!"PENDING".equals(payment.getStatus()) || payment.getPassengerTicketId() == null) return;
+
+            ticketDetailRepo.findByPassengerTicketId(payment.getPassengerTicketId())
+                .stream().findFirst().ifPresent(detail -> {
+                    if (detail.getExpiredAt() != null && LocalDateTime.now().isAfter(detail.getExpiredAt())) {
+                        paymentService.cancelPayment(transactionId);
+                    }
+                });
         } catch (IllegalArgumentException ex) {
-            return;
-        }
-
-        if (!"PENDING".equals(payment.getStatus()) || payment.getPassengerTicketId() == null) {
-            return;
-        }
-
-        List<PassengerTicketDetail> details = ticketDetailRepo.findByPassengerTicketId(payment.getPassengerTicketId());
-        if (details.isEmpty()) {
-            return;
-        }
-
-        LocalDateTime expiredAt = details.get(0).getExpiredAt();
-        if (expiredAt != null && LocalDateTime.now().isAfter(expiredAt)) {
-            paymentService.cancelPayment(transactionId);
+            log.warn("Không thể expire transaction: {}", transactionId);
         }
     }
 
@@ -511,6 +302,234 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
         SseEmitter emitter = paymentSseService.createConnection(transactionId);
         paymentSseService.sendStatusUpdate(transactionId, payment.getStatus());
         return emitter;
+    }
+
+    private record CoreCalculationResult(
+        List<Integer> lockedSeatIds,
+        BigDecimal basePrice,
+        BigDecimal baseSurcharge,
+        BigDecimal totalRawPrice,
+        BigDecimal discountAmount,
+        BigDecimal totalFinalPrice,
+        CoachStop pickupStop,
+        CoachStop dropoffStop,
+        Voucher voucherToBeUsed,
+        Map<Integer, TripSeat> tripSeatMap
+    ) {}
+    
+    private CoreCalculationResult performCorePriceCalculation(
+        Integer tripId, String holdToken, Integer pickupStopId, 
+        Integer dropoffStopId, Integer voucherId, String accessToken
+    ) {
+        Integer routeId = tripRepo.findById(tripId).map(trip -> trip.getRouteId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyến xe có ID là: " + tripId));
+        //TODO: check kỹ hơn tripId nào với status nào, departure time (now-8?) nào còn đc đặt vé
+
+        List<Integer> lockedSeatIds = seatHoldService.getTripSeatIdsByToken(holdToken);
+        Map<Integer, TripSeat> tripSeatMap = validateAndFetchSeats(tripId, lockedSeatIds);
+        BigDecimal basePrice = tripSeatMap.values().iterator().next().getPrice();
+
+        RouteStopContext routeContext = calculateRouteSurcharge(routeId, pickupStopId, dropoffStopId);
+
+        BigDecimal totalRawPrice = basePrice.add(routeContext.surcharge)
+            .multiply(BigDecimal.valueOf(lockedSeatIds.size()));
+
+        DiscountContext discountContext = calculateDiscount(voucherId, totalRawPrice, accessToken);
+        
+        BigDecimal finalPrice = totalRawPrice.subtract(discountContext.discountAmount).setScale(0, RoundingMode.HALF_UP);
+
+        return new CoreCalculationResult(
+            lockedSeatIds, 
+            basePrice, 
+            routeContext.surcharge, 
+            totalRawPrice, 
+            discountContext.discountAmount, 
+            finalPrice.max(BigDecimal.ZERO), 
+            routeContext.pickupStop, 
+            routeContext.dropoffStop, 
+            discountContext.voucher,
+            tripSeatMap
+        );
+    }
+
+    private Map<Integer, TripSeat> validateAndFetchSeats(Integer tripId, List<Integer> tripSeatIdsBooking) {
+        if (tripSeatIdsBooking == null || tripSeatIdsBooking.isEmpty()) {
+            throw new BusinessRuleException("Phiên giữ ghế đã hết hạn hoặc không hợp lệ. Vui lòng chọn lại!");
+        }
+        List<TripSeat> bookedSeats = tripSeatRepo.findByTripIdAndTripSeatIdInWithSeat(tripId, tripSeatIdsBooking);
+        if (bookedSeats.size() != tripSeatIdsBooking.size()) {
+            throw new BusinessRuleException("Có ghế ngồi không hợp lệ hoặc đã bị thay đổi. Vui lòng chọn lại!");
+        }
+        if (!bookedSeats.stream().allMatch(seat -> TripSeatStatus.AVAILABLE.equals(seat.getStatus()))) {
+            throw new BusinessRuleException("Có ghế ngồi đã được đặt bởi người khác. Vui lòng chọn lại!");
+        }
+        if (bookedSeats.get(0).getPrice() == null) {
+            throw new ResourceNotFoundException("Không tìm thấy thông tin giá của ghế này!");
+        }
+        return bookedSeats.stream().collect(Collectors.toMap(tripSeat -> tripSeat.getTripSeatId(), Function.identity()));
+    }
+
+    private record RouteStopContext(CoachStop pickupStop, CoachStop dropoffStop, BigDecimal surcharge) {}
+
+    private RouteStopContext calculateRouteSurcharge(Integer routeId, Integer pickupStopId, Integer dropoffStopId) {
+        if (pickupStopId == null || dropoffStopId == null) {
+            return new RouteStopContext(null, null, BigDecimal.ZERO);
+        }
+        if (pickupStopId.equals(dropoffStopId)) {
+            throw new BusinessRuleException("Điểm đón và điểm trả không được trùng nhau!");
+        }
+        
+        RouteStop pickup = routeStopRepo.findByRouteIdAndStopPointId(routeId, pickupStopId)
+            .orElseThrow(() -> new BusinessRuleException("Điểm đón không hợp lệ!"));
+        RouteStop dropoff = routeStopRepo.findByRouteIdAndStopPointId(routeId, dropoffStopId)
+            .orElseThrow(() -> new BusinessRuleException("Điểm trả không hợp lệ!"));
+
+        if (pickup.getStopOrder() >= dropoff.getStopOrder()) {
+            throw new BusinessRuleException("Lộ trình không hợp lệ: Điểm đón phải nằm trước điểm trả!");
+        }
+
+        BigDecimal surcharge = BigDecimal.ZERO;
+        if (pickup.getCoachStop().getSurcharge() != null) surcharge = surcharge.add(pickup.getCoachStop().getSurcharge());
+        if (dropoff.getCoachStop().getSurcharge() != null) surcharge = surcharge.add(dropoff.getCoachStop().getSurcharge());
+
+        return new RouteStopContext(pickup.getCoachStop(), dropoff.getCoachStop(), surcharge);
+    }
+
+    private record DiscountContext(Voucher voucher, BigDecimal discountAmount) {}
+
+    private DiscountContext calculateDiscount(Integer voucherId, BigDecimal totalRawPrice, String accessToken) {
+        if (voucherId == null) return new DiscountContext(null, BigDecimal.ZERO);
+
+        Voucher voucher = voucherService.getEligibleVoucher(voucherId, totalRawPrice);
+        if (voucher == null) {
+            throw new BusinessRuleException("Mã giảm giá không hợp lệ hoặc không đáp ứng điều kiện!");
+        }
+
+        Integer accountId = jwtService.extractAccountId(accessToken);
+        if (accountId != null && ticketRepo.getUsedVoucherIdsByAccountId(accountId, PassengerTicketStatus.CANCELLED).contains(voucherId)) {
+            throw new BusinessRuleException("Không thành công, voucher này đã được sử dụng!");
+        }
+
+        BigDecimal discount = voucher.getDiscountType().equals(VoucherType.FIXED.getValue()) 
+            ? voucher.getDiscountValue() 
+            : totalRawPrice.multiply(voucher.getDiscountValue()).divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
+        
+        if (voucher.getMaxDiscountValue() != null) discount = discount.min(voucher.getMaxDiscountValue());
+        
+        return new DiscountContext(voucher, discount.min(totalRawPrice));
+    }
+
+    private void saveTicketDetailsAndChildrenInBatch(Integer ticketId, List<PassengerDTO> passengers, CoreCalculationResult coreResult) {
+        LocalDateTime expiredAt = LocalDateTime.now().plusSeconds(PAYMENT_HOLD_TTL_SECONDS); 
+        BigDecimal pricePerSeat = coreResult.basePrice().add(coreResult.baseSurcharge());
+
+        List<PassengerTicketDetail> detailsToSave = passengers.stream().map(p -> 
+            PassengerTicketDetail.builder()
+                .passengerTicketId(ticketId)
+                .tripSeatId(p.tripSeatId())
+                .seatCodeSnapshot(coreResult.tripSeatMap().get(p.tripSeatId()).getSeat().getSeatCode())
+                .fullName(p.fullname())
+                .phone(p.phone())
+                .email(p.email())
+                .price(pricePerSeat)
+                .status(PassengerTicketDetailStatus.PENDING.name())
+                .expiredAt(expiredAt)
+                .build()
+        ).toList();
+
+        List<PassengerTicketDetail> savedDetails = ticketDetailRepo.saveAll(detailsToSave);
+
+        List<AccompaniedChild> childrenToSave = new ArrayList<>();
+        for (PassengerDTO dto : passengers) {
+            if (dto.accompaniedChild() != null) {
+                savedDetails.stream()
+                    .filter(sd -> sd.getTripSeatId() == dto.tripSeatId())
+                    .findFirst()
+                    .ifPresent(sd -> {
+                        childrenToSave.add(AccompaniedChild.builder()
+                            .ticketDetailId(sd.getTicketDetailId())
+                            .fullname(dto.accompaniedChild().fullname())
+                            .birthYear(dto.accompaniedChild().birthYear())
+                            .build());
+                    });
+            }
+        }
+        
+        if (!childrenToSave.isEmpty()) {
+            accompaniedChildRepo.saveAll(childrenToSave); 
+        }
+    }
+
+    private PassengerTicket saveMasterTicket(Integer tripId, BookingConfirmRequest request, CoreCalculationResult coreResult, Integer customerId, String voucherCodeSnapshot) {
+        return ticketRepo.save(PassengerTicket.builder()
+            .customerId(customerId)
+            .tripId(tripId)
+            .ticketCode(ticketCodeGenerator.generatePassengerTicketCode())
+            .totalPrice(coreResult.totalFinalPrice())
+            .voucherId(request.voucherId())
+            .pickupStopId(coreResult.pickupStop().getStopPointId())
+            .dropoffStopId(coreResult.dropoffStop().getStopPointId())
+            .pickupStopName(coreResult.pickupStop().getStopPointName())
+            .dropoffStopName(coreResult.dropoffStop().getStopPointName())
+            .voucherCodeSnapshot(voucherCodeSnapshot)
+            .status(PassengerTicketStatus.PENDING)
+            .build());
+    }
+
+    private void validateRequestSeatsMatchLockedSeats(BookingConfirmRequest request, List<Integer> lockedSeatIds) {
+        Set<Integer> lockedSet = Set.copyOf(lockedSeatIds);
+        Set<Integer> requestedSet = request.passengers().stream()
+            .map(passengerDTO -> passengerDTO.tripSeatId()).collect(Collectors.toSet());
+        if (requestedSet.size() != request.passengers().size() || !requestedSet.equals(lockedSet)) {
+            throw new BusinessRuleException("Danh sách hành khách không khớp với ghế đang giữ!");
+        }
+    }
+
+    private String processVoucherUsage(Voucher voucher) {
+        if (voucher != null) {
+            if (voucherService.incrementUsedCountIfAvailable(voucher.getVoucherId()) == 0) {
+                throw new BusinessRuleException("Voucher vừa hết lượt sử dụng! Vui lòng chọn lại.");
+            }
+            return voucher.getVoucherCode();
+        }
+        return null;
+    }
+
+    private Integer resolveCustomerId(String accessToken) {
+        if (accessToken != null && !accessToken.isBlank()) {
+            Integer accountId = jwtService.extractAccountId(accessToken);
+            if (accountId != null) {
+                return customerRepo.findByAccountId(accountId)
+                    .map(customer -> customer.getCustomerId()).orElse(null);
+            }
+        }
+        return null;
+    }
+
+    private List<CoachStopDropdownDTO> getStopPointDropdown(List<RouteStop> stopPointList, String province){
+        return stopPointList.stream().filter(stop -> stop.getCoachStop().getCity().trim().equalsIgnoreCase(province)).map(stop -> new CoachStopDropdownDTO(
+            stop.getCoachStop().getStopPointId(), stop.getCoachStop().getStopPointName()
+        )).toList();
+    }
+
+    private List<VoucherDTO> getEligibleVouchers(String accessToken) {
+        Integer accountId = jwtService.extractAccountId(accessToken);
+        List<VoucherDTO> eligibleVouchers = new ArrayList<>();
+        if(accountId != null) {
+            List<VoucherDTO> availableVouchers = voucherService.getEligibleVouchers();
+            Set<Integer> usedVoucherIds = ticketRepo.getUsedVoucherIdsByAccountId(accountId, PassengerTicketStatus.CANCELLED);
+            eligibleVouchers = availableVouchers.stream().filter(voucher -> !usedVoucherIds.contains(voucher.voucherId())).toList();
+        }
+        return eligibleVouchers;
+    }
+
+    private void validatePassengerChildBirthYears(List<PassengerDTO> passengers) {
+        int currentYear = Year.now().getValue();
+        for (PassengerDTO p : passengers) {
+            if (p.accompaniedChild() != null && p.accompaniedChild().birthYear() > currentYear) {
+                throw new BusinessRuleException("Năm sinh của bé không thể > năm hiện tại!");
+            }
+        }
     }
 
 }
