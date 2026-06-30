@@ -4,7 +4,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -68,12 +67,6 @@ public class CargoTicketController {
     @PutMapping("/{id:\\d+}/soft-delete")
     public ResponseEntity<Void> softDeleteCargoTicket(@PathVariable @Min(1) int id) {
         cargoTicketService.softDeleteCargoTicket(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    @PutMapping("/{id:\\d+}/restore")
-    public ResponseEntity<Void> restoreCargoTicket(@PathVariable @Min(1) int id) {
-        cargoTicketService.restoreCargoTicket(id);
         return ResponseEntity.noContent().build();
     }
 }

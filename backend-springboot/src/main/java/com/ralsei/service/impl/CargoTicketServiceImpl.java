@@ -30,6 +30,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class CargoTicketServiceImpl implements CargoTicketService {
+    private static final String STATUS_ABANDONED = "ABANDONED";
+
     private final CargoTicketRepository cargoTicketRepository;
     private final TripRepository tripRepository;
     private final CustomerRepository customerRepository;
@@ -39,7 +41,8 @@ public class CargoTicketServiceImpl implements CargoTicketService {
 
     @Override
     public PagedResponse<CargoTicketResponse> getAllCargoTickets(int page, int size) {
-        Page<CargoTicket> result = cargoTicketRepository.findByIsActiveTrue(
+        Page<CargoTicket> result = cargoTicketRepository.findByStatusNot(
+                STATUS_ABANDONED,
                 PageRequest.of(page, size, Sort.by("cargoTicketId").descending()));
         return new PagedResponse<>(
                 result.map(this::mapToResponse).getContent(),
@@ -95,16 +98,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
         if (paymentRepository.existsByCargoTicket_CargoTicketId(id)) {
             throw new BusinessRuleException("Không thể xóa vé hàng hóa đã có giao dịch thanh toán.");
         }
-        ticket.setActive(false);
-        cargoTicketRepository.save(ticket);
-    }
-
-    @Override
-    @Transactional
-    public void restoreCargoTicket(int id) {
-        CargoTicket ticket = cargoTicketRepository.findById(id).orElseThrow(
-                () -> new ResourceNotFoundException("Không tìm thấy vé hàng hóa có ID là: " + id));
-        ticket.setActive(true);
+        ticket.setStatus(STATUS_ABANDONED);
         cargoTicketRepository.save(ticket);
     }
 
@@ -170,7 +164,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
     }
 
     private CargoTicket findByIdOrThrow(int id) {
-        return cargoTicketRepository.findByCargoTicketIdAndIsActiveTrue(id).orElseThrow(
+        return cargoTicketRepository.findByCargoTicketIdAndStatusNot(id, STATUS_ABANDONED).orElseThrow(
                 () -> new ResourceNotFoundException("Không tìm thấy vé hàng hóa có ID là: " + id));
     }
 
