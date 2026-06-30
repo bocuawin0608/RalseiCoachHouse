@@ -16,7 +16,7 @@ export const loadPaymentSession = (transactionId) => {
     }
 };
 
-export const mapPaymentPageResponse = (response) => ({
+export const mapPaymentPageResponse = (response, existing = {}) => ({
     ticketCode: response.ticketCode,
     transactionId: response.transactionId,
     amount: response.amount,
@@ -28,6 +28,8 @@ export const mapPaymentPageResponse = (response) => ({
     primaryPassengerPhone: response.primaryPassengerPhone,
     seatCodes: response.seatCodes || [],
     tripId: response.tripId,
+    tripTitle: existing.tripTitle,
+    tripDate: existing.tripDate,
 });
 
 export const mapConfirmResponse = (response, summary = {}) => ({
@@ -42,4 +44,6 @@ export const mapConfirmResponse = (response, summary = {}) => ({
     primaryPassengerPhone: summary.primaryPassengerPhone,
     seatCodes: summary.seatCodes || [],
     tripId: summary.tripId,
+    tripTitle: summary.tripTitle,
+    tripDate: summary.tripDate,
 });

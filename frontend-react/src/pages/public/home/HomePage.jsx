@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tripService } from '../../../features/trips/api/tripServices';
 import './HomePage.css';
+import { buildTripInfoFromSearchCard } from '../../../features/booking';
 
 const SEARCH_HISTORY_COOKIE = 'ralsei_trip_search_history';
 const MAX_SEARCH_HISTORY = 4;
@@ -504,7 +505,7 @@ const HomePage = () => {
                         </div>
                         <div className="policy-links">
                             <a href="#guide">Hướng dẫn đặt lịch trình</a>
-                            <span className="v-divider">|</span>
+                            <span className="v-divider"> | </span>
                             <a href="#policy">Quy định chung</a>
                         </div>
                     </div>
@@ -744,7 +745,11 @@ const HomePage = () => {
 
                                                 <div className="trip-card-actions-bar">
                                                     <button type="button" className="btn-secondary-info">Xem điểm đón trả</button>
-                                                    <button type="button" className="btn-primary-select" onClick={() => navigate(`/select-seat/${trip.tripId}`)}>Chọn chuyến</button>
+                                                    <button type="button" className="btn-primary-select" 
+                                                        onClick={
+                                                            () => navigate(`/booking/trip/${trip.tripId}`, {state: buildTripInfoFromSearchCard(trip)})
+                                                        }
+                                                    >Chọn chuyến</button>
                                                 </div>
                                             </div>
                                         );

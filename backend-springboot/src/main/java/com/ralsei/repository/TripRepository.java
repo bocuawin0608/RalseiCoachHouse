@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -271,4 +273,13 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             """, nativeQuery = true)
     int countDistinctDaysWithSchedule(@Param("startOfDay") LocalDateTime startOfDay,
             @Param("endOfPeriod") LocalDateTime endOfPeriod);
+
+    @Query("""
+            SELECT t FROM Trip t
+            JOIN FETCH t.route
+            JOIN FETCH t.coach c
+            JOIN FETCH c.coachType
+            WHERE t.tripId = :tripId
+            """)
+    Optional<Trip> findByIdWithRouteAndCoach(@Param("tripId") Integer tripId);
 }
