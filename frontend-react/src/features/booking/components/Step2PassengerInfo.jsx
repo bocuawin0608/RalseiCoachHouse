@@ -2,20 +2,28 @@ import { useState, useEffect } from 'react';
 import { Row, Col, Form, Card, Alert, Spinner, OverlayTrigger, Tooltip, InputGroup, Button, Modal } from 'react-bootstrap';
 import { BsExclamationTriangleFill, BsPersonFill, BsMapFill, BsTicketPerforatedFill, BsInfoCircle, BsCashStack } from "react-icons/bs";
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
-import { setStep, setPassengerInfo } from '../reducers/bookingSlice';
+import { setPassengerInfo, setPaymentInfo } from '../reducers/bookingSlice';
 import { useStep2InitData } from '../hooks/useStep2InitData';
 import { usePriceCalculation } from '../hooks/usePriceCalculation';
 import { formatCurrency, formatDateTime } from '../../../utils/formatters';
+import { bookingApi } from '../api/bookingApi';
+import { transformFormToPassengerPayload } from '../utils/passengerPayload';
+import { mapConfirmResponse, savePaymentSession } from '../utils/paymentSession';
+import { bookingValidationRules } from '../utils/bookingValidation';
 
 export default function Step2PassengerInfo({ tripId }) {
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const { selectedSeats, holdToken } = useSelector(state => state.booking);
 
     const { initData, loading, error } = useStep2InitData(tripId, holdToken);
 
     const [showVoucherModal, setShowVoucherModal] = useState(false);
     const [typedVoucherCode, setTypedVoucherCode] = useState('');
+    const [submitting, setSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState('');
     
     const { register, handleSubmit, control, watch, setValue, formState: { errors } } = useForm({
         defaultValues: {
@@ -84,25 +92,41 @@ export default function Step2PassengerInfo({ tripId }) {
         }
     };
 
-    const onSubmit = (formData) => {
-        const formattedPassengers = formData.passengers.map(p => ({
-            tripSeatId: p.tripSeatId,
-            seatCode: p.seatCode,
-            fullname: p.fullname,
-            phone: p.phone,
-            email: p.email,
-            accompaniedChild: p.hasChild ? { fullname: p.childName, birthYear: Number(p.childBirthYear) } : null
-        }));
+    const onSubmit = async (formData) => {
+        setSubmitError('');
+        const formattedPassengers = transformFormToPassengerPayload(formData.passengers);
 
         const payload = {
             pickupStopId: Number(formData.pickupStopId),
             dropoffStopId: Number(formData.dropoffStopId),
             voucherId: formData.voucherId ? Number(formData.voucherId) : null,
-            passengers: formattedPassengers
+            passengers: formattedPassengers,
         };
 
-        dispatch(setPassengerInfo(payload));
-        dispatch(setStep(3)); 
+        setSubmitting(true);
+        try {
+            const response = await bookingApi.confirmBooking(
+                tripId,
+                payload,
+                holdToken
+            );
+
+            const paymentInfo = mapConfirmResponse(response, {
+                tripId: Number(tripId),
+                primaryPassengerName: formattedPassengers[0]?.fullname,
+                primaryPassengerPhone: formattedPassengers[0]?.phone,
+                seatCodes: selectedSeats.map((seat) => seat.seatCode).filter(Boolean),
+            });
+
+            dispatch(setPassengerInfo(payload));
+            dispatch(setPaymentInfo(paymentInfo));
+            savePaymentSession(response.transactionId, paymentInfo);
+            navigate(`/booking/payment/${response.transactionId}`);
+        } catch (err) {
+            setSubmitError(err.response?.data?.message || 'Không thể xác nhận đặt vé. Vui lòng thử lại!');
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     if (loading) return <div className="text-center py-5"><Spinner animation="border" /></div>;
@@ -112,6 +136,12 @@ export default function Step2PassengerInfo({ tripId }) {
             {error && (
                 <Alert variant='danger' className="mb-4 d-flex align-items-center gap-2 rounded-3 border-0 shadow-sm" style={{ fontSize: '0.9rem' }}>
                     <BsExclamationTriangleFill /> {error}
+                </Alert>
+            )}
+
+            {submitError && (
+                <Alert variant='danger' className="mb-4 d-flex align-items-center gap-2 rounded-3 border-0 shadow-sm" style={{ fontSize: '0.9rem' }}>
+                    <BsExclamationTriangleFill /> {submitError}
                 </Alert>
             )}
 
@@ -138,7 +168,7 @@ export default function Step2PassengerInfo({ tripId }) {
                                         <Form.Group as={Col} md={6}>
                                             <Form.Label className="fw-medium text-muted mb-1" style={{ fontSize: '0.85rem' }}>Họ và tên <span className="text-danger">*</span></Form.Label>
                                             <Form.Control 
-                                                {...register(`passengers.${index}.fullname`, { required: 'Vui lòng nhập họ tên' })}
+                                                {...register(`passengers.${index}.fullname`, bookingValidationRules.fullname)}
                                                 isInvalid={!!errors.passengers?.[index]?.fullname}
                                                 type="text" placeholder="VD: Nguyễn Văn A" className="rounded-3 shadow-none" style={{ fontSize: '0.9rem' }}
                                             />
@@ -148,10 +178,7 @@ export default function Step2PassengerInfo({ tripId }) {
                                         <Form.Group as={Col} md={6}>
                                             <Form.Label className="fw-medium text-muted mb-1" style={{ fontSize: '0.85rem' }}>Số điện thoại <span className="text-danger">*</span></Form.Label>
                                             <Form.Control 
-                                                {...register(`passengers.${index}.phone`, { 
-                                                    required: 'Vui lòng nhập số điện thoại',
-                                                    pattern: { value: /^[0-9]{10,11}$/, message: 'SĐT không hợp lệ' }
-                                                })}
+                                                {...register(`passengers.${index}.phone`, bookingValidationRules.phone)}
                                                 isInvalid={!!errors.passengers?.[index]?.phone}
                                                 type="tel" placeholder="VD: 0912345678" className="rounded-3 shadow-none" style={{ fontSize: '0.9rem' }}
                                             />
@@ -161,9 +188,11 @@ export default function Step2PassengerInfo({ tripId }) {
                                         <Form.Group as={Col} md={12}>
                                             <Form.Label className="fw-medium text-muted mb-1" style={{ fontSize: '0.85rem' }}>Email (Nhận vé điện tử)</Form.Label>
                                             <Form.Control 
-                                                {...register(`passengers.${index}.email`)}
+                                                {...register(`passengers.${index}.email`, bookingValidationRules.email)}
+                                                isInvalid={!!errors.passengers?.[index]?.email}
                                                 type="email" placeholder="name@example.com" className="rounded-3 shadow-none" style={{ fontSize: '0.9rem' }}
                                             />
+                                            <Form.Control.Feedback type="invalid">{errors.passengers?.[index]?.email?.message}</Form.Control.Feedback>
                                         </Form.Group>
                                     </Row>
 
@@ -183,22 +212,43 @@ export default function Step2PassengerInfo({ tripId }) {
                                                 <Form.Group as={Col} md={7}>
                                                     <Form.Label className="fw-medium text-muted mb-1" style={{ fontSize: '0.85rem' }}>Họ tên bé <span className="text-danger">*</span></Form.Label>
                                                     <Form.Control 
-                                                        {...register(`passengers.${index}.childName`, { required: 'Vui lòng nhập tên bé' })}
+                                                        {...register(`passengers.${index}.childName`, {
+                                                            validate: (value, formValues) => {
+                                                                if (!formValues.passengers?.[index]?.hasChild) return true;
+                                                                if (!value?.trim()) return bookingValidationRules.childName.required;
+                                                                return bookingValidationRules.childName.pattern.value.test(value.trim())
+                                                                    ? true
+                                                                    : bookingValidationRules.childName.pattern.message;
+                                                            },
+                                                        })}
                                                         isInvalid={!!errors.passengers?.[index]?.childName}
                                                         type="text" placeholder="Tên của bé" className="bg-white rounded-3 shadow-none" style={{ fontSize: '0.9rem' }}
                                                     />
+                                                    <Form.Control.Feedback type="invalid">{errors.passengers?.[index]?.childName?.message}</Form.Control.Feedback>
                                                 </Form.Group>
                                                 <Form.Group as={Col} md={5}>
                                                     <Form.Label className="fw-medium text-muted mb-1" style={{ fontSize: '0.85rem' }}>Năm sinh <span className="text-danger">*</span></Form.Label>
                                                     <Form.Control 
-                                                        {...register(`passengers.${index}.childBirthYear`, { 
-                                                            required: 'Nhập năm sinh',
-                                                            min: { value: 2020, message: 'Năm sinh không hợp lệ' },
-                                                            max: { value: new Date().getFullYear(), message: 'Năm sinh không hợp lệ' }
+                                                        {...register(`passengers.${index}.childBirthYear`, {
+                                                            ...bookingValidationRules.childBirthYear,
+                                                            validate: (value, formValues) => {
+                                                                if (!formValues.passengers?.[index]?.hasChild) return true;
+                                                                if (!value) return bookingValidationRules.childBirthYear.required;
+                                                                const year = Number(value);
+                                                                if (Number.isNaN(year)) return 'Năm sinh không hợp lệ!';
+                                                                if (year < bookingValidationRules.childBirthYear.min.value) {
+                                                                    return bookingValidationRules.childBirthYear.min.message;
+                                                                }
+                                                                if (year > bookingValidationRules.childBirthYear.max.value) {
+                                                                    return bookingValidationRules.childBirthYear.max.message;
+                                                                }
+                                                                return true;
+                                                            },
                                                         })}
                                                         isInvalid={!!errors.passengers?.[index]?.childBirthYear}
                                                         type="number" className="bg-white rounded-3 shadow-none" style={{ fontSize: '0.9rem' }}
                                                     />
+                                                    <Form.Control.Feedback type="invalid">{errors.passengers?.[index]?.childBirthYear?.message}</Form.Control.Feedback>
                                                 </Form.Group>
                                             </Row>
                                         )}
@@ -373,8 +423,12 @@ export default function Step2PassengerInfo({ tripId }) {
                             <hr className="my-3" style={{ borderColor: '#e0e0e0' }} />
 
                             <div className="d-flex justify-content-center pt-2">
-                                <button type="submit" className="fw-bold border-0 px-5 py-2 rounded-pill shadow-sm booking-btn-general" >
-                                    Thanh toán
+                                <button
+                                    type="submit"
+                                    className="fw-bold border-0 px-5 py-2 rounded-pill shadow-sm booking-btn-general"
+                                    disabled={priceLoading || !priceData || submitting}
+                                >
+                                    {submitting ? 'Đang tạo mã thanh toán...' : priceLoading ? 'Đang cập nhật giá...' : 'Thanh toán'}
                                 </button>
                             </div>
                         </Card>

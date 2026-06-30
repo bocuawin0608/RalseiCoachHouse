@@ -55,8 +55,4 @@ public class Payment extends BaseEntity {
 
     @Column(name = "callbackData", columnDefinition = "NVARCHAR(MAX)")
     private String callbackData;
-
-    @Column(name = "isActive", nullable = false)
-    @Builder.Default
-    private boolean isActive = true;
 }

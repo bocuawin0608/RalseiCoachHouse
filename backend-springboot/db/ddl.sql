@@ -413,10 +413,8 @@ CREATE TABLE [cargo_ticket] (
     [customerId] INT NULL,
     [senderName] NVARCHAR(100) NOT NULL,
     [senderPhone] VARCHAR(20) NOT NULL,
-    [senderEmail] VARCHAR(100) NULL,
     [receiverName] NVARCHAR(100) NOT NULL,
     [receiverPhone] VARCHAR(20) NOT NULL,
-    [receiverEmail] VARCHAR(100) NULL,
     [ticketCode] VARCHAR(50) NOT NULL UNIQUE,
     [totalPrice] DECIMAL(15, 2) NOT NULL,
     [description] NVARCHAR(MAX) NULL,
@@ -505,7 +503,6 @@ CREATE TABLE [payment] (
     [refundAmount] DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
     [paymentTime] DATETIME NULL,
     [callbackData] NVARCHAR(MAX) NULL,
-    [isActive] BIT NOT NULL DEFAULT 1,
     [createdAt] DATETIME DEFAULT GETDATE(),
     [createdBy] INT NULL,
     [updatedAt] DATETIME DEFAULT GETDATE(),
@@ -518,7 +515,7 @@ CREATE TABLE [payment] (
         ([passengerTicketId] IS NULL AND [cargoTicketId] IS NOT NULL)
     ),
 	CONSTRAINT CK_Payment_Amount CHECK ([amount] > 0 AND [refundAmount] >= 0),
-    CONSTRAINT CK_Payment_Method CHECK ([paymentMethod] IN ('VNPAY', 'CASH', 'BANK_TRANSFER')),
+    CONSTRAINT CK_Payment_Method CHECK ([paymentMethod] IN ('SEPAY', 'CASH', 'BANK_TRANSFER')),
     CONSTRAINT CK_Payment_Status CHECK ([status] IN ('PENDING', 'COMPLETED', 'FAILED')),
 );
 
@@ -559,7 +556,7 @@ CREATE TABLE [refund] (
     FOREIGN KEY ([paymentId]) REFERENCES [payment] ([paymentId]),
 
 	CONSTRAINT CK_Refund_Amount CHECK ([amount] > 0),
-    CONSTRAINT CK_Refund_Method CHECK ([refundMethod] IN ('VNPAY', 'BANK_TRANSFER', 'CASH')),
+    CONSTRAINT CK_Refund_Method CHECK ([refundMethod] IN ('SEPAY', 'BANK_TRANSFER', 'CASH')),
     CONSTRAINT CK_Refund_Status CHECK ([status] IN ('PENDING', 'COMPLETED', 'FAILED'))
 );
 

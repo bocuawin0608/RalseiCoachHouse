@@ -18,7 +18,9 @@ public class WebConfig {
                 registry.addMapping("/api/**") // Áp dụng cho tất cả endpoint /api/
                         .allowedOrigins(
                             "http://localhost:2999", // staff frontend
-                            "https://localhost:3000" // customer frontend 
+                            "https://localhost:2999",
+                            "https://localhost:3000", // customer frontend 
+                            "http://localhost:3000"
                         )
                         .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
