@@ -18,7 +18,21 @@ export default function BookingWizard({ tripId }) {
 
     const latestStateRef = useRef({ selectedSeats, step, holdToken, tripId, paymentInfo });
 
-    useEffect(() => { window.scrollTo(0, 0);}, []);
+    useEffect(() => {
+        window.scrollTo(0, 0);
+
+        if (paymentInfo && paymentInfo.transactionId) {
+            const isExpired = new Date(paymentInfo.paymentExpiresAt) <= new Date();
+            
+            if (!isExpired) {
+                navigate(`/booking/payment/${paymentInfo.transactionId}`);
+                return;
+            }
+        }
+
+        dispatch(resetBooking());
+
+    }, [tripId, dispatch, navigate, paymentInfo]);
 
     useEffect(() => {
         const incomingTripInfo = location.state; 
