@@ -51,8 +51,10 @@ export default function AccountTable({ accounts, loading, error, onViewDetail, o
                     </tr>
                 </thead>
                 <tbody>
-                    {accounts.map(acc => (
-                        <tr key={acc.accountId}>
+                    {accounts.map(acc => {
+                        const isActive = acc.active !== false;
+                        return (
+                        <tr key={acc.accountId} className={!isActive ? 'table-danger' : ''}>
                             <td className="fw-medium">{acc.username}</td>
                             <td>{acc.staffName || <span className="text-muted fst-italic">Chưa có</span>}</td>
                             <td>{acc.staffPosition || <span className="text-muted">—</span>}</td>
@@ -68,8 +70,8 @@ export default function AccountTable({ accounts, loading, error, onViewDetail, o
                             </td>
                             <td><Badge bg="light" text="dark">{acc.authProvider}</Badge></td>
                             <td>
-                                <Badge bg={acc.active !== false ? 'success' : 'secondary'}>
-                                    {acc.active !== false ? 'Hoạt động' : 'Đã khóa'}
+                                <Badge bg={isActive ? 'success' : 'danger'}>
+                                    {isActive ? 'Hoạt động' : 'Đã khóa'}
                                 </Badge>
                             </td>
                             <td className="small text-muted">
@@ -90,11 +92,11 @@ export default function AccountTable({ accounts, loading, error, onViewDetail, o
                                         <BsKey />
                                     </Button>
                                     <Button
-                                        variant={acc.active !== false ? 'outline-danger' : 'outline-success'}
-                                        title={acc.active !== false ? 'Vô hiệu hóa' : 'Kích hoạt'}
+                                        variant={isActive ? 'outline-danger' : 'outline-success'}
+                                        title={isActive ? 'Vô hiệu hóa' : 'Kích hoạt'}
                                         onClick={() => onToggleActive(acc)}
                                     >
-                                        {acc.active !== false ? <BsToggleOff /> : <BsToggleOn />}
+                                        {isActive ? <BsToggleOff /> : <BsToggleOn />}
                                     </Button>
                                     <Button variant="outline-danger" title="Xóa" onClick={() => onDelete(acc)}>
                                         <BsTrash />
@@ -102,7 +104,8 @@ export default function AccountTable({ accounts, loading, error, onViewDetail, o
                                 </ButtonGroup>
                             </td>
                         </tr>
-                    ))}
+                        );
+                    })}
                 </tbody>
             </Table>
         </div>
