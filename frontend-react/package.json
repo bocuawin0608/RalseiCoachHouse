@@ -43,5 +43,9 @@
     "globals": "^17.6.0",
     "source-map-js": "^1.2.1",
     "vite": "^8.0.12"
+  },
+  "allowScripts": {
+    "@firebase/util@1.15.1": true,
+    "protobufjs@7.6.4": true
   }
 }

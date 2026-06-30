@@ -4,6 +4,7 @@ import { BsExclamationTriangleFill, BsPersonFill, BsMapFill, BsTicketPerforatedF
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
+import { useAuth } from '../../auth';
 import { setPassengerInfo, setPaymentInfo } from '../reducers/bookingSlice';
 import { useStep2InitData } from '../hooks/useStep2InitData';
 import { usePriceCalculation } from '../hooks/usePriceCalculation';
@@ -11,11 +12,16 @@ import { formatCurrency, formatDateTime } from '../../../utils/formatters';
 import { bookingApi } from '../api/bookingApi';
 import { transformFormToPassengerPayload } from '../utils/passengerPayload';
 import { mapConfirmResponse, savePaymentSession } from '../utils/paymentSession';
+import { bookingValidationRules } from '../utils/bookingValidation';
+import { buildTripShellLabels, computePickupPresentBy, formatPickupPresentByLabel } from '../utils/tripInfo';
+import TripSummaryPanel from './TripSummaryPanel';
 
 export default function Step2PassengerInfo({ tripId }) {
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    const { selectedSeats, holdToken } = useSelector(state => state.booking);
+    const { selectedSeats, holdToken, tripInfo } = useSelector(state => state.booking);
+    const { token, user } = useAuth();
+    const isAuthenticated = Boolean(token && user);
 
     const { initData, loading, error } = useStep2InitData(tripId, holdToken);
 
@@ -45,18 +51,31 @@ export default function Step2PassengerInfo({ tripId }) {
     const { fields } = useFieldArray({ control, name: 'passengers' });
 
     const currentVoucherId = watch('voucherId');
+    const effectiveVoucherId = isAuthenticated ? currentVoucherId : '';
     const pickupStopId = watch('pickupStopId');
     const dropoffStopId = watch('dropoffStopId');
 
     const { priceData, loading: priceLoading, error: priceError } = usePriceCalculation(tripId, holdToken, {
         pickupStopId,
         dropoffStopId,
-        voucherId: currentVoucherId,
+        voucherId: effectiveVoucherId,
     });
 
     const seatCount = selectedSeats.length;
+    const seatCodes = selectedSeats.map((seat) => seat.seatCode).filter(Boolean);
+    const pickupStop = initData.pickupStopPoints?.find((point) => String(point.stopPointId) === String(pickupStopId));
+    const dropoffStop = initData.dropoffStopPoints?.find((point) => String(point.stopPointId) === String(dropoffStopId));
+    const pickupPresentBy = pickupStop && tripInfo?.departureTime
+        ? computePickupPresentBy(tripInfo.departureTime, pickupStop.minutesFromStart)
+        : null;
 
     useEffect(() => {
+        if (!isAuthenticated) {
+            setValue('voucherId', '');
+            setTypedVoucherCode('');
+            setShowVoucherModal(false);
+            return;
+        }
         if (!currentVoucherId) {
             setTypedVoucherCode('');
             return;
@@ -65,9 +84,10 @@ export default function Step2PassengerInfo({ tripId }) {
         if (selected) {
             setTypedVoucherCode(selected.voucherCode);
         }
-    }, [currentVoucherId, initData.vouchers]);
+    }, [currentVoucherId, initData.vouchers, isAuthenticated, setValue]);
 
     const handleSelectVoucher = (voucher) => {
+        if (!isAuthenticated) return;
         setValue('voucherId', voucher.voucherId);
     };
 
@@ -81,6 +101,7 @@ export default function Step2PassengerInfo({ tripId }) {
     };
 
     const handleApplyManualVoucher = () => {
+        if (!isAuthenticated) return;
         if (!typedVoucherCode.trim()) return;
         const matched = initData.vouchers?.find(v => v.voucherCode.toLowerCase() === typedVoucherCode.trim().toLowerCase());
         if (matched) {
@@ -98,7 +119,7 @@ export default function Step2PassengerInfo({ tripId }) {
         const payload = {
             pickupStopId: Number(formData.pickupStopId),
             dropoffStopId: Number(formData.dropoffStopId),
-            voucherId: formData.voucherId ? Number(formData.voucherId) : null,
+            voucherId: isAuthenticated && formData.voucherId ? Number(formData.voucherId) : null,
             passengers: formattedPassengers,
         };
 
@@ -110,11 +131,14 @@ export default function Step2PassengerInfo({ tripId }) {
                 holdToken
             );
 
+            const { tripTitle, tripDate } = buildTripShellLabels(tripInfo);
             const paymentInfo = mapConfirmResponse(response, {
                 tripId: Number(tripId),
                 primaryPassengerName: formattedPassengers[0]?.fullname,
                 primaryPassengerPhone: formattedPassengers[0]?.phone,
-                seatCodes: selectedSeats.map((seat) => seat.seatCode).filter(Boolean),
+                seatCodes,
+                tripTitle,
+                tripDate
             });
 
             dispatch(setPassengerInfo(payload));
@@ -167,7 +191,7 @@ export default function Step2PassengerInfo({ tripId }) {
                                         <Form.Group as={Col} md={6}>
                                             <Form.Label className="fw-medium text-muted mb-1" style={{ fontSize: '0.85rem' }}>Họ và tên <span className="text-danger">*</span></Form.Label>
                                             <Form.Control 
-                                                {...register(`passengers.${index}.fullname`, { required: 'Vui lòng nhập họ tên' })}
+                                                {...register(`passengers.${index}.fullname`, bookingValidationRules.fullname)}
                                                 isInvalid={!!errors.passengers?.[index]?.fullname}
                                                 type="text" placeholder="VD: Nguyễn Văn A" className="rounded-3 shadow-none" style={{ fontSize: '0.9rem' }}
                                             />
@@ -177,10 +201,7 @@ export default function Step2PassengerInfo({ tripId }) {
                                         <Form.Group as={Col} md={6}>
                                             <Form.Label className="fw-medium text-muted mb-1" style={{ fontSize: '0.85rem' }}>Số điện thoại <span className="text-danger">*</span></Form.Label>
                                             <Form.Control 
-                                                {...register(`passengers.${index}.phone`, { 
-                                                    required: 'Vui lòng nhập số điện thoại',
-                                                    pattern: { value: /^[0-9]{10,11}$/, message: 'SĐT không hợp lệ' }
-                                                })}
+                                                {...register(`passengers.${index}.phone`, bookingValidationRules.phone)}
                                                 isInvalid={!!errors.passengers?.[index]?.phone}
                                                 type="tel" placeholder="VD: 0912345678" className="rounded-3 shadow-none" style={{ fontSize: '0.9rem' }}
                                             />
@@ -188,11 +209,13 @@ export default function Step2PassengerInfo({ tripId }) {
                                         </Form.Group>
 
                                         <Form.Group as={Col} md={12}>
-                                            <Form.Label className="fw-medium text-muted mb-1" style={{ fontSize: '0.85rem' }}>Email (Nhận vé điện tử)</Form.Label>
+                                            <Form.Label className="fw-medium text-muted mb-1" style={{ fontSize: '0.85rem' }}>Email (Nhận vé điện tử) <span className="text-danger">*</span></Form.Label>
                                             <Form.Control 
-                                                {...register(`passengers.${index}.email`)}
-                                                type="email" placeholder="name@example.com" className="rounded-3 shadow-none" style={{ fontSize: '0.9rem' }}
+                                                {...register(`passengers.${index}.email`, bookingValidationRules.email)}
+                                                isInvalid={!!errors.passengers?.[index]?.email}
+                                                type="email" placeholder="VD: name@example.com" className="rounded-3 shadow-none" style={{ fontSize: '0.9rem' }}
                                             />
+                                            <Form.Control.Feedback type="invalid">{errors.passengers?.[index]?.email?.message}</Form.Control.Feedback>
                                         </Form.Group>
                                     </Row>
 
@@ -212,22 +235,43 @@ export default function Step2PassengerInfo({ tripId }) {
                                                 <Form.Group as={Col} md={7}>
                                                     <Form.Label className="fw-medium text-muted mb-1" style={{ fontSize: '0.85rem' }}>Họ tên bé <span className="text-danger">*</span></Form.Label>
                                                     <Form.Control 
-                                                        {...register(`passengers.${index}.childName`, { required: 'Vui lòng nhập tên bé' })}
+                                                        {...register(`passengers.${index}.childName`, {
+                                                            validate: (value, formValues) => {
+                                                                if (!formValues.passengers?.[index]?.hasChild) return true;
+                                                                if (!value?.trim()) return bookingValidationRules.childName.required;
+                                                                return bookingValidationRules.childName.pattern.value.test(value.trim())
+                                                                    ? true
+                                                                    : bookingValidationRules.childName.pattern.message;
+                                                            },
+                                                        })}
                                                         isInvalid={!!errors.passengers?.[index]?.childName}
                                                         type="text" placeholder="Tên của bé" className="bg-white rounded-3 shadow-none" style={{ fontSize: '0.9rem' }}
                                                     />
+                                                    <Form.Control.Feedback type="invalid">{errors.passengers?.[index]?.childName?.message}</Form.Control.Feedback>
                                                 </Form.Group>
                                                 <Form.Group as={Col} md={5}>
                                                     <Form.Label className="fw-medium text-muted mb-1" style={{ fontSize: '0.85rem' }}>Năm sinh <span className="text-danger">*</span></Form.Label>
                                                     <Form.Control 
-                                                        {...register(`passengers.${index}.childBirthYear`, { 
-                                                            required: 'Nhập năm sinh',
-                                                            min: { value: 2020, message: 'Năm sinh không hợp lệ' },
-                                                            max: { value: new Date().getFullYear(), message: 'Năm sinh không hợp lệ' }
+                                                        {...register(`passengers.${index}.childBirthYear`, {
+                                                            ...bookingValidationRules.childBirthYear,
+                                                            validate: (value, formValues) => {
+                                                                if (!formValues.passengers?.[index]?.hasChild) return true;
+                                                                if (!value) return bookingValidationRules.childBirthYear.required;
+                                                                const year = Number(value);
+                                                                if (Number.isNaN(year)) return 'Năm sinh không hợp lệ!';
+                                                                if (year < bookingValidationRules.childBirthYear.min.value) {
+                                                                    return bookingValidationRules.childBirthYear.min.message;
+                                                                }
+                                                                if (year > bookingValidationRules.childBirthYear.max.value) {
+                                                                    return bookingValidationRules.childBirthYear.max.message;
+                                                                }
+                                                                return true;
+                                                            },
                                                         })}
                                                         isInvalid={!!errors.passengers?.[index]?.childBirthYear}
                                                         type="number" className="bg-white rounded-3 shadow-none" style={{ fontSize: '0.9rem' }}
                                                     />
+                                                    <Form.Control.Feedback type="invalid">{errors.passengers?.[index]?.childBirthYear?.message}</Form.Control.Feedback>
                                                 </Form.Group>
                                             </Row>
                                         )}
@@ -257,6 +301,11 @@ export default function Step2PassengerInfo({ tripId }) {
                                                 ))}
                                             </Form.Select>
                                             <Form.Control.Feedback type="invalid">{errors.pickupStopId?.message}</Form.Control.Feedback>
+                                            {pickupStop && pickupPresentBy && (
+                                                <Alert variant="info" className="mt-2 mb-0 py-2 px-3 rounded-3 border-0" style={{ fontSize: '0.8rem' }}>
+                                                    Quý khách vui lòng có mặt tại <strong>{pickupStop.stopPointName}</strong> trước <strong>{formatPickupPresentByLabel(pickupPresentBy)}</strong> để được trung chuyển hoặc kiểm tra thông tin trước khi lên xe.
+                                                </Alert>
+                                            )}
                                         </Form.Group>
                                     </Col>
                                     <Col md={6}>
@@ -280,60 +329,83 @@ export default function Step2PassengerInfo({ tripId }) {
                         </div>
                     </Col>
 
-                    {/* CỘT PHẢI: VOUCHER */}
+                    {/* CỘT PHẢI: THÔNG TIN CHUYẾN + VOUCHER */}
                     <Col lg={4} md={12}>
                         <Card className="border-0 rounded-4 shadow-sm bg-white p-4 sticky-top" style={{ top: '20px', zIndex: 10, border: '1px solid #f0f0f0' }}>
-                            <div className="d-flex justify-content-between align-items-center mb-3">
-                                <div className="fw-bold m-0 d-flex align-items-center gap-2" style={{ fontSize: '1.05rem', color: 'var(--ralsei-black)' }}>
-                                    <BsTicketPerforatedFill size={18} /> Mã giảm giá
-                                </div>
-                                <span className="fw-semibold" style={{ fontSize: '0.85rem', color: 'var(--ralsei-black)', cursor: 'pointer' }} onClick={() => setShowVoucherModal(true)}>
-                                    Xem tất cả
-                                </span>
-                            </div>
-
-                            <InputGroup className="mb-3">
-                                <Form.Control
-                                    placeholder="Nhập mã giảm giá..."
-                                    className="rounded-start-3 shadow-none border-end-0" style={{ fontSize: '0.9rem' }}
-                                    value={typedVoucherCode} onChange={e => setTypedVoucherCode(e.target.value)}
-                                />
-                                <Button className="rounded-end-3 fw-semibold border-start-0 booking-btn-general2" style={{ fontSize: '0.9rem' }} onClick={handleApplyManualVoucher}>
-                                    Áp dụng
-                                </Button>
-                            </InputGroup>
-
-                            <div className="voucher-list d-flex flex-column gap-2 mb-4">
-                                {initData.vouchers?.slice(0, 2).map(voucher => {
-                                    const isSelected = currentVoucherId == voucher.voucherId;
-                                    return (
-                                        <div 
-                                            key={voucher.voucherId} 
-                                            className={`d-flex border rounded-3 overflow-hidden align-items-center ${isSelected ? 'bg-light' : ''}`}
-                                            style={{ cursor: 'pointer', transition: 'all 0.2s', borderColor: isSelected ? 'var(--ralsei-black)' : '#e0e0e0', borderWidth: isSelected ? '2px' : '1px' }}
-                                            onClick={() => handleSelectVoucher(voucher)} 
-                                        >
-                                            <div className="text-white fw-bold d-flex align-items-center justify-content-center p-2 h-100" style={{ minWidth: '65px', minHeight: '70px', fontSize: '0.95rem', backgroundColor: isSelected ? 'var(--ralsei-black)' : '#8c8c8c' }}>
-                                                {formatDiscountBadge(voucher)}
-                                            </div>
-                                            <div className="p-2 flex-grow-1 position-relative">
-                                                <div className="fw-bold text-dark mb-0" style={{ fontSize: '0.85rem' }}>{voucher.voucherCode}</div>
-                                                <div className="text-muted" style={{ fontSize: '0.75rem' }}>Đơn tối thiểu {voucher.minOrderValue.toLocaleString()}đ</div>
-                                                <OverlayTrigger placement="top" overlay={<Tooltip style={{ fontSize: '0.75rem' }}>HSD: {new Date(voucher.endEffectiveDate).toLocaleDateString('vi-VN')}</Tooltip>}>
-                                                    <span className="position-absolute bg-transparent text-secondary" style={{ bottom: '8px', right: '8px', fontSize: '0.85rem' }}><BsInfoCircle /></span>
-                                                </OverlayTrigger>
-                                            </div>
+                            <TripSummaryPanel
+                                tripInfo={tripInfo}
+                                pickupStopName={pickupStop?.stopPointName}
+                                dropoffStopName={dropoffStop?.stopPointName}
+                                seatCount={seatCount}
+                                seatCodes={seatCodes}
+                            />
+                            
+                            {isAuthenticated ? (
+                                <>
+                                    <div className="d-flex justify-content-between align-items-center mb-3">
+                                        <div className="fw-bold m-0 d-flex align-items-center gap-2" style={{ fontSize: '1.05rem', color: 'var(--ralsei-black)' }}>
+                                            <BsTicketPerforatedFill size={18} /> Mã giảm giá
                                         </div>
-                                    );
-                                })}
-                            </div>
+                                        <span className="fw-semibold" style={{ fontSize: '0.85rem', color: 'var(--ralsei-black)', cursor: 'pointer' }} onClick={() => setShowVoucherModal(true)}>
+                                            Xem tất cả
+                                        </span>
+                                    </div>
 
-                            {currentVoucherId && (
-                                <div className="text-end mb-3">
-                                    <span className="text-danger fw-medium" style={{ cursor: 'pointer', fontSize: '0.8rem' }} onClick={handleClearVoucher}>
-                                        Hủy chọn mã hiện tại ✕
-                                    </span>
-                                </div>
+                                    <InputGroup className="mb-3">
+                                        <Form.Control
+                                            placeholder="Nhập mã giảm giá..."
+                                            className="rounded-start-3 shadow-none border-end-0" style={{ fontSize: '0.9rem' }}
+                                            value={typedVoucherCode} onChange={e => setTypedVoucherCode(e.target.value)}
+                                        />
+                                        <Button className="rounded-end-3 fw-semibold border-start-0 booking-btn-general2" style={{ fontSize: '0.9rem' }} onClick={handleApplyManualVoucher}>
+                                            Áp dụng
+                                        </Button>
+                                    </InputGroup>
+
+                                    <div className="voucher-list d-flex flex-column gap-2 mb-4">
+                                        {initData.vouchers?.slice(0, 2).map(voucher => {
+                                            const isSelected = currentVoucherId == voucher.voucherId;
+                                            return (
+                                                <div 
+                                                    key={voucher.voucherId} 
+                                                    className={`d-flex border rounded-3 overflow-hidden align-items-center ${isSelected ? 'bg-light' : ''}`}
+                                                    style={{ cursor: 'pointer', transition: 'all 0.2s', borderColor: isSelected ? 'var(--ralsei-black)' : '#e0e0e0', borderWidth: isSelected ? '2px' : '1px' }}
+                                                    onClick={() => handleSelectVoucher(voucher)} 
+                                                >
+                                                    <div className="text-white fw-bold d-flex align-items-center justify-content-center p-2 h-100" style={{ minWidth: '65px', minHeight: '70px', fontSize: '0.95rem', backgroundColor: isSelected ? 'var(--ralsei-black)' : '#8c8c8c' }}>
+                                                        {formatDiscountBadge(voucher)}
+                                                    </div>
+                                                    <div className="p-2 flex-grow-1 position-relative">
+                                                        <div className="fw-bold text-dark mb-0" style={{ fontSize: '0.85rem' }}>{voucher.voucherCode}</div>
+                                                        <div className="text-muted" style={{ fontSize: '0.75rem' }}>Đơn tối thiểu {voucher.minOrderValue.toLocaleString()}đ</div>
+                                                        <OverlayTrigger placement="top" overlay={<Tooltip style={{ fontSize: '0.75rem' }}>HSD: {new Date(voucher.endEffectiveDate).toLocaleDateString('vi-VN')}</Tooltip>}>
+                                                            <span className="position-absolute bg-transparent text-secondary" style={{ bottom: '8px', right: '8px', fontSize: '0.85rem' }}><BsInfoCircle /></span>
+                                                        </OverlayTrigger>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {currentVoucherId && (
+                                        <div className="text-end mb-3">
+                                            <span className="text-danger fw-medium" style={{ cursor: 'pointer', fontSize: '0.8rem' }} onClick={handleClearVoucher}>
+                                                Hủy chọn mã hiện tại ✕
+                                            </span>
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <Alert 
+                                    variant="warning" 
+                                    className="d-flex align-items-center gap-3 rounded-4 border-0 shadow-sm py-3 px-4"
+                                    style={{ backgroundColor: '#FFF9E6', color: '#8A6D3B' }}
+                                >
+                                    <BsExclamationTriangleFill className="text-warning fs-4 flex-shrink-0" />
+                                    <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>
+                                        <span className="fw-bold text-dark">Đăng nhập</span> để được áp dụng mã giảm giá!
+                                    </div>
+                                </Alert>
                             )}
 
                             <hr className="my-3" style={{ borderColor: '#e0e0e0' }} />

@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -96,82 +98,55 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             @Param("driverId") Integer driverId,
             @Param("attendantId") Integer attendantId);
 
+    /**
+     * Searches customer trips with optional time, coach type, and price filters.
+     * Seat availability is counted directly from the concrete trip_seat
+     * snapshot for each trip. Price is resolved by the trip departure time so
+     * old or future trips do not disappear because today's price row changed.
+     */
     @Query(value = """
             SELECT
                 t.tripId AS tripId,
                 ct.coachTypeName AS coachTypeName,
                 r.routeName AS routeName,
                 t.departureTime AS departureTime,
-                ctp.seatPrice AS seatPrice
+                DATEADD(MINUTE, 432, t.departureTime) AS arrivalTime,
+                N'7 giờ 12 phút' AS duration,
+                ctp.seatPrice AS seatPrice,
+                COALESCE(seat_counts.availableSeats, 0) AS availableSeats,
+                COALESCE(seat_counts.totalSeats, 0) AS totalSeats
             FROM trip t
             JOIN route r ON t.routeId = r.routeId
             JOIN coach c ON t.coachId = c.coachId
             JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId
             JOIN coach_type_price ctp ON ct.coachTypeId = ctp.coachTypeId
+                AND t.departureTime BETWEEN ctp.startEffectiveDate AND ctp.endEffectiveDate
+            LEFT JOIN (
+                SELECT
+                    ts.tripId,
+                    CAST(SUM(CASE WHEN UPPER(LTRIM(RTRIM(ts.[status]))) = 'AVAILABLE' THEN 1 ELSE 0 END) AS INT) AS availableSeats,
+                    CAST(COUNT(ts.tripSeatId) AS INT) AS totalSeats
+                FROM trip_seat ts
+                JOIN seat s ON s.seatId = ts.seatId
+                WHERE s.isActive = 1
+                GROUP BY ts.tripId
+            ) seat_counts ON seat_counts.tripId = t.tripId
             WHERE r.routeName = :route
               AND t.departureTime BETWEEN :start AND :end
-              AND :now BETWEEN ctp.startEffectiveDate AND ctp.endEffectiveDate
+              AND t.[status] = 'SCHEDULED'
               AND (:checkTimeSlots = 0 OR (
-                  (:slot1Start IS NOT NULL AND CAST(t.departureTime AS TIME) BETWEEN :slot1Start AND :slot1End) OR
-                  (:slot2Start IS NOT NULL AND CAST(t.departureTime AS TIME) BETWEEN :slot2Start AND :slot2End) OR
-                  (:slot3Start IS NOT NULL AND CAST(t.departureTime AS TIME) BETWEEN :slot3Start AND :slot3End) OR
-                  (:slot4Start IS NOT NULL AND CAST(t.departureTime AS TIME) BETWEEN :slot4Start AND :slot4End)
+                  (:slot1StartMinute IS NOT NULL AND DATEDIFF(MINUTE, CAST(t.departureTime AS DATE), t.departureTime) BETWEEN :slot1StartMinute AND :slot1EndMinute) OR
+                  (:slot2StartMinute IS NOT NULL AND DATEDIFF(MINUTE, CAST(t.departureTime AS DATE), t.departureTime) BETWEEN :slot2StartMinute AND :slot2EndMinute) OR
+                  (:slot3StartMinute IS NOT NULL AND DATEDIFF(MINUTE, CAST(t.departureTime AS DATE), t.departureTime) BETWEEN :slot3StartMinute AND :slot3EndMinute) OR
+                  (:slot4StartMinute IS NOT NULL AND DATEDIFF(MINUTE, CAST(t.departureTime AS DATE), t.departureTime) BETWEEN :slot4StartMinute AND :slot4EndMinute)
               ))
               AND (:checkLayouts = 0 OR (
-                  ct.coachTypeName LIKE :layoutKeyword1 OR
-                  ct.coachTypeName LIKE :layoutKeyword2
+                  LOWER(ct.coachTypeName) LIKE LOWER(:layoutKeyword1) OR
+                  LOWER(ct.coachTypeName) LIKE LOWER(:layoutKeyword2) OR
+                  LOWER(ct.coachTypeName) LIKE LOWER(:layoutKeyword3)
               ))
               AND (:minPrice IS NULL OR ctp.seatPrice >= :minPrice)
               AND (:maxPrice IS NULL OR ctp.seatPrice <= :maxPrice)
-            """, countQuery = """
-            SELECT COUNT(t.tripId)
-            FROM trip t
-            JOIN route r ON t.routeId = r.routeId
-            JOIN coach c ON t.coachId = c.coachId
-            JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId
-            JOIN coach_type_price ctp ON ct.coachTypeId = ctp.coachTypeId
-            WHERE r.routeName = :route
-              AND t.departureTime BETWEEN :start AND :end
-              AND :now BETWEEN ctp.startEffectiveDate AND ctp.endEffectiveDate
-              AND (:checkTimeSlots = 0 OR (
-                  (:slot1Start IS NOT NULL AND CAST(t.departureTime AS TIME) BETWEEN :slot1Start AND :slot1End) OR
-                  (:slot2Start IS NOT NULL AND CAST(t.departureTime AS TIME) BETWEEN :slot2Start AND :slot2End) OR
-                  (:slot3Start IS NOT NULL AND CAST(t.departureTime AS TIME) BETWEEN :slot3Start AND :slot3End) OR
-                  (:slot4Start IS NOT NULL AND CAST(t.departureTime AS TIME) BETWEEN :slot4Start AND :slot4End)
-              ))
-              AND (:checkLayouts = 0 OR (
-                  ct.coachTypeName LIKE :layoutKeyword1 OR
-                  ct.coachTypeName LIKE :layoutKeyword2
-              ))
-              AND (:minPrice IS NULL OR ctp.seatPrice >= :minPrice)
-              AND (:maxPrice IS NULL OR ctp.seatPrice <= :maxPrice)
-            """, nativeQuery = true)
-    Page<TripFilterProjection> filterTrips(
-            @Param("now") LocalDateTime now,
-            @Param("start") LocalDateTime start,
-            @Param("end") LocalDateTime end,
-            @Param("route") String route,
-            @Param("checkTimeSlots") int checkTimeSlots,
-            @Param("slot1Start") String slot1Start, @Param("slot1End") String slot1End,
-            @Param("slot2Start") String slot2Start, @Param("slot2End") String slot2End,
-            @Param("slot3Start") String slot3Start, @Param("slot3End") String slot3End,
-            @Param("slot4Start") String slot4Start, @Param("slot4End") String slot4End,
-            @Param("checkLayouts") int checkLayouts,
-            @Param("layoutKeyword1") String layoutKeyword1,
-            @Param("layoutKeyword2") String layoutKeyword2,
-            @Param("minPrice") Double minPrice,
-            @Param("maxPrice") Double maxPrice,
-            Pageable pageable);
-
-    @Query(value = """
-            SELECT t.tripId, ct.coachTypeName, r.routeName, t.departureTime, ctp.seatPrice
-            FROM trip t
-            JOIN route r ON t.routeId = r.routeId
-            JOIN coach c ON t.coachId = c.coachId
-            JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId
-            JOIN coach_type_price ctp ON ct.coachTypeId = ctp.coachTypeId
-            WHERE t.departureTime BETWEEN :start AND :end
-              AND r.routeName = :route
             ORDER BY t.departureTime
             """, countQuery = """
             SELECT COUNT(t.tripId)
@@ -180,8 +155,90 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             JOIN coach c ON t.coachId = c.coachId
             JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId
             JOIN coach_type_price ctp ON ct.coachTypeId = ctp.coachTypeId
+                AND t.departureTime BETWEEN ctp.startEffectiveDate AND ctp.endEffectiveDate
+            WHERE r.routeName = :route
+              AND t.departureTime BETWEEN :start AND :end
+              AND t.[status] = 'SCHEDULED'
+              AND (:checkTimeSlots = 0 OR (
+                  (:slot1StartMinute IS NOT NULL AND DATEDIFF(MINUTE, CAST(t.departureTime AS DATE), t.departureTime) BETWEEN :slot1StartMinute AND :slot1EndMinute) OR
+                  (:slot2StartMinute IS NOT NULL AND DATEDIFF(MINUTE, CAST(t.departureTime AS DATE), t.departureTime) BETWEEN :slot2StartMinute AND :slot2EndMinute) OR
+                  (:slot3StartMinute IS NOT NULL AND DATEDIFF(MINUTE, CAST(t.departureTime AS DATE), t.departureTime) BETWEEN :slot3StartMinute AND :slot3EndMinute) OR
+                  (:slot4StartMinute IS NOT NULL AND DATEDIFF(MINUTE, CAST(t.departureTime AS DATE), t.departureTime) BETWEEN :slot4StartMinute AND :slot4EndMinute)
+              ))
+              AND (:checkLayouts = 0 OR (
+                  LOWER(ct.coachTypeName) LIKE LOWER(:layoutKeyword1) OR
+                  LOWER(ct.coachTypeName) LIKE LOWER(:layoutKeyword2) OR
+                  LOWER(ct.coachTypeName) LIKE LOWER(:layoutKeyword3)
+              ))
+              AND (:minPrice IS NULL OR ctp.seatPrice >= :minPrice)
+              AND (:maxPrice IS NULL OR ctp.seatPrice <= :maxPrice)
+            """, nativeQuery = true)
+    Page<TripFilterProjection> filterTrips(
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end,
+            @Param("route") String route,
+            @Param("checkTimeSlots") int checkTimeSlots,
+            @Param("slot1StartMinute") Integer slot1StartMinute, @Param("slot1EndMinute") Integer slot1EndMinute,
+            @Param("slot2StartMinute") Integer slot2StartMinute, @Param("slot2EndMinute") Integer slot2EndMinute,
+            @Param("slot3StartMinute") Integer slot3StartMinute, @Param("slot3EndMinute") Integer slot3EndMinute,
+            @Param("slot4StartMinute") Integer slot4StartMinute, @Param("slot4EndMinute") Integer slot4EndMinute,
+            @Param("checkLayouts") int checkLayouts,
+            @Param("layoutKeyword1") String layoutKeyword1,
+            @Param("layoutKeyword2") String layoutKeyword2,
+            @Param("layoutKeyword3") String layoutKeyword3,
+            @Param("minPrice") Double minPrice,
+            @Param("maxPrice") Double maxPrice,
+            Pageable pageable);
+
+    /**
+     * Loads the default customer trip list for a route/date before any filters
+     * are selected. The projection shape intentionally matches filterTrips so
+     * the frontend does not need a separate placeholder mapping.
+     */
+    @Query(value = """
+            SELECT
+                t.tripId AS tripId,
+                ct.coachTypeName AS coachTypeName,
+                r.routeName AS routeName,
+                ct.seatLayout AS seatLayoutName,
+                t.[status] AS status,
+                t.departureTime AS departureTime,
+                DATEADD(MINUTE, 432, t.departureTime) AS arrivalTime,
+                N'7 giờ 12 phút' AS duration,
+                ctp.seatPrice AS seatPrice,
+                COALESCE(seat_counts.availableSeats, 0) AS availableSeats,
+                COALESCE(seat_counts.totalSeats, 0) AS totalSeats
+            FROM trip t
+            JOIN route r ON t.routeId = r.routeId
+            JOIN coach c ON t.coachId = c.coachId
+            JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId
+            JOIN coach_type_price ctp ON ct.coachTypeId = ctp.coachTypeId
+                AND t.departureTime BETWEEN ctp.startEffectiveDate AND ctp.endEffectiveDate
+            LEFT JOIN (
+                SELECT
+                    ts.tripId,
+                    CAST(SUM(CASE WHEN UPPER(LTRIM(RTRIM(ts.[status]))) = 'AVAILABLE' THEN 1 ELSE 0 END) AS INT) AS availableSeats,
+                    CAST(COUNT(ts.tripSeatId) AS INT) AS totalSeats
+                FROM trip_seat ts
+                JOIN seat s ON s.seatId = ts.seatId
+                WHERE s.isActive = 1
+                GROUP BY ts.tripId
+            ) seat_counts ON seat_counts.tripId = t.tripId
             WHERE t.departureTime BETWEEN :start AND :end
               AND r.routeName = :route
+              AND t.[status] = 'SCHEDULED'
+            ORDER BY t.departureTime
+            """, countQuery = """
+            SELECT COUNT(t.tripId)
+            FROM trip t
+            JOIN route r ON t.routeId = r.routeId
+            JOIN coach c ON t.coachId = c.coachId
+            JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId
+            JOIN coach_type_price ctp ON ct.coachTypeId = ctp.coachTypeId
+                AND t.departureTime BETWEEN ctp.startEffectiveDate AND ctp.endEffectiveDate
+            WHERE t.departureTime BETWEEN :start AND :end
+              AND r.routeName = :route
+              AND t.[status] = 'SCHEDULED'
             """, nativeQuery = true)
     Page<TripDetailProjection> findTripDetails(
             @Param("start") LocalDateTime start,
@@ -200,11 +257,21 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
                 c.[status] AS coachStatus,
                 CAST(t.departureTime AS DATE) AS departureDate,
                 CAST(t.departureTime AS TIME) AS departureTime,
-                (SELECT COUNT(*) FROM trip_seat ts WHERE ts.tripId = t.tripId AND ts.[status] = 'AVAILABLE') AS availableSeats,
-                (SELECT COUNT(*) FROM trip_seat ts WHERE ts.tripId = t.tripId) AS totalSeats
+                COALESCE(seat_counts.availableSeats, 0) AS availableSeats,
+                COALESCE(seat_counts.totalSeats, 0) AS totalSeats
             FROM trip t
             LEFT JOIN coach c ON t.coachId = c.coachId
             LEFT JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId
+            LEFT JOIN (
+                SELECT
+                    ts.tripId,
+                    CAST(SUM(CASE WHEN UPPER(LTRIM(RTRIM(ts.[status]))) = 'AVAILABLE' THEN 1 ELSE 0 END) AS INT) AS availableSeats,
+                    CAST(COUNT(ts.tripSeatId) AS INT) AS totalSeats
+                FROM trip_seat ts
+                JOIN seat s ON s.seatId = ts.seatId
+                WHERE s.isActive = 1
+                GROUP BY ts.tripId
+            ) seat_counts ON seat_counts.tripId = t.tripId
             WHERE CAST(t.departureTime AS DATE) = :departureDate
             ORDER BY t.departureTime ASC
             """, countQuery = """
@@ -215,6 +282,21 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
     Page<TripSummaryProjection> viewAllTripSummaries(
             @Param("departureDate") String departureDate,
             Pageable pageable);
+
+    /**
+     * Counts available seats for one concrete trip from its trip_seat snapshot.
+     * The tripId already owns the coach/date context, so no external route,
+     * coach, or date parameter is needed.
+     */
+    @Query(value = """
+            SELECT CAST(COUNT(1) AS INT)
+            FROM trip_seat ts
+            JOIN seat s ON s.seatId = ts.seatId
+            WHERE ts.tripId = :tripId
+              AND s.isActive = 1
+              AND UPPER(LTRIM(RTRIM(ts.[status]))) = 'AVAILABLE'
+            """, nativeQuery = true)
+    Integer countAvailableTripSeatsByTripId(@Param("tripId") Integer tripId);
 
     @Query(value = "SELECT MAX(CAST(departureTime AS DATE)) FROM [trip]", nativeQuery = true)
     LocalDate findMaxDepartureDate();
@@ -244,4 +326,13 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             """, nativeQuery = true)
     int countDistinctDaysWithSchedule(@Param("startOfDay") LocalDateTime startOfDay,
             @Param("endOfPeriod") LocalDateTime endOfPeriod);
+
+    @Query("""
+            SELECT t FROM Trip t
+            JOIN FETCH t.route
+            JOIN FETCH t.coach c
+            JOIN FETCH c.coachType
+            WHERE t.tripId = :tripId
+            """)
+    Optional<Trip> findByIdWithRouteAndCoach(@Param("tripId") Integer tripId);
 }

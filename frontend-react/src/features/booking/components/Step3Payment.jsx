@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Badge, Button, Card, Col, Row, Spinner } from 'react-bootstrap';
-import { BsCheckCircleFill, BsClipboard, BsClock, BsExclamationTriangleFill, BsInfoCircle, BsQrCode } from 'react-icons/bs';
+import { Alert, Button, Card, Col, Row, Spinner } from 'react-bootstrap';
+import { BsCheckCircleFill, BsClipboard, BsClock, BsExclamationTriangleFill } from 'react-icons/bs';
 import { useDispatch, useSelector } from 'react-redux';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { bookingApi } from '../api/bookingApi';
 import { usePaymentSse } from '../hooks/usePaymentSse';
 import { setPaymentInfo, setPaymentStatus } from '../reducers/bookingSlice';
@@ -47,6 +47,7 @@ const buildQrUrl = (paymentInfo) => {
 
 export default function Step3Payment() {
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const { transactionId } = useParams();
     const storedPaymentInfo = useSelector((state) => state.booking.paymentInfo);
 
@@ -106,7 +107,8 @@ export default function Step3Payment() {
             setError('');
             try {
                 const response = await bookingApi.getPaymentPage(transactionId);
-                const mapped = mapPaymentPageResponse(response);
+                const cached = loadPaymentSession(transactionId);
+                const mapped = mapPaymentPageResponse(response, cached || {});
                 savePaymentSession(transactionId, mapped);
                 if (!cancelled) {
                     dispatch(setPaymentInfo(mapped));
@@ -150,7 +152,8 @@ export default function Step3Payment() {
         const expirePayment = async () => {
             try {
                 const response = await bookingApi.expirePayment(transactionId);
-                const mapped = mapPaymentPageResponse(response);
+                const cached = loadPaymentSession(transactionId);
+                const mapped = mapPaymentPageResponse(response, cached || {});
                 dispatch(setPaymentInfo(mapped));
                 savePaymentSession(transactionId, mapped);
             } catch (err) {
@@ -160,6 +163,16 @@ export default function Step3Payment() {
 
         expirePayment();
     }, [dispatch, isExpired, isPending, transactionId]);
+
+    useEffect(() => {
+        if (isCompleted) {
+            const timer = setTimeout(() => {
+                navigate('/'); 
+            }, 15000);
+
+            return () => clearTimeout(timer); 
+        }
+    }, [isCompleted, navigate]);
 
     usePaymentSse(transactionId, {
         enabled: Boolean(transactionId && isPending && !isExpired),
@@ -197,7 +210,9 @@ export default function Step3Payment() {
             {isCompleted && (
                 <Alert variant="success" className="rounded-3 border-0 shadow-sm d-flex gap-2 align-items-center">
                     <BsCheckCircleFill />
-                    Thanh toán thành công. Hệ thống đã xác nhận vé của bạn.
+                    <div>
+                        Thanh toán thành công. Hệ thống sẽ tự động điều hướng về trang chủ sau 15 giây...
+                    </div>
                 </Alert>
             )}
 
@@ -205,17 +220,7 @@ export default function Step3Payment() {
                 <Alert variant="danger" className="rounded-3 border-0 shadow-sm d-flex gap-2 align-items-start">
                     <BsExclamationTriangleFill className="mt-1" />
                     <div>
-                        Mã thanh toán đã hết hạn hoặc bị hủy. Ghế sẽ được giải phóng — vui lòng đặt lại vé nếu bạn chưa chuyển khoản.
-                    </div>
-                </Alert>
-            )}
-
-            {canPay && (
-                <Alert variant="info" className="rounded-3 border-0 shadow-sm d-flex gap-2 align-items-start">
-                    <BsInfoCircle className="mt-1" />
-                    <div>
-                        Trong thời gian còn lại, bạn có thể quét lại QR hoặc chuyển khoản thủ công nếu lần trước chưa thành công.
-                        Hệ thống sẽ tự cập nhật khi nhận được tiền.
+                        Mã thanh toán đã hết hạn hoặc bị hủy. Ghế sẽ được giải phóng, vui lòng đặt lại vé nếu bạn chưa chuyển khoản.
                     </div>
                 </Alert>
             )}
