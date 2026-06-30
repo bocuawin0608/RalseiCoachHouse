@@ -79,7 +79,7 @@ INSERT INTO [voucher] (voucherCode, discountValue, startEffectiveDate, endEffect
 ('HE2026', 10.00, '2026-01-01', '2028-12-31', 'PERCENT', 50000.00, 200000.00, 1000), 
 ('GIAM50K', 50000.00, '2026-01-01', '2028-12-31', 'FIXED', 50000.00, 0.00, 1000);
 
-INSERT INTO [coach_stop] (stopPointName, address, city, surcharge, isActive, latitude, longitude) VALUES
+INSERT INTO [coach_stop] (stopPointName, address, city, latitude, longitude) VALUES
 (N'Bến Xe Nước Ngầm', N'Số 1 Ngọc Hồi, Hoàng Mai', N'Hà Nội', 20.939917437, 105.844225125),
 (N'Sảnh T1+T2 - Sân bay Nội Bài', N'Sảnh E, Nhà ga T1, Sóc Sơn', N'Hà Nội', 21.2149337, 105.8007099),
 (N'Văn Phòng Đồng Hới', N'Trần Hưng Đạo, Đồng Hới', N'Quảng Bình', 17.4691879169492, 106.61043838942),
