@@ -39,6 +39,7 @@ docs/
 ./documents/usecase-cargo-tracking.md
 ./documents/changelog-voucher-crud.md
 ./documents/changelog-local.md
+./documents/Test_Plan_Cargo_Tracking.docx
 ./documents/USECASE_PassengerTicket_Payment_Refund.md
 
 tracker/
