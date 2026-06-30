@@ -129,6 +129,8 @@ CREATE TABLE [coach_stop] (
     [city] NVARCHAR(255) NOT NULL,
     [surcharge] DECIMAL(15,2) NOT NULL DEFAULT 0.00,
     [isActive] BIT NOT NULL DEFAULT 1,
+    [latitude] DECIMAL(12, 8) NOT NULL,
+    [longitude] DECIMAL(12, 8) NOT NULL,
     [createdAt] DATETIME DEFAULT GETDATE(),
     [createdBy] INT NULL,
     [updatedAt] DATETIME DEFAULT GETDATE(),
