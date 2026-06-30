@@ -10,7 +10,8 @@ const initialState = {
         dropoffStopId: null,
         voucherId: null,
         passengers: []
-    }
+    },
+    paymentInfo: null
 };
 
 const bookingSlice = createSlice({
@@ -29,6 +30,16 @@ const bookingSlice = createSlice({
         setPassengerInfo: (state, action) => {
             state.passengerInfo = action.payload;
         },
+
+        setPaymentInfo: (state, action) => {
+            state.paymentInfo = action.payload;
+        },
+
+        setPaymentStatus: (state, action) => {
+            if (state.paymentInfo) {
+                state.paymentInfo.status = action.payload;
+            }
+        },
         
         resetBooking: () => {
             return {...initialState, holdToken: uuidv4()}
@@ -36,6 +47,6 @@ const bookingSlice = createSlice({
     }
 });
 
-export const { setStep, setSelectedSeats, setPassengerInfo, resetBooking } = bookingSlice.actions;
+export const { setStep, setSelectedSeats, setPassengerInfo, setPaymentInfo, setPaymentStatus, resetBooking } = bookingSlice.actions;
 
 export default bookingSlice.reducer;

@@ -19,6 +19,7 @@ import com.ralsei.dto.request.sePay.SepayWebhookRequest;
 import com.ralsei.model.Payment;
 import com.ralsei.service.PaymentService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -32,7 +33,7 @@ public class PaymentController {
     private String sepayApiToken;
 
     @PostMapping("/checkout")
-    public ResponseEntity<?> initializePayment(@RequestBody PaymentCheckoutRequest request) {
+    public ResponseEntity<?> initializePayment(@Valid @RequestBody PaymentCheckoutRequest request) {
         try {
             Payment payment = paymentService.initializePayment(request);
             return ResponseEntity.ok(Map.of(
@@ -73,30 +74,6 @@ public class PaymentController {
         try {
             Payment payment = paymentService.getPaymentByTransactionId(transactionId);
             return ResponseEntity.ok(payment);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
-        }
-    }
-
-    @PutMapping("/{paymentId}/soft-delete")
-    public ResponseEntity<?> softDeletePayment(@PathVariable int paymentId) {
-        try {
-            paymentService.softDeletePayment(paymentId);
-            return ResponseEntity.ok(Map.of("success", true, "message", "Payment deleted successfully"));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
-        }
-    }
-
-    @PutMapping("/{paymentId}/restore")
-    public ResponseEntity<?> restorePayment(@PathVariable int paymentId) {
-        try {
-            paymentService.restorePayment(paymentId);
-            return ResponseEntity.ok(Map.of("success", true, "message", "Payment restored successfully"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {

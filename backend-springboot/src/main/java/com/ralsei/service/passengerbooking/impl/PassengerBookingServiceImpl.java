@@ -3,19 +3,26 @@ package com.ralsei.service.passengerbooking.impl;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.Year;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.ralsei.dto.request.passengerbooking.BookingConfirmRequest;
 import com.ralsei.dto.request.passengerbooking.PassengerDTO;
 import com.ralsei.dto.request.passengerbooking.PriceCalculationRequest;
 import com.ralsei.dto.request.passengerbooking.SeatLockRequest;
+import com.ralsei.dto.request.payment.PaymentCheckoutRequest;
 import com.ralsei.dto.response.passengerbooking.BookingConfirmResponse;
+import com.ralsei.dto.response.passengerbooking.BookingPaymentPageResponse;
 import com.ralsei.dto.response.passengerbooking.CoachStopDropdownDTO;
 import com.ralsei.dto.response.passengerbooking.PriceCalculationResponse;
 import com.ralsei.dto.response.passengerbooking.SeatLockResponse;
@@ -26,24 +33,31 @@ import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.exception.ResourceNotFoundException;
 import com.ralsei.model.AccompaniedChild;
 import com.ralsei.model.CoachStop;
-import com.ralsei.model.Customer;
 import com.ralsei.model.PassengerTicket;
 import com.ralsei.model.PassengerTicketDetail;
 import com.ralsei.model.Payment;
 import com.ralsei.model.RouteStop;
+import com.ralsei.model.TripSeat;
 import com.ralsei.model.Voucher;
+import com.ralsei.model.enums.PassengerTicketDetailStatus;
 import com.ralsei.model.enums.PassengerTicketStatus;
 import com.ralsei.model.enums.TripSeatStatus;
 import com.ralsei.model.enums.VoucherType;
-import com.ralsei.repository.CoachStopRepository;
+import com.ralsei.repository.AccompaniedChildRepository;
+import com.ralsei.repository.CustomerRepository;
+import com.ralsei.repository.PassengerTicketDetailRepository;
 import com.ralsei.repository.PassengerTicketRepository;
+import com.ralsei.repository.RouteStopRepository;
 import com.ralsei.repository.TripRepository;
 import com.ralsei.repository.TripSeatRepository;
 import com.ralsei.service.JwtService;
+import com.ralsei.service.PaymentService;
 import com.ralsei.service.RouteStopService;
 import com.ralsei.service.VoucherService;
 import com.ralsei.service.passengerbooking.PassengerBookingService;
+import com.ralsei.service.passengerbooking.PaymentSseService;
 import com.ralsei.service.passengerbooking.SeatHoldService;
+import com.ralsei.service.ticketgenerator.TicketCodeGenerator;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -55,16 +69,30 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
 
     private final TripRepository tripRepo;
     private final TripSeatRepository tripSeatRepo;
-    private final CoachStopRepository coachStopRepo;
+    private final RouteStopRepository routeStopRepo;
+    private final CustomerRepository customerRepo;
     private final PassengerTicketRepository ticketRepo;
+    private final PassengerTicketDetailRepository ticketDetailRepo;
+    private final AccompaniedChildRepository accompaniedChildRepo;
     //lười nên vứt con repo ở đây thay vì tạo thêm service
 
     private final SeatHoldService seatHoldService;
     private final RouteStopService routeStopService;
     private final VoucherService voucherService;
+    private final PaymentService paymentService;
+    private final PaymentSseService paymentSseService;
+    private final TicketCodeGenerator ticketCodeGenerator;
     private final JwtService jwtService;
 
     private static final long BROWSING_HOLD_TTL_SECONDS = 600;
+    private static final long PAYMENT_HOLD_TTL_SECONDS = 60;
+    private static final String BANK_TRANSFER_METHOD = "SEPAY";
+
+    @Value("${sepay.bank.account}")
+    private String sepayBankAccount;
+
+    @Value("${sepay.bank.name}")
+    private String sepayBankName;
     
     @Transactional(readOnly = true)
     @Override
@@ -130,30 +158,9 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
         return releaseSeats(tripSeatIds, holdToken);
     }
 
-    private List<CoachStopDropdownDTO> getStopPointDropdown(List<RouteStop> stopPointList, String province){
-        return stopPointList.stream().filter(stop -> stop.getCoachStop().getCity().trim().equalsIgnoreCase(province)).map(stop -> new CoachStopDropdownDTO(
-            stop.getCoachStop().getStopPointId(), stop.getCoachStop().getStopPointName()
-        )).toList();
-    }
-
-    private List<VoucherDTO> getEligibleVouchers(String accessToken) {
-        Integer accountId = jwtService.extractAccountId(accessToken);
-        List<VoucherDTO> eligibleVouchers = new ArrayList<>();
-        if(accountId != null) {
-            List<VoucherDTO> availableVouchers = voucherService.getEligibleVouchers();
-            Set<Integer> usedVoucherIds = ticketRepo.getUsedVoucherIdsByAccountId(accountId, PassengerTicketStatus.CANCELLED);
-            eligibleVouchers = availableVouchers.stream().filter(voucher -> !usedVoucherIds.contains(voucher.voucherId())).toList();
-        }
-        return eligibleVouchers;
-    }
-
     @Transactional(readOnly = true)
     @Override
     public Step2InitResponse getStep2InitData(Integer tripId, String holdToken, String accessToken) {
-        if(!tripRepo.existsById(tripId)) {
-            throw new ResourceNotFoundException("Không tìm thấy chuyến xe có ID là: " + tripId);
-        }
-        //TODO: check kỹ hơn tripId nào với status nào, departure time (now-8?) nào còn đc đặt vé
 
         List<RouteStop> routeStops = routeStopService.getStopsByTripId(tripId);
         if(routeStops == null || routeStops.isEmpty()) {
@@ -196,6 +203,107 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
         );
     }
 
+    @Transactional
+    @Override
+    public BookingConfirmResponse confirmBooking(Integer tripId, BookingConfirmRequest request, String holdToken, String accessToken) {
+        validatePassengerChildBirthYears(request.passengers());
+
+        CoreCalculationResult coreResult = performCorePriceCalculation(
+            tripId, holdToken, request.pickupStopId(), 
+            request.dropoffStopId(), request.voucherId(), accessToken
+        );
+
+        validateRequestSeatsMatchLockedSeats(request, coreResult.lockedSeatIds());
+
+        String voucherCodeSnapshot = processVoucherUsage(coreResult.voucherToBeUsed());
+
+        Integer customerId = resolveCustomerId(accessToken);
+
+        PassengerTicket ticket = saveMasterTicket(tripId, request, coreResult, customerId, voucherCodeSnapshot);
+
+        saveTicketDetailsAndChildrenInBatch(ticket.getPassengerTicketId(), request.passengers(), coreResult);
+
+        Payment payment = paymentService.initializePayment(new PaymentCheckoutRequest(
+            ticket.getPassengerTicketId(),
+            null, // cargoTicketId = null
+            coreResult.totalFinalPrice(),
+            BANK_TRANSFER_METHOD
+        ));
+
+        seatHoldService.extendLock(coreResult.lockedSeatIds(), holdToken, PAYMENT_HOLD_TTL_SECONDS);
+
+        return new BookingConfirmResponse(
+            ticket.getTicketCode(),
+            payment.getTransactionId(),
+            coreResult.totalFinalPrice(),
+            sepayBankAccount, 
+            sepayBankName,
+            LocalDateTime.now().plusSeconds(PAYMENT_HOLD_TTL_SECONDS)
+        );
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public BookingPaymentPageResponse getPaymentPage(String transactionId) {
+        Payment payment = paymentService.getPaymentByTransactionId(transactionId);
+        if (payment.getPassengerTicketId() == null) {
+            throw new ResourceNotFoundException("Không tìm thấy thông tin thanh toán vé hành khách!");
+        }
+
+        PassengerTicket ticket = ticketRepo.findById(payment.getPassengerTicketId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vé với mã giao dịch: " + transactionId));
+
+        List<PassengerTicketDetail> details = ticketDetailRepo.findByPassengerTicketId(ticket.getPassengerTicketId());
+        if (details.isEmpty()) {
+            throw new ResourceNotFoundException("Không tìm thấy chi tiết vé!");
+        }
+
+        PassengerTicketDetail primaryDetail = details.get(0);
+        List<String> seatCodes = details.stream()
+            .map(ticketDetail -> ticketDetail.getSeatCodeSnapshot())
+            .toList();
+
+        return new BookingPaymentPageResponse(
+            ticket.getTicketCode(),
+            payment.getTransactionId(),
+            payment.getAmount(),
+            sepayBankAccount,
+            sepayBankName,
+            primaryDetail.getExpiredAt(),
+            payment.getStatus(),
+            primaryDetail.getFullName(),
+            primaryDetail.getPhone(),
+            seatCodes,
+            ticket.getTripId()
+        );
+    }
+
+    @Transactional
+    @Override
+    public void expirePendingPaymentIfOverdue(String transactionId) {
+        try {
+            Payment payment = paymentService.getPaymentByTransactionId(transactionId);
+            if (!"PENDING".equals(payment.getStatus()) || payment.getPassengerTicketId() == null) return;
+
+            ticketDetailRepo.findByPassengerTicketId(payment.getPassengerTicketId())
+                .stream().findFirst().ifPresent(detail -> {
+                    if (detail.getExpiredAt() != null && LocalDateTime.now().isAfter(detail.getExpiredAt())) {
+                        paymentService.cancelPayment(transactionId);
+                    }
+                });
+        } catch (IllegalArgumentException ex) {
+            log.warn("Không thể expire transaction: {}", transactionId);
+        }
+    }
+
+    @Override
+    public SseEmitter subscribePaymentStatus(String transactionId) {
+        Payment payment = paymentService.getPaymentByTransactionId(transactionId);
+        SseEmitter emitter = paymentSseService.createConnection(transactionId);
+        paymentSseService.sendStatusUpdate(transactionId, payment.getStatus());
+        return emitter;
+    }
+
     private record CoreCalculationResult(
         List<Integer> lockedSeatIds,
         BigDecimal basePrice,
@@ -205,195 +313,223 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
         BigDecimal totalFinalPrice,
         CoachStop pickupStop,
         CoachStop dropoffStop,
-        Voucher voucherToBeUsed
+        Voucher voucherToBeUsed,
+        Map<Integer, TripSeat> tripSeatMap
     ) {}
-
+    
     private CoreCalculationResult performCorePriceCalculation(
         Integer tripId, String holdToken, Integer pickupStopId, 
         Integer dropoffStopId, Integer voucherId, String accessToken
     ) {
-        //TODO: check kỹ hơn tripId nào với status nào, departure time (now-8?) nào còn đc đặt vé. Chú ý, ở hàm step2InitData() có check tripId, nếu mà chỗ này check ngon hơn thì xóa chỗ check tripId đó ở hàm kia đi, dùng cái này là ổn r
-        List<Integer> tripSeatIdsBooking = seatHoldService.getTripSeatIdsByToken(holdToken);
-        if (tripSeatIdsBooking == null || tripSeatIdsBooking.isEmpty()) {
-            throw new BusinessRuleException("Phiên giữ ghế đã hết hạn hoặc không hợp lệ. Vui lòng chọn lại ghế!");
-        }
+        Integer routeId = tripRepo.findById(tripId).map(trip -> trip.getRouteId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyến xe có ID là: " + tripId));
+        //TODO: check kỹ hơn tripId nào với status nào, departure time (now-8?) nào còn đc đặt vé
 
-        List<Integer> availableSeatIds = tripSeatRepo.findTripSeatIdsByTripIdAndStatus(tripId, TripSeatStatus.AVAILABLE);
-        //bản chất là status LOCK ko đổ database, nên ở dưới đó nó vẫn là status available thôi
-        if (availableSeatIds.isEmpty() || !availableSeatIds.containsAll(tripSeatIdsBooking)) {
-            throw new BusinessRuleException("Có ghế ngồi không hợp lệ hoặc đã được đặt! Vui lòng chọn lại!");
-        }
+        List<Integer> lockedSeatIds = seatHoldService.getTripSeatIdsByToken(holdToken);
+        Map<Integer, TripSeat> tripSeatMap = validateAndFetchSeats(tripId, lockedSeatIds);
+        BigDecimal basePrice = tripSeatMap.values().iterator().next().getPrice();
 
-        BigDecimal basePrice = tripSeatRepo.findById(tripSeatIdsBooking.get(0))
-            .map(tripSeat -> tripSeat.getPrice())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin giá của ghế này!"));
+        RouteStopContext routeContext = calculateRouteSurcharge(routeId, pickupStopId, dropoffStopId);
 
-        BigDecimal baseSurcharge = BigDecimal.ZERO;
-        CoachStop pickupStop = null;
-        CoachStop dropoffStop = null;
+        BigDecimal totalRawPrice = basePrice.add(routeContext.surcharge)
+            .multiply(BigDecimal.valueOf(lockedSeatIds.size()));
 
-        if (pickupStopId != null && dropoffStopId != null) {
-            if (pickupStopId.equals(dropoffStopId)) {
-                throw new BusinessRuleException("Điểm đón và điểm trả không được trùng nhau!");
-            }
-            
-            pickupStop = coachStopRepo.findById(pickupStopId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy điểm đón hợp lệ!"));
-            dropoffStop = coachStopRepo.findById(dropoffStopId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy điểm trả hợp lệ!"));
-
-            if (pickupStop.getSurcharge() != null) {
-                baseSurcharge = baseSurcharge.add(pickupStop.getSurcharge());
-            }
-            if (dropoffStop.getSurcharge() != null) {
-                baseSurcharge = baseSurcharge.add(dropoffStop.getSurcharge());
-            }
-        }
-
-        BigDecimal totalRawPrice = basePrice.add(baseSurcharge).multiply(BigDecimal.valueOf(tripSeatIdsBooking.size()));
-
-        BigDecimal discountAmount = BigDecimal.ZERO;
-        Voucher voucherToBeUsed = null;
-
-        if (voucherId != null) {
-            voucherToBeUsed = voucherService.getEligibleVoucher(voucherId, totalRawPrice);
-            if (voucherToBeUsed == null) {
-                throw new BusinessRuleException("Mã giảm giá không hợp lệ hoặc không đáp ứng điều kiện đơn hàng!");
-            }
-
-            Integer accountId = jwtService.extractAccountId(accessToken);
-            if (accountId != null) {
-                Set<Integer> usedVoucherIds = ticketRepo.getUsedVoucherIdsByAccountId(accountId, PassengerTicketStatus.CANCELLED);
-                if (usedVoucherIds.contains(voucherToBeUsed.getVoucherId())) {
-                    throw new BusinessRuleException("Không thành công, voucher này đã được sử dụng!");
-                }
-            }
-
-            discountAmount = voucherToBeUsed.getDiscountType().equals(VoucherType.FIXED.getValue()) 
-                ? voucherToBeUsed.getDiscountValue() 
-                : totalRawPrice.multiply(voucherToBeUsed.getDiscountValue()).divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
-            
-            if (voucherToBeUsed.getMaxDiscountValue() != null && discountAmount.compareTo(voucherToBeUsed.getMaxDiscountValue()) > 0) {
-                discountAmount = voucherToBeUsed.getMaxDiscountValue();
-            }
-            if (discountAmount.compareTo(totalRawPrice) > 0) {
-                discountAmount = totalRawPrice;
-            }
-        }
+        DiscountContext discountContext = calculateDiscount(voucherId, totalRawPrice, accessToken);
         
-        BigDecimal finalPrice = totalRawPrice.subtract(discountAmount).setScale(0, RoundingMode.HALF_UP);
+        BigDecimal finalPrice = totalRawPrice.subtract(discountContext.discountAmount).setScale(0, RoundingMode.HALF_UP);
 
         return new CoreCalculationResult(
-            tripSeatIdsBooking, 
+            lockedSeatIds, 
             basePrice, 
-            baseSurcharge, 
+            routeContext.surcharge, 
             totalRawPrice, 
-            discountAmount, 
-            finalPrice.compareTo(BigDecimal.ZERO) >= 0 ? finalPrice : BigDecimal.ZERO, 
-            pickupStop, 
-            dropoffStop, 
-            voucherToBeUsed
+            discountContext.discountAmount, 
+            finalPrice.max(BigDecimal.ZERO), 
+            routeContext.pickupStop, 
+            routeContext.dropoffStop, 
+            discountContext.voucher,
+            tripSeatMap
         );
     }
 
-    @Transactional
-    @Override
-    public BookingConfirmResponse confirmBooking(Integer tripId, BookingConfirmRequest request, String holdToken, String accessToken) {
-        // // 1. Chạy Core Helper: Tính toán & Verify, móc luôn Entity lên đây
-        // CoreCalculationResult coreResult = performCorePriceCalculation(
-        //     tripId, holdToken, request.pickupStopId(), 
-        //     request.dropoffStopId(), request.voucherId(), accessToken
-        // );
+    private Map<Integer, TripSeat> validateAndFetchSeats(Integer tripId, List<Integer> tripSeatIdsBooking) {
+        if (tripSeatIdsBooking == null || tripSeatIdsBooking.isEmpty()) {
+            throw new BusinessRuleException("Phiên giữ ghế đã hết hạn hoặc không hợp lệ. Vui lòng chọn lại!");
+        }
+        List<TripSeat> bookedSeats = tripSeatRepo.findByTripIdAndTripSeatIdInWithSeat(tripId, tripSeatIdsBooking);
+        if (bookedSeats.size() != tripSeatIdsBooking.size()) {
+            throw new BusinessRuleException("Có ghế ngồi không hợp lệ hoặc đã bị thay đổi. Vui lòng chọn lại!");
+        }
+        if (!bookedSeats.stream().allMatch(seat -> TripSeatStatus.AVAILABLE.equals(seat.getStatus()))) {
+            throw new BusinessRuleException("Có ghế ngồi đã được đặt bởi người khác. Vui lòng chọn lại!");
+        }
+        if (bookedSeats.get(0).getPrice() == null) {
+            throw new ResourceNotFoundException("Không tìm thấy thông tin giá của ghế này!");
+        }
+        return bookedSeats.stream().collect(Collectors.toMap(tripSeat -> tripSeat.getTripSeatId(), Function.identity()));
+    }
 
-        // // 2. Định danh Account (Khách vãng lai = null)
-        // Integer customerId = null;
-        // if (accessToken != null && !accessToken.isBlank()) {
-        //     Integer accountId = jwtService.extractAccountId(accessToken);
-        //     if (accountId != null) {
-        //         customerId = customerRepo.findByAccountId(accountId)
-        //             .map(Customer::getCustomerId)
-        //             .orElse(null);
-        //     }
-        // }
+    private record RouteStopContext(CoachStop pickupStop, CoachStop dropoffStop, BigDecimal surcharge) {}
 
-        // // 3. Xử lý Voucher Concurrent (Atomic Update chống Race Condition)
-        // String voucherCodeSnapshot = null;
-        // if (coreResult.voucherToBeUsed() != null && coreResult.discountAmount().compareTo(BigDecimal.ZERO) > 0) {
-        //     int rowsUpdated = voucherRepo.incrementUsedCountIfAvailable(coreResult.voucherToBeUsed().getVoucherId());
-        //     if (rowsUpdated == 0) {
-        //         throw new BusinessRuleException("Voucher vừa hết lượt sử dụng! Vui lòng chọn lại.");
-        //     }
-        //     voucherCodeSnapshot = coreResult.voucherToBeUsed().getVoucherCode();
-        // }
+    private RouteStopContext calculateRouteSurcharge(Integer routeId, Integer pickupStopId, Integer dropoffStopId) {
+        if (pickupStopId == null || dropoffStopId == null) {
+            return new RouteStopContext(null, null, BigDecimal.ZERO);
+        }
+        if (pickupStopId.equals(dropoffStopId)) {
+            throw new BusinessRuleException("Điểm đón và điểm trả không được trùng nhau!");
+        }
+        
+        RouteStop pickup = routeStopRepo.findByRouteIdAndStopPointId(routeId, pickupStopId)
+            .orElseThrow(() -> new BusinessRuleException("Điểm đón không hợp lệ!"));
+        RouteStop dropoff = routeStopRepo.findByRouteIdAndStopPointId(routeId, dropoffStopId)
+            .orElseThrow(() -> new BusinessRuleException("Điểm trả không hợp lệ!"));
 
-        // // 4. Khởi tạo Passenger Ticket (Vé Tổng)
-        // String ticketCode = "TK" + System.currentTimeMillis(); 
-        // PassengerTicket ticket = PassengerTicket.builder()
-        //     .customerId(customerId)
-        //     .tripId(tripId)
-        //     .ticketCode(ticketCode)
-        //     .totalPrice(coreResult.totalFinalPrice())
-        //     .voucherId(request.voucherId())
-        //     // TẬN DỤNG LUÔN Entity từ CoreResult mà không cần Query lại
-        //     .pickupStopId(coreResult.pickupStop().getStopPointId())
-        //     .dropoffStopId(coreResult.dropoffStop().getStopPointId())
-        //     .pickupStopName(coreResult.pickupStop().getStopPointName())
-        //     .dropoffStopName(coreResult.dropoffStop().getStopPointName())
-        //     .voucherCodeSnapshot(voucherCodeSnapshot)
-        //     .status(PassengerTicketStatus.PENDING.getValue())
-        //     .build();
-        // PassengerTicket savedTicket = ticketRepo.save(ticket);
+        if (pickup.getStopOrder() >= dropoff.getStopOrder()) {
+            throw new BusinessRuleException("Lộ trình không hợp lệ: Điểm đón phải nằm trước điểm trả!");
+        }
 
-        // // 5. Khởi tạo Passenger Ticket Detail & Accompanied Child
-        // LocalDateTime expiredAt = LocalDateTime.now().plusSeconds(PAYMENT_HOLD_TTL_SECONDS); 
-        // BigDecimal pricePerSeat = coreResult.basePrice().add(coreResult.baseSurcharge());
+        BigDecimal surcharge = BigDecimal.ZERO;
+        if (pickup.getCoachStop().getSurcharge() != null) surcharge = surcharge.add(pickup.getCoachStop().getSurcharge());
+        if (dropoff.getCoachStop().getSurcharge() != null) surcharge = surcharge.add(dropoff.getCoachStop().getSurcharge());
 
-        // for (PassengerDTO passenger : request.passengers()) {
-        //     PassengerTicketDetail detail = PassengerTicketDetail.builder()
-        //         .passengerTicketId(savedTicket.getPassengerTicketId())
-        //         .tripSeatId(passenger.tripSeatId())
-        //         .seatCodeSnapshot(passenger.seatCode())
-        //         .fullName(passenger.fullname())
-        //         .phone(passenger.phone())
-        //         .email(passenger.email())
-        //         .price(pricePerSeat)
-        //         .status(PassengerTicketStatus.PENDING.getValue())
-        //         .expiredAt(expiredAt)
-        //         .build();
-        //     PassengerTicketDetail savedDetail = ticketDetailRepo.save(detail);
+        return new RouteStopContext(pickup.getCoachStop(), dropoff.getCoachStop(), surcharge);
+    }
 
-        //     if (passenger.accompaniedChild() != null) {
-        //         AccompaniedChild child = AccompaniedChild.builder()
-        //             .ticketDetailId(savedDetail.getTicketDetailId())
-        //             .fullname(passenger.accompaniedChild().fullname())
-        //             .birthYear(passenger.accompaniedChild().birthYear())
-        //             .build();
-        //         accompaniedChildRepo.save(child);
-        //     }
-        // }
+    private record DiscountContext(Voucher voucher, BigDecimal discountAmount) {}
 
-        // // 6. Giao tiếp với Module Payment (Tạo giao dịch PENDING chờ FE quét QR)
-        // PaymentCheckoutRequest paymentRequest = new PaymentCheckoutRequest(
-        //     savedTicket.getPassengerTicketId(),
-        //     null, // cargoTicketId = null
-        //     coreResult.totalFinalPrice(),
-        //     "BANK_TRANSFER"
-        // );
-        // Payment payment = paymentService.initializePayment(paymentRequest);
+    private DiscountContext calculateDiscount(Integer voucherId, BigDecimal totalRawPrice, String accessToken) {
+        if (voucherId == null) return new DiscountContext(null, BigDecimal.ZERO);
 
-        // // 7. Gia hạn Redis Lock cho khớp với thời gian chờ quét QR
-        // seatHoldService.extendLock(coreResult.lockedSeatIds(), holdToken, PAYMENT_HOLD_TTL_SECONDS);
+        Voucher voucher = voucherService.getEligibleVoucher(voucherId, totalRawPrice);
+        if (voucher == null) {
+            throw new BusinessRuleException("Mã giảm giá không hợp lệ hoặc không đáp ứng điều kiện!");
+        }
 
-        // // 8. Trả Response về cho FE render QR
-        // return new BookingConfirmResponse(
-        //     savedTicket.getTicketCode(),
-        //     payment.getTransactionId(),
-        //     coreResult.totalFinalPrice(),
-        //     sepayBankAccount, 
-        //     sepayBankName,
-        //     expiredAt
-        // );
+        Integer accountId = jwtService.extractAccountId(accessToken);
+        if (accountId != null && ticketRepo.getUsedVoucherIdsByAccountId(accountId, PassengerTicketStatus.CANCELLED).contains(voucherId)) {
+            throw new BusinessRuleException("Không thành công, voucher này đã được sử dụng!");
+        }
+
+        BigDecimal discount = voucher.getDiscountType().equals(VoucherType.FIXED.getValue()) 
+            ? voucher.getDiscountValue() 
+            : totalRawPrice.multiply(voucher.getDiscountValue()).divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
+        
+        if (voucher.getMaxDiscountValue() != null) discount = discount.min(voucher.getMaxDiscountValue());
+        
+        return new DiscountContext(voucher, discount.min(totalRawPrice));
+    }
+
+    private void saveTicketDetailsAndChildrenInBatch(Integer ticketId, List<PassengerDTO> passengers, CoreCalculationResult coreResult) {
+        LocalDateTime expiredAt = LocalDateTime.now().plusSeconds(PAYMENT_HOLD_TTL_SECONDS); 
+        BigDecimal pricePerSeat = coreResult.basePrice().add(coreResult.baseSurcharge());
+
+        List<PassengerTicketDetail> detailsToSave = passengers.stream().map(p -> 
+            PassengerTicketDetail.builder()
+                .passengerTicketId(ticketId)
+                .tripSeatId(p.tripSeatId())
+                .seatCodeSnapshot(coreResult.tripSeatMap().get(p.tripSeatId()).getSeat().getSeatCode())
+                .fullName(p.fullname())
+                .phone(p.phone())
+                .email(p.email())
+                .price(pricePerSeat)
+                .status(PassengerTicketDetailStatus.PENDING.name())
+                .expiredAt(expiredAt)
+                .build()
+        ).toList();
+
+        List<PassengerTicketDetail> savedDetails = ticketDetailRepo.saveAll(detailsToSave);
+
+        List<AccompaniedChild> childrenToSave = new ArrayList<>();
+        for (PassengerDTO dto : passengers) {
+            if (dto.accompaniedChild() != null) {
+                savedDetails.stream()
+                    .filter(sd -> sd.getTripSeatId() == dto.tripSeatId())
+                    .findFirst()
+                    .ifPresent(sd -> {
+                        childrenToSave.add(AccompaniedChild.builder()
+                            .ticketDetailId(sd.getTicketDetailId())
+                            .fullname(dto.accompaniedChild().fullname())
+                            .birthYear(dto.accompaniedChild().birthYear())
+                            .build());
+                    });
+            }
+        }
+        
+        if (!childrenToSave.isEmpty()) {
+            accompaniedChildRepo.saveAll(childrenToSave); 
+        }
+    }
+
+    private PassengerTicket saveMasterTicket(Integer tripId, BookingConfirmRequest request, CoreCalculationResult coreResult, Integer customerId, String voucherCodeSnapshot) {
+        return ticketRepo.save(PassengerTicket.builder()
+            .customerId(customerId)
+            .tripId(tripId)
+            .ticketCode(ticketCodeGenerator.generatePassengerTicketCode())
+            .totalPrice(coreResult.totalFinalPrice())
+            .voucherId(request.voucherId())
+            .pickupStopId(coreResult.pickupStop().getStopPointId())
+            .dropoffStopId(coreResult.dropoffStop().getStopPointId())
+            .pickupStopName(coreResult.pickupStop().getStopPointName())
+            .dropoffStopName(coreResult.dropoffStop().getStopPointName())
+            .voucherCodeSnapshot(voucherCodeSnapshot)
+            .status(PassengerTicketStatus.PENDING)
+            .build());
+    }
+
+    private void validateRequestSeatsMatchLockedSeats(BookingConfirmRequest request, List<Integer> lockedSeatIds) {
+        Set<Integer> lockedSet = Set.copyOf(lockedSeatIds);
+        Set<Integer> requestedSet = request.passengers().stream()
+            .map(passengerDTO -> passengerDTO.tripSeatId()).collect(Collectors.toSet());
+        if (requestedSet.size() != request.passengers().size() || !requestedSet.equals(lockedSet)) {
+            throw new BusinessRuleException("Danh sách hành khách không khớp với ghế đang giữ!");
+        }
+    }
+
+    private String processVoucherUsage(Voucher voucher) {
+        if (voucher != null) {
+            if (voucherService.incrementUsedCountIfAvailable(voucher.getVoucherId()) == 0) {
+                throw new BusinessRuleException("Voucher vừa hết lượt sử dụng! Vui lòng chọn lại.");
+            }
+            return voucher.getVoucherCode();
+        }
         return null;
+    }
+
+    private Integer resolveCustomerId(String accessToken) {
+        if (accessToken != null && !accessToken.isBlank()) {
+            Integer accountId = jwtService.extractAccountId(accessToken);
+            if (accountId != null) {
+                return customerRepo.findByAccountId(accountId)
+                    .map(customer -> customer.getCustomerId()).orElse(null);
+            }
+        }
+        return null;
+    }
+
+    private List<CoachStopDropdownDTO> getStopPointDropdown(List<RouteStop> stopPointList, String province){
+        return stopPointList.stream().filter(stop -> stop.getCoachStop().getCity().trim().equalsIgnoreCase(province)).map(stop -> new CoachStopDropdownDTO(
+            stop.getCoachStop().getStopPointId(), stop.getCoachStop().getStopPointName()
+        )).toList();
+    }
+
+    private List<VoucherDTO> getEligibleVouchers(String accessToken) {
+        Integer accountId = jwtService.extractAccountId(accessToken);
+        List<VoucherDTO> eligibleVouchers = new ArrayList<>();
+        if(accountId != null) {
+            List<VoucherDTO> availableVouchers = voucherService.getEligibleVouchers();
+            Set<Integer> usedVoucherIds = ticketRepo.getUsedVoucherIdsByAccountId(accountId, PassengerTicketStatus.CANCELLED);
+            eligibleVouchers = availableVouchers.stream().filter(voucher -> !usedVoucherIds.contains(voucher.voucherId())).toList();
+        }
+        return eligibleVouchers;
+    }
+
+    private void validatePassengerChildBirthYears(List<PassengerDTO> passengers) {
+        int currentYear = Year.now().getValue();
+        for (PassengerDTO p : passengers) {
+            if (p.accompaniedChild() != null && p.accompaniedChild().birthYear() > currentYear) {
+                throw new BusinessRuleException("Năm sinh của bé không thể > năm hiện tại!");
+            }
+        }
     }
 
 }

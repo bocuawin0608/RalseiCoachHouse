@@ -237,4 +237,16 @@ public class VoucherServiceImpl implements VoucherService {
     public Voucher getEligibleVoucher(Integer voucherId, BigDecimal currentOrderValue) {
         return voucherRepository.getEligibleVoucher(voucherId, currentOrderValue);
     }
+
+    @Transactional
+    @Override
+    public int incrementUsedCountIfAvailable(Integer voucherId) {
+        return voucherRepository.incrementUsedCountIfAvailable(voucherId);
+    }
+
+    @Transactional
+    @Override
+    public int decrementUsedCountIfApplied(Integer voucherId) {
+        return voucherRepository.decrementUsedCountIfApplied(voucherId);
+    }
 }
