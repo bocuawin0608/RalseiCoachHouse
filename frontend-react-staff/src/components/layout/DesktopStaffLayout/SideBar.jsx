@@ -4,7 +4,7 @@ import { Collapse } from 'react-bootstrap';
 import {
     BsList, BsGrid1X2, BsBusFront, BsSignpostSplit,
     BsChevronDown, BsChevronRight, BsTags, BsGeoAlt,
-    BsBoxSeam, BsCashCoin, BsGift
+    BsBoxSeam, BsCashCoin, BsGift, BsPeopleFill
 } from 'react-icons/bs';
 import { useAuth } from '../../../features/auth';
 
@@ -170,10 +170,18 @@ export default function Sidebar() {
 
                     {hasAccess(['ADMIN', 'MANAGER']) && (
                         <>
-                            {/* NIKO: Gắn thêm trục điều hướng Chuyến Xe vào đây */}
                             <NavLink to="/management/trips" className={navLinkClass} end>
                                 <BsBusFront size={20} className="flex-shrink-0" />
                                 <span>Quản lý chuyến xe</span>
+                            </NavLink>
+                        </>
+                    )}
+
+                    {hasAccess(['ADMIN']) && (
+                        <>
+                            <NavLink to="/management/manage-accounts" className={navLinkClass} end>
+                                <BsPeopleFill size={20} className="flex-shrink-0" />
+                                <span>Quản lý tài khoản</span>
                             </NavLink>
                         </>
                     )}

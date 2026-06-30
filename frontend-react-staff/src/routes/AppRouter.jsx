@@ -14,6 +14,7 @@ import { coachRoutes } from '../features/coaches';
 import { voucherRoutes } from '../features/vouchers';
 import { cargoRoutes } from '../features/cargo';
 import { tripRoutes } from '../features/trip';
+import { accountRoutes } from '../features/manage-accounts';
 
 const AppRouter = () => {
     return (
@@ -38,7 +39,7 @@ const AppRouter = () => {
                     {/* route dưới thì chỉ admin vào đc, manager thì ko */}
                     <Route element={<RoleGuard allowedRoles={['ADMIN']} />}>
                         <Route path="system-config" element={<div>Cấu hình hệ thống</div>} />
-                        <Route path="manage-accounts" element={<div>Phân quyền tài khoản</div>} />
+                        {accountRoutes}
                     </Route>
 
                 </Route>
