@@ -5,9 +5,10 @@ import Step1SeatSelection from './Step1SeatSelection';
 import Step2PassengerInfo from './Step2PassengerInfo';
 import BookingWizardShell from './BookingWizardShell';
 import { bookingApi } from '../api/bookingApi';
-import { resetBooking, setStep, setTripInfo } from '../reducers/bookingSlice';
+import { resetBooking, setPaymentInfo, setStep, setTripInfo } from '../reducers/bookingSlice';
 import axiosClient from '../../../api/axiosClient';
 import { buildTripShellLabels } from '../utils/tripInfo';
+import { clearActivePaymentSessionByTrip, loadActivePaymentSessionByTrip } from '../utils/paymentSession';
 
 export default function BookingWizard({ tripId }) {
     const navigate = useNavigate();
@@ -34,18 +35,20 @@ export default function BookingWizard({ tripId }) {
                 .catch(() => {});
         }
 
-        const currentPayment = previousState.paymentInfo;
+        const currentPayment = previousState.paymentInfo || loadActivePaymentSessionByTrip(tripId);
         const paymentBelongsToCurrentTrip = String(currentPayment?.tripId) === String(tripId);
-        const paymentExpiresAt = currentPayment?.paymentExpiresAt ? new Date(currentPayment.paymentExpiresAt) : null;
-        const isActivePayment = currentPayment?.transactionId
+        const hasPendingPaymentForCurrentTrip = currentPayment?.transactionId
             && paymentBelongsToCurrentTrip
-            && currentPayment.status === 'PENDING'
-            && paymentExpiresAt
-            && paymentExpiresAt > new Date();
+            && currentPayment.status === 'PENDING';
 
-        if (isActivePayment) {
+        if (hasPendingPaymentForCurrentTrip) {
+            dispatch(setPaymentInfo(currentPayment));
             navigate(`/booking/payment/${currentPayment.transactionId}`, { replace: true });
             return;
+        }
+
+        if (currentPayment?.transactionId && paymentBelongsToCurrentTrip && currentPayment.status !== 'PENDING') {
+            clearActivePaymentSessionByTrip(tripId);
         }
 
         dispatch(resetBooking());

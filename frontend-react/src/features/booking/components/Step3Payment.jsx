@@ -7,7 +7,7 @@ import { bookingApi } from '../api/bookingApi';
 import { usePaymentSse } from '../hooks/usePaymentSse';
 import { setPaymentInfo, setPaymentStatus } from '../reducers/bookingSlice';
 import { formatCurrency, formatDateTime } from '../../../utils/formatters';
-import { loadPaymentSession, mapPaymentPageResponse, savePaymentSession } from '../utils/paymentSession';
+import { clearActivePaymentSessionByTrip, loadPaymentSession, mapPaymentPageResponse, savePaymentSession } from '../utils/paymentSession';
 
 const PENDING = 'PENDING';
 const COMPLETED = 'COMPLETED';
@@ -78,6 +78,9 @@ export default function Step3Payment() {
         const cached = loadPaymentSession(transactionId);
         if (cached) {
             savePaymentSession(transactionId, { ...cached, status: nextStatus });
+            if (nextStatus !== PENDING) {
+                clearActivePaymentSessionByTrip(cached.tripId);
+            }
         }
     }, [dispatch, transactionId]);
 
@@ -156,6 +159,9 @@ export default function Step3Payment() {
                 const mapped = mapPaymentPageResponse(response, cached || {});
                 dispatch(setPaymentInfo(mapped));
                 savePaymentSession(transactionId, mapped);
+                if (mapped.status !== PENDING) {
+                    clearActivePaymentSessionByTrip(mapped.tripId);
+                }
             } catch (err) {
                 console.error('Không thể hết hạn giao dịch thanh toán:', err);
             }
