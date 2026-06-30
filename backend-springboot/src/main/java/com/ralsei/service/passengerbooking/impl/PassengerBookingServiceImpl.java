@@ -508,7 +508,7 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
 
     private List<CoachStopDropdownDTO> getStopPointDropdown(List<RouteStop> stopPointList, String province){
         return stopPointList.stream().filter(stop -> stop.getCoachStop().getCity().trim().equalsIgnoreCase(province)).map(stop -> new CoachStopDropdownDTO(
-            stop.getCoachStop().getStopPointId(), stop.getCoachStop().getStopPointName()
+            stop.getCoachStop().getStopPointId(), stop.getCoachStop().getStopPointName(), stop.getMinutesFromStart()
         )).toList();
     }
 

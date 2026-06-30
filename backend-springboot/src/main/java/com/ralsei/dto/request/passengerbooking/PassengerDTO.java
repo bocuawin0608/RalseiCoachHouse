@@ -27,6 +27,7 @@ public record PassengerDTO(
     )
     String phone,
 
+    @NotBlank(message = "Vui lòng nhập email!")
     @Pattern(
         regexp = BookingValidationPatterns.EMAIL,
         message = "Email không hợp lệ!"

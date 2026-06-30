@@ -1,19 +1,34 @@
 import { useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import Step1SeatSelection from './Step1SeatSelection';
 import Step2PassengerInfo from './Step2PassengerInfo';
 import BookingWizardShell from './BookingWizardShell';
 import { bookingApi } from '../api/bookingApi';
-import { resetBooking, setStep } from '../reducers/bookingSlice';
+import { resetBooking, setStep, setTripInfo } from '../reducers/bookingSlice';
 import axiosClient from '../../../api/axiosClient';
+import { buildTripShellLabels } from '../utils/tripInfo';
 
 export default function BookingWizard({ tripId }) {
     const navigate = useNavigate();
+    const location = useLocation();
     const dispatch = useDispatch();
-    const { step, holdToken, selectedSeats, paymentInfo } = useSelector((state) => state.booking);
+    const { step, holdToken, selectedSeats, paymentInfo, tripInfo } = useSelector((state) => state.booking);
+    const { tripTitle, tripDate } = buildTripShellLabels(tripInfo);
 
     const latestStateRef = useRef({ selectedSeats, step, holdToken, tripId, paymentInfo });
+
+    useEffect(() => { window.scrollTo(0, 0);}, []);
+
+    useEffect(() => {
+        const incomingTripInfo = location.state; 
+
+        if (incomingTripInfo) {
+            dispatch(setTripInfo(incomingTripInfo));
+        } else if (!tripInfo) {
+            navigate('/', { replace: true });
+        }
+    }, [location.state, tripInfo, dispatch, navigate]);
 
     useEffect(() => {
         latestStateRef.current = { selectedSeats, step, holdToken, tripId, paymentInfo };
@@ -62,7 +77,7 @@ export default function BookingWizard({ tripId }) {
             }
             dispatch(setStep(step - 1));
         } else {
-            navigate(0);
+            navigate(-1);
         }
     };
 
@@ -78,7 +93,7 @@ export default function BookingWizard({ tripId }) {
     };
 
     return (
-        <BookingWizardShell step={step} onBack={handleBack}>
+        <BookingWizardShell step={step} onBack={handleBack} tripTitle={tripTitle} tripDate={tripDate}>
             {renderStepContent()}
         </BookingWizardShell>
     );
