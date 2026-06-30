@@ -21,28 +21,41 @@ export default function BookingWizard({ tripId }) {
     useEffect(() => {
         window.scrollTo(0, 0);
 
-        if (paymentInfo && paymentInfo.transactionId) {
-            const isExpired = new Date(paymentInfo.paymentExpiresAt) <= new Date();
-            
-            if (!isExpired) {
-                navigate(`/booking/payment/${paymentInfo.transactionId}`);
-                return;
-            }
+        const previousState = latestStateRef.current;
+        const previousTripChanged = String(previousState.tripId) !== String(tripId);
+
+        if (previousTripChanged && previousState.selectedSeats.length > 0 && !previousState.paymentInfo) {
+            bookingApi
+                .releaseSeats(
+                    previousState.tripId,
+                    { tripSeatIds: previousState.selectedSeats.map((seatObj) => seatObj.tripSeatId) },
+                    previousState.holdToken
+                )
+                .catch(() => {});
+        }
+
+        const currentPayment = previousState.paymentInfo;
+        const paymentBelongsToCurrentTrip = String(currentPayment?.tripId) === String(tripId);
+        const paymentExpiresAt = currentPayment?.paymentExpiresAt ? new Date(currentPayment.paymentExpiresAt) : null;
+        const isActivePayment = currentPayment?.transactionId
+            && paymentBelongsToCurrentTrip
+            && currentPayment.status === 'PENDING'
+            && paymentExpiresAt
+            && paymentExpiresAt > new Date();
+
+        if (isActivePayment) {
+            navigate(`/booking/payment/${currentPayment.transactionId}`, { replace: true });
+            return;
         }
 
         dispatch(resetBooking());
 
-    }, [tripId, dispatch, navigate, paymentInfo]);
-
-    useEffect(() => {
-        const incomingTripInfo = location.state; 
-
-        if (incomingTripInfo) {
-            dispatch(setTripInfo(incomingTripInfo));
-        } else if (!tripInfo) {
+        if (location.state) {
+            dispatch(setTripInfo(location.state));
+        } else {
             navigate('/', { replace: true });
         }
-    }, [location.state, tripInfo, dispatch, navigate]);
+    }, [tripId, location.state, dispatch, navigate]);
 
     useEffect(() => {
         latestStateRef.current = { selectedSeats, step, holdToken, tripId, paymentInfo };

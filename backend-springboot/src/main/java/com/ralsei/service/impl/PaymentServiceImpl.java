@@ -101,16 +101,26 @@ public class PaymentServiceImpl implements PaymentService {
 
             // Verify transfer amount
             if (payment.getAmount().compareTo(request.getTransferAmount()) <= 0) {
-                payment.setStatus("COMPLETED");
-                payment.setPaymentTime(LocalDateTime.now());
-
+                String callbackData;
                 try {
-                    payment.setCallbackData(objectMapper.writeValueAsString(request));
+                    callbackData = objectMapper.writeValueAsString(request);
                 } catch (JsonProcessingException e) {
-                    payment.setCallbackData(request.toString());
+                    callbackData = request.toString();
                 }
 
-                paymentRepository.save(payment);
+                int rowsUpdated = paymentRepository.completeIfCurrent(
+                        transactionId,
+                        "PENDING",
+                        "COMPLETED",
+                        LocalDateTime.now(),
+                        callbackData);
+
+                if (rowsUpdated == 0) {
+                    log.info("Payment already processed before webhook completion, transactionId={}", transactionId);
+                    return;
+                }
+
+                payment.setStatus("COMPLETED");
 
                 if (payment.getPassengerTicketId() != null) {
                     completePassengerPaymentTarget(payment);
@@ -145,20 +155,23 @@ public class PaymentServiceImpl implements PaymentService {
         Payment payment = paymentRepository.findByTransactionId(transactionId)
                 .orElseThrow(
                         () -> new IllegalArgumentException("Không tìm thấy thanh toán có mã giao dịch: " + transactionId));
-        if (!"COMPLETED".equals(payment.getStatus())) {
-            payment.setStatus("FAILED");
-            paymentRepository.save(payment);
-            
-            if (payment.getPassengerTicketId() != null) {
-                cancelPassengerPaymentTarget(payment);
-            } else if (payment.getCargoTicketId() != null) {
-                cancelCargoPaymentTarget(payment); 
-            } else {
-                throw new BusinessRuleException("Dữ liệu thanh toán không hợp lệ!");
-            }
-
-            paymentSseService.sendStatusUpdate(transactionId, payment.getStatus());
+        int rowsUpdated = paymentRepository.updateStatusIfCurrent(transactionId, "PENDING", "FAILED");
+        if (rowsUpdated == 0) {
+            log.info("Skip payment cancellation because payment is no longer pending, transactionId={}", transactionId);
+            return;
         }
+
+        payment.setStatus("FAILED");
+        
+        if (payment.getPassengerTicketId() != null) {
+            cancelPassengerPaymentTarget(payment);
+        } else if (payment.getCargoTicketId() != null) {
+            cancelCargoPaymentTarget(payment); 
+        } else {
+            throw new BusinessRuleException("Dữ liệu thanh toán không hợp lệ!");
+        }
+
+        paymentSseService.sendStatusUpdate(transactionId, payment.getStatus());
     }
 
     private void validateCheckoutRequest(PaymentCheckoutRequest request) {
