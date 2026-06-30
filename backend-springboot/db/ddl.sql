@@ -129,6 +129,8 @@ CREATE TABLE [coach_stop] (
     [city] NVARCHAR(255) NOT NULL,
     [surcharge] DECIMAL(15,2) NOT NULL DEFAULT 0.00,
     [isActive] BIT NOT NULL DEFAULT 1,
+    [latitude] DECIMAL(12, 8) NOT NULL,
+    [longitude] DECIMAL(12, 8) NOT NULL,
     [createdAt] DATETIME DEFAULT GETDATE(),
     [createdBy] INT NULL,
     [updatedAt] DATETIME DEFAULT GETDATE(),
@@ -413,10 +415,8 @@ CREATE TABLE [cargo_ticket] (
     [customerId] INT NULL,
     [senderName] NVARCHAR(100) NOT NULL,
     [senderPhone] VARCHAR(20) NOT NULL,
-    [senderEmail] VARCHAR(100) NULL,
     [receiverName] NVARCHAR(100) NOT NULL,
     [receiverPhone] VARCHAR(20) NOT NULL,
-    [receiverEmail] VARCHAR(100) NULL,
     [ticketCode] VARCHAR(50) NOT NULL UNIQUE,
     [totalPrice] DECIMAL(15, 2) NOT NULL,
     [description] NVARCHAR(MAX) NULL,
@@ -558,7 +558,7 @@ CREATE TABLE [refund] (
     FOREIGN KEY ([paymentId]) REFERENCES [payment] ([paymentId]),
 
 	CONSTRAINT CK_Refund_Amount CHECK ([amount] > 0),
-    CONSTRAINT CK_Refund_Method CHECK ([refundMethod] IN ('VNPAY', 'BANK_TRANSFER', 'CASH')),
+    CONSTRAINT CK_Refund_Method CHECK ([refundMethod] IN ('SEPAY', 'BANK_TRANSFER', 'CASH')),
     CONSTRAINT CK_Refund_Status CHECK ([status] IN ('PENDING', 'COMPLETED', 'FAILED'))
 );
 

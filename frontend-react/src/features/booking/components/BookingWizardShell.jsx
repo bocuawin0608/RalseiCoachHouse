@@ -10,8 +10,8 @@ export default function BookingWizardShell({
     step = 1,
     paymentMode = false,
     onBack,
-    tripTitle = '19A Lý Thường Kiệt, Đồng Hới - Hà Nội',
-    tripDate = 'Thứ hai, 22/06/2026',
+    tripTitle = '',
+    tripDate = '',
     children,
 }) {
     const activeStep = paymentMode ? 3 : step;
