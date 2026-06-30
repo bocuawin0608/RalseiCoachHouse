@@ -9,7 +9,7 @@ public interface CargoTicketRepository extends JpaRepository<CargoTicket, Intege
 
     boolean existsByTicketCodeIgnoreCaseAndCargoTicketIdNot(String ticketCode, int cargoTicketId);
 
-    org.springframework.data.domain.Page<CargoTicket> findByIsActiveTrue(org.springframework.data.domain.Pageable pageable);
+    org.springframework.data.domain.Page<CargoTicket> findByStatusNot(String status, org.springframework.data.domain.Pageable pageable);
 
-    java.util.Optional<CargoTicket> findByCargoTicketIdAndIsActiveTrue(int cargoTicketId);
+    java.util.Optional<CargoTicket> findByCargoTicketIdAndStatusNot(int cargoTicketId, String status);
 }

@@ -8,5 +8,5 @@ export const cargoTicketApi = {
     getCargoTicket: (id) => axiosClient.get(`${BASE_URL}/${id}`),
     createCargoTicket: (data) => axiosClient.post(BASE_URL, data),
     updateCargoTicket: (id, data) => axiosClient.put(`${BASE_URL}/${id}`, data),
-    deleteCargoTicket: (id) => axiosClient.delete(`${BASE_URL}/${id}`)
+    deleteCargoTicket: (id) => axiosClient.put(`${BASE_URL}/${id}/soft-delete`)
 };

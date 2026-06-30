@@ -81,10 +81,6 @@ public class CargoTicket extends BaseEntity {
     @Column(name = "status", nullable = false)
     private String status;
 
-    @Builder.Default
-    @Column(name = "isActive", nullable = false)
-    private boolean isActive = true;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "soldBy")
     private Staff soldBy;

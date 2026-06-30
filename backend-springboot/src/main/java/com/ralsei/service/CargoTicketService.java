@@ -17,6 +17,4 @@ public interface CargoTicketService {
     CargoTicketResponse updateCargoTicket(int id, CargoTicketRequest request);
 
     void softDeleteCargoTicket(int id);
-
-    void restoreCargoTicket(int id);
 }
