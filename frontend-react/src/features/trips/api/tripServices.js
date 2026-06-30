@@ -1,9 +1,19 @@
 import axiosClient from '../../../api/axiosClient';
 
 export const tripService = {
+    /**
+     * Loads active backend routes so the public trip form can build searchable
+     * departure and destination dropdowns from real route data.
+     */
+    getRouteDropdown: async () => {
+        return axiosClient.get('/v1/routes/dropdown');
+    },
+
+    /**
+     * Searches customer trips for the selected route/date and optional filters.
+     */
     searchTrips: async (searchParams) => {
         try {
-            // Khởi tạo các tham số cơ bản bắt buộc
             const params = {
                 date: searchParams.date,
                 route: searchParams.route,
@@ -11,7 +21,6 @@ export const tripService = {
                 size: searchParams.size ?? 10
             };
 
-            // Nếu cờ nâng cao được bật hoặc có bất kỳ bộ lọc nào được chọn
             if (searchParams.isAdvanced) {
                 params.advanced = 'true';
                 if (searchParams.timeSlots) params.timeSlots = searchParams.timeSlots;
@@ -21,7 +30,6 @@ export const tripService = {
             }
 
             const responseData = await axiosClient.get('/v1/trips/home', { params });
-            console.log("Dữ liệu thông mạch đổ về:", responseData);
             return responseData;
         } catch (error) {
             console.error("Lỗi nghẽn mạch tại tầng Trip Service:", error);
