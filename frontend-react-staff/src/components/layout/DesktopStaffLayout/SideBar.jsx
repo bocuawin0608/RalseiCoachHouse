@@ -4,7 +4,7 @@ import { Collapse } from 'react-bootstrap';
 import {
     BsList, BsGrid1X2, BsBusFront, BsSignpostSplit,
     BsChevronDown, BsChevronRight, BsTags, BsGeoAlt,
-    BsBoxSeam, BsCashCoin, BsGift, BsPeopleFill, BsShieldCheck, BsPersonBadge
+    BsBoxSeam, BsCashCoin, BsGift, BsPeopleFill, BsShieldCheck, BsPersonBadge, BsBuilding
 } from 'react-icons/bs';
 import { useAuth } from '../../../features/auth';
 
@@ -190,6 +190,10 @@ export default function Sidebar() {
                             <NavLink to="/management/manage-customers" className={navLinkClass} end>
                                 <BsPersonBadge size={20} className="flex-shrink-0" />
                                 <span>Quản lý khách hàng</span>
+                            </NavLink>
+                            <NavLink to="/management/manage-ticket-agencies" className={navLinkClass} end>
+                                <BsBuilding size={20} className="flex-shrink-0" />
+                                <span>Quản lý bến xe</span>
                             </NavLink>
                         </>
                     )}
