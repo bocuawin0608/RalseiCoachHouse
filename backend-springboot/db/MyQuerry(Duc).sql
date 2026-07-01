@@ -544,3 +544,6 @@ GROUP BY
     t.coachId,
     c.licensePlate,
     t.departureTime;
+
+
+EXEC sp_AutoGenerateWeeklySchedule_Final @StartDate = '2026-07-01';
