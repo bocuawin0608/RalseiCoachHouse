@@ -6,6 +6,7 @@ import RouteStopUpdateInfoModal from "./RouteStopUpdateInfoModal";
 import { Alert, Badge, Button, Form, Modal, Spinner, Table } from "react-bootstrap";
 import { BsExclamationTriangleFill, BsTrash, BsPencilFill, BsPlusCircleFill, BsGeoAltFill, BsXLg, BsSearch } from "react-icons/bs";
 import { FaArrowRightLong } from "react-icons/fa6";
+import { TiTick } from "react-icons/ti";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import SortableRouteStopRow from "./SortableRouteStopRow";
@@ -32,6 +33,7 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
     const [coachStopSearch, setCoachStopSearch] = useState('');
     const [addingStopId, setAddingStopId] = useState(null);
     const [isClosingRightPanel, setIsClosingRightPanel] = useState(false);
+    const [pendingCoachStop, setPendingCoachStop] = useState(null); // coach stop waiting to be placed at a row
 
     const firstStop = useMemo(() => {
         if (!detail.routeStops || detail.routeStops.length === 0) return null;
@@ -179,7 +181,46 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
         }
     };
 
-    const handleAddCoachStop = async (coachStop) => {
+    // Step 1: user picks a coach stop from the right panel → store it as pending
+    const handleSelectCoachStopForInsert = (coachStop) => {
+        setPendingCoachStop(coachStop);
+    };
+
+    // Step 2: user clicks the green + on a row → insert pending coach stop after that row's order
+    const handleInsertCoachStopAtOrder = async (afterStopOrder) => {
+        if (!pendingCoachStop) return;
+        const cs = pendingCoachStop;
+        setPendingCoachStop(null);
+        setAddingStopId(cs.stopPointId);
+        try {
+            // Shift all existing stops with order >= afterStopOrder + 1 up by 1
+            const insertOrder = afterStopOrder + 1;
+            const stopsToShift = detail.routeStops
+                .filter(s => s.stopOrder >= insertOrder)
+                .map(s => ({ routeStopId: s.routeStopId, stopOrder: s.stopOrder + 1 }));
+
+            if (stopsToShift.length > 0) {
+                await routeStopApi.bulkUpdateOrders(stopsToShift);
+            }
+
+            await routeStopApi.createRouteStop({
+                routeId: Number(detail.routeId),
+                stopPointId: cs.stopPointId,
+                stopOrder: insertOrder,
+                kilometersFromStart: 0,
+                minutesFromStart: 0
+            });
+
+            await fetchRouteDetail();
+        } catch (err) {
+            alert(err.response?.data?.message || "Có lỗi xảy ra khi thêm điểm dừng.");
+        } finally {
+            setAddingStopId(null);
+        }
+    };
+
+    // Fallback: add to the very end (used when there are no existing stops)
+    const handleAddCoachStopAtEnd = async (coachStop) => {
         setAddingStopId(coachStop.stopPointId);
         try {
             const nextOrder = detail.routeStops.length > 0
@@ -245,35 +286,56 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
                                 <div className="bg-light rounded-3 p-3 border">
                                     <div className="d-flex align-items-center justify-content-between mb-3">
                                         <span className="fw-bold text-dark">Tổng quan tuyến đường</span>
-                                        <Button
-                                            size="sm"
-                                            variant={showRightPanel ? "danger" : undefined}
-                                            className={`d-flex align-items-center gap-1 ${!showRightPanel ? 'custom-btn-general' : ''}`}
-                                            onClick={() => {
-                                                if (showRightPanel) {
-                                                    setIsClosingRightPanel(true);
-                                                    setTimeout(() => {
-                                                        setShowRightPanel(false);
-                                                        setIsClosingRightPanel(false);
-                                                    }, 240);
-                                                } else {
-                                                    setShowRightPanel(true);
-                                                }
-                                            }}
-                                            disabled={isClosingRightPanel}
-                                        >
-                                            {showRightPanel ? (
-                                                <>
-                                                    <BsXLg size={12} />
-                                                    Đóng
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <BsPlusCircleFill size={14} />
-                                                    Thêm điểm dừng
-                                                </>
+                                        <div className="d-flex gap-2">
+                                            {showRightPanel && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="success"
+                                                    className="d-flex align-items-center gap-1 text-white"
+                                                    onClick={() => {
+                                                        setIsClosingRightPanel(true);
+                                                        setTimeout(() => {
+                                                            setShowRightPanel(false);
+                                                            setIsClosingRightPanel(false);
+                                                        }, 240);
+                                                    }}
+                                                    disabled={isClosingRightPanel}
+                                                >
+                                                    <TiTick size={18} />
+                                                    Hoàn tất
+                                                </Button>
                                             )}
-                                        </Button>
+                                            <Button
+                                                size="sm"
+                                                variant={showRightPanel ? "danger" : undefined}
+                                                className={`d-flex align-items-center gap-1 ${!showRightPanel ? 'custom-btn-general' : ''}`}
+                                                onClick={() => {
+                                                    if (showRightPanel) {
+                                                        setIsClosingRightPanel(true);
+                                                        setTimeout(() => {
+                                                            setShowRightPanel(false);
+                                                            setIsClosingRightPanel(false);
+                                                        }, 240);
+                                                    } else {
+                                                        setShowRightPanel(true);
+                                                        setPendingCoachStop(null);
+                                                    }
+                                                }}
+                                                disabled={isClosingRightPanel}
+                                            >
+                                                {showRightPanel ? (
+                                                    <>
+                                                        <BsXLg size={12} />
+                                                        Hủy
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <BsPlusCircleFill size={14} />
+                                                        Thêm điểm dừng
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </div>
                                     </div>
                                     <div className="d-flex align-items-center gap-2">
                                         {/* First stop (origin) */}
@@ -317,6 +379,15 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
                                                 <Table size="sm" bordered hover className="align-middle text-center mb-0">
                                                     <thead className="table-light text-secondary">
                                                         <tr>
+                                                            <th
+                                                                style={{
+                                                                    width: pendingCoachStop ? '36px' : '0px',
+                                                                    padding: pendingCoachStop ? undefined : '0px',
+                                                                    overflow: 'hidden',
+                                                                    transition: 'width 0.2s ease, padding 0.2s ease',
+                                                                    borderRight: pendingCoachStop ? undefined : 'none',
+                                                                }}
+                                                            />
                                                             <th className="fw-semibold" style={{ width: '120px' }}>Thứ tự</th>
                                                             <th className="fw-semibold text-start">Tên trạm</th>
                                                             <th className="fw-semibold">Khoảng cách từ điểm xuất phát</th>
@@ -335,6 +406,8 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
                                                                     stop={stop}
                                                                     onEdit={setEditingStop}
                                                                     onDelete={handleDeleteRouteStop}
+                                                                    showAddButton={!!pendingCoachStop}
+                                                                    onAddAtOrder={handleInsertCoachStopAtOrder}
                                                                 />
                                                             ))}
                                                         </SortableContext>
@@ -402,6 +475,19 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
                                 </div>
                             ) : (
                                 <div className="d-flex flex-column gap-2">
+                                    {pendingCoachStop && (
+                                        <div className="alert alert-success py-2 px-2 mb-1 d-flex align-items-center gap-2" style={{ fontSize: '0.8rem' }}>
+                                            <BsPlusCircleFill className="text-success flex-shrink-0" />
+                                            <span>Chọn vị trí trong bảng để chèn <strong>{pendingCoachStop.stopPointName}</strong></span>
+                                            <button
+                                                type="button"
+                                                className="btn-close ms-auto"
+                                                style={{ fontSize: '0.6rem' }}
+                                                onClick={() => setPendingCoachStop(null)}
+                                                title="Hủy"
+                                            />
+                                        </div>
+                                    )}
                                     {availableCoachStops.map(cs => (
                                         <div
                                             key={cs.stopPointId}
@@ -418,10 +504,20 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
                                             </div>
                                             <Button
                                                 size="sm"
-                                                variant="outline-primary"
+                                                variant={pendingCoachStop?.stopPointId === cs.stopPointId ? 'success' : 'outline-primary'}
                                                 className="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle p-0"
                                                 style={{ width: '28px', height: '28px' }}
-                                                onClick={() => handleAddCoachStop(cs)}
+                                                onClick={() => {
+                                                    if (detail.routeStops.length === 0) {
+                                                        // No existing stops → just add to end directly
+                                                        handleAddCoachStopAtEnd(cs);
+                                                    } else if (pendingCoachStop?.stopPointId === cs.stopPointId) {
+                                                        // Clicking the same btn again → cancel pending
+                                                        setPendingCoachStop(null);
+                                                    } else {
+                                                        handleSelectCoachStopForInsert(cs);
+                                                    }
+                                                }}
                                                 disabled={addingStopId === cs.stopPointId}
                                                 title="Thêm vào tuyến"
                                             >

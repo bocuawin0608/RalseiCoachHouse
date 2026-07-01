@@ -1,10 +1,10 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Button } from "react-bootstrap";
-import { BsTrash, BsPencilFill, BsGripVertical } from "react-icons/bs";
+import { BsTrash, BsPencilFill, BsGripVertical, BsPlusCircleFill } from "react-icons/bs";
 import { MdDangerous } from "react-icons/md";
 
-export default function SortableRouteStopRow({ stop, onEdit, onDelete }) {
+export default function SortableRouteStopRow({ stop, onEdit, onDelete, showAddButton, onAddAtOrder }) {
     const {
         attributes,
         listeners,
@@ -25,6 +25,30 @@ export default function SortableRouteStopRow({ stop, onEdit, onDelete }) {
 
     return (
         <tr ref={setNodeRef} style={style} className={!stop.stopPointActive ? 'table-danger' : ''}>
+            {/* Green + insert button — shown as a narrow leading cell when a stop is pending */}
+            <td
+                style={{
+                    width: showAddButton ? '36px' : '0px',
+                    padding: showAddButton ? '4px 2px' : '0px',
+                    overflow: 'hidden',
+                    transition: 'width 0.2s ease, padding 0.2s ease',
+                    borderRight: showAddButton ? undefined : 'none',
+                    verticalAlign: 'middle',
+                }}
+            >
+                {showAddButton && (
+                    <Button
+                        size="sm"
+                        variant="success"
+                        className="d-flex align-items-center justify-content-center rounded-circle p-0"
+                        style={{ width: '26px', height: '26px', margin: '0 auto' }}
+                        onClick={() => onAddAtOrder(stop.stopOrder)}
+                        title={`Chèn sau vị trí ${stop.stopOrder}`}
+                    >
+                        <BsPlusCircleFill size={13} />
+                    </Button>
+                )}
+            </td>
             <td className={`fw-bold ${!stop.stopPointActive ? 'text-danger' : 'text-primary'}`}>
                 <div className="d-flex align-items-center justify-content-center gap-2">
                     <span
