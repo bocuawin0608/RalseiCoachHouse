@@ -127,7 +127,7 @@ html, body {
 }
 
 .search-form-wrapper {
-  max-width: 1100px;
+  max-width: 1280px;
   margin: 30px auto;
   padding: 0 20px;
   width: 100%;
@@ -181,8 +181,8 @@ html, body {
 
 .form-tier-main {
   display: grid;
-  grid-template-columns: minmax(180px, 1.15fr) 38px minmax(180px, 1.15fr) minmax(150px, 0.8fr) minmax(180px, 0.95fr);
-  align-items: center;
+  grid-template-columns: minmax(0, 1.15fr) 0 minmax(0, 1.15fr) minmax(0, 0.8fr) minmax(160px, 0.9fr);
+  align-items: stretch;
   border: 1px solid #e0e0e0;
   border-radius: 12px;
   background-color: var(--ralsei-white);
@@ -190,8 +190,7 @@ html, body {
 }
 
 .form-tier-main.round-trip-mode {
-  grid-template-columns: minmax(160px, 1fr) 38px minmax(160px, 1fr) minmax(135px, 0.72fr) minmax(135px, 0.72fr) minmax(175px, 0.86fr);
-  align-items: stretch;
+  grid-template-columns: minmax(0, 1fr) 0 minmax(0, 1fr) minmax(0, 0.72fr) minmax(0, 0.72fr) minmax(160px, 0.82fr);
 }
 
 .input-block {
@@ -208,8 +207,14 @@ html, body {
   position: relative;
 }
 
+.btn-swap + .location-combobox {
+  padding-left: 28px;
+}
+
 .date-block {
   min-width: 0;
+  gap: 8px;
+  padding-inline: 12px;
 }
 
 .input-field-wrapper {
@@ -235,6 +240,21 @@ html, body {
   color: #204f3d;
   width: 100%;
   min-width: 0;
+}
+
+.date-block .input-field-wrapper {
+  min-width: 0;
+}
+
+.date-block input[type="date"] {
+  display: block;
+  min-height: 24px;
+}
+
+.date-block input[type="date"]::-webkit-calendar-picker-indicator {
+  flex: 0 0 auto;
+  margin: 0;
+  cursor: pointer;
 }
 
 .input-icon {
@@ -312,7 +332,9 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 -3px; 
+  margin: 0;
+  align-self: center;
+  justify-self: center;
   z-index: 2;
   font-weight: bold;
   color: var(--ralsei-black);
@@ -1167,7 +1189,7 @@ background-color: var(--ralsei-pink);
 
   .form-tier-main,
   .form-tier-main.round-trip-mode {
-    grid-template-columns: minmax(180px, 1fr) 38px minmax(180px, 1fr);
+    grid-template-columns: minmax(180px, 1fr) 0 minmax(180px, 1fr);
   }
 
   .date-block,
@@ -1207,12 +1229,17 @@ background-color: var(--ralsei-pink);
     margin-bottom: 10px;
     width: 100%;
   }
+
+  .btn-swap + .location-combobox {
+    padding-left: 15px;
+  }
   
   .input-block:nth-last-child(2) {
     border-right: 1px solid #e0e0e0;
   }
 
   .btn-swap {
+    flex: 0 0 32px;
     margin: -5px auto 5px auto;
     transform: rotate(90deg);
   }
