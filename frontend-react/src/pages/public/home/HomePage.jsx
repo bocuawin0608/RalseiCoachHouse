@@ -478,7 +478,7 @@ const HomePage = () => {
                 <form onSubmit={handleSearchSubmit} className="search-form">
                     <div className="form-tier-top">
                         <div className="radio-group" aria-label="Loại chuyến">
-                            <label className="radio-label">
+                            {/* <label className="radio-label">
                                 <input
                                     type="radio"
                                     name="trip-type"
@@ -501,7 +501,7 @@ const HomePage = () => {
                                     }}
                                 />
                                 <span className="radio-checkmark"></span> Khứ hồi
-                            </label>
+                            </label> */}
                         </div>
                         <div className="policy-links">
                             <a href="#guide">Hướng dẫn đặt lịch trình</a>
