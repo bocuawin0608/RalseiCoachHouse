@@ -17,6 +17,7 @@ import { tripRoutes } from '../features/trip';
 import { accountRoutes } from '../features/manage-accounts';
 import { roleRoutes } from '../features/manage-roles';
 import { customerRoutes } from '../features/manage-customers';
+import { ticketAgencyRoutes } from '../features/manage-ticket-agencies';
 
 const AppRouter = () => {
     return (
@@ -43,6 +44,7 @@ const AppRouter = () => {
                         <Route path="system-config" element={<div>Cấu hình hệ thống</div>} />
                         {accountRoutes}
                         {customerRoutes}
+                        {ticketAgencyRoutes}
                         {roleRoutes}
                     </Route>
 
