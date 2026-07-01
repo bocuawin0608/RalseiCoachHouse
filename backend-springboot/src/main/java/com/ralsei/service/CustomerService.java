@@ -1,22 +1,21 @@
 package com.ralsei.service;
 
-import org.springframework.stereotype.Service;
+import java.util.List;
 
-@Service
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
+import com.ralsei.dto.request.customer.CreateCustomerRequest;
+import com.ralsei.dto.request.customer.CustomerFilterRequest;
+import com.ralsei.dto.request.customer.UpdateCustomerRequest;
+import com.ralsei.dto.response.customer.CustomerDetailResponse;
+import com.ralsei.dto.response.customer.CustomerListResponse;
 
-// địt con mẹ code thằng nào ngu lồn thế này???
-public class CustomerService {
-
-
-    // @TODO: Work in progress, chưa xong
-    // public List<TripDetailProjection> getComplexTripDetails(String dateStr, String route) {
-    //     // Chặn đầu chặn đuôi ngày chạy của con xe
-    //     String start = dateStr + " 00:00:00";
-    //     String end = dateStr + " 23:59:59.999"; 
-        
-    //     return tripRepository.layThongTinChuyenXeComplex(start, end, route);
-    // }
-    
+public interface CustomerService {
+    Page<CustomerListResponse> filterCustomers(CustomerFilterRequest filterRequest, Pageable pageable);
+    CustomerDetailResponse getCustomerDetail(Integer customerId);
+    Integer createCustomer(CreateCustomerRequest request);
+    void updateCustomer(Integer customerId, UpdateCustomerRequest request);
+    void toggleActive(Integer customerId);
+    void deleteCustomer(Integer customerId);
 }
-   
