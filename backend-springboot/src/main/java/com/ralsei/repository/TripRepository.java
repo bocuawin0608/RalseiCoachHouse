@@ -263,6 +263,15 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             """, nativeQuery = true)
     boolean checkIfCoachHasTodoTrips(@Param("coachId") Integer coachId);
 
+    @Query(value = """
+                SELECT COUNT(*)
+                FROM trip t
+                WHERE t.coachId = :coachId
+                    AND t.departureTime >= DATEADD(hour, -8, GETDATE())
+                    AND t.status NOT IN ('CANCELLED', 'COMPLETED')
+            """, nativeQuery = true)
+    long countUpcomingTripsByCoachId(@Param("coachId") Integer coachId);
+
     boolean existsByCoach_CoachId(Integer coachId);
 
     @Query(value = """

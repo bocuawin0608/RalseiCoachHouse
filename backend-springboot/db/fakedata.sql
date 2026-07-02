@@ -356,6 +356,13 @@ BEGIN
     SET @c = @c + 1;
 END;
 
+-- Mẫu lịch sử trạng thái xe (xe đang bảo trì)
+INSERT INTO [coach_status_log] (coachId, fromStatus, toStatus, reason, expectedEndAt)
+SELECT c.coachId, 'ACTIVE', 'MAINTENANCE', N'Bảo dưỡng định kỳ hệ thống phanh', DATEADD(day, 7, GETDATE())
+FROM [coach] c
+WHERE c.[status] = 'MAINTENANCE'
+  AND c.coachId IN (SELECT TOP 5 coachId FROM [coach] WHERE [status] = 'MAINTENANCE' ORDER BY coachId);
+
 -- ============================================================================
 -- LEVEL 4: OPERATIONAL ENTITIES - TRIPS & TRIP_SEATS
 -- ============================================================================

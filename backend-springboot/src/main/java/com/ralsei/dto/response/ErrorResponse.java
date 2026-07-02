@@ -22,5 +22,7 @@ public class ErrorResponse {
     private final String message;
     private final String path;               
     private final Map<String, String> fieldErrors;
+    private final String code;
+    private final Object details;
     
 }

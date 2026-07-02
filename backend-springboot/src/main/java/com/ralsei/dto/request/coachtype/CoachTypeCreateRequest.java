@@ -1,6 +1,7 @@
 package com.ralsei.dto.request.coachtype;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.NotBlank;

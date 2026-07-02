@@ -16,18 +16,26 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ralsei.dto.projection.CoachTypeProjection;
 import com.ralsei.dto.request.coachtype.CoachTypeCreateRequest;
 import com.ralsei.dto.request.coachtype.CoachTypeFilterRequest;
+import com.ralsei.dto.request.coachtype.CoachTypePriceCreateRequest;
 import com.ralsei.dto.request.coachtype.CoachTypeUpdateInfoRequest;
 import com.ralsei.dto.request.coachtype.CoachTypeUpdatePriceRequest;
 import com.ralsei.dto.request.coachtype.CoachTypeUpdateSeatmapRequest;
+import com.ralsei.dto.response.coachtype.CoachTypeDeactivationCheckResponse;
 import com.ralsei.dto.response.coachtype.CoachTypeDetailResponse;
 import com.ralsei.dto.response.coachtype.CoachTypeDropdownDTO;
+import com.ralsei.dto.response.coachtype.CoachTypePriceResponse;
 import com.ralsei.dto.response.coachtype.CoachTypeResponse;
+import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.exception.ResourceNotFoundException;
+import com.ralsei.model.Coach;
 import com.ralsei.model.CoachType;
 import com.ralsei.model.CoachTypePrice;
 import com.ralsei.model.enums.CoachStatus;
+import com.ralsei.model.enums.CoachTypePriceStatus;
 import com.ralsei.repository.CoachRepository;
+import com.ralsei.repository.CoachTypePriceRepository;
 import com.ralsei.repository.CoachTypeRepository;
+import com.ralsei.repository.TripRepository;
 import com.ralsei.service.CoachTypeService;
 
 import lombok.RequiredArgsConstructor;
@@ -37,10 +45,12 @@ import lombok.RequiredArgsConstructor;
 public class CoachTypeServiceImpl implements CoachTypeService {
 
     private final CoachTypeRepository coachTypeRepo;
+    private final CoachTypePriceRepository coachTypePriceRepo;
     private final CoachRepository coachRepo;
+    private final TripRepository tripRepo;
     private final ObjectMapper objectMapper;
 
-    private final LocalDateTime infiniteDateTime = LocalDateTime.of(9999, 12, 31, 23, 59, 59);
+    private static final LocalDateTime INFINITE_END = LocalDateTime.of(9999, 12, 31, 23, 59, 59);
 
     private record ProcessedSeatLayout(int totalSeat, String seatLayout) {
     }
@@ -91,7 +101,7 @@ public class CoachTypeServiceImpl implements CoachTypeService {
                 .coachType(newCoachType)
                 .seatPrice(request.seatPrice())
                 .startEffectiveDate(LocalDateTime.now())
-                .endEffectiveDate(infiniteDateTime)
+                .endEffectiveDate(INFINITE_END)
                 .build();
         newCoachType.setCoachTypePrices(List.of(price));
 
@@ -123,8 +133,7 @@ public class CoachTypeServiceImpl implements CoachTypeService {
                 throw new IllegalArgumentException("Dữ liệu tầng ghế bị thiếu hoặc không khớp.");
             }
 
-            for(JsonNode floor : floorsNode) {
-
+            for (JsonNode floor : floorsNode) {
                 for (JsonNode rowNode : floor) {
                     for (JsonNode cellNode : rowNode) {
                         if (cellNode.asText().equals("SEAT")) {
@@ -132,8 +141,8 @@ public class CoachTypeServiceImpl implements CoachTypeService {
                         }
                     }
                 }
-                //TODO: chưa có cơ chế check 1 cột/hàng bất kỳ trống hoàn toàn ghế (kiểu đang dùng cols/rows cho các tầng -> sẽ có nơi bị trống full)
             }
+            //TODO: chưa có cơ chế check 1 cột/hàng bất kỳ trống hoàn toàn ghế (kiểu đang dùng cols/rows cho các tầng -> sẽ có nơi bị trống full)
 
             if (calculatedTotalSeat < 1 || calculatedTotalSeat > 44) {
                 throw new IllegalArgumentException("Sơ đồ ghế không thể <1 hoặc >44 ghế.");
@@ -146,20 +155,21 @@ public class CoachTypeServiceImpl implements CoachTypeService {
         }
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     @Override
     public CoachTypeDetailResponse getCoachTypeDetail(Integer id) {
-        CoachType coachType = coachTypeRepo.findById(id).orElseThrow(
-                () -> {
-                    throw new ResourceNotFoundException("Không tìm thấy loại xe có ID là: " + id);
-                });
+        CoachType coachType = findCoachTypeOrThrow(id);
+        LocalDateTime now = LocalDateTime.now();
+        List<CoachTypePrice> prices = coachTypePriceRepo.findByCoachType_CoachTypeIdOrderByStartEffectiveDateDesc(id);
 
-        BigDecimal currentPrice = coachType.getCoachTypePrices().stream()
-                .filter(price -> price.getStartEffectiveDate().isBefore(LocalDateTime.now())
-                        && price.getEndEffectiveDate().isAfter(LocalDateTime.now()))
-                .findFirst()
-                .map(price -> price.getSeatPrice())
-                .orElse(BigDecimal.ZERO);
+        Optional<CoachTypePrice> activePrice = prices.stream()
+                .filter(p -> isEffectiveAt(p, now))
+                .findFirst();
+
+        BigDecimal currentPrice = activePrice.map(CoachTypePrice::getSeatPrice).orElse(BigDecimal.ZERO);
+        LocalDateTime currentPriceEffectiveFrom = activePrice.map(CoachTypePrice::getStartEffectiveDate).orElse(null);
+        long activeCoachCount = coachRepo.countByCoachType_CoachTypeIdAndStatusNot(id, CoachStatus.RETIRED);
+        boolean canEditSeatLayout = activeCoachCount == 0;
 
         return new CoachTypeDetailResponse(
                 coachType.getCoachTypeId(),
@@ -167,16 +177,85 @@ public class CoachTypeServiceImpl implements CoachTypeService {
                 coachType.getTotalSeat(),
                 currentPrice,
                 coachType.isActive(),
-                coachType.getSeatLayout());
+                coachType.getSeatLayout(),
+                (int) activeCoachCount,
+                currentPriceEffectiveFrom,
+                canEditSeatLayout);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<CoachTypePriceResponse> getCoachTypePrices(Integer id) {
+        findCoachTypeOrThrow(id);
+        LocalDateTime now = LocalDateTime.now();
+        return coachTypePriceRepo.findByCoachType_CoachTypeIdOrderByStartEffectiveDateDesc(id).stream()
+                .map(p -> toPriceResponse(p, now))
+                .toList();
+    }
+
+    @Transactional
+    @Override
+    public void addCoachTypePrice(Integer id, CoachTypePriceCreateRequest request) {
+        CoachType coachType = findCoachTypeOrThrow(id);
+        LocalDateTime start = request.startEffectiveDate();
+        LocalDateTime end = request.endEffectiveDate() != null ? request.endEffectiveDate() : INFINITE_END;
+        
+        LocalDateTime now = LocalDateTime.now();
+        if (start.isBefore(now.minusMinutes(5))) {
+            throw new IllegalArgumentException("Ngày bắt đầu không được nằm trong quá khứ!");
+        }
+        if (start.isEqual(end)) {
+            throw new IllegalArgumentException("Ngày kết thúc không được trùng với ngày bắt đầu!");
+        }
+        if (end.isBefore(start)) {
+            throw new IllegalArgumentException("Ngày kết thúc hiệu lực phải lớn hơn hoặc bằng ngày bắt đầu!");
+        }
+
+        List<CoachTypePrice> existingPrices = coachTypePriceRepo
+                .findByCoachType_CoachTypeIdOrderByStartEffectiveDateDesc(id);
+
+        for (CoachTypePrice existing : existingPrices) {
+            if (!intervalsOverlap(existing.getStartEffectiveDate(), existing.getEndEffectiveDate(), start, end)) {
+                continue;
+            }
+            if (isEffectiveAt(existing, now) && start.isAfter(existing.getStartEffectiveDate())) {
+                existing.setEndEffectiveDate(start);
+                coachTypePriceRepo.save(existing);
+            } else if (intervalsOverlap(existing.getStartEffectiveDate(), existing.getEndEffectiveDate(), start, end)) {
+                throw new IllegalArgumentException("Khoảng thời gian giá bị trùng với một trong các mốc giá hiện có/sắp có!");
+            }
+        }
+
+        CoachTypePrice newPrice = CoachTypePrice.builder()
+                .coachType(coachType)
+                .seatPrice(request.seatPrice())
+                .startEffectiveDate(start)
+                .endEffectiveDate(end)
+                .build();
+        coachTypePriceRepo.save(newPrice);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public CoachTypeDeactivationCheckResponse getDeactivationCheck(Integer id) {
+        findCoachTypeOrThrow(id);
+        List<Coach> activeCoaches = coachRepo.findByCoachType_CoachTypeIdAndStatusNot(id, CoachStatus.RETIRED);
+
+        List<CoachTypeDeactivationCheckResponse.ActiveCoachSummary> summaries = activeCoaches.stream()
+                .map(c -> new CoachTypeDeactivationCheckResponse.ActiveCoachSummary(
+                        c.getCoachId(),
+                        c.getLicensePlate(),
+                        c.getStatus(),
+                        tripRepo.countUpcomingTripsByCoachId(c.getCoachId())))
+                .toList();
+
+        return new CoachTypeDeactivationCheckResponse(summaries.isEmpty(), summaries);
     }
 
     @Transactional
     @Override
     public void updateCoachTypeInfo(Integer id, CoachTypeUpdateInfoRequest updateRequest) {
-        CoachType coachType = coachTypeRepo.findById(id).orElseThrow(
-                () -> {
-                    throw new ResourceNotFoundException("Không tìm thấy loại xe có ID là: " + id);
-                });
+        CoachType coachType = findCoachTypeOrThrow(id);
 
         if (!coachType.getCoachTypeName().equalsIgnoreCase(updateRequest.coachTypeName())) {
             if (coachTypeRepo.existsByCoachTypeNameIgnoreCase(updateRequest.coachTypeName())) {
@@ -185,8 +264,14 @@ public class CoachTypeServiceImpl implements CoachTypeService {
             coachType.setCoachTypeName(updateRequest.coachTypeName());
         }
 
-        if(coachRepo.existsByCoachType_CoachTypeIdAndStatusNot(id, CoachStatus.RETIRED) && !updateRequest.isActive()) {
-            throw new IllegalArgumentException("Không thể tắt loại xe vẫn còn xe hoạt động!");
+        if (!updateRequest.isActive() && coachType.isActive()) {
+            CoachTypeDeactivationCheckResponse check = getDeactivationCheck(id);
+            if (!check.canDeactivate()) {
+                throw new BusinessRuleException(
+                        "COACH_TYPE_HAS_ACTIVE_COACHES",
+                        "Không thể tắt loại xe vì vẫn còn xe đang hoạt động hoặc bảo trì!",
+                        check);
+            }
         }
 
         coachType.setActive(updateRequest.isActive());
@@ -195,46 +280,25 @@ public class CoachTypeServiceImpl implements CoachTypeService {
     @Transactional
     @Override
     public void updateCoachTypePrice(Integer id, CoachTypeUpdatePriceRequest updateRequest) {
-        CoachType coachType = coachTypeRepo.findById(id).orElseThrow(
-                () -> {
-                    throw new ResourceNotFoundException("Không tìm thấy loại xe có ID là: " + id);
-                });
-
-        Optional<CoachTypePrice> currentPrice = coachType.getCoachTypePrices().stream()
-                .filter(price -> !price.getStartEffectiveDate().isAfter(LocalDateTime.now())
-                        && price.getEndEffectiveDate().isAfter(LocalDateTime.now()))
-                .findFirst();
-
-        if (currentPrice.isPresent() && currentPrice.get().getSeatPrice().compareTo(updateRequest.seatPrice()) != 0) {
-            currentPrice.get().setEndEffectiveDate(LocalDateTime.now());
-
-            CoachTypePrice newPrice = CoachTypePrice.builder()
-                    .coachType(coachType)
-                    .seatPrice(updateRequest.seatPrice())
-                    .startEffectiveDate(LocalDateTime.now())
-                    .endEffectiveDate(infiniteDateTime)
-                    .build();
-
-            coachType.getCoachTypePrices().add(newPrice);
-        }
+        addCoachTypePrice(id, new CoachTypePriceCreateRequest(
+                updateRequest.seatPrice(),
+                LocalDateTime.now(),
+                null));
     }
 
     @Transactional
     @Override
     public void updateCoachTypeSeatmap(Integer id, CoachTypeUpdateSeatmapRequest updateRequest) {
-        CoachType coachType = coachTypeRepo.findById(id).orElseThrow(
-            () -> {throw new ResourceNotFoundException("Không tìm thấy loại xe có ID là: " + id);}
-        );
+        CoachType coachType = findCoachTypeOrThrow(id);
 
-        
-        if(coachType.getSeatLayout().equalsIgnoreCase(updateRequest.seatLayout())) {
+        if (coachType.getSeatLayout().equalsIgnoreCase(updateRequest.seatLayout())) {
             return;
         }
-        
-        if(coachRepo.existsByCoachType_CoachTypeIdAndStatusNot(id, CoachStatus.RETIRED)) {
+
+        if (coachRepo.existsByCoachType_CoachTypeIdAndStatusNot(id, CoachStatus.RETIRED)) {
             throw new IllegalArgumentException("Không thể thay đổi sơ đồ ghế của loại xe vẫn còn xe hoạt động!");
         }
-        
+
         ProcessedSeatLayout newSeatLayout = validateSeatLayout(updateRequest.seatLayout());
         coachType.setTotalSeat(newSeatLayout.totalSeat());
         coachType.setSeatLayout(newSeatLayout.seatLayout());
@@ -245,4 +309,36 @@ public class CoachTypeServiceImpl implements CoachTypeService {
         return coachTypeRepo.findActiveCoachTypesForDropdown();
     }
 
+    private CoachType findCoachTypeOrThrow(Integer id) {
+        return coachTypeRepo.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException("Không tìm thấy loại xe có ID là: " + id));
+    }
+
+    private boolean isEffectiveAt(CoachTypePrice price, LocalDateTime at) {
+        return !price.getStartEffectiveDate().isAfter(at) && price.getEndEffectiveDate().isAfter(at);
+    }
+
+    private boolean intervalsOverlap(LocalDateTime start1, LocalDateTime end1, LocalDateTime start2,
+            LocalDateTime end2) {
+        return !start1.isAfter(end2) && !start2.isAfter(end1);
+    }
+
+    private CoachTypePriceStatus computePriceStatus(CoachTypePrice price, LocalDateTime now) {
+        if (price.getStartEffectiveDate().isAfter(now)) {
+            return CoachTypePriceStatus.UPCOMING;
+        }
+        if (!price.getEndEffectiveDate().isAfter(now)) {
+            return CoachTypePriceStatus.EXPIRED;
+        }
+        return CoachTypePriceStatus.ACTIVE;
+    }
+
+    private CoachTypePriceResponse toPriceResponse(CoachTypePrice price, LocalDateTime now) {
+        return new CoachTypePriceResponse(
+                price.getCoachTypePriceId(),
+                price.getSeatPrice(),
+                price.getStartEffectiveDate(),
+                price.getEndEffectiveDate(),
+                computePriceStatus(price, now));
+    }
 }
