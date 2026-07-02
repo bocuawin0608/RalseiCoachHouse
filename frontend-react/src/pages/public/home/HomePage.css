@@ -1000,6 +1000,47 @@ background-color: var(--ralsei-pink);
   gap: 16px;
 }
 
+.trip-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 36px;
+}
+
+.pagination-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid #dbe4e1;
+  border-radius: 6px;
+  background: #ffffff;
+  color: var(--ralsei-black);
+  cursor: pointer;
+}
+
+.pagination-icon-btn:hover:not(:disabled) {
+  border-color: var(--ralsei-footer);
+  background: #eefcf7;
+}
+
+.pagination-icon-btn:disabled {
+  color: #a7b0ad;
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.pagination-status {
+  min-width: 92px;
+  color: #47524f;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
 /* THIẾT KẾ CARD NÂNG CAO GIỐNG HƯNG LONG */
 .advanced-trip-card {
   background-color: var(--ralsei-white);
@@ -1163,6 +1204,196 @@ background-color: var(--ralsei-pink);
 
 .btn-secondary-info:hover {
   background-color: #e2e8f0;
+}
+
+.trip-stops-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(20, 28, 26, 0.58);
+}
+
+.trip-stops-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(760px, 100%);
+  max-height: min(680px, calc(100vh - 40px));
+  overflow: hidden;
+  border: 1px solid #e1e7e5;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(10, 35, 28, 0.28);
+}
+
+.trip-stops-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 22px 14px;
+  border-bottom: 1px solid #edf0ef;
+}
+
+.trip-stops-header h3,
+.trip-stops-header p {
+  margin: 0;
+}
+
+.trip-stops-header h3 {
+  color: var(--ralsei-dark);
+  font-size: 20px;
+}
+
+.trip-stops-header p {
+  margin-top: 4px;
+  color: #68726f;
+  font-size: 13px;
+}
+
+.trip-stops-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #52605c;
+  cursor: pointer;
+}
+
+.trip-stops-close:hover {
+  color: var(--ralsei-pink);
+}
+
+.trip-stops-summary {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 22px;
+  border-bottom: 1px solid #edf0ef;
+}
+
+.trip-stops-summary strong {
+  color: #1e2c28;
+  font-size: 22px;
+}
+
+.trip-stops-summary span {
+  border-bottom: 1px dashed #b7c8c3;
+  color: #64716d;
+  font-size: 12px;
+  text-align: center;
+}
+
+.trip-stops-body {
+  min-height: 180px;
+  padding: 18px 22px;
+  overflow-y: auto;
+}
+
+.trip-stops-message {
+  margin: 60px 0;
+  color: #67736f;
+  text-align: center;
+}
+
+.trip-stops-message.error {
+  color: #bd3f39;
+}
+
+.trip-stops-timeline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trip-stop-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 54px 16px minmax(0, 1fr);
+  gap: 10px;
+  min-height: 66px;
+}
+
+.trip-stop-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 20px;
+  bottom: -2px;
+  left: 71px;
+  width: 2px;
+  background: #d5ddda;
+}
+
+.trip-stop-item time {
+  padding-top: 1px;
+  color: #34413d;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.trip-stop-dot {
+  position: relative;
+  z-index: 1;
+  width: 12px;
+  height: 12px;
+  margin-top: 3px;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  background: #87938f;
+  box-shadow: 0 0 0 2px #87938f;
+}
+
+.trip-stop-dot.terminal {
+  background: #1683c7;
+  box-shadow: 0 0 0 2px #1683c7;
+}
+
+.trip-stop-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 3px;
+  padding-bottom: 16px;
+}
+
+.trip-stop-copy strong {
+  color: #25332f;
+  font-size: 15px;
+}
+
+.trip-stop-copy span {
+  color: #69736f;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.trip-stops-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 14px 22px 20px;
+  border-top: 1px solid #edf0ef;
+}
+
+.trip-stops-actions button {
+  min-height: 44px;
+}
+
+.trip-stops-dismiss {
+  border: 1px solid #dce3e1;
+  border-radius: 6px;
+  background: #f3f5f4;
+  color: #293632;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .btn-primary-select {
