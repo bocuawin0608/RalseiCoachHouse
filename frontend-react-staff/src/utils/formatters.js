@@ -30,3 +30,14 @@ export const formatDateTime = (dateInput) => {
 
     return `${d}/${m}/${y} ${h}:${min}`;
 };
+
+/**
+ * Lấy thời gian hiện tại theo múi giờ local (UTC+7)
+ * VD: 2026-07-02T16:15:23.456Z -> 2026-07-02T16:15
+ */
+export const getMinDateTime = () => {
+    const now = new Date();
+    // Bù trừ timezone để hàm toISOString() trả về đúng giờ Việt Nam
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    return now.toISOString().slice(0, 16); 
+};

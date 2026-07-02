@@ -2,41 +2,41 @@ import axiosClient from '../../../api/axiosClient';
 const BASE = '/v1/coach-types';
 
 export const coachTypeApi = {
-    /**
-     * @param {Object} params - Chứa các trường filter (coachTypeName, min/maxPrice, min/maxSeat, isActive, page, size)
-     */
-    filterCoachTypes: (params) => { return axiosClient.get(BASE, { params }); },
-    
-    /**
-     * @param {Object} data - Chứa thông tin tạo mới (coachTypeName, seatLayout, seatPrice)
-    */
-   createCoachType: (data) => { return axiosClient.post(BASE, data); },
-    
-    /**
-     * @param {number|string} id - ID của CoachType cần xem chi tiết
-     */
-    getCoachTypeDetail: (id) => { return axiosClient.get(`${BASE}/${id}`); },
+    filterCoachTypes: (params) => axiosClient.get(BASE, { params }),
 
-    /**
-     * @param {number|string} id - ID của CoachType cần sửa
-     * @param {Object} data - Chứa thông tin cần cập nhật (coachTypeName, isActive)
-     */
-    updateCoachTypeInfo: (id, data) => { return axiosClient.patch(`${BASE}/${id}`, data); },
+    createCoachType: (data) => axiosClient.post(BASE, data),
 
-    /**
-     * @param {number|string} id - ID của CoachType cần sửa
-     * @param {Object} data - Chứa thông tin cần cập nhật (seatPrice)
-     */
-    updateCoachTypePrice: (id, data) => { return axiosClient.put(`${BASE}/${id}/price`, data); },
+    getCoachTypeDetail: (id) => axiosClient.get(`${BASE}/${id}`),
 
-    /**
-     * @param {number|string} id - ID của CoachType cần sửa
-     * @param {Object} data - Chứa thông tin cần cập nhật (seatLayout)
-     */
-    updateCoachTypeSeatMap: (id, data) => { return axiosClient.patch(`${BASE}/${id}/seat-layout`, data); },
+    updateCoachTypeInfo: (id, data) => axiosClient.patch(`${BASE}/${id}`, data),
 
-    /**
-     * nhận về danh sách coach type (id, name) để xổ ra dropdown
-     */
-    getCoachTypesDropdown: () => { return axiosClient.get(`${BASE}/dropdown`); }
+    updateCoachTypePrice: (id, data) => axiosClient.put(`${BASE}/${id}/price`, data),
+
+    updateCoachTypeSeatMap: (id, data) => axiosClient.patch(`${BASE}/${id}/seat-layout`, data),
+
+    getPriceTimeline: (id) => axiosClient.get(`${BASE}/${id}/prices`),
+
+    addPrice: (id, data) => axiosClient.post(`${BASE}/${id}/prices`, data),
+
+    getDeactivationCheck: (id) => axiosClient.get(`${BASE}/${id}/deactivation-check`),
+
+    getCoachTypesDropdown: () => axiosClient.get(`${BASE}/dropdown`),
+};
+
+export const INFINITE_END_YEAR = 9999;
+
+export const isOpenEndedPrice = (dateStr) => {
+    if (!dateStr) return false;
+    return new Date(dateStr).getFullYear() >= INFINITE_END_YEAR;
+};
+
+export const formatPriceEndDate = (dateStr) => {
+    if (!dateStr || isOpenEndedPrice(dateStr)) return 'Không giới hạn';
+    return new Date(dateStr).toLocaleString('vi-VN');
+};
+
+export const PRICE_STATUS_LABELS = {
+    UPCOMING: { text: 'Sắp áp dụng', bg: 'warning' },
+    ACTIVE: { text: 'Đang áp dụng', bg: 'success' },
+    EXPIRED: { text: 'Đã hết hạn', bg: 'secondary' },
 };
