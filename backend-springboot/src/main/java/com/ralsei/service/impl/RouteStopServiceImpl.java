@@ -151,7 +151,21 @@ public class RouteStopServiceImpl implements RouteStopService {
                 RouteStop routeStop = routeStopRepository.findById(id)
                                 .orElseThrow(() -> new ResourceNotFoundException("RouteStop not found with ID: " + id));
 
+                int routeId = routeStop.getRoute().getRouteId();
+
                 routeStopRepository.delete(routeStop);
+                routeStopRepository.flush();
+
+                // Reset stop orders to ascending sequence (1, 2, 3, ...)
+                List<RouteStop> remainingStops = routeStopRepository
+                                .findByRoute_RouteIdOrderByStopOrderAsc(routeId);
+
+                int order = 1;
+                for (RouteStop rs : remainingStops) {
+                        rs.setStopOrder(order++);
+                }
+
+                routeStopRepository.saveAll(remainingStops);
         }
 
         @Override

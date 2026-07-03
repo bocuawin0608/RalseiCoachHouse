@@ -21,7 +21,6 @@ import com.ralsei.exception.ResourceNotFoundException;
 import com.ralsei.model.Route;
 import com.ralsei.model.RouteStop;
 import com.ralsei.repository.RouteRepository;
-import com.ralsei.repository.RouteStopRepository;
 import com.ralsei.service.RouteService;
 
 import lombok.RequiredArgsConstructor;
@@ -31,7 +30,6 @@ import lombok.RequiredArgsConstructor;
 public class RouteServiceImpl implements RouteService {
 
     private final RouteRepository routeRepository;
-    private final RouteStopRepository routeStopRepository;
 
     @Override
     @Transactional
