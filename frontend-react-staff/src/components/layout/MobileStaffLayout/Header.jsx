@@ -1,15 +1,60 @@
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../../features/auth";
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../features/auth';
+import './MobileLayout.css';
 
-// hiện chỉ để tạm bợ để logout được ra thôi!!!
+const PAGE_TITLES = {
+    '/staff/trip/list': 'Chuyến của tôi',
+};
+
+function resolveTitle(pathname) {
+    if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
+    if (pathname.includes('/dashboard')) return 'Điều khiển chuyến';
+    if (pathname.includes('/scan')) return 'Quét QR';
+    return 'Trip Staff';
+}
+
 export default function Header() {
     const navigate = useNavigate();
-    const { user, logout} = useAuth()
+    const location = useLocation();
+    const { user, logout } = useAuth();
+
+    const showBack = location.pathname !== '/staff/trip/list' && !location.pathname.endsWith('/staff');
+
+    const handleBack = () => {
+        if (location.pathname.includes('/scan')) {
+            const tripId = location.pathname.split('/')[3];
+            navigate(`/staff/trip/${tripId}/dashboard`);
+            return;
+        }
+        if (location.pathname.includes('/dashboard')) {
+            navigate('/staff/trip/list');
+            return;
+        }
+        navigate(-1);
+    };
 
     return (
-        <header style={{ height: '60px', background: '#ffffff', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', padding: '0 20px', justifyContent: 'flex-end', gap: '10px' }}>
-            <div style={{ fontWeight: 'bold' }}>Xin chào, {user?.username || "User"}!</div>
-            <button className="btn-head" onClick={() => {logout(); navigate('/staff/login');}}>Đăng xuất</button>
+        <header className="mobile-staff-header">
+            {showBack ? (
+                <button type="button" className="mobile-staff-header-btn back" onClick={handleBack}>
+                    ← Quay lại
+                </button>
+            ) : (
+                <span className="mobile-staff-header-spacer" />
+            )}
+
+            <div className="mobile-staff-header-title">{resolveTitle(location.pathname)}</div>
+
+            <button
+                type="button"
+                className="mobile-staff-header-btn logout"
+                onClick={() => {
+                    logout();
+                    navigate('/staff/login');
+                }}
+            >
+                {user?.username ? user.username.split('@')[0] : 'Logout'}
+            </button>
         </header>
-    )
+    );
 }
