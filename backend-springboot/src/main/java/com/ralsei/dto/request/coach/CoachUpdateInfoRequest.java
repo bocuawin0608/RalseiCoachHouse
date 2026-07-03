@@ -1,7 +1,5 @@
 package com.ralsei.dto.request.coach;
 
-import com.ralsei.model.enums.CoachStatus;
-
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -29,8 +27,5 @@ public record CoachUpdateInfoRequest(
     @NotNull(message = "Năm sản xuất không được để trống.")
     @Min(value = 2000, message = "Năm sản xuất phải lớn hơn hoặc bằng 2000.")
     @Max(value = 2026, message = "Năm sản xuất không được lớn hơn năm hiện tại.")
-    Integer year,
-
-    @NotNull(message = "Trạng thái xe không được để trống.")
-    CoachStatus status
+    Integer year
 ) {}
