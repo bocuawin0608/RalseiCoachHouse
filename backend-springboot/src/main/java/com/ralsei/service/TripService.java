@@ -5,6 +5,7 @@ import com.ralsei.dto.projection.staff.StaffProjection;
 import com.ralsei.dto.projection.trip.TripDetailProjection;
 import com.ralsei.dto.projection.trip.TripFilterProjection;
 import com.ralsei.dto.projection.trip.TripSummaryProjection;
+import com.ralsei.dto.projection.trip.TripStopProjection;
 import com.ralsei.dto.request.trip.TripCreateRequest;
 import com.ralsei.dto.request.trip.TripUpdateRequest;
 import com.ralsei.dto.response.PagedResponse;
@@ -47,6 +48,14 @@ public interface TripService {
                         int size);
 
         PagedResponse<TripSummaryProjection> getAllTripSummaries(LocalDate date, int page, int size);
+
+        /**
+         * Loads the ordered route timeline for a concrete customer trip.
+         *
+         * @param tripId concrete trip identifier
+         * @return active stops in route order
+         */
+        List<TripStopProjection> getTripStops(Integer tripId);
 
         // PagedResponse<TripDetailProjection> getFilteredTripDetails(
         // LocalDateTime start,

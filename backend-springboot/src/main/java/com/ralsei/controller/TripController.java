@@ -4,7 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -19,12 +19,14 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ralsei.dto.projection.trip.TripDetailProjection;
 import com.ralsei.dto.projection.trip.TripFilterProjection;
 import com.ralsei.dto.projection.trip.TripSummaryProjection;
+import com.ralsei.dto.projection.trip.TripStopProjection;
 import com.ralsei.dto.request.trip.TripCreateRequest;
 import com.ralsei.dto.request.trip.TripFilterRequest;
 import com.ralsei.dto.request.trip.TripSearchRequest;
 import com.ralsei.dto.request.trip.TripUpdateRequest;
 import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.service.TripService;
+import java.util.List;
 
 import lombok.RequiredArgsConstructor;
 /***
@@ -34,7 +36,6 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
 public class TripController {
     private final TripService tripService;
 
@@ -73,6 +74,18 @@ public class TripController {
                 request.getSize());
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Exposes the ordered pickup and drop-off timeline for one public trip.
+     *
+     * @param tripId concrete trip selected on the customer search page
+     * @return route stops derived from that trip's assigned route
+     */
+    @GetMapping("/trips/{tripId}/stops")
+    @PreAuthorize("permitAll()")
+    public ResponseEntity<List<TripStopProjection>> getTripStops(@PathVariable Integer tripId) {
+        return ResponseEntity.ok(tripService.getTripStops(tripId));
     }
 
     @PostMapping("/manager/trips/create") // NIKO: Đổi từ /admin/create thành /manager/trips/create

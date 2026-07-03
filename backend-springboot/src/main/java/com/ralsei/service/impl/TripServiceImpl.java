@@ -5,6 +5,7 @@ import com.ralsei.dto.projection.staff.StaffProjection;
 import com.ralsei.dto.projection.trip.TripDetailProjection;
 import com.ralsei.dto.projection.trip.TripFilterProjection;
 import com.ralsei.dto.projection.trip.TripSummaryProjection;
+import com.ralsei.dto.projection.trip.TripStopProjection;
 import com.ralsei.dto.request.trip.TripCreateRequest;
 import com.ralsei.dto.request.trip.TripUpdateRequest;
 import com.ralsei.dto.response.PagedResponse;
@@ -37,6 +38,20 @@ public class TripServiceImpl implements TripService {
     private final TripRepository tripRepository;
     private final RouteRepository routeRepository;
     private final StaffRepository staffRepository;
+
+    /**
+     * Returns stops for the route assigned to the requested trip, avoiding the
+     * ambiguity of looking up a coach by date.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<TripStopProjection> getTripStops(Integer tripId) {
+        if (tripId == null || tripId < 1) {
+            throw new IllegalArgumentException("Trip id must be greater than zero.");
+        }
+        return tripRepository.findTripStopsByTripId(tripId);
+    }
+
     @Override
     public String insertTrip(TripCreateRequest tripRequest) {
         String prompt = "";
@@ -74,7 +89,9 @@ public class TripServiceImpl implements TripService {
         }
 
         Pageable pageable = PageRequest.of(page, size);
-        Page<TripDetailProjection> tripPage = tripRepository.findTripDetails(start, end, route, pageable);
+        LocalDateTime currentTime = LocalDateTime.now();
+        Page<TripDetailProjection> tripPage = tripRepository.findTripDetails(
+                start, end, currentTime, route, pageable);
 
         return new PagedResponse<>(
                 tripPage.getContent(),
@@ -147,9 +164,10 @@ public class TripServiceImpl implements TripService {
 
         // 3. Khởi tạo phân trang
         Pageable pageable = PageRequest.of(page, size);
+        LocalDateTime currentTime = LocalDateTime.now();
         // 4. Gọi repository
         Page<TripFilterProjection> filteredPage = tripRepository.filterTrips(
-                start, end, route,
+                start, end, currentTime, route,
                 checkTimeSlots,
                 slot1StartMinute, slot1EndMinute,
                 slot2StartMinute, slot2EndMinute,

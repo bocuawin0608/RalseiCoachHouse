@@ -547,3 +547,38 @@ GROUP BY
 
 
 EXEC sp_AutoGenerateWeeklySchedule_Final @StartDate = '2026-07-01';
+
+USE VeXeDB;
+
+SELECT * FROM route
+
+SELECT * FROM route
+
+SELECT * FROM trip
+
+
+
+SELECT * FROM route_stop
+
+SELECT * FROM coach_stop
+
+-- Test customer stop timeline by concrete trip, not ambiguous coach/date.
+DECLARE @TripId INT = 1;
+
+SELECT
+    t.tripId,
+    r.routeName,
+    cs.stopPointId,
+    cs.stopPointName,
+    cs.[address],
+    cs.city,
+    rs.stopOrder,
+    rs.minutesFromStart,
+    DATEADD(MINUTE, rs.minutesFromStart, t.departureTime) AS estimatedStopTime
+FROM trip t
+JOIN route r ON r.routeId = t.routeId
+JOIN route_stop rs ON rs.routeId = t.routeId
+JOIN coach_stop cs ON cs.stopPointId = rs.stopPointId
+WHERE t.tripId = @TripId
+  AND cs.isActive = 1
+ORDER BY rs.stopOrder ASC;
