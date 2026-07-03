@@ -483,8 +483,13 @@ CREATE TABLE [passenger_ticket_detail] (
     FOREIGN KEY ([tripSeatId]) REFERENCES [trip_seat] ([tripSeatId]) ON DELETE SET NULL,
 
 	CONSTRAINT CK_PassengerDetail_Price CHECK ([price] >= 0),
-    CONSTRAINT CK_PassengerDetail_Status CHECK ([status] IN ('PENDING', 'CONFIRMED', 'CHECKED_IN', 'CANCELLED', 'EXPIRED'))
+	CONSTRAINT CK_PassengerDetail_Status CHECK ([status] IN ('PENDING', 'CONFIRMED', 'CHECKED_IN', 'CANCELLED', 'EXPIRED'))
 );
+
+CREATE UNIQUE NONCLUSTERED INDEX UQ_PassengerDetail_Qrcode
+ON [passenger_ticket_detail]([qrcode])
+WHERE [qrcode] IS NOT NULL;
+GO
 
 CREATE TABLE [cargo_ticket_detail] (
     [cargoTicketDetailId] INT IDENTITY(1,1) PRIMARY KEY,
