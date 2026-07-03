@@ -2,6 +2,7 @@ package com.ralsei.repository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -16,6 +17,7 @@ import org.springframework.data.repository.query.Param;
 import com.ralsei.dto.projection.trip.TripDetailProjection;
 import com.ralsei.dto.projection.trip.TripFilterProjection;
 import com.ralsei.dto.projection.trip.TripSummaryProjection;
+import com.ralsei.dto.projection.trip.TripStopProjection;
 import com.ralsei.model.Trip;
 
 import jakarta.transaction.Transactional;
@@ -50,6 +52,8 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
      * Seat availability is counted directly from the concrete trip_seat
      * snapshot for each trip. Price is resolved by the trip departure time so
      * old or future trips do not disappear because today's price row changed.
+     * Trips whose departure time has already passed are excluded using the
+     * request timestamp supplied by the service.
      */
     @Query(value = """
             SELECT
@@ -80,6 +84,7 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             ) seat_counts ON seat_counts.tripId = t.tripId
             WHERE r.routeName = :route
               AND t.departureTime BETWEEN :start AND :end
+              AND t.departureTime >= :currentTime
               AND t.[status] = 'SCHEDULED'
               AND (:checkTimeSlots = 0 OR (
                   (:slot1StartMinute IS NOT NULL AND DATEDIFF(MINUTE, CAST(t.departureTime AS DATE), t.departureTime) BETWEEN :slot1StartMinute AND :slot1EndMinute) OR
@@ -105,6 +110,7 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
                 AND t.departureTime BETWEEN ctp.startEffectiveDate AND ctp.endEffectiveDate
             WHERE r.routeName = :route
               AND t.departureTime BETWEEN :start AND :end
+              AND t.departureTime >= :currentTime
               AND t.[status] = 'SCHEDULED'
               AND (:checkTimeSlots = 0 OR (
                   (:slot1StartMinute IS NOT NULL AND DATEDIFF(MINUTE, CAST(t.departureTime AS DATE), t.departureTime) BETWEEN :slot1StartMinute AND :slot1EndMinute) OR
@@ -123,6 +129,7 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
     Page<TripFilterProjection> filterTrips(
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end,
+            @Param("currentTime") LocalDateTime currentTime,
             @Param("route") String route,
             @Param("checkTimeSlots") int checkTimeSlots,
             @Param("slot1StartMinute") Integer slot1StartMinute, @Param("slot1EndMinute") Integer slot1EndMinute,
@@ -140,7 +147,8 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
     /**
      * Loads the default customer trip list for a route/date before any filters
      * are selected. The projection shape intentionally matches filterTrips so
-     * the frontend does not need a separate placeholder mapping.
+     * the frontend does not need a separate placeholder mapping. Departed
+     * trips are excluded using the same request-time rule as filtered search.
      */
     @Query(value = """
             SELECT
@@ -172,6 +180,7 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
                 GROUP BY ts.tripId
             ) seat_counts ON seat_counts.tripId = t.tripId
             WHERE t.departureTime BETWEEN :start AND :end
+              AND t.departureTime >= :currentTime
               AND r.routeName = :route
               AND t.[status] = 'SCHEDULED'
             ORDER BY t.departureTime
@@ -184,12 +193,14 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             JOIN coach_type_price ctp ON ct.coachTypeId = ctp.coachTypeId
                 AND t.departureTime BETWEEN ctp.startEffectiveDate AND ctp.endEffectiveDate
             WHERE t.departureTime BETWEEN :start AND :end
+              AND t.departureTime >= :currentTime
               AND r.routeName = :route
               AND t.[status] = 'SCHEDULED'
             """, nativeQuery = true)
     Page<TripDetailProjection> findTripDetails(
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end,
+            @Param("currentTime") LocalDateTime currentTime,
             @Param("route") String route,
             Pageable pageable);
 
@@ -244,6 +255,36 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
               AND UPPER(LTRIM(RTRIM(ts.[status]))) = 'AVAILABLE'
             """, nativeQuery = true)
     Integer countAvailableTripSeatsByTripId(@Param("tripId") Integer tripId);
+
+    /**
+     * Finds the ordered stop timeline for one concrete trip. The trip id is the
+     * source of truth because a coach may serve different routes or directions
+     * on the same day. Each stop time is forecast from the trip departure and
+     * the route-specific minutes-from-start value.
+     *
+     * @param tripId concrete scheduled trip identifier
+     * @return active route stops in travel order
+     */
+    @Query(value = """
+            SELECT
+                t.tripId AS tripId,
+                r.routeName AS routeName,
+                cs.stopPointId AS stopPointId,
+                cs.stopPointName AS stopPointName,
+                cs.[address] AS [address],
+                cs.city AS city,
+                rs.stopOrder AS stopOrder,
+                rs.minutesFromStart AS minutesFromStart,
+                DATEADD(MINUTE, rs.minutesFromStart, t.departureTime) AS estimatedStopTime
+            FROM trip t
+            JOIN route r ON r.routeId = t.routeId
+            JOIN route_stop rs ON rs.routeId = t.routeId
+            JOIN coach_stop cs ON cs.stopPointId = rs.stopPointId
+            WHERE t.tripId = :tripId
+              AND cs.isActive = 1
+            ORDER BY rs.stopOrder ASC
+            """, nativeQuery = true)
+    List<TripStopProjection> findTripStopsByTripId(@Param("tripId") Integer tripId);
 
     @Query(value = "SELECT MAX(CAST(departureTime AS DATE)) FROM [trip]", nativeQuery = true)
     LocalDate findMaxDepartureDate();
