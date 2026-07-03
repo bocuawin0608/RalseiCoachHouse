@@ -31,15 +31,16 @@ public interface RouteStopRepository extends JpaRepository<RouteStop, Integer> {
       Pageable pageable);
 
   @Query(value = """
-      SELECT rs FROM RouteStop rs
-      JOIN FETCH rs.coachStop cs
-      JOIN rs.route r
-      JOIN Trip t ON t.route = r
-      WHERE t.tripId = :tripId AND cs.isActive = true
-      ORDER BY rs.stopOrder ASC
-  """)
+          SELECT rs FROM RouteStop rs
+          JOIN FETCH rs.coachStop cs
+          JOIN rs.route r
+          JOIN Trip t ON t.route = r
+          WHERE t.tripId = :tripId AND cs.isActive = true
+          ORDER BY rs.stopOrder ASC
+      """)
   public List<RouteStop> findByTripIdWithCoachStop(@Param("tripId") Integer tripId);
 
   @Query("SELECT rs FROM RouteStop rs JOIN FETCH rs.coachStop WHERE rs.route.routeId = :routeId AND rs.coachStop.stopPointId = :stopPointId")
-  Optional<RouteStop> findByRouteIdAndStopPointId(@Param("routeId") Integer routeId, @Param("stopPointId") Integer stopPointId);
+  Optional<RouteStop> findByRouteIdAndStopPointId(@Param("routeId") Integer routeId,
+      @Param("stopPointId") Integer stopPointId);
 }
