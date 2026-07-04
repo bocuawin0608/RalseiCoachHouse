@@ -23,7 +23,7 @@ public interface PassengerBookingService {
     Step2InitResponse getStep2InitData(Integer tripId, String holdToken, String accessToken);
     PriceCalculationResponse calculatePrice(Integer tripId, PriceCalculationRequest request, String accessToken);
     BookingConfirmResponse confirmBooking(Integer tripId, BookingConfirmRequest request, String holdToken, String accessToken);
-    BookingPaymentPageResponse getPaymentPage(String transactionId);
+    BookingPaymentPageResponse getPaymentPage(String transactionId, String cancelToken, String accessToken);
     void expirePendingPaymentIfOverdue(String transactionId);
     void cancelPendingPaymentByUser(String transactionId);
     boolean canCancelPendingPayment(String transactionId, String cancelToken, String accessToken);

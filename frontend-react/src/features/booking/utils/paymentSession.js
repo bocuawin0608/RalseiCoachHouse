@@ -46,6 +46,7 @@ export const mapPaymentPageResponse = (response, existing = {}) => ({
     tripId: response.tripId,
     tripTitle: existing.tripTitle,
     tripDate: existing.tripDate,
+    cancelToken: existing.cancelToken,
 });
 
 export const mapConfirmResponse = (response, summary = {}) => ({

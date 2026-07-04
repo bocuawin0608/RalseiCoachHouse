@@ -115,10 +115,12 @@ public class PassengerBookingController {
 
     @GetMapping("/payments/{transactionId}")
     public ResponseEntity<BookingPaymentPageResponse> getPaymentPage(
-        @PathVariable String transactionId
+        @PathVariable String transactionId,
+        @RequestHeader(value = "X-Cancel-Token", required = false) String cancelToken,
+        @RequestHeader(value = "Authorization", required = false) String accessToken
     ) {
         bookingService.expirePendingPaymentIfOverdue(transactionId);
-        return ResponseEntity.ok(bookingService.getPaymentPage(transactionId));
+        return ResponseEntity.ok(bookingService.getPaymentPage(transactionId, cancelToken, accessToken));
     }
 
     @GetMapping(value = "/payments/{transactionId}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -128,9 +130,12 @@ public class PassengerBookingController {
     }
 
     @PostMapping("/payments/{transactionId}/expire")
-    public ResponseEntity<BookingPaymentPageResponse> expirePaymentIfOverdue(@PathVariable String transactionId) {
+    public ResponseEntity<BookingPaymentPageResponse> expirePaymentIfOverdue(
+            @PathVariable String transactionId,
+            @RequestHeader(value = "X-Cancel-Token", required = false) String cancelToken,
+            @RequestHeader(value = "Authorization", required = false) String accessToken) {
         bookingService.expirePendingPaymentIfOverdue(transactionId);
-        return ResponseEntity.ok(bookingService.getPaymentPage(transactionId));
+        return ResponseEntity.ok(bookingService.getPaymentPage(transactionId, cancelToken, accessToken));
     }
 
     @PostMapping("/payments/{transactionId}/cancel")
@@ -144,6 +149,6 @@ public class PassengerBookingController {
         }
 
         bookingService.cancelPendingPaymentByUser(transactionId);
-        return ResponseEntity.ok(bookingService.getPaymentPage(transactionId));
+        return ResponseEntity.ok(bookingService.getPaymentPage(transactionId, cancelToken, accessToken));
     }
 }

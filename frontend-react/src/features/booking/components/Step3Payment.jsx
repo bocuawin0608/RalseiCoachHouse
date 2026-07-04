@@ -110,8 +110,8 @@ export default function Step3Payment() {
             setLoading(true);
             setError('');
             try {
-                const response = await bookingApi.getPaymentPage(transactionId);
                 const cached = loadPaymentSession(transactionId);
+                const response = await bookingApi.getPaymentPage(transactionId, cached?.cancelToken);
                 const mapped = mapPaymentPageResponse(response, cached || {});
                 savePaymentSession(transactionId, mapped);
                 if (!cancelled) {
@@ -155,8 +155,8 @@ export default function Step3Payment() {
 
         const expirePayment = async () => {
             try {
-                const response = await bookingApi.expirePayment(transactionId);
                 const cached = loadPaymentSession(transactionId);
+                const response = await bookingApi.expirePayment(transactionId, cached?.cancelToken);
                 const mapped = mapPaymentPageResponse(response, cached || {});
                 dispatch(setPaymentInfo(mapped));
                 savePaymentSession(transactionId, mapped);
@@ -200,18 +200,20 @@ export default function Step3Payment() {
 
         setCanceling(true);
         setError('');
+        const sessionCached = loadPaymentSession(transactionId);
+        const cancelToken = paymentInfo.cancelToken || sessionCached?.cancelToken;
         try {
-            const response = await bookingApi.cancelPayment(transactionId, paymentInfo.cancelToken);
+            const response = await bookingApi.cancelPayment(transactionId, cancelToken);
             const cached = loadPaymentSession(transactionId);
             const mapped = {
                 ...mapPaymentPageResponse(response, cached || {}),
-                cancelToken: paymentInfo.cancelToken,
+                cancelToken,
+                status: response?.paymentStatus || response?.status || 'FAILED',
             };
             dispatch(setPaymentInfo(mapped));
             savePaymentSession(transactionId, mapped);
-            if (mapped.status !== PENDING) {
-                clearActivePaymentSessionByTrip(mapped.tripId);
-            }
+            applyPaymentStatus('FAILED');
+            clearActivePaymentSessionByTrip(mapped.tripId);
         } catch (err) {
             setError(getErrorMessage(err));
         } finally {
