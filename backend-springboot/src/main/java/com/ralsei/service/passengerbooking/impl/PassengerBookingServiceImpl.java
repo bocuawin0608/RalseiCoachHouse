@@ -47,6 +47,7 @@ import com.ralsei.repository.AccompaniedChildRepository;
 import com.ralsei.repository.CustomerRepository;
 import com.ralsei.repository.PassengerTicketDetailRepository;
 import com.ralsei.repository.PassengerTicketRepository;
+import com.ralsei.repository.PaymentRepository;
 import com.ralsei.repository.RouteStopRepository;
 import com.ralsei.repository.TripRepository;
 import com.ralsei.repository.TripSeatRepository;
@@ -59,6 +60,7 @@ import com.ralsei.service.passengerbooking.PassengerPendingPaymentService;
 import com.ralsei.service.passengerbooking.PaymentSseService;
 import com.ralsei.service.passengerbooking.SeatHoldService;
 import com.ralsei.service.ticketgenerator.TicketCodeGenerator;
+import com.ralsei.util.PiiMaskingUtility;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -75,19 +77,19 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
     private final PassengerTicketRepository ticketRepo;
     private final PassengerTicketDetailRepository ticketDetailRepo;
     private final AccompaniedChildRepository accompaniedChildRepo;
-    //lười nên vứt con repo ở đây thay vì tạo thêm service
 
     private final SeatHoldService seatHoldService;
     private final RouteStopService routeStopService;
     private final VoucherService voucherService;
     private final PaymentService paymentService;
+    private final PaymentRepository paymentRepository;
     private final PaymentSseService paymentSseService;
     private final PassengerPendingPaymentService passengerPendingPaymentService;
     private final TicketCodeGenerator ticketCodeGenerator;
     private final JwtService jwtService;
 
     private static final long BROWSING_HOLD_TTL_SECONDS = 600;
-    private static final long PAYMENT_HOLD_TTL_SECONDS = 60;
+    private static final long PAYMENT_HOLD_TTL_SECONDS = 90;
     private static final String BANK_TRANSFER_METHOD = "SEPAY";
 
     @Value("${sepay.bank.account}")
@@ -247,7 +249,7 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
 
     @Transactional(readOnly = true)
     @Override
-    public BookingPaymentPageResponse getPaymentPage(String transactionId) {
+    public BookingPaymentPageResponse getPaymentPage(String transactionId, String cancelToken, String accessToken) {
         Payment payment = paymentService.getPaymentByTransactionId(transactionId);
         if (payment.getPassengerTicketId() == null) {
             throw new ResourceNotFoundException("Không tìm thấy thông tin thanh toán vé hành khách!");
@@ -266,6 +268,17 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
             .map(ticketDetail -> ticketDetail.getSeatCodeSnapshot())
             .toList();
 
+        boolean canViewFullPii = canCancelPendingPayment(transactionId, cancelToken, accessToken);
+        String passengerName = canViewFullPii
+                ? primaryDetail.getFullName()
+                : PiiMaskingUtility.maskFullName(primaryDetail.getFullName());
+        String passengerPhone = canViewFullPii
+                ? primaryDetail.getPhone()
+                : PiiMaskingUtility.maskPhone(primaryDetail.getPhone());
+
+        String paymentStatus = paymentRepository.findStatusByTransactionId(transactionId)
+                .orElse(payment.getStatus());
+
         return new BookingPaymentPageResponse(
             ticket.getTicketCode(),
             payment.getTransactionId(),
@@ -273,9 +286,9 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
             sepayBankAccount,
             sepayBankName,
             primaryDetail.getExpiredAt(),
-            payment.getStatus(),
-            primaryDetail.getFullName(),
-            primaryDetail.getPhone(),
+            paymentStatus,
+            passengerName,
+            passengerPhone,
             seatCodes,
             ticket.getTripId()
         );

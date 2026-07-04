@@ -107,11 +107,12 @@ public class PaymentServiceImpl implements PaymentService {
                     callbackData = request.toString();
                 }
 
+                LocalDateTime paymentTime = LocalDateTime.now();
                 int rowsUpdated = paymentRepository.completeIfCurrent(
                         transactionId,
                         "PENDING",
                         "COMPLETED",
-                        LocalDateTime.now(),
+                        paymentTime,
                         callbackData);
 
                 if (rowsUpdated == 0) {
@@ -119,7 +120,10 @@ public class PaymentServiceImpl implements PaymentService {
                     return;
                 }
 
+                // completeIfCurrent evicts the managed entity; sync in-memory copy for downstream use only.
                 payment.setStatus("COMPLETED");
+                payment.setPaymentTime(paymentTime);
+                payment.setCallbackData(callbackData);
 
                 if (payment.getPassengerTicketId() != null) {
                     completePassengerPaymentTarget(payment);
@@ -129,7 +133,7 @@ public class PaymentServiceImpl implements PaymentService {
                     throw new BusinessRuleException("Dữ liệu thanh toán không hợp lệ!");
                 }
 
-                paymentSseService.sendStatusUpdate(transactionId, payment.getStatus());
+                paymentSseService.sendStatusUpdate(transactionId, "COMPLETED");
 
             } else {
                 throw new IllegalArgumentException("Transfer amount is less than required payment amount");
