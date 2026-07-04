@@ -1,0 +1,53 @@
+.trip-crew-title { font-weight: 700; }
+
+.trip-crew-trip-summary {
+    display: flex;
+    align-items: center;
+    gap: .875rem;
+    padding: 1rem;
+    color: #18392d;
+    background: #eef6f2;
+    border-radius: .75rem;
+}
+
+.trip-crew-trip-summary div, .trip-crew-member div { display: flex; flex-direction: column; gap: .3rem; }
+.trip-crew-trip-summary span, .trip-crew-member span { color: #667085; }
+.trip-crew-list { display: grid; gap: .75rem; margin-top: 1rem; }
+
+.trip-crew-member {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: .875rem;
+    padding: 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: .75rem;
+}
+.driver-info, .attendant-info {
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+}
+.trip-crew-icon { margin-top: .15rem; color: #287154; font-size: 1.5rem; }
+
+.trip-crew-role {
+    align-self: flex-start;
+    width: fit-content;
+    padding: .25rem .6rem;
+    border-radius: 999px;
+    font-size: .75rem;
+    font-weight: 700;
+    line-height: 1;
+    text-transform: uppercase;
+}
+
+.trip-crew-role--driver {
+    color: #145c3a;
+    background-color: #d8f3e5;
+    border: 1px solid #9dd9ba;
+}
+
+.trip-crew-role--attendant {
+    color: #244d87;
+    background-color: #e1ecff;
+    border: 1px solid #adc8f4;
+}

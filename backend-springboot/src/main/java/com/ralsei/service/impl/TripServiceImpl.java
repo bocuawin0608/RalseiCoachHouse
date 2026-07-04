@@ -6,6 +6,7 @@ import com.ralsei.dto.projection.trip.TripDetailProjection;
 import com.ralsei.dto.projection.trip.TripFilterProjection;
 import com.ralsei.dto.projection.trip.TripSummaryProjection;
 import com.ralsei.dto.projection.trip.TripStopProjection;
+import com.ralsei.dto.projection.trip.TripResourceProjection;
 import com.ralsei.dto.request.trip.TripCreateRequest;
 import com.ralsei.dto.request.trip.TripUpdateRequest;
 import com.ralsei.dto.response.PagedResponse;
@@ -27,14 +28,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class TripServiceImpl implements TripService {
     private static final Logger LOGGER = LoggerFactory.getLogger(TripService.class);
+    private static final ZoneId BUSINESS_TIME_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+    private static final Set<String> WRITABLE_TRIP_STATUSES = Set.of("SCHEDULED", "IN_PROGRESS", "COMPLETED");
     private final TripRepository tripRepository;
     private final RouteRepository routeRepository;
     private final StaffRepository staffRepository;
@@ -56,9 +62,12 @@ public class TripServiceImpl implements TripService {
     public String insertTrip(TripCreateRequest tripRequest) {
         String prompt = "";
         if (tripRequest.getDepartureTime() == null
-                || tripRequest.getDepartureTime().isBefore(java.time.LocalDateTime.now())) {
-            LOGGER.error(" Validation Failed: Mẹ mày ko hợp lệ hoặc ở quá khứ.");
+                || tripRequest.getDepartureTime().isBefore(currentMinute())) {
+            LOGGER.warn("Validation failed: departure time is missing or in the past.");
             prompt = "Không thể tạo chuyến xe trong quá khứ, vui lòng tạo lại.";
+        } else if (!resourcesAreAvailable(tripRequest.getRouteId(), tripRequest.getCoachId(),
+                tripRequest.getDriverId(), tripRequest.getAttendantId(), tripRequest.getDepartureTime(), null)) {
+            prompt = "Xe hoặc nhân sự đã có lịch trùng. Vui lòng chọn lại.";
         } else {
             try {
                 tripRepository.insertTrip(tripRequest.getRouteId(), tripRequest.getCoachId(),
@@ -68,7 +77,7 @@ public class TripServiceImpl implements TripService {
                 LOGGER.info("Tạo chuyến xe mới thành công. ID: ");
                 prompt = "Tạo chuyến xe mới thành công";
             } catch (Exception e) {
-                LOGGER.error("ERROR: Không thể ghi đè mẹ thằng hiếu xuống Database. Lý do: {}", e.getMessage());
+                LOGGER.error("Could not create trip. Reason: {}", e.getMessage());
                 prompt = "Lỗi hệ thống, tạo chuyến thất bại!";
             }
         }
@@ -192,11 +201,14 @@ public class TripServiceImpl implements TripService {
 
     @Override
     @Transactional(readOnly = true)
-    public PagedResponse<TripSummaryProjection> getAllTripSummaries(LocalDate date, int page, int size) {
-        LocalDate targetDate = (date != null) ? date : LocalDate.now();
+    public PagedResponse<TripSummaryProjection> getAllTripSummaries(
+            LocalDate date, Integer routeId, String period, int page, int size) {
+        LocalDate targetDate = (date != null) ? date : LocalDate.now(BUSINESS_TIME_ZONE);
         String departureDateStr = targetDate.toString();
         Pageable pageable = PageRequest.of(page, size);
-        Page<TripSummaryProjection> summaryPage = tripRepository.viewAllTripSummaries(departureDateStr, pageable);
+        String normalizedPeriod = (period == null || period.isBlank()) ? null : period.toUpperCase();
+        Page<TripSummaryProjection> summaryPage = tripRepository.viewAllTripSummaries(
+                departureDateStr, currentMinute(), routeId, normalizedPeriod, pageable);
 
         return new PagedResponse<>(
                 summaryPage.getContent(),
@@ -225,59 +237,59 @@ public class TripServiceImpl implements TripService {
     @Override
     @Transactional
     public String updateTrip(Integer tripId, TripUpdateRequest updateRequest) {
-        String prompt = "";
         Trip trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new NoSuchElementException("Không tìm thấy chuyến xe có ID: " + tripId));
-        if ("COMPLETED".equals(trip.getStatus()) || "CANCELED".equals(trip.getStatus())) {
+        if ("COMPLETED".equals(trip.getStatus()) || isCancelled(trip.getStatus())) {
             LOGGER.error("Validation Failed: Chuyến xe ID {} đã đóng trạng thái, cấm chỉnh sửa.", tripId);
-            prompt = "Chuyến xe đã hoàn thành hoặc bị hủy, không thể chỉnh sửa thông tin!";
-        } else {
-            try {
-                trip.setDriverId(updateRequest.driverId());
-                trip.setCoachId(updateRequest.coachId());
-                trip.setAttendantId(updateRequest.attendantId());
-                trip.setDepartureTime(updateRequest.departureTime());
-                trip.setUpdatedAt(java.time.LocalDateTime.now());
-
-                LOGGER.info("Cập nhật chuyến xe thành công. ID: {}", tripId);
-                prompt = "Cập nhật thông tin chuyến xe thành công";
-            } catch (Exception e) {
-                LOGGER.error("ERROR: Lỗi hệ thống khi cập nhật chuyến xe {}. Lý do: {}", tripId, e.getMessage());
-                prompt = "Lỗi hệ thống, cập nhật chuyến thất bại!";
-            }
+            return "Chuyến xe đã hoàn thành hoặc bị hủy, không thể chỉnh sửa thông tin!";
         }
-
-        return prompt;
+        LocalDateTime validationTime = currentMinute();
+        if (updateRequest.departureTime() == null
+                || updateRequest.departureTime().isBefore(validationTime)) {
+            LOGGER.warn("Rejected past trip update: tripId={}, requestedDeparture={}",
+                    tripId, updateRequest.departureTime());
+            return "Không thể chuyển chuyến xe về thời gian trong quá khứ. Thời gian nhận được: "
+                    + updateRequest.departureTime() + ", thời gian hệ thống: " + validationTime + ".";
+        }
+        if (!WRITABLE_TRIP_STATUSES.contains(updateRequest.status())) {
+            return "Trạng thái chuyến xe không hợp lệ.";
+        }
+        if (!resourcesAreAvailable(updateRequest.routeId(), updateRequest.coachId(),
+                updateRequest.driverId(), updateRequest.attendantId(), updateRequest.departureTime(), tripId)) {
+            return "Xe hoặc nhân sự đã có lịch trùng. Vui lòng chọn lại.";
+        }
+        int updated = tripRepository.updateOpenTrip(tripId, updateRequest.routeId(), updateRequest.coachId(),
+                updateRequest.departureTime(), updateRequest.status(), updateRequest.driverId(),
+                updateRequest.attendantId());
+        if (updated != 1) {
+            return "Chuyến xe đã thay đổi trạng thái, vui lòng tải lại danh sách.";
+        }
+        LOGGER.info("Cập nhật chuyến xe thành công. ID: {}", tripId);
+        return "Cập nhật thông tin chuyến xe thành công";
     }
 
     @Override
     @Transactional
     public String deleteTrip(Integer tripId) {
-        String prompt = "";
         Trip trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new NoSuchElementException("Không tìm thấy chuyến xe có ID: " + tripId));
-        prompt = switch (trip.getStatus()) {
-            case "COMPLETED" -> {
-                LOGGER.error("Validation Failed: Chuyến xe ID {} đã hoàn thành, cấm xóa lịch sử.", tripId);
-                yield "Chuyến xe đã hoàn thành hành trình, không thể xóa bỏ!";
-            }
-            case "CANCELED" -> {
-                LOGGER.warn("Validation Failed: Chuyến xe ID {} đã bị hủy từ trước.", tripId);
-                yield "Chuyến xe này đã bị hủy bỏ từ trước đó rồi.";
-            }
-            default -> {
-                try {
-                    trip.setStatus("CANCELED");
-                    trip.setUpdatedAt(java.time.LocalDateTime.now());
-                    LOGGER.info("Xóa mềm (Hủy) chuyến xe thành công. ID: {}", tripId);
-                    yield "Xóa chuyến xe thành công!";
-                } catch (Exception e) {
-                    LOGGER.error("ERROR: Lỗi hệ thống không thể xóa chuyến xe {}. Lý do: {}", tripId, e.getMessage());
-                    yield "Lỗi hệ thống, xóa chuyến thất bại!";
-                }
-            }
-        };
-        return prompt;
+        if (isCancelled(trip.getStatus())) {
+            return "Chuyến xe này đã bị hủy bỏ từ trước đó rồi.";
+        }
+        if ("COMPLETED".equals(trip.getStatus())) {
+            return "Chuyến xe đã hoàn thành hành trình, không thể xóa bỏ!";
+        }
+        int cancelled = tripRepository.cancelOpenTrip(tripId);
+        if (cancelled != 1) {
+            return "Chuyến xe đã thay đổi trạng thái, vui lòng tải lại danh sách.";
+        }
+        LOGGER.info("Hủy chuyến xe thành công. ID: {}", tripId);
+        return "Xóa chuyến xe thành công!";
+    }
+
+    /** Accepts both historical cancellation spellings stored by older code. */
+    private boolean isCancelled(String status) {
+        return "CANCELED".equals(status) || "CANCELLED".equals(status);
     }
 
     @Override
@@ -295,6 +307,62 @@ public class TripServiceImpl implements TripService {
     public List<CoachLicensePlateProjection> getCoachInfoDropDown(LocalDate date) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'getCoachInfoDropDown'");
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    @Transactional(readOnly = true)
+    public List<TripResourceProjection> getAvailableCoaches(
+            Integer routeId, LocalDateTime departureTime, Integer excludeTripId) {
+        validateResourceRequest(routeId, departureTime);
+        return tripRepository.findAvailableCoaches(routeId, departureTime, excludeTripId);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    @Transactional(readOnly = true)
+    public List<TripResourceProjection> getAvailableDrivers(LocalDateTime departureTime, Integer excludeTripId) {
+        validateResourceRequest(1, departureTime);
+        return tripRepository.findAvailableStaff("DRIVER", departureTime, excludeTripId);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    @Transactional(readOnly = true)
+    public List<TripResourceProjection> getAvailableAttendants(LocalDateTime departureTime, Integer excludeTripId) {
+        validateResourceRequest(1, departureTime);
+        return tripRepository.findAvailableStaff("ATTENDANT", departureTime, excludeTripId);
+    }
+
+    /** Ensures a resource lookup has enough data and never targets a past trip. */
+    private void validateResourceRequest(Integer routeId, LocalDateTime departureTime) {
+        if (routeId == null || departureTime == null
+                || departureTime.isBefore(currentMinute())) {
+            throw new IllegalArgumentException("Tuyến đường và thời gian khởi hành tương lai là bắt buộc.");
+        }
+    }
+
+    /**
+     * Matches the minute precision exposed by the staff time picker. Comparing
+     * hidden seconds made the current selectable minute incorrectly look past.
+     */
+    private LocalDateTime currentMinute() {
+        return LocalDateTime.now(BUSINESS_TIME_ZONE).truncatedTo(ChronoUnit.MINUTES);
+    }
+
+    /** Verifies all selected resources still remain free at write time. */
+    private boolean resourcesAreAvailable(Integer routeId, Integer coachId, Integer driverId,
+            Integer attendantId, LocalDateTime departureTime, Integer excludeTripId) {
+        if (routeId == null || coachId == null || driverId == null || attendantId == null) {
+            return false;
+        }
+        boolean coachFree = tripRepository.findAvailableCoaches(routeId, departureTime, excludeTripId)
+                .stream().anyMatch(item -> coachId.equals(item.getId()));
+        boolean driverFree = tripRepository.findAvailableStaff("DRIVER", departureTime, excludeTripId)
+                .stream().anyMatch(item -> driverId.equals(item.getId()));
+        boolean attendantFree = tripRepository.findAvailableStaff("ATTENDANT", departureTime, excludeTripId)
+                .stream().anyMatch(item -> attendantId.equals(item.getId()));
+        return coachFree && driverFree && attendantFree && !driverId.equals(attendantId);
     }
 
     /**

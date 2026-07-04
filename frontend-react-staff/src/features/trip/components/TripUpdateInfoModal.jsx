@@ -1,189 +1,109 @@
-import { Alert, Button, Form, Modal } from 'react-bootstrap';
-import { useState, useEffect } from 'react';
+import { Alert, Button, Form, Modal, Spinner } from 'react-bootstrap';
+import { useEffect, useMemo, useState } from 'react';
 import { BsExclamationTriangleFill } from 'react-icons/bs';
 import { tripApi } from '../api/tripApi';
 import './TripUpdateInfoModal.css';
 
-/**
- * Modal for updating an existing trip's editable fields.
- * Controlled via isOpen/onClose props; calls onSuccess after a successful PUT.
- */
-export default function TripUpdateInfoModal({ isOpen, data, onClose, onSuccess }) {
-    const [formData, setFormData] = useState({
-        departureDate: '',
-        departureTime: '',
-        tripStatus: ''
-    });
+const normalizeTime = (value) => {
+    if (!value) return '';
+    if (Array.isArray(value)) return `${String(value[0]).padStart(2, '0')}:${String(value[1]).padStart(2, '0')}`;
+    return String(value).substring(0, 5);
+};
+
+/** Complete, conflict-aware editor for every mutable field shown in the trip view. */
+export default function TripUpdateInfoModal({ isOpen, data, routes, onClose, onSuccess }) {
+    const [formData, setFormData] = useState({ routeId: '', coachId: '', driverId: '', attendantId: '', departureDate: '', departureTime: '', status: '' });
+    const [resources, setResources] = useState({ coaches: [], drivers: [], attendants: [] });
+    const [isLoading, setIsLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState(null);
+    const today = new Date().toLocaleDateString('en-CA');
 
-    /**
-     * Normalize a LocalTime value from the API into "HH:mm" for <input type="time">.
-     * Jackson may deserialize LocalTime as an array [H, m, s] or a string "HH:mm:ss".
-     */
-    const normalizeTime = (value) => {
-        if (!value) return '';
-        // Array form: [8, 30, 0] → "08:30"
-        if (Array.isArray(value)) {
-            const [h, m] = value;
-            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-        }
-        // String form: "08:30:00" or "08:30" → take first 5 chars
-        return String(value).substring(0, 5);
-    };
-
-    /** Populate form fields whenever the target row or open state changes */
     useEffect(() => {
-        if (data && isOpen) {
-            setFormData({
-                departureDate: data.departureDate ? String(data.departureDate).substring(0, 10) : '',
-                departureTime: normalizeTime(data.departureTime),
-                tripStatus: data.tripStatus || ''
-            });
-            setError(null);
-        }
+        if (!data || !isOpen) return;
+        setFormData({
+            routeId: String(data.routeId || ''), coachId: String(data.coachId || ''),
+            driverId: String(data.driverId || ''), attendantId: String(data.attendantId || ''),
+            departureDate: String(data.departureDate || '').substring(0, 10),
+            departureTime: normalizeTime(data.departureTime), status: data.tripStatus || 'SCHEDULED'
+        });
+        setError(null);
     }, [data, isOpen]);
 
-    /** Detect whether the user has changed at least one field */
-    const hasAnyChange = data && (
-        String(data.departureDate).substring(0, 10) !== formData.departureDate ||
-        String(data.departureTime).substring(0, 5) !== formData.departureTime ||
-        data.tripStatus !== formData.tripStatus
-    );
+    useEffect(() => {
+        if (!isOpen || !data || !formData.routeId || !formData.departureDate || !formData.departureTime) return;
+        const departureTime = `${formData.departureDate}T${formData.departureTime}:00`;
+        setIsLoading(true);
+        setResources({ coaches: [], drivers: [], attendants: [] });
+        Promise.all([
+            tripApi.getAvailableCoaches({ routeId: formData.routeId, departureTime, excludeTripId: data.tripId }),
+            tripApi.getAvailableDrivers({ departureTime, excludeTripId: data.tripId }),
+            tripApi.getAvailableAttendants({ departureTime, excludeTripId: data.tripId })
+        ]).then(([coaches, drivers, attendants]) => setResources({ coaches, drivers, attendants }))
+            .catch((err) => {
+                setResources({ coaches: [], drivers: [], attendants: [] });
+                setError(err.response?.data?.message || err.response?.data || 'Không thể tải xe và nhân sự đang rảnh.');
+            })
+            .finally(() => setIsLoading(false));
+    }, [isOpen, data, formData.routeId, formData.departureDate, formData.departureTime]);
 
-    /** Generic handler for all controlled form inputs */
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-        setError(null);
-    };
+    const isPast = useMemo(() => {
+        if (!formData.departureDate || !formData.departureTime) return true;
+        const selectedMinute = new Date(`${formData.departureDate}T${formData.departureTime}:00`);
+        const currentMinute = new Date();
+        currentMinute.setSeconds(0, 0);
+        return selectedMinute < currentMinute;
+    }, [formData.departureDate, formData.departureTime]);
 
-    /** Submit updated trip data to the API */
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-
-        // Skip API call when nothing changed
-        if (!hasAnyChange) {
-            onClose();
+    const handleChange = ({ target: { name, value } }) => {
+        if (name === 'departureDate' && value && value < today) {
+            setFormData((previous) => ({ ...previous, departureDate: today }));
+            setError('Không thể chọn ngày trong quá khứ.');
             return;
         }
-
-        setIsSubmitting(true);
+        setFormData((previous) => ({ ...previous, [name]: value }));
         setError(null);
-        try {
-            await tripApi.updateTrip(data.tripId, {
-                departureDate: formData.departureDate,
-                /**
-                 * Spring LocalTime requires HH:mm:ss.
-                 * Send null (omitted) rather than an empty string to avoid
-                 * "could not be parsed at index 0" deserialization failure.
-                 */
-                departureTime: formData.departureTime
-                    ? `${formData.departureTime}:00`
-                    : null,
-                tripStatus: formData.tripStatus
-            });
-
-            onSuccess();
-            onClose();
-        } catch (err) {
-            setError(err.response?.data?.message || 'Có lỗi xảy ra khi cập nhật.');
-        } finally {
-            setIsSubmitting(false);
-        }
     };
 
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+        if (isPast) return setError('Thời gian khởi hành phải ở tương lai.');
+        setIsSubmitting(true);
+        try {
+            await tripApi.updateTrip(data.tripId, {
+                routeId: Number(formData.routeId), coachId: Number(formData.coachId),
+                driverId: Number(formData.driverId), attendantId: Number(formData.attendantId),
+                departureTime: `${formData.departureDate}T${formData.departureTime}:00`, status: formData.status
+            });
+            await onSuccess();
+            onClose();
+        } catch (err) {
+            setError(err.response?.data?.message || err.response?.data || 'Có lỗi xảy ra khi cập nhật.');
+        } finally { setIsSubmitting(false); }
+    };
+
+    const renderOptions = (items) => items.map((item) => (
+        <option key={item.id} value={item.id}>{item.displayName}{item.secondaryText ? ` — ${item.secondaryText}` : ''}</option>
+    ));
+
     if (!isOpen) return null;
-
     return (
-        <Modal show={isOpen} onHide={onClose} centered backdrop="static">
-            <Modal.Header closeButton>
-                <Modal.Title className="fs-5 fw-bold text-primary">
-                    Cập nhật thông tin chuyến xe
-                </Modal.Title>
-            </Modal.Header>
-
-            <Modal.Body className="px-4 pb-0">
-                <Form id="update-trip-form" onSubmit={handleSubmit}>
-
-                    {/* Departure Date */}
-                    <Form.Group className="mb-3">
-                        <Form.Label className="fw-semibold text-secondary">
-                            Ngày khởi hành <span className="text-danger">*</span>
-                        </Form.Label>
-                        <Form.Control
-                            type="date"
-                            name="departureDate"
-                            value={formData.departureDate}
-                            onChange={handleInputChange}
-                            required
-                            className="py-2"
-                        />
-                    </Form.Group>
-
-                    {/* Departure Time */}
-                    <Form.Group className="mb-3">
-                        <Form.Label className="fw-semibold text-secondary">
-                            Giờ khởi hành <span className="text-danger">*</span>
-                        </Form.Label>
-                        <Form.Control
-                            type="time"
-                            name="departureTime"
-                            value={formData.departureTime}
-                            onChange={handleInputChange}
-                            required
-                            className="py-2"
-                        />
-                    </Form.Group>
-
-                    {/* Trip Status */}
-                    <Form.Group className="mb-4">
-                        <Form.Label className="fw-semibold text-secondary">
-                            Trạng thái chuyến <span className="text-danger">*</span>
-                        </Form.Label>
-                        <Form.Select
-                            name="tripStatus"
-                            value={formData.tripStatus}
-                            onChange={handleInputChange}
-                            required
-                            className="py-2"
-                        >
-                            <option value="" disabled>-- Chọn trạng thái --</option>
-                            <option value="SCHEDULED">Đã lên lịch</option>
-                            <option value="ACTIVE">Đang hoạt động</option>
-                            <option value="COMPLETED">Hoàn thành</option>
-                            <option value="CANCELLED">Đã hủy</option>
-                        </Form.Select>
-                    </Form.Group>
-
-                    {/* Inline error alert */}
-                    {error && (
-                        <Alert variant="danger" className="mb-3 py-2 px-3 border-0 d-flex align-items-center gap-2">
-                            <BsExclamationTriangleFill />
-                            <span>{error}</span>
-                        </Alert>
-                    )}
+        <Modal show onHide={onClose} centered size="lg" backdrop="static">
+            <Modal.Header closeButton><Modal.Title className="fs-5 fw-bold">Cập nhật chuyến #{data?.tripId}</Modal.Title></Modal.Header>
+            <Modal.Body>
+                <Form id="update-trip-form" onSubmit={handleSubmit} className="trip-update-grid">
+                    <Form.Group><Form.Label>Tuyến đường *</Form.Label><Form.Select name="routeId" value={formData.routeId} onChange={handleChange} required>{routes.map((route) => <option key={route.routeId} value={route.routeId}>{route.routeName}</option>)}</Form.Select></Form.Group>
+                    <Form.Group><Form.Label>Trạng thái chuyến *</Form.Label><Form.Select name="status" value={formData.status} onChange={handleChange} required><option value="SCHEDULED">Đã lên lịch</option><option value="IN_PROGRESS">Đang hoạt động</option><option value="COMPLETED">Hoàn thành</option></Form.Select></Form.Group>
+                    <Form.Group><Form.Label>Ngày khởi hành *</Form.Label><Form.Control type="date" min={today} name="departureDate" value={formData.departureDate} onChange={handleChange} required /></Form.Group>
+                    <Form.Group><Form.Label>Giờ khởi hành *</Form.Label><Form.Control type="time" step="300" min={formData.departureDate === today ? new Date().toTimeString().slice(0, 5) : undefined} name="departureTime" value={formData.departureTime} onChange={handleChange} required /></Form.Group>
+                    <Form.Group><Form.Label>Xe khách đang rảnh *</Form.Label><Form.Select name="coachId" value={formData.coachId} onChange={handleChange} disabled={isLoading} required><option value="">Chọn xe khách</option>{renderOptions(resources.coaches)}</Form.Select></Form.Group>
+                    <Form.Group><Form.Label>Tài xế đang rảnh *</Form.Label><Form.Select name="driverId" value={formData.driverId} onChange={handleChange} disabled={isLoading} required><option value="">Chọn tài xế</option>{renderOptions(resources.drivers)}</Form.Select></Form.Group>
+                    <Form.Group><Form.Label>Phụ xe đang rảnh *</Form.Label><Form.Select name="attendantId" value={formData.attendantId} onChange={handleChange} disabled={isLoading} required><option value="">Chọn phụ xe</option>{renderOptions(resources.attendants)}</Form.Select></Form.Group>
+                    {isLoading && <div className="trip-update-loading"><Spinner size="sm" /> Đang kiểm tra lịch xe và nhân sự…</div>}
+                    {error && <Alert variant="danger" className="trip-update-alert"><BsExclamationTriangleFill /> {error}</Alert>}
                 </Form>
             </Modal.Body>
-
-            <Modal.Footer className="trip-modal-footer">
-                <Button
-                    variant="outline-secondary"
-                    onClick={onClose}
-                    disabled={isSubmitting}
-                    className="trip-modal-cancel-btn"
-                >
-                    Hủy bỏ
-                </Button>
-                <Button
-                    type="submit"
-                    form="update-trip-form"
-                    disabled={isSubmitting}
-                    className="trip-modal-submit-btn custom-btn-general"
-                >
-                    {isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi'}
-                </Button>
-            </Modal.Footer>
+            <Modal.Footer className="trip-modal-footer"><Button variant="outline-secondary" onClick={onClose}>Hủy bỏ</Button><Button type="submit" form="update-trip-form" disabled={isSubmitting || isLoading || isPast} className="custom-btn-general">{isSubmitting ? 'Đang lưu…' : 'Lưu thay đổi'}</Button></Modal.Footer>
         </Modal>
     );
 }

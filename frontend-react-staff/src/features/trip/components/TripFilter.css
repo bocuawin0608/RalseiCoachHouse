@@ -16,6 +16,25 @@
     justify-content: center;
 }
 
+.trip-filter-today {
+    display: flex;
+    flex-direction: column;
+    padding-right: 1rem;
+    border-right: 1px solid #dee2e6;
+    color: #52606d;
+}
+
+.trip-filter-today strong { color: #18392d; }
+
+.trip-filter-choice-group { display: flex; gap: .5rem; }
+
+@media (max-width: 768px) {
+    .trip-filter-form { align-items: stretch; flex-direction: column; }
+    .trip-filter-input { width: 100%; }
+    .trip-filter-choice-group { display: grid; grid-template-columns: 1fr 1fr; }
+    .trip-filter-today { border-right: 0; border-bottom: 1px solid #dee2e6; padding-bottom: .75rem; }
+}
+
 .trip-filter-input {
     width: 220px;
 }
