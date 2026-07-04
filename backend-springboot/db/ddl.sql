@@ -1,4 +1,4 @@
-﻿USE master;
+USE master;
 GO
 
 -- Xóa theo thứ tự từ LEVEL cao xuống LEVEL thấp để không dính Foreign Key Constraints
@@ -256,7 +256,7 @@ CREATE TABLE [route_stop] (
     FOREIGN KEY ([stopPointId]) REFERENCES [coach_stop] ([stopPointId]),
 
 	CONSTRAINT CK_RouteStop_Order CHECK ([stopOrder] >= 1),
-    CONSTRAINT CK_RouteStop_Metrics CHECK ([kilometersFromStart] >= 0 AND [minutesFromStart] >= 0)
+    CONSTRAINT CK_RouteStop_Metrics CHECK (([kilometersFromStart] > 0 AND [minutesFromStart] > 0) OR ([kilometersFromStart] = 0 AND [minutesFromStart] = 0))
 );
 
 CREATE TABLE [coach_type_price] (

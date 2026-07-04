@@ -18,6 +18,7 @@ public class RouteStopResponse {
     private int stopPointId;
     private String stopPointName;
     private String address;
+    private String city;
     private int stopOrder;
     private BigDecimal kilometersFromStart;
     private int minutesFromStart;

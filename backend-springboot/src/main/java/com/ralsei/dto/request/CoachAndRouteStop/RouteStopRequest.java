@@ -1,5 +1,6 @@
 package com.ralsei.dto.request.CoachAndRouteStop;
 
+import com.ralsei.util.validation.ValidRouteStopMetrics;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -13,6 +14,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@ValidRouteStopMetrics
 public class RouteStopRequest {
     @NotNull(message = "Route ID is required")
     @Min(value = 1, message = "Route ID must be at least 1")

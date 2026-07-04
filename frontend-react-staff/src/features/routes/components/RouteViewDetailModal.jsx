@@ -34,6 +34,7 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
     const [addingStopId, setAddingStopId] = useState(null);
     const [isClosingRightPanel, setIsClosingRightPanel] = useState(false);
     const [pendingCoachStop, setPendingCoachStop] = useState(null); // coach stop waiting to be placed at a row
+    const [calculatingDistances, setCalculatingDistances] = useState(false);
 
     const firstStop = useMemo(() => {
         if (!detail.routeStops || detail.routeStops.length === 0) return null;
@@ -243,6 +244,39 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
         }
     };
 
+    // Handle "Hoàn Tất" — calculate distances for all stops with 0 km/minutes
+    const handleCalculateDistances = async () => {
+        const hasZeroStops = detail.routeStops.some(
+            s => Number(s.kilometersFromStart) === 0 && Number(s.minutesFromStart) === 0
+        );
+
+        if (!hasZeroStops) {
+            // No stops need calculating, just close the panel
+            setIsClosingRightPanel(true);
+            setTimeout(() => {
+                setShowRightPanel(false);
+                setIsClosingRightPanel(false);
+            }, 240);
+            return;
+        }
+
+        setCalculatingDistances(true);
+        try {
+            await routeStopApi.calculateDistances({ routeId: Number(detail.routeId) });
+            await fetchRouteDetail();
+            // Close the right panel after success
+            setIsClosingRightPanel(true);
+            setTimeout(() => {
+                setShowRightPanel(false);
+                setIsClosingRightPanel(false);
+            }, 240);
+        } catch (err) {
+            alert(err.response?.data?.message || "Có lỗi xảy ra khi tính khoảng cách.");
+        } finally {
+            setCalculatingDistances(false);
+        }
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -292,17 +326,20 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
                                                     size="sm"
                                                     variant="success"
                                                     className="d-flex align-items-center gap-1 text-white"
-                                                    onClick={() => {
-                                                        setIsClosingRightPanel(true);
-                                                        setTimeout(() => {
-                                                            setShowRightPanel(false);
-                                                            setIsClosingRightPanel(false);
-                                                        }, 240);
-                                                    }}
-                                                    disabled={isClosingRightPanel}
+                                                    onClick={handleCalculateDistances}
+                                                    disabled={isClosingRightPanel || calculatingDistances}
                                                 >
-                                                    <TiTick size={18} />
-                                                    Hoàn tất
+                                                    {calculatingDistances ? (
+                                                        <>
+                                                            <Spinner animation="border" size="sm" style={{ width: '16px', height: '16px' }} />
+                                                            Đang tính...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <TiTick size={18} />
+                                                            Hoàn tất
+                                                        </>
+                                                    )}
                                                 </Button>
                                             )}
                                             <Button
@@ -390,6 +427,7 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
                                                             />
                                                             <th className="fw-semibold" style={{ width: '120px' }}>Thứ tự</th>
                                                             <th className="fw-semibold text-start">Tên trạm</th>
+                                                            <th className="fw-semibold text-start">Thành phố / Tỉnh</th>
                                                             <th className="fw-semibold">Khoảng cách từ điểm xuất phát</th>
                                                             <th className="fw-semibold">Thời gian từ điểm xuất phát</th>
                                                             <th className="fw-semibold">Hành động</th>
@@ -504,8 +542,8 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
                                             </div>
                                             <Button
                                                 size="sm"
-                                                variant={pendingCoachStop?.stopPointId === cs.stopPointId ? 'success' : 'outline-primary'}
-                                                className="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle p-0"
+                                                variant={pendingCoachStop?.stopPointId === cs.stopPointId ? 'warning' : undefined}
+                                                className={`flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle p-0 text-white ${pendingCoachStop?.stopPointId !== cs.stopPointId ? 'custom-btn-general' : ''}`}
                                                 style={{ width: '28px', height: '28px' }}
                                                 onClick={() => {
                                                     if (detail.routeStops.length === 0) {
