@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Alert, Badge, Button, Card, Col, Container, Form, Modal, Row, Spinner, Table } from 'react-bootstrap';
+import { useForm } from 'react-hook-form';
+import { Alert, Badge, Button, Card, Col, Container, Form, Modal, Row, Spinner, Table, Toast, ToastContainer } from 'react-bootstrap';
 import { BsArrowLeft, BsCheckCircle, BsExclamationTriangleFill, BsPencilFill } from 'react-icons/bs';
 import { coachApi } from '../../../features/coaches/api/coachApi';
 import SeatMapBuilder from '../../../features/coaches/components/SeatMapBuilder';
 import { useCoachTypeDropdown } from '../../../hooks/useCoachTypeDropdown';
 import { useRouteDropdown } from '../../../hooks/useRouteDropdown';
+import { validateAndFormatLicensePlate } from '../../../utils/formatters';
 
 const STATUS_LABELS = {
     ACTIVE: { text: 'Đang hoạt động', bg: 'success' },
@@ -29,7 +31,15 @@ export default function CoachDetailPage() {
     const [error, setError] = useState(null);
 
     const [editInfo, setEditInfo] = useState(false);
-    const [formData, setFormData] = useState({});
+    const { register, handleSubmit, setValue, reset, formState: { errors } } = useForm({
+        defaultValues: {
+            licensePlate: '',
+            manufacturer: '',
+            year: new Date().getFullYear(),
+            coachTypeId: '',
+            routeId: ''
+        }
+    });
     const [savingInfo, setSavingInfo] = useState(false);
 
     const [editSeats, setEditSeats] = useState(false);
@@ -55,7 +65,7 @@ export default function CoachDetailPage() {
             ]);
             setDetail(detailRes);
             setStatusLogs(logsRes.content ?? []);
-            setFormData({
+            reset({
                 licensePlate: detailRes.licensePlate,
                 manufacturer: detailRes.manufacturer,
                 year: detailRes.year,
@@ -63,11 +73,11 @@ export default function CoachDetailPage() {
                 routeId: detailRes.routeId ?? '',
             });
         } catch (err) {
-            setError(err.response?.data?.message || 'Có lỗi khi tải thông tin xe.');
+            setError({message: err.response?.data?.message || 'Có lỗi khi tải thông tin xe.'});
         } finally {
             setLoading(false);
         }
-    }, [id]);
+    }, [id, reset]);
 
     useEffect(() => {
         fetchDetail();
@@ -96,28 +106,29 @@ export default function CoachDetailPage() {
 
     useEffect(() => {
         if (!detail?.seats?.length) return;
-        setSeatMatrix(parsedLayout.floors.map((f) => f.map((r) => [...r])));
-    }, [detail?.coachId]);
+        const deepClonedMatrix = parsedLayout.floors.map((floor) =>
+            floor.map((row) =>
+                row.map((cell) => (cell ? { ...cell } : null))
+            )
+        );
+        setSeatMatrix(deepClonedMatrix);
+    }, [detail?.coachId, detail?.seats?.length, parsedLayout]);
 
-    const handleInputChange = (e) => {
-        setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-    };
-
-    const handleSaveInfo = async () => {
+    const handleSaveInfo = async (data) => {
         setSavingInfo(true);
         setError(null);
         try {
             const payload = {
-                ...formData,
-                routeId: formData.routeId === '' ? null : Number(formData.routeId),
-                coachTypeId: Number(formData.coachTypeId),
-                year: Number(formData.year),
+                ...data,
+                routeId: data.routeId === '' ? null : Number(data.routeId),
+                coachTypeId: Number(data.coachTypeId),
+                year: Number(data.year),
             };
             await coachApi.updateCoachInfo(id, payload);
             setEditInfo(false);
             await fetchDetail();
         } catch (err) {
-            setError(err.response?.data?.message || 'Có lỗi khi cập nhật thông tin xe.');
+            setError({message: err.response?.data?.message || 'Có lỗi khi cập nhật thông tin xe.'});
         } finally {
             setSavingInfo(false);
         }
@@ -140,7 +151,7 @@ export default function CoachDetailPage() {
                 floor.forEach((row) => {
                     row.forEach((cell) => {
                         if (cell) {
-                            seats.push({ seatId: cell.seatId, isActive: cell.isActive });
+                            seats.push({ seatId: cell.seatId, isActive: cell.isActive, seatCode: cell.seatCode });
                         }
                     });
                 });
@@ -149,7 +160,18 @@ export default function CoachDetailPage() {
             setEditSeats(false);
             await fetchDetail();
         } catch (err) {
-            setError(err.response?.data?.message || 'Có lỗi khi cập nhật ghế.');
+            const backendError = err.response?.data;
+            
+            if (backendError) {
+                setError({
+                    message: backendError.message || 'Dữ liệu không hợp lệ.',
+                    fieldErrors: backendError.fieldErrors
+                });
+            } else {
+                setError({
+                    message: err.message || 'Có lỗi khi cập nhật ghế.'
+                });
+            }
         } finally {
             setSavingSeats(false);
         }
@@ -164,7 +186,7 @@ export default function CoachDetailPage() {
                 const check = await coachApi.getStatusChangeCheck(id, targetStatus);
                 setActionCheck(check);
             } catch (err) {
-                setError(err.response?.data?.message || 'Không thể kiểm tra điều kiện đổi trạng thái.');
+                setError({message: err.response?.data?.message || 'Không thể kiểm tra điều kiện đổi trạng thái.'});
                 setActionModal(null);
             }
         }
@@ -189,12 +211,16 @@ export default function CoachDetailPage() {
             } else if (actionModal === 'reactivate') {
                 await coachApi.reactivate(id, { reason: actionForm.reason || null });
             } else if (actionModal === 'retire') {
+                if(!window.confirm("Xe ngừng hoạt động không thể phục hồi trạng thái. Bạn có chắc chắn muốn ngừng hoạt động xe?")) {
+                    closeAction();
+                    return;
+                }
                 await coachApi.retire(id, { reason: actionForm.reason });
             }
             closeAction();
             await fetchDetail();
         } catch (err) {
-            setError(err.response?.data?.message || 'Có lỗi khi thực hiện hành động.');
+            setError({message: err.response?.data?.message || 'Có lỗi khi thực hiện hành động.'});
         } finally {
             setSubmittingAction(false);
         }
@@ -237,13 +263,6 @@ export default function CoachDetailPage() {
                 <Badge bg={statusLabel.bg} className="px-3 py-2 fs-6">{statusLabel.text}</Badge>
             </div>
 
-            {error && (
-                <Alert variant="danger" className="d-flex align-items-center gap-2" dismissible onClose={() => setError(null)}>
-                    <BsExclamationTriangleFill />
-                    <span>{error}</span>
-                </Alert>
-            )}
-
             {detail.latestStatusLog && (
                 <Alert variant="light" className="border mb-4">
                     <strong>Ghi chú trạng thái gần nhất:</strong> {detail.latestStatusLog.reason}
@@ -275,7 +294,7 @@ export default function CoachDetailPage() {
                             </Button>
                         )}
                         {status === 'RETIRED' && (
-                            <span className="text-muted align-self-center">Xe đã ngừng hoạt động — không có hành động khả dụng.</span>
+                            <span className="text-muted align-self-center">Xe đã ngừng hoạt động, không có hành động khả dụng.</span>
                         )}
                     </div>
                 </Card.Body>
@@ -293,7 +312,7 @@ export default function CoachDetailPage() {
                             <div className="d-flex gap-2">
                                 <Button size="sm" variant="outline-secondary" onClick={() => {
                                     setEditInfo(false);
-                                    setFormData({
+                                    reset({
                                         licensePlate: detail.licensePlate,
                                         manufacturer: detail.manufacturer,
                                         year: detail.year,
@@ -303,7 +322,7 @@ export default function CoachDetailPage() {
                                 }}>
                                     Hủy
                                 </Button>
-                                <Button size="sm" className="custom-btn-general" disabled={savingInfo} onClick={handleSaveInfo}>
+                                <Button size="sm" className="custom-btn-general" disabled={savingInfo} onClick={handleSubmit(handleSaveInfo)}>
                                     {savingInfo ? 'Đang lưu...' : 'Lưu'}
                                 </Button>
                             </div>
@@ -314,27 +333,77 @@ export default function CoachDetailPage() {
                             <Row className="g-3">
                                 <Col md={6}>
                                     <Form.Label className="small fw-semibold">Biển số xe</Form.Label>
-                                    <Form.Control name="licensePlate" value={formData.licensePlate} onChange={handleInputChange} maxLength={20} required />
+                                    <Form.Control 
+                                        maxLength={20}
+                                        isInvalid={!!errors.licensePlate} 
+                                        {...register('licensePlate', {
+                                            required: 'Biển số xe không được để trống.',
+                                            validate: (value) => {
+                                                const result = validateAndFormatLicensePlate(value);
+                                                return result.valid || "Biển số xe không đúng định dạng chuẩn (Ví dụ: 73B600.45 hoặc 29A1234).";
+                                            },
+                                            onBlur: (e) => {
+                                                const result = validateAndFormatLicensePlate(e.target.value);
+                                                if (result.valid) {
+                                                    setValue('licensePlate', result.data);
+                                                }
+                                            }
+                                        })}
+                                    />
+                                    <Form.Control.Feedback type="invalid">
+                                        {errors.licensePlate?.message}
+                                    </Form.Control.Feedback>
                                 </Col>
                                 <Col md={6}>
-                                    <Form.Label className="small fw-semibold">Hãng sản xuất</Form.Label>
-                                    <Form.Control name="manufacturer" value={formData.manufacturer} onChange={handleInputChange} required />
+                                    <Form.Label className="small fw-semibold">Hãng xe</Form.Label>
+                                    <Form.Control 
+                                        isInvalid={!!errors.manufacturer}
+                                        {...register('manufacturer', { 
+                                            required: 'Hãng xe không được để trống.' 
+                                        })} 
+                                    />
+                                    <Form.Control.Feedback type="invalid">
+                                        {errors.manufacturer?.message}
+                                    </Form.Control.Feedback>
                                 </Col>
                                 <Col md={6}>
                                     <Form.Label className="small fw-semibold">Năm sản xuất</Form.Label>
-                                    <Form.Control type="number" name="year" value={formData.year} onChange={handleInputChange} min={2000} max={new Date().getFullYear()} required />
+                                    <Form.Control 
+                                        type="number" 
+                                        isInvalid={!!errors.year}
+                                        {...register('year', {
+                                            required: 'Năm sản xuất không được để trống.',
+                                            min: { value: 2000, message: 'Năm sản xuất phải lớn hơn hoặc bằng 2000.' },
+                                            max: { value: new Date().getFullYear(), message: 'Năm sản xuất không được lớn hơn năm hiện tại.' }
+                                        })}
+                                    />
+                                    <Form.Control.Feedback type="invalid">
+                                        {errors.year?.message}
+                                    </Form.Control.Feedback>
                                 </Col>
                                 <Col md={6}>
                                     <Form.Label className="small fw-semibold">Loại xe</Form.Label>
-                                    <Form.Select name="coachTypeId" value={formData.coachTypeId} onChange={handleInputChange} disabled={isDropdownLoading} required>
+                                    <Form.Select 
+                                        isInvalid={!!errors.coachTypeId}
+                                        disabled={isDropdownLoading}
+                                        {...register('coachTypeId', { 
+                                            required: 'Vui lòng chọn loại xe.' 
+                                        })}
+                                    >
                                         {coachTypes.map((ct) => (
                                             <option key={ct.coachTypeId} value={ct.coachTypeId}>{ct.coachTypeName}</option>
                                         ))}
                                     </Form.Select>
+                                    <Form.Control.Feedback type="invalid">
+                                        {errors.coachTypeId?.message}
+                                    </Form.Control.Feedback>
                                 </Col>
                                 <Col md={6}>
                                     <Form.Label className="small fw-semibold">Tuyến (tùy chọn)</Form.Label>
-                                    <Form.Select name="routeId" value={formData.routeId} onChange={handleInputChange} disabled={isDropdownLoading}>
+                                    <Form.Select 
+                                        disabled={isDropdownLoading}
+                                        {...register('routeId')}
+                                    >
                                         <option value="">-- Chọn tuyến --</option>
                                         {routes.map((r) => (
                                             <option key={r.routeId} value={r.routeId}>{r.routeName}</option>
@@ -345,9 +414,11 @@ export default function CoachDetailPage() {
                         </Form>
                     ) : (
                         <Row className="gy-3">
-                            <Col sm={6}><p className="text-secondary small mb-1">Tuyến xe</p><p className="mb-0">{detail.routeName}</p></Col>
+                            <Col sm={6}><p className="text-secondary small mb-1">Biển số xe</p><p className="mb-0">{detail.licensePlate}</p></Col>
                             <Col sm={6}><p className="text-secondary small mb-1">Hãng xe</p><p className="mb-0">{detail.manufacturer}</p></Col>
                             <Col sm={6}><p className="text-secondary small mb-1">Năm sản xuất</p><p className="mb-0">{detail.year}</p></Col>
+                            <Col sm={6}><p className="text-secondary small mb-1">Loại xe</p><p className="mb-0">{detail.coachTypeName}</p></Col>
+                            <Col sm={6}><p className="text-secondary small mb-1">Tuyến xe</p><p className="mb-0">{detail.routeName}</p></Col>
                             <Col sm={6}><p className="text-secondary small mb-1">Ghế khả dụng</p><p className="mb-0 text-success fw-bold">{detail.totalActiveSeats}</p></Col>
                         </Row>
                     )}
@@ -357,7 +428,13 @@ export default function CoachDetailPage() {
             <Card className="shadow-sm border-0 mb-4">
                 <Card.Body className="p-4">
                     <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                        <h5 className="fw-bold mb-0">Sơ đồ ghế</h5>
+                        <div>
+                            <h5 className="fw-bold">Sơ đồ ghế</h5>
+                            <p className="text-secondary small mb-1">
+                                * <span className="text-success fw-bold">Màu xanh</span>: Ghế ngồi (Khả dụng). <span className="text-danger fw-bold">Màu đỏ</span>: Ghế khóa (Tạm ngừng sử dụng).
+                            </p>
+                            <p className="text-secondary small">* Ở chế độ chỉnh sửa: Click vào ghế để chuyển đổi trạng thái ghế. Click vào tên ghế để đổi tên.</p>
+                        </div>
                         {status !== 'RETIRED' && !editSeats && (
                             <Button size="sm" variant="outline-primary" onClick={() => setEditSeats(true)}>
                                 <BsPencilFill className="me-1" /> Chỉnh sửa ghế
@@ -365,7 +442,24 @@ export default function CoachDetailPage() {
                         )}
                         {editSeats && (
                             <div className="d-flex gap-2">
-                                <Button size="sm" variant="outline-secondary" onClick={() => { setEditSeats(false); fetchDetail(); }}>
+                                <Button size="sm" variant="outline-secondary" onClick={() => { 
+                                    setEditSeats(false); 
+                                    reset({
+                                        licensePlate: detail.licensePlate,
+                                        manufacturer: detail.manufacturer,
+                                        year: detail.year,
+                                        coachTypeId: detail.coachTypeId,
+                                        routeId: detail.routeId ?? '',
+                                    });
+                                    if (parsedLayout?.floors) {
+                                        const resetMatrix = parsedLayout.floors.map((floor) =>
+                                            floor.map((row) =>
+                                                row.map((cell) => (cell ? { ...cell } : null))
+                                            )
+                                        );
+                                        setSeatMatrix(resetMatrix);
+                                    }
+                                }}>
                                     Hủy
                                 </Button>
                                 <Button size="sm" className="custom-btn-general" disabled={savingSeats} onClick={handleSaveSeats}>
@@ -494,6 +588,46 @@ export default function CoachDetailPage() {
                     </Modal.Footer>
                 </Form>
             </Modal>
+
+            <ToastContainer 
+                position="top-end" 
+                className="p-3" 
+                style={{ position: 'fixed', zIndex: 9999 }}
+            >
+                <Toast 
+                    show={!!error} 
+                    onClose={() => setError(null)} 
+                    delay={9000} 
+                    autohide 
+                    bg="danger" 
+                    text="white"
+                >
+                    <Toast.Header closeButton={true} className="bg-danger text-white border-0">
+                        <strong className="me-auto d-inline-flex align-items-center gap-2">
+                            <BsExclamationTriangleFill />
+                            <span>Có lỗi xảy ra</span>
+                        </strong>
+                    </Toast.Header>
+                    <Toast.Body className="bg-white text-dark rounded-bottom">
+                        {error && (
+                            <div>
+                                <p className={`fw-semibold mb-2 ${error.fieldErrors ? 'text-danger' : 'mb-0'}`}>
+                                    {error.message}
+                                </p>
+                                {error.fieldErrors && Object.keys(error.fieldErrors).length > 0 && (
+                                    <ul className="mb-0 ps-3 text-danger" style={{ fontSize: '0.85rem', lineHeight: '1.4' }}>
+                                        {[...new Set(Object.values(error.fieldErrors))].map((errorMessage, index) => (
+                                            <li key={index} className="mb-1">
+                                                {errorMessage}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                        )}
+                    </Toast.Body>
+                </Toast>
+            </ToastContainer>
         </Container>
     );
 }
