@@ -39,4 +39,16 @@ public interface PassengerTicketRepository extends JpaRepository<PassengerTicket
     int updateStatusIfCurrent(@Param("passengerTicketId") Integer passengerTicketId,
                               @Param("expectedStatus") PassengerTicketStatus expectedStatus,
                               @Param("newStatus") PassengerTicketStatus newStatus);
+
+    @Query("""
+        SELECT COUNT(pt) > 0
+        FROM PassengerTicket pt
+        JOIN Payment p ON p.passengerTicketId = pt.passengerTicketId
+        WHERE p.transactionId = :transactionId
+        AND pt.customerId = :customerId
+        AND p.status = 'PENDING'
+    """)
+    boolean existsPendingPaymentByTransactionIdAndCustomerId(
+            @Param("transactionId") String transactionId,
+            @Param("customerId") Integer customerId);
 }

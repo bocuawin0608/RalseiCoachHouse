@@ -12,5 +12,9 @@ public interface PaymentService {
 
     public Payment getPaymentByTransactionId(String transactionId);
 
-    public void cancelPayment(String transactionId);
+    /**
+     * Chỉ đổi payment PENDING → FAILED (idempotent).
+     * @return true nếu vừa fail thành công, false nếu payment không còn PENDING
+     */
+    boolean failPendingPayment(String transactionId);
 }

@@ -37,4 +37,10 @@ export const bookingApi = {
     expirePayment: (transactionId) => {
         return axiosClient.post(`${BASE}/payments/${transactionId}/expire`);
     },
+
+    cancelPayment: (transactionId, cancelToken) => {
+        return axiosClient.post(`${BASE}/payments/${transactionId}/cancel`, null, {
+            headers: { 'X-Cancel-Token': cancelToken }
+        });
+    },
 }

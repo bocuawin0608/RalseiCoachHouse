@@ -55,6 +55,7 @@ import com.ralsei.service.PaymentService;
 import com.ralsei.service.RouteStopService;
 import com.ralsei.service.VoucherService;
 import com.ralsei.service.passengerbooking.PassengerBookingService;
+import com.ralsei.service.passengerbooking.PassengerPendingPaymentService;
 import com.ralsei.service.passengerbooking.PaymentSseService;
 import com.ralsei.service.passengerbooking.SeatHoldService;
 import com.ralsei.service.ticketgenerator.TicketCodeGenerator;
@@ -81,6 +82,7 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
     private final VoucherService voucherService;
     private final PaymentService paymentService;
     private final PaymentSseService paymentSseService;
+    private final PassengerPendingPaymentService passengerPendingPaymentService;
     private final TicketCodeGenerator ticketCodeGenerator;
     private final JwtService jwtService;
 
@@ -238,7 +240,8 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
             coreResult.totalFinalPrice(),
             sepayBankAccount, 
             sepayBankName,
-            LocalDateTime.now().plusSeconds(PAYMENT_HOLD_TTL_SECONDS)
+            LocalDateTime.now().plusSeconds(PAYMENT_HOLD_TTL_SECONDS),
+            payment.getCancelToken()
         );
     }
 
@@ -281,19 +284,18 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
     @Transactional
     @Override
     public void expirePendingPaymentIfOverdue(String transactionId) {
-        try {
-            Payment payment = paymentService.getPaymentByTransactionId(transactionId);
-            if (!"PENDING".equals(payment.getStatus()) || payment.getPassengerTicketId() == null) return;
+        passengerPendingPaymentService.expireIfOverdue(transactionId);
+    }
 
-            ticketDetailRepo.findByPassengerTicketId(payment.getPassengerTicketId())
-                .stream().findFirst().ifPresent(detail -> {
-                    if (detail.getExpiredAt() != null && LocalDateTime.now().isAfter(detail.getExpiredAt())) {
-                        paymentService.cancelPayment(transactionId);
-                    }
-                });
-        } catch (IllegalArgumentException ex) {
-            log.warn("Không thể expire transaction: {}", transactionId);
-        }
+    @Transactional
+    @Override
+    public void cancelPendingPaymentByUser(String transactionId) {
+        passengerPendingPaymentService.cancelByUser(transactionId);
+    }
+
+    @Override
+    public boolean canCancelPendingPayment(String transactionId, String cancelToken, String accessToken) {
+        return passengerPendingPaymentService.canCancelByUser(transactionId, cancelToken, accessToken);
     }
 
     @Override
