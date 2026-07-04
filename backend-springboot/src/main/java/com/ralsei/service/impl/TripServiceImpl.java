@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -97,72 +98,67 @@ public class TripServiceImpl implements TripService {
             int page,
             int size) {
 
-        int checkTimeSlots = (timeSlots != null && !timeSlots.isEmpty()) ? 1 : 0;
+        List<String> normalizedTimeSlots = normalizeCustomerTimeSlots(timeSlots);
+        int checkTimeSlots = normalizedTimeSlots.isEmpty() ? 0 : 1;
 
-        String slot1Start = null, slot1End = null;
-        String slot2Start = null, slot2End = null;
-        String slot3Start = null, slot3End = null;
-        String slot4Start = null, slot4End = null;
+        Integer slot1StartMinute = null, slot1EndMinute = null;
+        Integer slot2StartMinute = null, slot2EndMinute = null;
+        Integer slot3StartMinute = null, slot3EndMinute = null;
+        Integer slot4StartMinute = null, slot4EndMinute = null;
 
         if (checkTimeSlots == 1) {
-            for (int i = 0; i < Math.min(timeSlots.size(), 4); i++) {
-                String slot = timeSlots.get(i);
+            for (int i = 0; i < Math.min(normalizedTimeSlots.size(), 4); i++) {
+                String slot = normalizedTimeSlots.get(i);
                 if (slot != null && slot.contains("-")) {
                     String[] parts = slot.split("-");
-                    String sTime = parts[0].trim();
-                    String eTime = parts[1].trim();
-                    if (sTime.length() == 5)
-                        sTime += ":00";
-                    if (eTime.length() == 5)
-                        eTime += ":00";
+                    Integer startMinute = parseTimeToMinuteOfDay(parts[0].trim());
+                    Integer endMinute = parseTimeToMinuteOfDay(parts[1].trim());
+                    if (startMinute == null || endMinute == null) {
+                        continue;
+                    }
 
                     switch (i) {
                         case 0 -> {
-                            slot1Start = sTime;
-                            slot1End = eTime;
+                            slot1StartMinute = startMinute;
+                            slot1EndMinute = endMinute;
                         }
                         case 1 -> {
-                            slot2Start = sTime;
-                            slot2End = eTime;
+                            slot2StartMinute = startMinute;
+                            slot2EndMinute = endMinute;
                         }
                         case 2 -> {
-                            slot3Start = sTime;
-                            slot3End = eTime;
+                            slot3StartMinute = startMinute;
+                            slot3EndMinute = endMinute;
                         }
                         case 3 -> {
-                            slot4Start = sTime;
-                            slot4End = eTime;
+                            slot4StartMinute = startMinute;
+                            slot4EndMinute = endMinute;
                         }
                     }
                 }
             }
         }
 
-        int checkLayouts = (layouts != null && !layouts.isEmpty()) ? 1 : 0;
-        String layoutKeyword1 = null;
-        String layoutKeyword2 = null;
-
-        if (checkLayouts == 1) {
-            if (layouts.size() > 0)
-                layoutKeyword1 = "%" + layouts.get(0).trim() + "%";
-            if (layouts.size() > 1)
-                layoutKeyword2 = "%" + layouts.get(1).trim() + "%";
-        }
+        List<String> normalizedLayoutKeywords = normalizeCustomerCoachTypeFilters(layouts);
+        int checkLayouts = normalizedLayoutKeywords.isEmpty() ? 0 : 1;
+        String layoutKeyword1 = normalizedLayoutKeywords.size() > 0 ? normalizedLayoutKeywords.get(0) : null;
+        String layoutKeyword2 = normalizedLayoutKeywords.size() > 1 ? normalizedLayoutKeywords.get(1) : null;
+        String layoutKeyword3 = normalizedLayoutKeywords.size() > 2 ? normalizedLayoutKeywords.get(2) : null;
 
         // 3. Khởi tạo phân trang
         Pageable pageable = PageRequest.of(page, size);
-        LocalDateTime now = LocalDateTime.now();
-
         // 4. Gọi repository
         Page<TripFilterProjection> filteredPage = tripRepository.filterTrips(
-                now, start, end, route,
+                start, end, route,
                 checkTimeSlots,
-                slot1Start, slot1End,
-                slot2Start, slot2End,
-                slot3Start, slot3End,
-                slot4Start, slot4End,
+                slot1StartMinute, slot1EndMinute,
+                slot2StartMinute, slot2EndMinute,
+                slot3StartMinute, slot3EndMinute,
+                slot4StartMinute, slot4EndMinute,
                 checkLayouts,
-                layoutKeyword1, layoutKeyword2,
+                layoutKeyword1,
+                layoutKeyword2,
+                layoutKeyword3,
                 minPrice, maxPrice,
                 pageable);
 
@@ -283,6 +279,128 @@ public class TripServiceImpl implements TripService {
         throw new UnsupportedOperationException("Unimplemented method 'getCoachInfoDropDown'");
     }
 
+    /**
+     * Converts customer filter slot keys from the React UI into SQL-friendly time
+     * ranges while still accepting direct "HH:mm-HH:mm" values from future clients.
+     *
+     * @param timeSlots raw request values bound by Spring from query parameters
+     * @return normalized time ranges in "HH:mm-HH:mm" format
+     */
+    private List<String> normalizeCustomerTimeSlots(List<String> timeSlots) {
+        if (timeSlots == null || timeSlots.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> normalizedSlots = new ArrayList<>();
+        for (String rawSlot : timeSlots) {
+            if (rawSlot == null || rawSlot.isBlank()) {
+                continue;
+            }
+
+            String[] requestedSlots = rawSlot.split(",");
+            for (String requestedSlot : requestedSlots) {
+                String slot = requestedSlot.trim();
+                if (slot.isEmpty()) {
+                    continue;
+                }
+
+                switch (slot) {
+                    case "EARLY_MORNING" -> normalizedSlots.add("00:00-06:00");
+                    case "MORNING" -> normalizedSlots.add("06:00-12:00");
+                    case "AFTERNOON" -> normalizedSlots.add("12:00-18:00");
+                    case "EVENING" -> normalizedSlots.add("18:00-23:59");
+                    default -> {
+                        if (slot.contains("-")) {
+                            normalizedSlots.add(slot);
+                        }
+                    }
+                }
+            }
+        }
+        return normalizedSlots;
+    }
+
+    /**
+     * Parses an "HH:mm" or "HH:mm:ss" value into minutes after midnight so SQL
+     * Server can compare departure times numerically instead of comparing TIME
+     * to string parameters.
+     *
+     * @param timeValue time value from the normalized customer filter
+     * @return minute of day, or {@code null} when the input is malformed
+     */
+    private Integer parseTimeToMinuteOfDay(String timeValue) {
+        if (timeValue == null || timeValue.isBlank()) {
+            return null;
+        }
+
+        String[] parts = timeValue.split(":");
+        if (parts.length < 2) {
+            return null;
+        }
+
+        try {
+            int hour = Integer.parseInt(parts[0]);
+            int minute = Integer.parseInt(parts[1]);
+            if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+                return null;
+            }
+            return hour * 60 + minute;
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    /**
+     * Converts public-site coach filter values into SQL LIKE patterns. The
+     * frontend sends simple keywords: "Limousine", "luxury", or "truyền thống".
+     *
+     * @param layouts raw request values from the customer filter
+     * @return SQL LIKE patterns for coach type filtering
+     */
+    private List<String> normalizeCustomerCoachTypeFilters(List<String> layouts) {
+        if (layouts == null || layouts.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> keywords = new ArrayList<>();
+        for (String rawLayout : layouts) {
+            if (rawLayout == null || rawLayout.isBlank()) {
+                continue;
+            }
+
+            String[] requestedLayouts = rawLayout.split(",");
+            for (String requestedLayout : requestedLayouts) {
+                String layout = requestedLayout.trim();
+                if (layout.isEmpty()) {
+                    continue;
+                }
+
+                switch (layout) {
+                    case "COACH_STANDARD", "Xe Khách Truyền Thống 38 chỗ" ->
+                        addUniqueKeyword(keywords, "%truyền thống%");
+                    case "COACH_LIMOUSINE", "Xe Limousine VIP 20 phòng" ->
+                        addUniqueKeyword(keywords, "%Limousine%");
+                    case "COACH_LUXURY", "Xe Giường Nằm Luxury 32 chỗ" ->
+                        addUniqueKeyword(keywords, "%luxury%");
+                    default -> addUniqueKeyword(keywords, "%" + layout + "%");
+                }
+            }
+        }
+        return keywords.stream().limit(3).toList();
+    }
+
+    /**
+     * Adds a SQL LIKE pattern once so combined filters do not duplicate
+     * repository parameters.
+     *
+     * @param keywords accumulated SQL LIKE patterns
+     * @param keyword candidate SQL LIKE pattern
+     */
+    private void addUniqueKeyword(List<String> keywords, String keyword) {
+        if (!keywords.contains(keyword)) {
+            keywords.add(keyword);
+        }
+    }
 
 
 }

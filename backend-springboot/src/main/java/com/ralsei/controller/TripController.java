@@ -1,18 +1,8 @@
 package com.ralsei.controller;
 
-import com.ralsei.dto.request.trip.TripSearchRequest;
-import com.ralsei.dto.request.trip.TripUpdateRequest;
-import com.ralsei.dto.projection.trip.TripDetailProjection;
-import com.ralsei.dto.projection.trip.TripFilterProjection;
-import com.ralsei.dto.projection.trip.TripSummaryProjection;
-import com.ralsei.dto.request.trip.TripCreateRequest;
-import com.ralsei.dto.request.trip.TripFilterRequest;
-import com.ralsei.dto.response.PagedResponse;
-import com.ralsei.service.TripService;
-import lombok.RequiredArgsConstructor;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -25,6 +15,18 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.ralsei.dto.projection.trip.TripDetailProjection;
+import com.ralsei.dto.projection.trip.TripFilterProjection;
+import com.ralsei.dto.projection.trip.TripSummaryProjection;
+import com.ralsei.dto.request.trip.TripCreateRequest;
+import com.ralsei.dto.request.trip.TripFilterRequest;
+import com.ralsei.dto.request.trip.TripSearchRequest;
+import com.ralsei.dto.request.trip.TripUpdateRequest;
+import com.ralsei.dto.response.PagedResponse;
+import com.ralsei.service.TripService;
+
+import lombok.RequiredArgsConstructor;
 /***
  * 
  * TripController: nhớ comment vào nhá

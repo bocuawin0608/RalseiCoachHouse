@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setSelectedSeats, setStep } from '../reducers/bookingSlice';
 import SeatMapBuilder from './SeatMapBuilder';
 import SeatIcon from '../../../components/common/SeatIcon';
+import { formatCurrency } from '../../../utils/formatters';
 
 export default function Step1SeatSelection({ tripId }) {
     const [seatList, setSeatList] = useState([]);
@@ -14,7 +15,7 @@ export default function Step1SeatSelection({ tripId }) {
     const [isLocking, setIsLocking] = useState(false);
 
     const dispatch = useDispatch();
-    const { holdToken, selectedSeats } = useSelector(state => state.booking);
+    const { holdToken, selectedSeats, tripInfo } = useSelector(state => state.booking);
 
     const fetchInitialData = useCallback(async () => {
         setLoading(true);
@@ -147,7 +148,15 @@ export default function Step1SeatSelection({ tripId }) {
                     
                     {selectedSeats.length > 0 && (
                         <div className="mt-4 pt-3 border-top" style={{ fontSize: '14px' }}>
-                            <strong>Đang chọn:</strong> {selectedSeats.length} ghế
+                            <div><strong>Đang chọn:</strong> {selectedSeats.length} ghế</div>
+                            {tripInfo?.seatPrice > 0 && (
+                                <div className="mt-2">
+                                    <strong>Giá tạm tính:</strong> {selectedSeats.length} x {formatCurrency(tripInfo.seatPrice)}
+                                </div>
+                            )}
+                            <div className="text-muted mt-1" style={{ fontSize: '12px' }}>
+                                Chưa bao gồm phụ thu điểm đón/trả và giảm giá
+                            </div>
                         </div>
                     )}
 
