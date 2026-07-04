@@ -27,6 +27,7 @@ import com.ralsei.dto.response.passengerbooking.PriceCalculationResponse;
 import com.ralsei.dto.response.passengerbooking.SeatLockResponse;
 import com.ralsei.dto.response.passengerbooking.Step2InitResponse;
 import com.ralsei.dto.response.passengerbooking.TripSeatResponse;
+import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.service.passengerbooking.PassengerBookingService;
 
 import jakarta.validation.Valid;
@@ -129,6 +130,20 @@ public class PassengerBookingController {
     @PostMapping("/payments/{transactionId}/expire")
     public ResponseEntity<BookingPaymentPageResponse> expirePaymentIfOverdue(@PathVariable String transactionId) {
         bookingService.expirePendingPaymentIfOverdue(transactionId);
+        return ResponseEntity.ok(bookingService.getPaymentPage(transactionId));
+    }
+
+    @PostMapping("/payments/{transactionId}/cancel")
+    public ResponseEntity<BookingPaymentPageResponse> cancelPendingPayment(
+            @PathVariable String transactionId,
+            @RequestHeader(value = "X-Cancel-Token", required = false) String cancelToken,
+            @RequestHeader(value = "Authorization", required = false) String accessToken) {
+
+        if (!bookingService.canCancelPendingPayment(transactionId, cancelToken, accessToken)) {
+            throw new BusinessRuleException("Bạn không có quyền hủy giao dịch này!");
+        }
+
+        bookingService.cancelPendingPaymentByUser(transactionId);
         return ResponseEntity.ok(bookingService.getPaymentPage(transactionId));
     }
 }

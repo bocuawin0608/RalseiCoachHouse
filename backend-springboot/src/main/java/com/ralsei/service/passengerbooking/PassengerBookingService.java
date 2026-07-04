@@ -25,5 +25,7 @@ public interface PassengerBookingService {
     BookingConfirmResponse confirmBooking(Integer tripId, BookingConfirmRequest request, String holdToken, String accessToken);
     BookingPaymentPageResponse getPaymentPage(String transactionId);
     void expirePendingPaymentIfOverdue(String transactionId);
+    void cancelPendingPaymentByUser(String transactionId);
+    boolean canCancelPendingPayment(String transactionId, String cancelToken, String accessToken);
     SseEmitter subscribePaymentStatus(String transactionId);
 }

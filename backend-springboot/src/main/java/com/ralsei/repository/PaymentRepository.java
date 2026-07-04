@@ -57,4 +57,14 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
         AND ptd.expiredAt <= :now
     """)
     List<String> findOverduePendingPassengerTransactionIds(@Param("now") LocalDateTime now, Pageable pageable);
+
+    @Query("""
+        SELECT COUNT(p) > 0
+        FROM Payment p
+        WHERE p.transactionId = :transactionId
+        AND p.cancelToken = :cancelToken
+        AND p.status = 'PENDING'
+    """)
+    boolean isValidCancelToken(@Param("transactionId") String transactionId,
+                               @Param("cancelToken") String cancelToken);
 }

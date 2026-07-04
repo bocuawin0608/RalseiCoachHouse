@@ -9,5 +9,6 @@ public record BookingConfirmResponse(
     BigDecimal amount,           
     String bankAccountNumber,    
     String bankName,
-    LocalDateTime paymentExpiresAt  
+    LocalDateTime paymentExpiresAt,
+    String cancelToken
 ) {}
