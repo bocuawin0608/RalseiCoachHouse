@@ -144,6 +144,7 @@ public class RouteServiceImpl implements RouteService {
                 .stopPointId(rs.getCoachStop() != null ? rs.getCoachStop().getStopPointId() : 0)
                 .stopPointName(rs.getCoachStop() != null ? rs.getCoachStop().getStopPointName() : null)
                 .address(rs.getCoachStop() != null ? rs.getCoachStop().getAddress() : null)
+                .city(rs.getCoachStop() != null ? rs.getCoachStop().getCity() : null)
                 .stopOrder(rs.getStopOrder())
                 .kilometersFromStart(rs.getKilometersFromStart())
                 .minutesFromStart(rs.getMinutesFromStart())

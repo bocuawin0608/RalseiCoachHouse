@@ -1,5 +1,6 @@
 package com.ralsei.service.impl;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -62,6 +63,14 @@ public class RouteStopServiceImpl implements RouteStopService {
                         throw new IllegalArgumentException(
                                         "Minutes from start cannot be larger than route's total minutes.");
                 }
+                boolean isBothZero = (request.getMinutesFromStart() == 0 && request.getKilometersFromStart() != null
+                                && request.getKilometersFromStart().compareTo(BigDecimal.ZERO) == 0);
+                boolean isBothPositive = (request.getMinutesFromStart() > 0 && request.getKilometersFromStart() != null
+                                && request.getKilometersFromStart().compareTo(BigDecimal.ZERO) > 0);
+                if (!isBothZero && !isBothPositive) {
+                        throw new IllegalArgumentException(
+                                        "Khoảng cách và thời gian phải cùng bằng 0 hoặc cùng lớn hơn 0.");
+                }
 
                 RouteStop routeStop = RouteStop.builder()
                                 .route(route)
@@ -105,6 +114,14 @@ public class RouteStopServiceImpl implements RouteStopService {
                 if (request.getMinutesFromStart() > route.getTotalMinutes()) {
                         throw new IllegalArgumentException(
                                         "Minutes from start cannot be larger than route's total minutes.");
+                }
+                boolean isBothZero = (request.getMinutesFromStart() == 0 && request.getKilometersFromStart() != null
+                                && request.getKilometersFromStart().compareTo(BigDecimal.ZERO) == 0);
+                boolean isBothPositive = (request.getMinutesFromStart() > 0 && request.getKilometersFromStart() != null
+                                && request.getKilometersFromStart().compareTo(BigDecimal.ZERO) > 0);
+                if (!isBothZero && !isBothPositive) {
+                        throw new IllegalArgumentException(
+                                        "Khoảng cách và thời gian phải cùng bằng 0 hoặc cùng lớn hơn 0.");
                 }
 
                 routeStop.setRoute(route);
@@ -159,6 +176,23 @@ public class RouteStopServiceImpl implements RouteStopService {
                 // Reset stop orders to ascending sequence (1, 2, 3, ...)
                 List<RouteStop> remainingStops = routeStopRepository
                                 .findByRoute_RouteIdOrderByStopOrderAsc(routeId);
+
+                if (routeStop.getStopOrder() == 1 && !remainingStops.isEmpty()) {
+                        RouteStop newFirstStop = remainingStops.get(0);
+                        BigDecimal subtractKm = newFirstStop.getKilometersFromStart();
+                        int subtractMinutes = newFirstStop.getMinutesFromStart();
+
+                        for (RouteStop rs : remainingStops) {
+                                BigDecimal currentKm = rs.getKilometersFromStart();
+                                if (currentKm != null && subtractKm != null) {
+                                        BigDecimal newKm = currentKm.subtract(subtractKm);
+                                        rs.setKilometersFromStart(
+                                                        newKm.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : newKm);
+                                }
+                                int newMinutes = rs.getMinutesFromStart() - subtractMinutes;
+                                rs.setMinutesFromStart(Math.max(0, newMinutes));
+                        }
+                }
 
                 int order = 1;
                 for (RouteStop rs : remainingStops) {
@@ -217,6 +251,7 @@ public class RouteStopServiceImpl implements RouteStopService {
                                 .stopPointId(rs.getCoachStop() != null ? rs.getCoachStop().getStopPointId() : 0)
                                 .stopPointName(rs.getCoachStop() != null ? rs.getCoachStop().getStopPointName() : null)
                                 .address(rs.getCoachStop() != null ? rs.getCoachStop().getAddress() : null)
+                                .city(rs.getCoachStop() != null ? rs.getCoachStop().getCity() : null)
                                 .stopOrder(rs.getStopOrder())
                                 .kilometersFromStart(rs.getKilometersFromStart())
                                 .minutesFromStart(rs.getMinutesFromStart())

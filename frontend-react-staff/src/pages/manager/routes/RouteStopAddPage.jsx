@@ -78,6 +78,15 @@ export default function RouteStopAddPage() {
             return;
         }
 
+        const minutes = Number(formData.minutesFromStart);
+        const kilometers = Number(formData.kilometersFromStart);
+        const isBothZero = minutes === 0 && kilometers === 0;
+        const isBothPositive = minutes > 0 && kilometers > 0;
+        if (!isBothZero && !isBothPositive) {
+            setErrorMsg('Khoảng cách và thời gian phải cùng bằng 0 hoặc cùng lớn hơn 0.');
+            return;
+        }
+
         setIsSubmitting(true);
 
         try {

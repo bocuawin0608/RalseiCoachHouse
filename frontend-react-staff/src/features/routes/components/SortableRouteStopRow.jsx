@@ -39,8 +39,7 @@ export default function SortableRouteStopRow({ stop, onEdit, onDelete, showAddBu
                 {showAddButton && (
                     <Button
                         size="sm"
-                        variant="success"
-                        className="d-flex align-items-center justify-content-center rounded-circle p-0"
+                        className="d-flex align-items-center justify-content-center rounded-circle p-0 custom-btn-general"
                         style={{ width: '26px', height: '26px', margin: '0 auto' }}
                         onClick={() => onAddAtOrder(stop.stopOrder)}
                         title={`Chèn sau vị trí ${stop.stopOrder}`}
@@ -66,8 +65,9 @@ export default function SortableRouteStopRow({ stop, onEdit, onDelete, showAddBu
                 </div>
             </td>
             <td className="text-start fw-medium">{stop.stopPointName}</td>
-            <td>{stop.kilometersFromStart} km</td>
-            <td>{stop.minutesFromStart} phút</td>
+            <td className="text-start fw-medium">{stop.city}</td>
+            <td>{stop.kilometersFromStart === 0 && stop.stopOrder != 1 ? "- -" : stop.kilometersFromStart + " km"}</td>
+            <td>{stop.minutesFromStart === 0 && stop.stopOrder != 1 ? "- -" : (stop.minutesFromStart >= 60 ? Math.floor(stop.minutesFromStart / 60) + " giờ " + (stop.minutesFromStart % 60) + " phút" : stop.minutesFromStart + " phút")} </td>
             <td>
                 <div className="d-flex gap-2 justify-content-center">
                     <Button className="custom-btn-general" size="sm" onClick={() => onEdit(stop)} title="Sửa điểm dừng">
