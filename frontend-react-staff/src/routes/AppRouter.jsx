@@ -18,6 +18,7 @@ import { accountRoutes } from '../features/manage-accounts';
 import { roleRoutes } from '../features/manage-roles';
 import { customerRoutes } from '../features/manage-customers';
 import { ticketAgencyRoutes } from '../features/manage-ticket-agencies';
+import { staffRoutes } from '../features/manage-staff';
 
 const AppRouter = () => {
     return (
@@ -46,6 +47,7 @@ const AppRouter = () => {
                         {customerRoutes}
                         {ticketAgencyRoutes}
                         {roleRoutes}
+                        {staffRoutes}
                     </Route>
 
                 </Route>

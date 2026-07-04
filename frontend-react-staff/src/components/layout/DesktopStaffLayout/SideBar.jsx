@@ -195,6 +195,10 @@ export default function Sidebar() {
                                 <BsBuilding size={20} className="flex-shrink-0" />
                                 <span>Quản lý bến xe</span>
                             </NavLink>
+                            <NavLink to="/management/manage-staff" className={navLinkClass} end>
+                                <BsPersonBadge size={20} className="flex-shrink-0" />
+                                <span>Quản lý nhân viên</span>
+                            </NavLink>
                         </>
                     )}
 
