@@ -7,7 +7,7 @@ import { bookingApi } from '../api/bookingApi';
 import { usePaymentSse } from '../hooks/usePaymentSse';
 import { setPaymentInfo, setPaymentStatus } from '../reducers/bookingSlice';
 import { formatCurrency, formatDateTime } from '../../../utils/formatters';
-import { loadPaymentSession, mapPaymentPageResponse, savePaymentSession } from '../utils/paymentSession';
+import { clearActivePaymentSessionByTrip, loadPaymentSession, mapPaymentPageResponse, savePaymentSession } from '../utils/paymentSession';
 
 const PENDING = 'PENDING';
 const COMPLETED = 'COMPLETED';
@@ -78,6 +78,9 @@ export default function Step3Payment() {
         const cached = loadPaymentSession(transactionId);
         if (cached) {
             savePaymentSession(transactionId, { ...cached, status: nextStatus });
+            if (nextStatus !== PENDING) {
+                clearActivePaymentSessionByTrip(cached.tripId);
+            }
         }
     }, [dispatch, transactionId]);
 
@@ -107,7 +110,8 @@ export default function Step3Payment() {
             setError('');
             try {
                 const response = await bookingApi.getPaymentPage(transactionId);
-                const mapped = mapPaymentPageResponse(response);
+                const cached = loadPaymentSession(transactionId);
+                const mapped = mapPaymentPageResponse(response, cached || {});
                 savePaymentSession(transactionId, mapped);
                 if (!cancelled) {
                     dispatch(setPaymentInfo(mapped));
@@ -151,9 +155,13 @@ export default function Step3Payment() {
         const expirePayment = async () => {
             try {
                 const response = await bookingApi.expirePayment(transactionId);
-                const mapped = mapPaymentPageResponse(response);
+                const cached = loadPaymentSession(transactionId);
+                const mapped = mapPaymentPageResponse(response, cached || {});
                 dispatch(setPaymentInfo(mapped));
                 savePaymentSession(transactionId, mapped);
+                if (mapped.status !== PENDING) {
+                    clearActivePaymentSessionByTrip(mapped.tripId);
+                }
             } catch (err) {
                 console.error('Không thể hết hạn giao dịch thanh toán:', err);
             }
@@ -209,9 +217,7 @@ export default function Step3Payment() {
                 <Alert variant="success" className="rounded-3 border-0 shadow-sm d-flex gap-2 align-items-center">
                     <BsCheckCircleFill />
                     <div>
-                        Thanh toán thành công. Hệ thống đã xác nhận vé của bạn. 
-                        <br />
-                        <strong>Hệ thống sẽ tự động điều hướng sang trang chủ sau 15 giây...</strong>
+                        Thanh toán thành công. Hệ thống sẽ tự động điều hướng về trang chủ sau 15 giây...
                     </div>
                 </Alert>
             )}
@@ -220,7 +226,7 @@ export default function Step3Payment() {
                 <Alert variant="danger" className="rounded-3 border-0 shadow-sm d-flex gap-2 align-items-start">
                     <BsExclamationTriangleFill className="mt-1" />
                     <div>
-                        Mã thanh toán đã hết hạn hoặc bị hủy. Ghế sẽ được giải phóng — vui lòng đặt lại vé nếu bạn chưa chuyển khoản.
+                        Mã thanh toán đã hết hạn hoặc bị hủy. Ghế sẽ được giải phóng, vui lòng đặt lại vé nếu bạn chưa chuyển khoản.
                     </div>
                 </Alert>
             )}

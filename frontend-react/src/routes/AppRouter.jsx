@@ -11,6 +11,7 @@ import CargoTrackingPage from '../pages/public/cargo-tracking/CargoTrackingPage'
 import Login from '../pages/auth/Login';
 import Register from '../pages/auth/Register';
 import BookingPaymentPage from '../pages/public/booking/BookingPaymentPage';
+import BookingTripPage from '../pages/public/booking/BookingTripPage';
 // Nested routes
 import { publicTripRoutes } from '../features/trips';
 
@@ -20,6 +21,7 @@ const AppRouter = () => {
             <Route element={<PublicLayout />}>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/tra-cuu" element={<CargoTrackingPage />} />
+                <Route path="/booking/trip/:tripId" element={<BookingTripPage />} />
                 <Route path="/booking/payment/:transactionId" element={<BookingPaymentPage />} />
                 <Route path="/unauthorized" element={<div>401 - Unauthorized.</div>} />
                 <Route path="*" element={<div>404 - Page Not Found.</div>} />

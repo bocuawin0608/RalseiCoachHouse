@@ -9,7 +9,7 @@ public final class BookingValidationPatterns {
             "^0(3|5|7|8|9)[0-9]{8}$";
 
     public static final String EMAIL =
-            "^$|^[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}$";
+            "^[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}$";
 
     private BookingValidationPatterns() {}
 }

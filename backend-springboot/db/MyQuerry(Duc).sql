@@ -16,27 +16,43 @@ FROM route_stop
 SELECT *
 FROM trip_seat
 
--- My new view all available trip query
-SELECT t.tripId,
-    t.[status] AS [TRANG THAI CHUYEN DI],
-    c.manufacturer,
-    ct.coachTypeName,
+-- Customer trip seat count: same logic used by TripRepository.
+DECLARE @departureTime DATETIME = '2026-07-01 08:00:00';
+
+SELECT
+    t.tripId,
+    t.coachId,
     c.licensePlate,
-    c.[status] AS [TINH TRANG XE],
-    CAST(t.departureTime AS DATE) AS departureDate,
-    CAST(t.departureTime AS TIME) AS departureTime,
-    (SELECT COUNT(*)
-    FROM trip_seat ts
-    WHERE ts.tripId = t.tripId AND ts.[status] = 'AVAILABLE') AS availableSeats,
-    (SELECT COUNT(*)
-    FROM trip_seat ts
-    WHERE ts.tripId = t.tripId) AS totalSeats
+    t.departureTime,
+    COUNT(ts.tripSeatId) AS totalSeatsInTrip,
+    SUM(CASE WHEN ts.[status] = 'AVAILABLE' THEN 1 ELSE 0 END) AS availableSeats,
+    SUM(CASE WHEN ts.[status] IN ('LOCKED', 'SOLD') THEN 1 ELSE 0 END) AS unavailableSeats
 FROM trip t
-    JOIN coach c ON c.coachId = t.coachId
-    JOIN coach_type ct ON ct.coachTypeId = c.coachTypeId
--- KHÔNG JOIN TRIP_SEAT Ở ĐÂY NỮA!
-WHERE CAST(t.departureTime AS DATE) = '2026-06-15'
-ORDER BY t.departureTime ASC;
+JOIN coach c ON c.coachId = t.coachId
+JOIN trip_seat ts ON ts.tripId = t.tripId
+JOIN seat s ON s.seatId = ts.seatId
+WHERE t.departureTime = @departureTime
+  AND t.[status] = 'SCHEDULED'
+  AND s.isActive = 1
+GROUP BY
+    t.tripId,
+    t.coachId,
+    c.licensePlate,
+    t.departureTime;
+
+-- Debug one tripId directly from trip_seat.
+DECLARE @TripId INT = 1;
+SELECT
+    ts.tripId,
+    COUNT(ts.tripSeatId) AS totalSeatsInTrip,
+    SUM(CASE WHEN ts.[status] = 'AVAILABLE' THEN 1 ELSE 0 END) AS availableSeats,
+    SUM(CASE WHEN ts.[status] IN ('LOCKED', 'SOLD') THEN 1 ELSE 0 END) AS unavailableSeats
+FROM trip_seat ts
+JOIN seat s ON s.seatId = ts.seatId
+WHERE ts.tripId = @TripId
+  AND s.isActive = 1
+GROUP BY ts.tripId;
+
 USE VeXeDB;
 GO
 
@@ -112,7 +128,7 @@ WHERE tripId = 10;
 GO
 USE VeXeDB
 -- Giả sử Manager số 2 thực hiện sinh lịch tự động cho 1 tuần từ ngày 01/06/2026
-EXEC sp_AutoGenerateWeeklySchedule_Final @StartDate = '2026-06-23';
+EXEC sp_AutoGenerateWeeklySchedule_Final @StartDate = '2026-06-27';
 
 -- Lệnh 1: Kiểm tra tổng số lượng chuyến xe sinh ra trong ngày đầu tiên xem có chạm mốc 20 chuyến không
 SELECT CAST(departureTime AS DATE) AS NgayChay, COUNT(*) AS TongSoChuyenTrongNgay
@@ -475,3 +491,59 @@ SELECt * FROM account
 USE VeXeDB
 SELECT * FROM trip_seat ts 
 JOIN trip t ON t.tripId = ts.tripSeatId
+
+SELECT * FROM account_role ar JOIN account a ON ar.accountId = a.accountId JOIN role r on r.roleId = ar.roleId 
+
+SELECT * FROM coach_type
+
+
+SELECT COUNT(*)
+    FROM trip_seat ts JOIN trip t on ts.tripId = t.tripId 
+    WHERE ts.tripId = t.tripId
+
+
+    SELECT * FROM TRIP
+
+
+    ------------------
+DECLARE @departureTime DATETIME = '2026-07-01 08:00:00';
+
+SELECT
+    t.tripId,
+    t.coachId,
+    c.licensePlate,
+    t.departureTime,
+
+    COUNT(ts.tripSeatId) AS totalSeatsInTrip,
+
+    SUM(CASE 
+        WHEN ts.status = 'AVAILABLE' THEN 1 
+        ELSE 0 
+    END) AS availableSeats,
+
+    SUM(CASE 
+        WHEN ts.status IN ('LOCKED', 'SOLD') THEN 1 
+        ELSE 0 
+    END) AS unavailableSeats
+
+FROM trip t
+JOIN coach c 
+    ON c.coachId = t.coachId
+JOIN trip_seat ts 
+    ON ts.tripId = t.tripId
+JOIN seat s 
+    ON s.seatId = ts.seatId
+
+WHERE 
+   t.departureTime = @departureTime
+  AND t.status = 'SCHEDULED'
+  AND s.isActive = 1
+
+GROUP BY
+    t.tripId,
+    t.coachId,
+    c.licensePlate,
+    t.departureTime;
+
+
+EXEC sp_AutoGenerateWeeklySchedule_Final @StartDate = '2026-07-01';

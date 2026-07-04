@@ -1,8 +1,12 @@
 const STORAGE_PREFIX = 'booking-payment:';
+const ACTIVE_TRIP_PAYMENT_PREFIX = 'booking-active-payment-trip:';
 
 export const savePaymentSession = (transactionId, data) => {
     if (!transactionId || !data) return;
     sessionStorage.setItem(`${STORAGE_PREFIX}${transactionId}`, JSON.stringify(data));
+    if (data.tripId) {
+        sessionStorage.setItem(`${ACTIVE_TRIP_PAYMENT_PREFIX}${data.tripId}`, transactionId);
+    }
 };
 
 export const loadPaymentSession = (transactionId) => {
@@ -16,7 +20,19 @@ export const loadPaymentSession = (transactionId) => {
     }
 };
 
-export const mapPaymentPageResponse = (response) => ({
+export const loadActivePaymentSessionByTrip = (tripId) => {
+    if (!tripId) return null;
+    const transactionId = sessionStorage.getItem(`${ACTIVE_TRIP_PAYMENT_PREFIX}${tripId}`);
+    if (!transactionId) return null;
+    return loadPaymentSession(transactionId);
+};
+
+export const clearActivePaymentSessionByTrip = (tripId) => {
+    if (!tripId) return;
+    sessionStorage.removeItem(`${ACTIVE_TRIP_PAYMENT_PREFIX}${tripId}`);
+};
+
+export const mapPaymentPageResponse = (response, existing = {}) => ({
     ticketCode: response.ticketCode,
     transactionId: response.transactionId,
     amount: response.amount,
@@ -28,6 +44,8 @@ export const mapPaymentPageResponse = (response) => ({
     primaryPassengerPhone: response.primaryPassengerPhone,
     seatCodes: response.seatCodes || [],
     tripId: response.tripId,
+    tripTitle: existing.tripTitle,
+    tripDate: existing.tripDate,
 });
 
 export const mapConfirmResponse = (response, summary = {}) => ({
@@ -42,4 +60,6 @@ export const mapConfirmResponse = (response, summary = {}) => ({
     primaryPassengerPhone: summary.primaryPassengerPhone,
     seatCodes: summary.seatCodes || [],
     tripId: summary.tripId,
+    tripTitle: summary.tripTitle,
+    tripDate: summary.tripDate,
 });
