@@ -50,8 +50,15 @@ public class RouteStopServiceImpl implements RouteStopService {
                 boolean orderExists = route.getRouteStops().stream()
                                 .anyMatch(rs -> rs.getStopOrder() == request.getStopOrder());
                 if (orderExists) {
-                        throw new IllegalArgumentException(
-                                        "Stop order " + request.getStopOrder() + " already exists in this route.");
+                        List<RouteStop> toShift = route.getRouteStops().stream()
+                                        .filter(rs -> rs.getStopOrder() >= request.getStopOrder())
+                                        .sorted((a, b) -> Integer.compare(b.getStopOrder(), a.getStopOrder()))
+                                        .collect(Collectors.toList());
+                        for (RouteStop rs : toShift) {
+                                rs.setStopOrder(rs.getStopOrder() + 1);
+                        }
+                        routeStopRepository.saveAll(toShift);
+                        routeStopRepository.flush();
                 }
 
                 if (request.getKilometersFromStart() != null
@@ -81,9 +88,12 @@ public class RouteStopServiceImpl implements RouteStopService {
                                 .build();
 
                 RouteStop saved = routeStopRepository.save(Objects.requireNonNull(routeStop));
+                routeStopRepository.flush();
+                syncRouteTotals(route.getRouteId());
                 return mapToResponse(saved);
         }
 
+        // deprecated
         @Override
         @Transactional
         public RouteStopResponse updateRouteStop(int id, RouteStopRequest request) {
@@ -131,6 +141,8 @@ public class RouteStopServiceImpl implements RouteStopService {
                 routeStop.setMinutesFromStart(request.getMinutesFromStart());
 
                 RouteStop updated = routeStopRepository.save(routeStop);
+                routeStopRepository.flush();
+                syncRouteTotals(route.getRouteId());
                 return mapToResponse(updated);
         }
 
@@ -200,6 +212,8 @@ public class RouteStopServiceImpl implements RouteStopService {
                 }
 
                 routeStopRepository.saveAll(remainingStops);
+                routeStopRepository.flush();
+                syncRouteTotals(routeId);
         }
 
         @Override
@@ -237,6 +251,7 @@ public class RouteStopServiceImpl implements RouteStopService {
 
                 // Save all
                 List<RouteStop> saved = routeStopRepository.saveAll(routeStops);
+
                 return saved.stream().map(this::mapToResponse).collect(Collectors.toList());
         }
 
@@ -262,5 +277,19 @@ public class RouteStopServiceImpl implements RouteStopService {
         @Override
         public List<RouteStop> getStopsByTripId(Integer tripId) {
                 return routeStopRepository.findByTripIdWithCoachStop(tripId);
+        }
+
+        // sync route total kilometers and total minutes corresponding to the last stops
+        private void syncRouteTotals(int routeId) {
+                List<RouteStop> stops = routeStopRepository.findByRoute_RouteIdOrderByStopOrderAsc(routeId);
+                if (stops.isEmpty()) {
+                        routeRepository.updateRouteTotals(routeId, BigDecimal.ZERO, 0);
+                } else {
+                        RouteStop lastStop = stops.get(stops.size() - 1);
+                        BigDecimal km = lastStop.getKilometersFromStart() != null ? lastStop.getKilometersFromStart()
+                                        : BigDecimal.ZERO;
+                        int mins = lastStop.getMinutesFromStart();
+                        routeRepository.updateRouteTotals(routeId, km, mins);
+                }
         }
 }

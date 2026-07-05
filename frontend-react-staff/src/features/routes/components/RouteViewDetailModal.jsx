@@ -7,9 +7,9 @@ import { Alert, Badge, Button, Form, Modal, Spinner, Table } from "react-bootstr
 import { BsExclamationTriangleFill, BsTrash, BsPencilFill, BsPlusCircleFill, BsGeoAltFill, BsXLg, BsSearch } from "react-icons/bs";
 import { FaArrowRightLong } from "react-icons/fa6";
 import { TiTick } from "react-icons/ti";
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import SortableRouteStopRow from "./SortableRouteStopRow";
+import AvailableCoachStopsPanel from "./AvailableCoachStopsPanel";
+import DraftRouteStopsTable from "./DraftRouteStopsTable";
 
 const INITIAL_DETAIL = {
     routeId: '',
@@ -22,6 +22,8 @@ const INITIAL_DETAIL = {
 
 export default function RouteViewDetailModal({ isOpen, data, onClose }) {
     const [detail, setDetail] = useState(INITIAL_DETAIL);
+    const [originalRouteStops, setOriginalRouteStops] = useState([]);
+    const [draftRouteStops, setDraftRouteStops] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -31,24 +33,25 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
     const [coachStops, setCoachStops] = useState([]);
     const [coachStopsLoading, setCoachStopsLoading] = useState(false);
     const [coachStopSearch, setCoachStopSearch] = useState('');
-    const [addingStopId, setAddingStopId] = useState(null);
     const [isClosingRightPanel, setIsClosingRightPanel] = useState(false);
-    const [pendingCoachStop, setPendingCoachStop] = useState(null); // coach stop waiting to be placed at a row
     const [calculatingDistances, setCalculatingDistances] = useState(false);
+    const [pendingCoachStop, setPendingCoachStop] = useState(null);
+    const [isDeleteMode, setIsDeleteMode] = useState(false);
+    const [selectedForDeletion, setSelectedForDeletion] = useState([]);
 
     const firstStop = useMemo(() => {
-        if (!detail.routeStops || detail.routeStops.length === 0) return null;
-        return detail.routeStops.reduce((min, s) => s.stopOrder < min.stopOrder ? s : min, detail.routeStops[0]);
-    }, [detail.routeStops]);
+        if (!draftRouteStops || draftRouteStops.length === 0) return null;
+        return draftRouteStops.reduce((min, s) => s.stopOrder < min.stopOrder ? s : min, draftRouteStops[0]);
+    }, [draftRouteStops]);
 
     const lastStop = useMemo(() => {
-        if (!detail.routeStops || detail.routeStops.length === 0) return null;
-        return detail.routeStops.reduce((max, s) => s.stopOrder > max.stopOrder ? s : max, detail.routeStops[0]);
-    }, [detail.routeStops]);
+        if (!draftRouteStops || draftRouteStops.length === 0) return null;
+        return draftRouteStops.reduce((max, s) => s.stopOrder > max.stopOrder ? s : max, draftRouteStops[0]);
+    }, [draftRouteStops]);
 
     // Filter out stops already assigned to this route
     const availableCoachStops = useMemo(() => {
-        const existingStopIds = (detail.routeStops || []).map(rs => rs.stopPointId);
+        const existingStopIds = (draftRouteStops || []).map(rs => rs.stopPointId);
         let filtered = coachStops.filter(cs => !existingStopIds.includes(cs.stopPointId));
         if (coachStopSearch.trim()) {
             const search = coachStopSearch.toLowerCase().trim();
@@ -59,44 +62,73 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
             );
         }
         return filtered;
-    }, [coachStops, detail.routeStops, coachStopSearch]);
+    }, [coachStops, draftRouteStops, coachStopSearch]);
 
-    const sensors = useSensors(
-        useSensor(PointerSensor),
-        useSensor(KeyboardSensor, {
-            coordinateGetter: sortableKeyboardCoordinates,
-        })
-    );
+    const handleAddCoachStop = (coachStop) => {
+        if (pendingCoachStop?.stopPointId === coachStop.stopPointId) {
+            setPendingCoachStop(null);
+            return;
+        }
 
-    const handleDragEnd = async (event) => {
+        if (draftRouteStops.length === 0) {
+            const newStop = {
+                id: `draft-${Date.now()}`,
+                stopPointId: coachStop.stopPointId,
+                stopPointName: coachStop.stopPointName,
+                city: coachStop.city,
+                stopOrder: 1,
+                kilometersFromStart: 1.2,
+                minutesFromStart: 1.2,
+                stopPointActive: coachStop.active !== undefined ? coachStop.active : true
+            };
+            setDraftRouteStops([newStop]);
+        } else {
+            setPendingCoachStop(coachStop);
+        }
+    };
+
+    const handleInsertPendingStop = (index) => {
+        if (!pendingCoachStop) return;
+
+        const newStop = {
+            id: `draft-${Date.now()}`,
+            stopPointId: pendingCoachStop.stopPointId,
+            stopPointName: pendingCoachStop.stopPointName,
+            city: pendingCoachStop.city,
+            stopOrder: 0,
+            kilometersFromStart: 1.2,
+            minutesFromStart: 1.2,
+            stopPointActive: pendingCoachStop.active !== undefined ? pendingCoachStop.active : true
+        };
+
+        const copy = [...draftRouteStops];
+        copy.splice(index + 1, 0, newStop);
+
+        const updatedStops = copy.map((stop, i) => ({
+            ...stop,
+            stopOrder: i + 1
+        }));
+
+        setDraftRouteStops(updatedStops);
+        setPendingCoachStop(null);
+    };
+
+    const handleDragEnd = (event) => {
         const { active, over } = event;
         if (!over || active.id === over.id) return;
 
-        const oldIndex = detail.routeStops.findIndex(stop => stop.routeStopId === active.id);
-        const newIndex = detail.routeStops.findIndex(stop => stop.routeStopId === over.id);
+        const oldIndex = draftRouteStops.findIndex(stop => (stop.routeStopId || stop.id) === active.id);
+        const newIndex = draftRouteStops.findIndex(stop => (stop.routeStopId || stop.id) === over.id);
 
         if (oldIndex !== -1 && newIndex !== -1) {
-            const newStops = arrayMove(detail.routeStops, oldIndex, newIndex);
+            const newStops = arrayMove(draftRouteStops, oldIndex, newIndex);
 
             const updatedStops = newStops.map((stop, index) => ({
                 ...stop,
                 stopOrder: index + 1
             }));
 
-            setDetail(prev => ({ ...prev, routeStops: updatedStops }));
-
-            try {
-                const payload = updatedStops.map(stop => ({
-                    routeStopId: stop.routeStopId,
-                    stopOrder: stop.stopOrder
-                }));
-                await routeStopApi.bulkUpdateOrders(payload);
-                await routeStopApi.calculateDistances({ routeId: Number(detail.routeId) });
-                fetchRouteDetail();
-            } catch (err) {
-                alert(err.response?.data?.message || "Có lỗi xảy ra khi lưu thứ tự mới.");
-                fetchRouteDetail();
-            }
+            setDraftRouteStops(updatedStops);
         }
     };
 
@@ -122,13 +154,15 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
 
                 stopsWithActiveStatus.sort((a, b) => a.stopOrder - b.stopOrder);
 
+                setOriginalRouteStops(structuredClone(stopsWithActiveStatus));
+                setDraftRouteStops(structuredClone(stopsWithActiveStatus));
+
                 setDetail({
                     routeId: res.routeId,
                     routeName: res.routeName,
                     totalKilometers: res.totalKilometers,
                     totalMinutes: res.totalMinutes,
                     active: res.active !== undefined ? res.active : res.active, // Handle API field name
-                    routeStops: stopsWithActiveStatus
                 });
             }
         } catch (error) {
@@ -170,93 +204,23 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
             setShowRightPanel(false);
             setIsClosingRightPanel(false);
             setCoachStopSearch('');
+            setPendingCoachStop(null);
+            setIsDeleteMode(false);
+            setSelectedForDeletion([]);
         }
     }, [isOpen]);
 
-    const handleDeleteRouteStop = async (routeStopId) => {
-        if (!window.confirm("Bạn có chắc muốn xóa điểm dừng này khỏi tuyến đường?")) return;
-        try {
-            await routeStopApi.deleteRouteStop(routeStopId);
-            fetchRouteDetail();
-        } catch (error) {
-            alert(error.response?.data?.message || "Có lỗi xảy ra khi xóa điểm dừng.");
-        }
-    };
-
-    // Step 1: user picks a coach stop from the right panel → store it as pending
-    const handleSelectCoachStopForInsert = (coachStop) => {
-        setPendingCoachStop(coachStop);
-    };
-
-    // Step 2: user clicks the green + on a row → insert pending coach stop after that row's order
-    const handleInsertCoachStopAtOrder = async (afterStopOrder) => {
-        if (!pendingCoachStop) return;
-        const cs = pendingCoachStop;
-        setPendingCoachStop(null);
-        setAddingStopId(cs.stopPointId);
-        try {
-            // Shift all existing stops with order >= afterStopOrder + 1 up by 1
-            const insertOrder = afterStopOrder + 1;
-            const stopsToShift = detail.routeStops
-                .filter(s => s.stopOrder >= insertOrder)
-                .map(s => ({ routeStopId: s.routeStopId, stopOrder: s.stopOrder + 1 }));
-
-            if (stopsToShift.length > 0) {
-                await routeStopApi.bulkUpdateOrders(stopsToShift);
-            }
-
-            await routeStopApi.createRouteStop({
-                routeId: Number(detail.routeId),
-                stopPointId: cs.stopPointId,
-                stopOrder: insertOrder,
-                kilometersFromStart: 0,
-                minutesFromStart: 0
-            });
-
-            await routeStopApi.calculateDistances({ routeId: Number(detail.routeId) });
-
-            await fetchRouteDetail();
-        } catch (err) {
-            alert(err.response?.data?.message || "Có lỗi xảy ra khi thêm điểm dừng.");
-        } finally {
-            setAddingStopId(null);
-        }
-    };
-
-    // Fallback: add to the very end (used when there are no existing stops)
-    const handleAddCoachStopAtEnd = async (coachStop) => {
-        setAddingStopId(coachStop.stopPointId);
-        try {
-            const nextOrder = detail.routeStops.length > 0
-                ? Math.max(...detail.routeStops.map(s => s.stopOrder)) + 1
-                : 1;
-
-            await routeStopApi.createRouteStop({
-                routeId: Number(detail.routeId),
-                stopPointId: coachStop.stopPointId,
-                stopOrder: nextOrder,
-                kilometersFromStart: 0,
-                minutesFromStart: 0
-            });
-
-            await routeStopApi.calculateDistances({ routeId: Number(detail.routeId) });
-
-            await fetchRouteDetail();
-        } catch (err) {
-            alert(err.response?.data?.message || "Có lỗi xảy ra khi thêm điểm dừng.");
-        } finally {
-            setAddingStopId(null);
-        }
-    };
-
-    // Handle "Hoàn Tất" — calculate distances for all stops with 0 km/minutes
+    // Handle "Hoàn Tất" — sync draft to backend and calculate distances
     const handleCalculateDistances = async () => {
-        const hasZeroStops = detail.routeStops.some(
+        const isDraftModified = JSON.stringify(draftRouteStops.map(s => s.routeStopId || s.id))
+            !== JSON.stringify(originalRouteStops.map(s => s.routeStopId));
+
+        const hasZeroStops = draftRouteStops.some(
             s => Number(s.kilometersFromStart) === 0 && Number(s.minutesFromStart) === 0
         );
 
-        if (!hasZeroStops) {
-            // No stops need calculating, just close the panel
+        if (!isDraftModified && !hasZeroStops) {
+            // No changes, just close the panel
             setIsClosingRightPanel(true);
             setTimeout(() => {
                 setShowRightPanel(false);
@@ -267,8 +231,50 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
 
         setCalculatingDistances(true);
         try {
+            if (isDraftModified) {
+                // 1. Delete removed stops
+                const originalIds = originalRouteStops.map(s => s.routeStopId);
+                const draftIds = draftRouteStops.map(s => s.routeStopId).filter(Boolean);
+                const deletedIds = originalIds.filter(id => !draftIds.includes(id));
+                for (const id of deletedIds) {
+                    await routeStopApi.deleteRouteStop(id);
+                }
+
+                // 2. Add new stops
+                for (let i = 0; i < draftRouteStops.length; i++) {
+                    const stop = draftRouteStops[i];
+                    if (!stop.routeStopId) {
+                        await routeStopApi.createRouteStop({
+                            routeId: Number(detail.routeId),
+                            stopPointId: stop.stopPointId,
+                            stopOrder: i + 1,
+                            kilometersFromStart: 1.2,
+                            minutesFromStart: 1.2
+                        });
+                    }
+                }
+
+                // 3. Sync orders
+                const fetchRes = await routeApi.getRouteDetail(detail.routeId);
+                const fetchedStops = fetchRes.routeStops || [];
+
+                const payload = draftRouteStops.map((draftStop, index) => {
+                    const matched = fetchedStops.find(fs => fs.stopPointId === draftStop.stopPointId);
+                    return {
+                        routeStopId: matched?.routeStopId,
+                        stopOrder: index + 1
+                    };
+                }).filter(p => p.routeStopId);
+
+                if (payload.length > 0) {
+                    await routeStopApi.bulkUpdateOrders(payload);
+                }
+            }
+
+            // 4. Calculate distances
             await routeStopApi.calculateDistances({ routeId: Number(detail.routeId) });
             await fetchRouteDetail();
+
             // Close the right panel after success
             setIsClosingRightPanel(true);
             setTimeout(() => {
@@ -276,7 +282,29 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
                 setIsClosingRightPanel(false);
             }, 240);
         } catch (err) {
-            alert(err.response?.data?.message || "Có lỗi xảy ra khi tính khoảng cách.");
+            alert(err.response?.data?.message || "Có lỗi xảy ra khi lưu thay đổi.");
+            fetchRouteDetail(); // Revert to backend state on error
+        } finally {
+            setCalculatingDistances(false);
+        }
+    };
+
+    const handleConfirmDelete = async () => {
+        if (selectedForDeletion.length === 0) {
+            setIsDeleteMode(false);
+            return;
+        }
+
+        setCalculatingDistances(true);
+        try {
+            for (const id of selectedForDeletion) {
+                await routeStopApi.deleteRouteStop(id);
+            }
+            await fetchRouteDetail();
+            setIsDeleteMode(false);
+            setSelectedForDeletion([]);
+        } catch (err) {
+            alert(err.response?.data?.message || "Có lỗi xảy ra khi xóa trạm dừng.");
         } finally {
             setCalculatingDistances(false);
         }
@@ -327,56 +355,88 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
                                         <span className="fw-bold text-dark">Tổng quan tuyến đường</span>
                                         <div className="d-flex gap-2">
                                             {showRightPanel && (
-                                                <Button
-                                                    size="sm"
-                                                    variant="success"
-                                                    className="d-flex align-items-center gap-1 text-white"
-                                                    onClick={handleCalculateDistances}
-                                                    disabled={isClosingRightPanel || calculatingDistances}
-                                                >
-                                                    {calculatingDistances ? (
-                                                        <>
-                                                            <Spinner animation="border" size="sm" style={{ width: '16px', height: '16px' }} />
-                                                            Đang tính...
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <TiTick size={18} />
-                                                            Hoàn tất
-                                                        </>
-                                                    )}
-                                                </Button>
+                                                <>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="success"
+                                                        className="d-flex align-items-center gap-1 text-white"
+                                                        onClick={handleCalculateDistances}
+                                                        disabled={isClosingRightPanel || calculatingDistances}
+                                                    >
+                                                        {calculatingDistances ? (
+                                                            <><Spinner animation="border" size="sm" style={{ width: '16px', height: '16px' }} /> Đang tính...</>
+                                                        ) : (
+                                                            <span className='fw-medium'><TiTick size={18} /> Hoàn tất</span>
+                                                        )}
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="danger"
+                                                        className="fw-medium d-flex align-items-center gap-1"
+                                                        onClick={() => {
+                                                            setIsClosingRightPanel(true);
+                                                            setTimeout(() => {
+                                                                setShowRightPanel(false);
+                                                                setIsClosingRightPanel(false);
+                                                                setDraftRouteStops(structuredClone(originalRouteStops));
+                                                            }, 240);
+                                                        }}
+                                                        disabled={isClosingRightPanel}
+                                                    >
+                                                        <BsXLg size={12} /> Hủy
+                                                    </Button>
+                                                </>
                                             )}
-                                            <Button
-                                                size="sm"
-                                                variant={showRightPanel ? "danger" : undefined}
-                                                className={`d-flex align-items-center gap-1 ${!showRightPanel ? 'custom-btn-general' : ''}`}
-                                                onClick={() => {
-                                                    if (showRightPanel) {
-                                                        setIsClosingRightPanel(true);
-                                                        setTimeout(() => {
-                                                            setShowRightPanel(false);
-                                                            setIsClosingRightPanel(false);
-                                                        }, 240);
-                                                    } else {
-                                                        setShowRightPanel(true);
-                                                        setPendingCoachStop(null);
-                                                    }
-                                                }}
-                                                disabled={isClosingRightPanel}
-                                            >
-                                                {showRightPanel ? (
-                                                    <>
-                                                        <BsXLg size={12} />
-                                                        Hủy
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <BsPlusCircleFill size={14} />
-                                                        Thêm điểm dừng
-                                                    </>
-                                                )}
-                                            </Button>
+
+                                            {isDeleteMode && (
+                                                <>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="success"
+                                                        className="d-flex align-items-center gap-1 text-white"
+                                                        onClick={handleConfirmDelete}
+                                                        disabled={calculatingDistances}
+                                                    >
+                                                        {calculatingDistances ? (
+                                                            <><Spinner animation="border" size="sm" style={{ width: '16px', height: '16px' }} /> Đang xử lý...</>
+                                                        ) : (
+                                                            <span className='fw-medium'><TiTick size={18} /> Hoàn tất</span>
+                                                        )}
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="danger"
+                                                        className="fw-medium d-flex align-items-center gap-1"
+                                                        onClick={() => {
+                                                            setIsDeleteMode(false);
+                                                            setSelectedForDeletion([]);
+                                                        }}
+                                                        disabled={calculatingDistances}
+                                                    >
+                                                        <BsXLg size={12} /> Hủy
+                                                    </Button>
+                                                </>
+                                            )}
+
+                                            {!showRightPanel && !isDeleteMode && (
+                                                <>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="danger"
+                                                        className="fw-medium d-flex align-items-center gap-1"
+                                                        onClick={() => setIsDeleteMode(true)}
+                                                    >
+                                                        Xóa điểm dừng
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        className="fw-medium d-flex align-items-center gap-1 custom-btn-general"
+                                                        onClick={() => setShowRightPanel(true)}
+                                                    >
+                                                        Chỉnh sửa tuyến đường
+                                                    </Button>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="d-flex align-items-center gap-2">
@@ -411,52 +471,18 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
 
                                 <div>
                                     <h6 className="fw-bold text-dark border-bottom pb-2 mb-3">Các trạm dừng (Route Stops)</h6>
-                                    {detail.routeStops && detail.routeStops.length > 0 ? (
+                                    {draftRouteStops && draftRouteStops.length > 0 ? (
                                         <div className="table-responsive">
-                                            <DndContext
-                                                sensors={sensors}
-                                                collisionDetection={closestCenter}
+                                            <DraftRouteStopsTable
+                                                draftRouteStops={draftRouteStops}
                                                 onDragEnd={handleDragEnd}
-                                            >
-                                                <Table size="sm" bordered hover className="align-middle text-center mb-0">
-                                                    <thead className="table-light text-secondary">
-                                                        <tr>
-                                                            <th
-                                                                style={{
-                                                                    width: pendingCoachStop ? '36px' : '0px',
-                                                                    padding: pendingCoachStop ? undefined : '0px',
-                                                                    overflow: 'hidden',
-                                                                    transition: 'width 0.2s ease, padding 0.2s ease',
-                                                                    borderRight: pendingCoachStop ? undefined : 'none',
-                                                                }}
-                                                            />
-                                                            <th className="fw-semibold" style={{ width: '120px' }}>Thứ tự</th>
-                                                            <th className="fw-semibold text-start">Tên trạm</th>
-                                                            <th className="fw-semibold text-start">Thành phố / Tỉnh</th>
-                                                            <th className="fw-semibold">Khoảng cách từ điểm xuất phát</th>
-                                                            <th className="fw-semibold">Thời gian từ điểm xuất phát</th>
-                                                            <th className="fw-semibold">Hành động</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <SortableContext
-                                                            items={detail.routeStops.map(s => s.routeStopId)}
-                                                            strategy={verticalListSortingStrategy}
-                                                        >
-                                                            {detail.routeStops.map(stop => (
-                                                                <SortableRouteStopRow
-                                                                    key={stop.routeStopId}
-                                                                    stop={stop}
-
-                                                                    onDelete={handleDeleteRouteStop}
-                                                                    showAddButton={!!pendingCoachStop}
-                                                                    onAddAtOrder={handleInsertCoachStopAtOrder}
-                                                                />
-                                                            ))}
-                                                        </SortableContext>
-                                                    </tbody>
-                                                </Table>
-                                            </DndContext>
+                                                isDraftMode={showRightPanel}
+                                                pendingCoachStop={pendingCoachStop}
+                                                handleInsertPendingStop={handleInsertPendingStop}
+                                                isDeleteMode={isDeleteMode}
+                                                selectedForDeletion={selectedForDeletion}
+                                                setSelectedForDeletion={setSelectedForDeletion}
+                                            />
                                         </div>
                                     ) : (
                                         <div className="bg-light p-4 rounded border text-center">
@@ -469,113 +495,17 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
                     </div>
 
                     {/* ===== RIGHT COLUMN: Coach stops list ===== */}
-                    {showRightPanel && (
-                        <div
-                            className="border-start bg-white overflow-auto px-3 py-4"
-                            style={{
-                                flex: '1 1 0%',
-                                maxHeight: '70vh',
-                                animation: isClosingRightPanel ? 'fadeOut 0.25s ease forwards' : 'slideInRight 0.25s ease'
-                            }}
-                        >
-                            <div className="d-flex align-items-center justify-content-between mb-3">
-                                <h6 className="fw-bold text-dark mb-0" style={{ fontSize: '0.95rem' }}>
-                                    Danh sách trạm dừng
-                                </h6>
-                                <Badge bg="secondary" pill>
-                                    {availableCoachStops.length}
-                                </Badge>
-                            </div>
-
-                            {/* Search box */}
-                            <div className="position-relative mb-3">
-                                <BsSearch
-                                    size={14}
-                                    className="position-absolute text-secondary"
-                                    style={{ left: '10px', top: '50%', transform: 'translateY(-50%)' }}
-                                />
-                                <Form.Control
-                                    type="text"
-                                    size="sm"
-                                    placeholder="Tìm kiếm trạm dừng..."
-                                    value={coachStopSearch}
-                                    onChange={(e) => setCoachStopSearch(e.target.value)}
-                                    style={{ paddingLeft: '32px' }}
-                                    className="rounded-pill"
-                                />
-                            </div>
-
-                            {coachStopsLoading ? (
-                                <div className="d-flex flex-column align-items-center justify-content-center py-4">
-                                    <Spinner animation="border" size="sm" variant="primary" />
-                                    <small className="mt-2 text-secondary">Đang tải...</small>
-                                </div>
-                            ) : availableCoachStops.length === 0 ? (
-                                <div className="text-center py-4">
-                                    <p className="text-muted mb-0 fst-italic" style={{ fontSize: '0.85rem' }}>
-                                        {coachStopSearch ? 'Không tìm thấy trạm dừng phù hợp.' : 'Tất cả trạm dừng đã được thêm vào tuyến.'}
-                                    </p>
-                                </div>
-                            ) : (
-                                <div className="d-flex flex-column gap-2">
-                                    {pendingCoachStop && (
-                                        <div className="alert alert-success py-2 px-2 mb-1 d-flex align-items-center gap-2" style={{ fontSize: '0.8rem' }}>
-                                            <BsPlusCircleFill className="text-success flex-shrink-0" />
-                                            <span>Chọn vị trí trong bảng để chèn <strong>{pendingCoachStop.stopPointName}</strong></span>
-                                            <button
-                                                type="button"
-                                                className="btn-close ms-auto"
-                                                style={{ fontSize: '0.6rem' }}
-                                                onClick={() => setPendingCoachStop(null)}
-                                                title="Hủy"
-                                            />
-                                        </div>
-                                    )}
-                                    {availableCoachStops.map(cs => (
-                                        <div
-                                            key={cs.stopPointId}
-                                            className="d-flex align-items-center gap-2 p-2 rounded border bg-light coach-stop-item"
-                                            style={{ cursor: 'pointer', transition: 'all 0.15s ease' }}
-                                        >
-                                            <div className="flex-fill" style={{ minWidth: 0 }}>
-                                                <div className="fw-semibold text-dark text-truncate" style={{ fontSize: '0.85rem' }}>
-                                                    {cs.stopPointName}
-                                                </div>
-                                                <small className="text-muted text-truncate d-block" style={{ fontSize: '0.75rem' }}>
-                                                    {cs.address}
-                                                </small>
-                                            </div>
-                                            <Button
-                                                size="sm"
-                                                variant={pendingCoachStop?.stopPointId === cs.stopPointId ? 'warning' : undefined}
-                                                className={`flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle p-0 text-white ${pendingCoachStop?.stopPointId !== cs.stopPointId ? 'custom-btn-general' : ''}`}
-                                                style={{ width: '28px', height: '28px' }}
-                                                onClick={() => {
-                                                    if (detail.routeStops.length === 0) {
-                                                        // No existing stops → just add to end directly
-                                                        handleAddCoachStopAtEnd(cs);
-                                                    } else if (pendingCoachStop?.stopPointId === cs.stopPointId) {
-                                                        // Clicking the same btn again → cancel pending
-                                                        setPendingCoachStop(null);
-                                                    } else {
-                                                        handleSelectCoachStopForInsert(cs);
-                                                    }
-                                                }}
-                                                disabled={addingStopId === cs.stopPointId}
-                                                title="Thêm vào tuyến"
-                                            >
-                                                {addingStopId === cs.stopPointId ? (
-                                                    <Spinner animation="border" size="sm" style={{ width: '14px', height: '14px' }} />
-                                                ) : (
-                                                    <BsPlusCircleFill size={14} />
-                                                )}
-                                            </Button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
+                    <AvailableCoachStopsPanel
+                        showRightPanel={showRightPanel}
+                        isClosingRightPanel={isClosingRightPanel}
+                        availableCoachStops={availableCoachStops}
+                        coachStopSearch={coachStopSearch}
+                        setCoachStopSearch={setCoachStopSearch}
+                        coachStopsLoading={coachStopsLoading}
+                        routeStops={draftRouteStops}
+                        handleAddCoachStop={handleAddCoachStop}
+                        pendingCoachStop={pendingCoachStop}
+                    />
                 </div>
             </Modal.Body>
 
@@ -597,12 +527,14 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
                         transform: translateX(0);
                     }
                 }
-                @keyframes fadeOut {
+                @keyframes slideOutRight {
                     from {
                         opacity: 1;
+                        transform: translateX(0);
                     }
                     to {
                         opacity: 0;
+                        transform: translateX(20px);
                     }
                 }
                 .coach-stop-item:hover {
