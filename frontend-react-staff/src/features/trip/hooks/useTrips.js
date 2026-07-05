@@ -6,7 +6,8 @@ export function useTrips() {
     const [trips, setTrips] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [filters, setFilters] = useState({ date: '' });
+    const today = new Date().toLocaleDateString('en-CA');
+    const [filters, setFilters] = useState({ date: today, routeId: '', period: '' });
     const [pageInfo, setPageInfo] = useState({
         page: 0,
         size: 10,
@@ -24,6 +25,8 @@ export function useTrips() {
         try {
             const response = await tripApi.filterTrips({
                 date: debouncedFilters.date || undefined,
+                routeId: debouncedFilters.routeId || undefined,
+                period: debouncedFilters.period || undefined,
                 page: pageInfo.page,
                 size: pageInfo.size
             });
@@ -55,7 +58,7 @@ export function useTrips() {
 
     /** Reset all filters and pagination to initial state */
     const handleReset = () => {
-        setFilters({ date: '' });
+        setFilters({ date: today, routeId: '', period: '' });
         setError(null);
         setPageInfo(prev => ({ ...prev, page: 0 }));
     };
