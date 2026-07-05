@@ -1,26 +1,15 @@
 package com.ralsei.controller;
 
-import java.util.List;
-
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
-import com.ralsei.dto.response.CargoHistoryListResponse;
 import com.ralsei.dto.response.CargoTrackingResponse;
 import com.ralsei.service.CargoTrackingService;
-import com.ralsei.util.JwtAccountIdExtractor;
-
-import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/cargo-tracking")
 @RequiredArgsConstructor
+@CrossOrigin(origins = {"http://localhost:3000", "https://localhost:3000"})
 public class CargoTrackingController {
 
     private final CargoTrackingService cargoTrackingService;
@@ -29,25 +18,5 @@ public class CargoTrackingController {
     public ResponseEntity<CargoTrackingResponse> trackByCode(@PathVariable String ticketCode) {
         CargoTrackingResponse response = cargoTrackingService.trackByCode(ticketCode);
         return ResponseEntity.ok(response);
-    }
-
-    @GetMapping("/my-cargo")
-    @PreAuthorize("hasRole('CUSTOMER')")
-    public ResponseEntity<List<CargoHistoryListResponse>> getMyCargo(
-        @RequestParam(required = false) String status
-    ) {
-        String username = JwtAccountIdExtractor.getCurrentUsername();
-        List<CargoHistoryListResponse> list = cargoTrackingService.getMyCargoHistory(username, status);
-        return ResponseEntity.ok(list);
-    }
-
-    @GetMapping("/my-cargo/{cargoTicketId:\\d+}")
-    @PreAuthorize("hasRole('CUSTOMER')")
-    public ResponseEntity<CargoTrackingResponse> getMyCargoDetail(
-        @PathVariable @Min(value = 1, message = "ID đơn hàng phải lớn hơn 0.") Integer cargoTicketId
-    ) {
-        String username = JwtAccountIdExtractor.getCurrentUsername();
-        CargoTrackingResponse detail = cargoTrackingService.getCargoDetail(cargoTicketId);
-        return ResponseEntity.ok(detail);
     }
 }
