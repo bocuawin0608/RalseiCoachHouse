@@ -8,6 +8,7 @@ import { useAuth } from '../../auth';
 import { setPassengerInfo, setPaymentInfo } from '../reducers/bookingSlice';
 import { useStep2InitData } from '../hooks/useStep2InitData';
 import { usePriceCalculation } from '../hooks/usePriceCalculation';
+import { usePhoneVerification } from '../hooks/usePhoneVerification';
 import { formatCurrency, formatDateTime } from '../../../utils/formatters';
 import { bookingApi } from '../api/bookingApi';
 import { transformFormToPassengerPayload } from '../utils/passengerPayload';
@@ -15,6 +16,7 @@ import { mapConfirmResponse, savePaymentSession } from '../utils/paymentSession'
 import { bookingValidationRules } from '../utils/bookingValidation';
 import { buildTripShellLabels, computePickupPresentBy, formatPickupPresentByLabel } from '../utils/tripInfo';
 import TripSummaryPanel from './TripSummaryPanel';
+import PhoneOtpModal from './PhoneOtpModal';
 
 export default function Step2PassengerInfo({ tripId }) {
     const dispatch = useDispatch();
@@ -24,13 +26,27 @@ export default function Step2PassengerInfo({ tripId }) {
     const isAuthenticated = Boolean(token && user);
 
     const { initData, loading, error } = useStep2InitData(tripId, holdToken);
+    const {
+        verifiedPhones,
+        phoneCheckLoading,
+        phoneCheckError,
+        otpPhone,
+        markKnownPhone,
+        clearPhoneVerification,
+        isPhoneVerified,
+        getUnverifiedPhones,
+        handleOtpVerified,
+        closeOtpModal,
+        checkPhoneOnBlur,
+        openOtpForPhone,
+    } = usePhoneVerification();
 
     const [showVoucherModal, setShowVoucherModal] = useState(false);
     const [typedVoucherCode, setTypedVoucherCode] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState('');
     
-    const { register, handleSubmit, control, watch, setValue, formState: { errors } } = useForm({
+    const { register, handleSubmit, control, watch, setValue, getValues, formState: { errors } } = useForm({
         defaultValues: {
             pickupStopId: '',
             dropoffStopId: '',
@@ -86,6 +102,20 @@ export default function Step2PassengerInfo({ tripId }) {
         }
     }, [currentVoucherId, initData.vouchers, isAuthenticated, setValue]);
 
+    useEffect(() => {
+        if (!initData?.customerProfile || fields.length === 0) {
+            return;
+        }
+
+        const profile = initData.customerProfile;
+        setValue('passengers.0.fullname', profile.fullname || '');
+        setValue('passengers.0.phone', profile.phone || '');
+        setValue('passengers.0.email', profile.email || '');
+        if (profile.phone) {
+            markKnownPhone(profile.phone);
+        }
+    }, [initData?.customerProfile, fields.length, setValue, markKnownPhone]);
+
     const handleSelectVoucher = (voucher) => {
         if (!isAuthenticated) return;
         setValue('voucherId', voucher.voucherId);
@@ -114,7 +144,14 @@ export default function Step2PassengerInfo({ tripId }) {
 
     const onSubmit = async (formData) => {
         setSubmitError('');
-        const formattedPassengers = transformFormToPassengerPayload(formData.passengers);
+
+        const unverifiedPhones = getUnverifiedPhones(formData.passengers);
+        if (unverifiedPhones.length > 0) {
+            setSubmitError(`Vui lòng xác thực OTP cho số điện thoại: ${unverifiedPhones.join(', ')}`);
+            return;
+        }
+
+        const formattedPassengers = transformFormToPassengerPayload(formData.passengers, verifiedPhones);
 
         const payload = {
             pickupStopId: Number(formData.pickupStopId),
@@ -162,6 +199,12 @@ export default function Step2PassengerInfo({ tripId }) {
                 </Alert>
             )}
 
+            {phoneCheckError && (
+                <Alert variant="warning" className="mb-4 rounded-3 border-0 shadow-sm" style={{ fontSize: '0.9rem' }}>
+                    {phoneCheckError}
+                </Alert>
+            )}
+
             {submitError && (
                 <Alert variant='danger' className="mb-4 d-flex align-items-center gap-2 rounded-3 border-0 shadow-sm" style={{ fontSize: '0.9rem' }}>
                     <BsExclamationTriangleFill /> {submitError}
@@ -178,7 +221,13 @@ export default function Step2PassengerInfo({ tripId }) {
                             <BsPersonFill size={18} /> Thông tin hành khách
                         </div>
                         
-                        {fields.map((field, index) => (
+                        {fields.map((field, index) => {
+                            const phoneRegister = register(`passengers.${index}.phone`, bookingValidationRules.phone);
+                            const passengerPhone = watch(`passengers.${index}.phone`);
+                            const phoneVerified = isPhoneVerified(passengerPhone);
+                            const phoneVerification = passengerPhone?.trim() ? verifiedPhones[passengerPhone.trim()] : null;
+
+                            return (
                             <Card key={field.id} className="border-0 rounded-3 mb-3 bg-white overflow-hidden" style={{ border: '1px solid #f0f0f0', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08)' }}>
                                 <Card.Header className="bg-white p-3 fw-semibold text-secondary d-flex justify-content-between align-items-center" style={{ fontSize: '0.9rem' }}>
                                     <span>Hành khách ngồi <span className="fw-bold" style={{ color: 'var(--ralsei-black)' }}>vị trí {field.seatCode}</span></span>
@@ -201,11 +250,45 @@ export default function Step2PassengerInfo({ tripId }) {
                                         <Form.Group as={Col} md={6}>
                                             <Form.Label className="fw-medium text-muted mb-1" style={{ fontSize: '0.85rem' }}>Số điện thoại <span className="text-danger">*</span></Form.Label>
                                             <Form.Control 
-                                                {...register(`passengers.${index}.phone`, bookingValidationRules.phone)}
+                                                {...phoneRegister}
+                                                onBlur={(event) => {
+                                                    phoneRegister.onBlur(event);
+                                                    checkPhoneOnBlur(event.target.value, index, setValue, getValues);
+                                                }}
+                                                onChange={(event) => {
+                                                    const previousPhone = watch(`passengers.${index}.phone`);
+                                                    phoneRegister.onChange(event);
+                                                    if (previousPhone?.trim()) {
+                                                        clearPhoneVerification(previousPhone.trim());
+                                                    }
+                                                }}
                                                 isInvalid={!!errors.passengers?.[index]?.phone}
                                                 type="tel" placeholder="VD: 0912345678" className="rounded-3 shadow-none" style={{ fontSize: '0.9rem' }}
                                             />
                                             <Form.Control.Feedback type="invalid">{errors.passengers?.[index]?.phone?.message}</Form.Control.Feedback>
+                                            <div className="d-flex align-items-center justify-content-between mt-1 gap-2">
+                                                {phoneCheckLoading === passengerPhone?.trim() ? (
+                                                    <small className="text-muted">Đang kiểm tra số điện thoại...</small>
+                                                ) : phoneVerified ? (
+                                                    <small className="text-success">
+                                                        {phoneVerification?.isKnown ? 'Số điện thoại đã biết' : 'Đã xác thực OTP'}
+                                                    </small>
+                                                ) : (
+                                                    <small className="text-warning">Chưa xác thực số điện thoại</small>
+                                                )}
+                                                {!phoneVerified && passengerPhone?.trim() && !phoneCheckLoading && (
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="outline-dark"
+                                                        className="rounded-pill px-3"
+                                                        style={{ fontSize: '0.75rem' }}
+                                                        onClick={() => openOtpForPhone(passengerPhone.trim())}
+                                                    >
+                                                        Xác thực OTP
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </Form.Group>
 
                                         <Form.Group as={Col} md={12}>
@@ -278,7 +361,8 @@ export default function Step2PassengerInfo({ tripId }) {
                                     </div>
                                 </Card.Body>
                             </Card>
-                        ))}
+                            );
+                        })}
 
                         {/* ĐIỂM ĐÓN VÀ TRẢ */}
                         <div className="mt-4 pt-2">
@@ -514,6 +598,13 @@ export default function Step2PassengerInfo({ tripId }) {
                     </div>
                 </Modal.Body>
             </Modal>
+
+            <PhoneOtpModal
+                phone={otpPhone}
+                show={Boolean(otpPhone)}
+                onVerified={({ idToken }) => handleOtpVerified(otpPhone, idToken)}
+                onClose={closeOtpModal}
+            />
         </div>
     );
 }

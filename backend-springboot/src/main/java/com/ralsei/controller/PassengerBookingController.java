@@ -23,15 +23,18 @@ import com.ralsei.dto.request.passengerbooking.PriceCalculationRequest;
 import com.ralsei.dto.request.passengerbooking.SeatLockRequest;
 import com.ralsei.dto.response.passengerbooking.BookingConfirmResponse;
 import com.ralsei.dto.response.passengerbooking.BookingPaymentPageResponse;
+import com.ralsei.dto.response.passengerbooking.CheckPhoneResponse;
 import com.ralsei.dto.response.passengerbooking.PriceCalculationResponse;
 import com.ralsei.dto.response.passengerbooking.SeatLockResponse;
 import com.ralsei.dto.response.passengerbooking.Step2InitResponse;
 import com.ralsei.dto.response.passengerbooking.TripSeatResponse;
 import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.service.passengerbooking.PassengerBookingService;
+import com.ralsei.util.validation.BookingValidationPatterns;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -76,6 +79,14 @@ public class PassengerBookingController {
         @RequestParam("session") String holdToken
     ) {
         bookingService.releaseSeatsByBecon(holdToken);
+    }
+
+    @GetMapping("/check-phone")
+    public ResponseEntity<CheckPhoneResponse> checkPhone(
+            @RequestParam
+            @Pattern(regexp = BookingValidationPatterns.PHONE, message = "Số điện thoại không hợp lệ!")
+            String phone) {
+        return ResponseEntity.ok(bookingService.checkPhone(phone));
     }
 
     @GetMapping("/trips/{tripId}/step2-init-data")

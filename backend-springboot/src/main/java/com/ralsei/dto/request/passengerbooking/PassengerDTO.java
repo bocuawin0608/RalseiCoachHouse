@@ -35,5 +35,7 @@ public record PassengerDTO(
     String email,
 
     @Valid
-    AccompaniedChildDTO accompaniedChild
+    AccompaniedChildDTO accompaniedChild,
+
+    String firebaseIdToken
 ) {}
