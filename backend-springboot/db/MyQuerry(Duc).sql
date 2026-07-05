@@ -633,3 +633,79 @@ FROM trip t
             ) seat_counts ON seat_counts.tripId = t.tripId
 WHERE CAST(t.departureTime AS DATE) = '2026-01-01'
 ORDER BY t.departureTime ASC
+
+USE VeXeDB;
+SELECT * FROM passenger_ticket_detail
+
+SELECT * FROM customer
+
+
+
+
+select pt.qrcode, ts.tripSeatId, t.tripId FROM trip_seat ts join trip t on ts.tripId = t.tripId
+join passenger_ticket_detail pt
+on ts.tripSeatId = pt.tripSeatId
+JOIN passenger_ticket p on pt.passengerTicketId = p.passengerTicketId
+JOIN CUSTOMER c on p.customerId = c.customerId
+WHERE c.accountId = 193 AND cast(t.departureTime AS DATE) = '2026-01-11'
+
+
+
+
+select pt.qrcode FROM trip_seat ts join trip t on ts.tripId = t.tripId
+join passenger_ticket_detail pt
+on ts.tripSeatId = pt.tripSeatId
+JOIN passenger_ticket p on pt.passengerTicketId = p.passengerTicketId
+JOIN CUSTOMER c on p.customerId = c.customerId
+WHERE c.accountId = 193 AND cast(t.departureTime AS DATE) = '2026-01-11'
+AND ts.tripSeatId = 15011 AND t.tripId = 501
+
+SELECT * FROM trip_seat
+
+SELECT * FROM trip
+
+-- Booking-history rows used by CustomerTicketHistoryService.
+-- Set @ticketCode to NULL for the full history or a code for one detail page.
+DECLARE @historyAccountId INT = 193;
+DECLARE @ticketCode VARCHAR(64) = NULL;
+
+SELECT pt.passengerTicketId, ptd.ticketDetailId, pt.ticketCode,
+       pt.status AS ticketStatus, pt.totalPrice, pt.pickupStopName,
+       pt.dropoffStopName, pt.createdAt AS bookedAt, t.departureTime,
+       r.routeName, ct.coachTypeName, pay.paymentMethod,
+       pay.status AS paymentStatus, ptd.fullName, ptd.phone, ptd.email,
+       ptd.seatCodeSnapshot AS seatCode, ptd.price AS seatPrice
+FROM passenger_ticket_detail ptd
+JOIN passenger_ticket pt ON pt.passengerTicketId = ptd.passengerTicketId
+JOIN customer c ON c.customerId = pt.customerId
+JOIN trip t ON t.tripId = pt.tripId
+JOIN route r ON r.routeId = t.routeId
+JOIN coach co ON co.coachId = t.coachId
+JOIN coach_type ct ON ct.coachTypeId = co.coachTypeId
+LEFT JOIN payment pay ON pay.passengerTicketId = pt.passengerTicketId
+WHERE c.accountId = @historyAccountId
+  AND c.phone IS NOT NULL
+  AND EXISTS (
+      SELECT 1
+      FROM passenger_ticket_detail contact_detail
+      WHERE contact_detail.passengerTicketId = pt.passengerTicketId
+        AND contact_detail.phone = c.phone
+  )
+  AND (@ticketCode IS NULL OR pt.ticketCode = @ticketCode)
+ORDER BY t.departureTime DESC, pt.passengerTicketId DESC, ptd.ticketDetailId;
+
+-- Ownership-safe QR lookup corresponding to GET /customer/history/seats/{id}/qr.
+DECLARE @ticketDetailId INT = 1;
+SELECT ptd.qrcode
+FROM passenger_ticket_detail ptd
+JOIN passenger_ticket pt ON pt.passengerTicketId = ptd.passengerTicketId
+JOIN customer c ON c.customerId = pt.customerId
+WHERE ptd.ticketDetailId = @ticketDetailId
+  AND c.accountId = @historyAccountId
+  AND c.phone IS NOT NULL
+  AND EXISTS (
+      SELECT 1
+      FROM passenger_ticket_detail contact_detail
+      WHERE contact_detail.passengerTicketId = pt.passengerTicketId
+        AND contact_detail.phone = c.phone
+  );

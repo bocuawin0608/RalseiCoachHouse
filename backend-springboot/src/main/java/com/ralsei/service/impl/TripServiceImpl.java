@@ -57,7 +57,13 @@ public class TripServiceImpl implements TripService {
         }
         return tripRepository.findTripStopsByTripId(tripId);
     }
-
+    /**
+     * Inserts a new trip into the database after validating the departure time
+     * and resource availability.
+     *
+     * @param tripRequest the request containing trip details
+     * @return a message indicating the result of the operation
+     */
     @Override
     public String insertTrip(TripCreateRequest tripRequest) {
         String prompt = "";
