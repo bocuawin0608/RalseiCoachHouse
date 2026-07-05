@@ -15,8 +15,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ralsei.dto.request.CoachAndRouteStop.RouteRequest;
+import com.ralsei.dto.request.CoachAndRouteStop.RouteWithStopsRequest;
 import com.ralsei.dto.response.CoachAndRouteStop.RouteDropdownDTO;
 import com.ralsei.dto.response.CoachAndRouteStop.RouteResponse;
+import com.ralsei.dto.response.CoachAndRouteStop.RouteWithStopsResponse;
 import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.service.RouteService;
 
@@ -33,6 +35,12 @@ public class RouteController {
     @PostMapping
     public ResponseEntity<RouteResponse> createRoute(@Valid @RequestBody RouteRequest request) {
         RouteResponse response = routeService.createRoute(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/with-stops")
+    public ResponseEntity<RouteWithStopsResponse> createRouteWithStops(@Valid @RequestBody RouteWithStopsRequest request) {
+        RouteWithStopsResponse response = routeService.createRouteWithStops(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

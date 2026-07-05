@@ -5,7 +5,9 @@ import com.ralsei.dto.request.goong.CalculateRouteDistancesRequest;
 import com.ralsei.dto.request.goong.DistanceTimeRequest;
 import com.ralsei.dto.response.goong.CalculateRouteDistancesResponse;
 import com.ralsei.dto.response.goong.DistanceTimeResponse;
+import com.ralsei.model.Route;
 import com.ralsei.model.RouteStop;
+import com.ralsei.repository.RouteRepository;
 import com.ralsei.repository.RouteStopRepository;
 import com.ralsei.service.GoongService;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ public class GoongServiceImpl implements GoongService {
 
     private final RestTemplate restTemplate;
     private final RouteStopRepository routeStopRepository;
+    private final RouteRepository routeRepository;
 
     @Override
     public Object autocomplete(String input) {
@@ -74,6 +77,13 @@ public class GoongServiceImpl implements GoongService {
         calculateAndSetRouteStopsDistances(stops);
         routeStopRepository.saveAll(stops);
 
+        // update route total kilometers and total minutes correponding to the last
+        // stops
+        Route route = stops.get(0).getRoute();
+        route.setTotalKilometers(stops.get(stops.size() - 1).getKilometersFromStart());
+        route.setTotalMinutes(stops.get(stops.size() - 1).getMinutesFromStart());
+        routeRepository.save(route);
+
         return CalculateRouteDistancesResponse.builder()
                 .message("Đã tính toán khoảng cách và thời gian cho " + (stops.size() - 1) + " điểm dừng.")
                 .updated(stops.size() - 1)
@@ -86,7 +96,8 @@ public class GoongServiceImpl implements GoongService {
             return;
         }
 
-        String origin = sortedStops.get(0).getCoachStop().getLatitude() + "," + sortedStops.get(0).getCoachStop().getLongitude();
+        String origin = sortedStops.get(0).getCoachStop().getLatitude() + ","
+                + sortedStops.get(0).getCoachStop().getLongitude();
 
         StringBuilder destinationBuilder = new StringBuilder();
         for (int i = 1; i < sortedStops.size(); i++) {

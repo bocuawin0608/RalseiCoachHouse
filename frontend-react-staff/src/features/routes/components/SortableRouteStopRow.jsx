@@ -1,10 +1,10 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Button } from "react-bootstrap";
-import { BsTrash, BsPencilFill, BsGripVertical, BsPlusCircleFill } from "react-icons/bs";
+import { BsTrash, BsGripVertical, BsPlusCircleFill } from "react-icons/bs";
 import { MdDangerous } from "react-icons/md";
 
-export default function SortableRouteStopRow({ stop, onEdit, onDelete, showAddButton, onAddAtOrder }) {
+export default function SortableRouteStopRow({ stop, onDelete, showAddButton, onAddAtOrder }) {
     const {
         attributes,
         listeners,
@@ -70,9 +70,7 @@ export default function SortableRouteStopRow({ stop, onEdit, onDelete, showAddBu
             <td>{stop.minutesFromStart === 0 && stop.stopOrder != 1 ? "- -" : (stop.minutesFromStart >= 60 ? Math.floor(stop.minutesFromStart / 60) + " giờ " + (stop.minutesFromStart % 60) + " phút" : stop.minutesFromStart + " phút")} </td>
             <td>
                 <div className="d-flex gap-2 justify-content-center">
-                    <Button className="custom-btn-general" size="sm" onClick={() => onEdit(stop)} title="Sửa điểm dừng">
-                        <BsPencilFill />
-                    </Button>
+
                     <Button variant="danger" size="sm" onClick={() => onDelete(stop.routeStopId)} title="Xóa điểm dừng">
                         <BsTrash />
                     </Button>
