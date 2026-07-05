@@ -17,4 +17,10 @@ export const customerHistoryApi = {
         `/v1/customer/history/seats/${ticketDetailId}/qr`,
         { responseType: 'blob' },
     ),
+
+    /** Cancels an owned future ticket and creates a pending bank refund request. */
+    cancelTicket: (ticketCode, bankDestination) => axiosClient.post(
+        `/v1/customer/history/${encodeURIComponent(ticketCode)}/cancel`,
+        bankDestination,
+    ),
 };

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { FiChevronRight, FiClock, FiMapPin } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { useCustomerHistory } from '../hooks/useCustomerHistory';
@@ -7,23 +8,44 @@ import {
     formatCustomerTicketStatus,
 } from '../utils/customerHistoryFormatters';
 import '../styles/customerHistory.css';
+import TicketCancellationModal from './TicketCancellationModal';
 
 /**
  * Full customer service-history page backed entirely by authenticated API data.
  */
 export default function CustomerHistoryPage() {
     const navigate = useNavigate();
-    const { data: bookings, loading, error } = useCustomerHistory();
+    const { data: bookings, loading, error, updateBooking } = useCustomerHistory();
+    const [cancellationBooking, setCancellationBooking] = useState(null);
+    const [pageOpenedAt] = useState(() => Date.now());
 
     /** Opens a booking through its public, non-sequential ticket code. */
     const openBooking = (ticketCode) => navigate(`/history/detail/${ticketCode}`);
 
     /** Provides keyboard activation for each accessible booking card. */
     const handleCardKeyDown = (event, ticketCode) => {
+        if (event.target !== event.currentTarget) return;
         if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault();
             openBooking(ticketCode);
         }
+    };
+
+    /** A ticket remains cancellable only while confirmed and before departure. */
+    const canCancel = (booking) => booking.status === 'CONFIRMED'
+        && booking.departureTime
+        && new Date(booking.departureTime).getTime() > pageOpenedAt;
+
+    /** Opens the refund form without triggering navigation on the parent card. */
+    const openCancellation = (event, booking) => {
+        event.stopPropagation();
+        setCancellationBooking(booking);
+    };
+
+    /** Reflects the committed cancellation immediately and closes the modal. */
+    const handleCancelled = (result) => {
+        updateBooking(result.ticketCode, { status: result.ticketStatus });
+        setCancellationBooking(null);
     };
 
     return (
@@ -69,10 +91,27 @@ export default function CustomerHistoryPage() {
                                 <span>{booking.seats.length} ghế · {booking.seats.map((seat) => seat.seatCode).join(', ')}</span>
                                 <strong>{formatCustomerCurrency(booking.totalPrice)}</strong>
                             </footer>
+                            <div className="customer-history-card__actions">
+                                <button
+                                    type="button"
+                                    disabled={!canCancel(booking)}
+                                    onClick={(event) => openCancellation(event, booking)}
+                                >
+                                    Hủy vé
+                                </button>
+                            </div>
                         </article>
                     ))}
                 </div>
             </section>
+
+            {cancellationBooking && (
+                <TicketCancellationModal
+                    booking={cancellationBooking}
+                    onClose={() => setCancellationBooking(null)}
+                    onCancelled={handleCancelled}
+                />
+            )}
         </main>
     );
 }

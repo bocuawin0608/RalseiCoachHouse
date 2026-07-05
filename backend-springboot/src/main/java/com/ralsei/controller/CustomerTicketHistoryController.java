@@ -11,14 +11,19 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ralsei.dto.response.customer.CustomerTicketHistoryResponse;
+import com.ralsei.dto.request.customer.CustomerTicketCancellationRequest;
+import com.ralsei.dto.response.customer.CustomerTicketCancellationResponse;
 import com.ralsei.service.CustomerTicketHistoryService;
 import com.ralsei.service.JwtService;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -69,5 +74,18 @@ public class CustomerTicketHistoryController {
             .contentType(MediaType.IMAGE_PNG)
             .body(historyService.getSeatQrImage(
                 jwtService.extractAccountId(authorizationHeader), ticketDetailId));
+    }
+
+    /**
+     * Cancels an owned future ticket and records the customer's bank refund request.
+     */
+    @PostMapping("/{ticketCode:[A-Za-z0-9_-]+}/cancel")
+    public ResponseEntity<CustomerTicketCancellationResponse> cancelTicket(
+        @RequestHeader("Authorization") String authorizationHeader,
+        @PathVariable @Pattern(regexp = "[A-Za-z0-9_-]{3,64}") String ticketCode,
+        @Valid @RequestBody CustomerTicketCancellationRequest request
+    ) {
+        return ResponseEntity.ok(historyService.cancelTicket(
+            jwtService.extractAccountId(authorizationHeader), ticketCode, request));
     }
 }

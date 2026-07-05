@@ -144,6 +144,8 @@ public interface PassengerTicketDetailRepository extends JpaRepository<Passenger
         JOIN customer c ON c.customerId = pt.customerId
         WHERE ptd.ticketDetailId = :ticketDetailId
           AND c.accountId = :accountId
+          AND pt.status = 'CONFIRMED'
+          AND ptd.status = 'CONFIRMED'
           AND c.phone IS NOT NULL
           AND EXISTS (
               SELECT 1

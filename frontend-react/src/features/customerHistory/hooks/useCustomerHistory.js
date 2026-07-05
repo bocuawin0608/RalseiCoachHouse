@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { customerHistoryApi } from '../api/customerHistoryApi';
 
 /**
@@ -23,5 +23,15 @@ export const useCustomerHistory = () => {
         return () => { isMounted = false; };
     }, []);
 
-    return state;
+    /** Applies a committed server-side change to one booking without refetching the list. */
+    const updateBooking = useCallback((ticketCode, updates) => {
+        setState((current) => ({
+            ...current,
+            data: current.data.map((booking) => booking.ticketCode === ticketCode
+                ? { ...booking, ...updates }
+                : booking),
+        }));
+    }, []);
+
+    return { ...state, updateBooking };
 };
