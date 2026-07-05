@@ -42,7 +42,7 @@ export default function PublicHeader() {
 
     return (
         <Navbar expand="lg" className="public-header shadow-sm sticky-top py-2">
-            <Container>
+            <Container fluid className="public-header__container">
                 <Navbar.Brand role="button" onClick={() => navigate('/')} className="d-flex align-items-center me-4">
                     <img
                         src="/images/ralseiiii.jpg"

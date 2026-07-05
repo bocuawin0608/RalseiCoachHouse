@@ -1,4 +1,8 @@
-.public-header { background: var(--ralsei-green); }
+.public-header { min-height: 64px; background: var(--ralsei-green); }
+.public-header__container { padding-inline: clamp(20px, 2vw, 32px); }
+.public-header .navbar-brand { margin-left: 0; }
+.public-header .navbar-collapse { min-width: 0; }
+.public-header .navbar-nav:first-child { align-items: center; }
 .public-header__actions { position: relative; }
 .public-header__bell { position: relative; display: grid; width: 39px; height: 39px; place-items: center; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .62); color: var(--ralsei-black); }
 .public-header__bell:hover { background: white; }
@@ -26,6 +30,8 @@
 .history-notification__time { color: var(--color-text-muted); font-size: .8rem; }
 
 @media (max-width: 991px) {
+    .public-header__container { padding-inline: 14px; }
+    .public-header .navbar-nav:first-child { align-items: stretch; }
     .public-header__actions { align-items: stretch !important; }
     .history-notifications,
     .public-header__account-menu { position: static; width: 100%; margin-top: 7px; box-shadow: none; }

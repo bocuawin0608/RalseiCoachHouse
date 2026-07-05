@@ -76,19 +76,6 @@ public interface PassengerTicketDetailRepository extends JpaRepository<Passenger
         Pageable pageable
     );
 
-    /** Finds the primary contact from the newest booking owned by an account. */
-    @Query(value = """
-        SELECT TOP 1 ptd.phone
-        FROM passenger_ticket_detail ptd
-        JOIN passenger_ticket pt ON pt.passengerTicketId = ptd.passengerTicketId
-        JOIN customer c ON c.customerId = pt.customerId
-        WHERE c.accountId = :accountId
-          AND ptd.phone IS NOT NULL
-          AND LTRIM(RTRIM(ptd.phone)) <> ''
-        ORDER BY pt.createdAt DESC, ptd.ticketDetailId ASC
-        """, nativeQuery = true)
-    java.util.Optional<String> findLatestOwnedContactPhone(@Param("accountId") Integer accountId);
-
     /**
      * Loads all ticket seats belonging to one account for customer history.
      * Ownership is resolved in SQL and is never trusted from a client-provided ID.
@@ -121,13 +108,6 @@ public interface PassengerTicketDetailRepository extends JpaRepository<Passenger
         JOIN coach_type ct ON ct.coachTypeId = co.coachTypeId
         LEFT JOIN payment pay ON pay.passengerTicketId = pt.passengerTicketId
         WHERE c.accountId = :accountId
-          AND c.phone IS NOT NULL
-          AND EXISTS (
-              SELECT 1
-              FROM passenger_ticket_detail contact_detail
-              WHERE contact_detail.passengerTicketId = pt.passengerTicketId
-                AND contact_detail.phone = c.phone
-          )
           AND (:ticketCode IS NULL OR pt.ticketCode = :ticketCode)
         ORDER BY t.departureTime DESC, pt.passengerTicketId DESC, ptd.ticketDetailId ASC
         """, nativeQuery = true)
@@ -146,13 +126,6 @@ public interface PassengerTicketDetailRepository extends JpaRepository<Passenger
           AND c.accountId = :accountId
           AND pt.status = 'CONFIRMED'
           AND ptd.status = 'CONFIRMED'
-          AND c.phone IS NOT NULL
-          AND EXISTS (
-              SELECT 1
-              FROM passenger_ticket_detail contact_detail
-              WHERE contact_detail.passengerTicketId = pt.passengerTicketId
-                AND contact_detail.phone = c.phone
-          )
         """, nativeQuery = true)
     java.util.Optional<String> findOwnedQrToken(
         @Param("ticketDetailId") Integer ticketDetailId,
