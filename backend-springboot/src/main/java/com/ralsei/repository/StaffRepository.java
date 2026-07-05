@@ -14,6 +14,7 @@ import com.ralsei.model.Staff;
 public interface StaffRepository extends JpaRepository<Staff, Integer> {
     Staff findByAccountId(Integer accountId);
     boolean existsByAccountId(Integer accountId);
+    boolean existsByPhoneIgnoreCase(String phone);
     long countByTicketAgencyId(Integer ticketAgencyId);
 
     @Query(value = """

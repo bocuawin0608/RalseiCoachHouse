@@ -6,21 +6,29 @@ import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ralsei.dto.projection.staff.StaffListProjection;
+import com.ralsei.dto.request.staff.OnboardStaffRequest;
 import com.ralsei.dto.request.staff.StaffFilterRequest;
 import com.ralsei.dto.request.staff.UpdateStaffRequest;
+import com.ralsei.dto.response.staff.OnboardStaffResponse;
 import com.ralsei.dto.response.staff.StaffDetailResponse;
 import com.ralsei.dto.response.staff.StaffListResponse;
 import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.exception.ResourceNotFoundException;
+import com.ralsei.model.Account;
+import com.ralsei.model.AccountRole;
 import com.ralsei.model.CoachStop;
+import com.ralsei.model.Role;
 import com.ralsei.model.Staff;
 import com.ralsei.model.TicketAgency;
 import com.ralsei.repository.AccountRepository;
+import com.ralsei.repository.AccountRoleRepository;
 import com.ralsei.repository.CoachStopRepository;
+import com.ralsei.repository.RoleRepository;
 import com.ralsei.repository.StaffRepository;
 import com.ralsei.repository.TicketAgencyRepository;
 import com.ralsei.service.StaffService;
@@ -35,6 +43,9 @@ public class StaffServiceImpl implements StaffService {
     private final TicketAgencyRepository ticketAgencyRepo;
     private final CoachStopRepository coachStopRepo;
     private final AccountRepository accountRepo;
+    private final AccountRoleRepository accountRoleRepo;
+    private final RoleRepository roleRepo;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional(readOnly = true)
@@ -108,6 +119,62 @@ public class StaffServiceImpl implements StaffService {
         }
 
         staffRepo.delete(staff);
+    }
+
+    @Override
+    @Transactional
+    public OnboardStaffResponse onboardStaff(OnboardStaffRequest request) {
+        if (staffRepo.existsByPhoneIgnoreCase(request.phone().trim())) {
+            throw new BusinessRuleException("Số điện thoại đã tồn tại trong danh sách nhân viên!");
+        }
+        if (accountRepo.existsByUsername(request.phone().trim())) {
+            throw new BusinessRuleException("Số điện thoại đã được dùng làm tên đăng nhập!");
+        }
+
+        // Validate roles exist
+        List<Role> roles = request.roleIds().stream()
+            .map(id -> roleRepo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Role không tồn tại với ID: " + id)))
+            .collect(Collectors.toList());
+
+        // Create Account
+        Account account = Account.builder()
+            .username(request.phone().trim())
+            .passwordHash(passwordEncoder.encode("123456"))
+            .authProvider("local")
+            .isActive(true)
+            .build();
+        account = accountRepo.save(account);
+
+        // Create AccountRole
+        for (Role role : roles) {
+            AccountRole ar = AccountRole.builder()
+                .accountId(account.getAccountId())
+                .roleId(role.getRoleId())
+                .build();
+            accountRoleRepo.save(ar);
+        }
+
+        // Create Staff
+        Staff staff = Staff.builder()
+            .accountId(account.getAccountId())
+            .staffName(request.staffName().trim())
+            .phone(request.phone().trim())
+            .email(request.email() != null ? request.email().trim() : null)
+            .dob(request.dob())
+            .cccd(request.cccd() != null ? request.cccd().trim() : null)
+            .staffPosition(request.staffPosition().trim())
+            .hireDate(request.hireDate())
+            .ticketAgencyId(request.ticketAgencyId())
+            .isActive(true)
+            .build();
+        staff = staffRepo.save(staff);
+
+        return new OnboardStaffResponse(
+            staff.getStaffId(),
+            account.getAccountId(),
+            account.getUsername()
+        );
     }
 
     private StaffListResponse mapToListResponse(StaffListProjection proj) {
