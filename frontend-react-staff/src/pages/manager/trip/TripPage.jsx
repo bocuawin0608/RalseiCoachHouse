@@ -1,19 +1,22 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Alert, Button, Card, Container } from 'react-bootstrap';
+import { Alert, Button, Card, Container, Modal } from 'react-bootstrap';
 import { BsExclamationTriangleFill } from 'react-icons/bs';
 import {
     useTrips,
     TripTable,
     TripFilter,
-    TripUpdateInfoModal
+    TripUpdateInfoModal,
+    TripCrewModal
 } from '../../../features/trip';
 import Pagination from '../../../components/common/Pagination';
 import { tripApi } from '../../../features/trip/api/tripApi';
 import './TripPage.css';
+import { useRouteDropdown } from '../../../hooks/useRouteDropdown';
 
 export default function TripPage() {
     const navigate = useNavigate();
+    const { routes } = useRouteDropdown(true);
 
     const {
         trips, loading, pageInfo, setPageInfo, refetch,
@@ -22,19 +25,24 @@ export default function TripPage() {
 
     /** Modal state: type discriminates which modal is open, data holds the selected row */
     const [modalState, setModalState] = useState({ type: null, data: null });
+    const [deleteError, setDeleteError] = useState('');
+    const [isDeleting, setIsDeleting] = useState(false);
 
     /** Close any open modal and clear selected row */
     const closeModal = () => setModalState({ type: null, data: null });
 
     /** Soft-delete (cancel) trip and refresh the list */
-    const handleDelete = async (row) => {
-        if (!window.confirm(`Bạn có chắc muốn hủy chuyến #${row.tripId}?`)) return;
+    const handleDelete = async () => {
+        const row = modalState.data;
+        setIsDeleting(true);
+        setDeleteError('');
         try {
             await tripApi.deleteTrip(row.tripId);
-            refetch();
+            closeModal();
+            await refetch();
         } catch (err) {
-            alert(err.response?.data?.message || 'Hủy chuyến thất bại.');
-        }
+            setDeleteError(err.response?.data?.message || err.response?.data || 'Hủy chuyến thất bại.');
+        } finally { setIsDeleting(false); }
     };
 
     return (
@@ -54,6 +62,7 @@ export default function TripPage() {
             {/* Filter bar */}
             <TripFilter
                 filters={filters}
+                routes={routes}
                 onFilterChange={handleFilterChange}
                 onReset={handleReset}
             />
@@ -72,8 +81,9 @@ export default function TripPage() {
                     <TripTable
                         data={trips}
                         loading={loading}
+                        onViewCrew={(row) => setModalState({ type: 'CREW', data: row })}
                         onEditInfo={(row) => setModalState({ type: 'EDIT_INFO', data: row })}
-                        onDelete={handleDelete}
+                        onDelete={(row) => setModalState({ type: 'DELETE', data: row })}
                     />
                     <div className="trip-page-pagination">
                         <Pagination pageInfo={pageInfo} onPageChange={setPageInfo} />
@@ -85,9 +95,27 @@ export default function TripPage() {
             <TripUpdateInfoModal
                 isOpen={modalState.type === 'EDIT_INFO'}
                 data={modalState.data}
+                routes={routes}
                 onClose={closeModal}
                 onSuccess={refetch}
             />
+
+            <TripCrewModal
+                isOpen={modalState.type === 'CREW'}
+                trip={modalState.data}
+                onClose={closeModal}
+            />
+
+            <Modal show={modalState.type === 'DELETE'} onHide={closeModal} centered backdrop="static">
+                <Modal.Header closeButton><Modal.Title>Hủy chuyến xe</Modal.Title></Modal.Header>
+                <Modal.Body>
+                    <p>Bạn có chắc muốn hủy chuyến <strong>#{modalState.data?.tripId}</strong>?</p>
+                    <p className="trip-delete-detail">{modalState.data?.routeName} · {modalState.data?.departureDate} · {String(modalState.data?.departureTime || '').substring(0, 5)}</p>
+                    <p className="trip-delete-warning">Chuyến sẽ chuyển sang trạng thái Đã hủy và được giữ lại trong lịch sử.</p>
+                    {deleteError && <Alert variant="danger">{deleteError}</Alert>}
+                </Modal.Body>
+                <Modal.Footer><Button variant="outline-secondary" onClick={closeModal} disabled={isDeleting}>Giữ chuyến</Button><Button variant="danger" onClick={handleDelete} disabled={isDeleting}>{isDeleting ? 'Đang hủy…' : 'Xác nhận hủy chuyến'}</Button></Modal.Footer>
+            </Modal>
 
         </Container>
     );
