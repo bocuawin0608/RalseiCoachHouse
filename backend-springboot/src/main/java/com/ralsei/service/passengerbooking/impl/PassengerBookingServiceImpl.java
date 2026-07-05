@@ -241,6 +241,8 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
 
         Integer customerId = resolveCustomerId(accessToken);
 
+        synchronizeCustomerContactPhone(customerId, request.passengers());
+
         PassengerTicket ticket = saveMasterTicket(tripId, request, coreResult, customerId, voucherCodeSnapshot);
 
         saveTicketDetailsAndChildrenInBatch(ticket.getPassengerTicketId(), request.passengers(), coreResult);
@@ -594,6 +596,30 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
             }
 
             passengerPhoneVerificationService.verifyFirebasePhoneToken(phone, passenger.firebaseIdToken());
+        }
+    }
+
+    /**
+     * Persists the primary passenger phone as the authenticated customer's contact number.
+     * This keeps OAuth authentication independent from the operational phone required by
+     * drivers while allowing history queries to confirm both account and contact ownership.
+     * Guest bookings have no customer identifier and are intentionally ignored.
+     *
+     * @param customerId authenticated customer identifier, or {@code null} for a guest
+     * @param passengers validated booking passengers with the primary contact first
+     */
+    private void synchronizeCustomerContactPhone(Integer customerId, List<PassengerDTO> passengers) {
+        if (customerId == null || passengers == null || passengers.isEmpty()) {
+            return;
+        }
+
+        String primaryPhone = PhoneNumberUtility.normalizeToLocalFormat(passengers.get(0).phone());
+        Customer customer = customerRepo.findById(customerId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ khách hàng."));
+
+        if (!primaryPhone.equals(customer.getPhone())) {
+            customer.setPhone(primaryPhone);
+            customerRepo.save(customer);
         }
     }
 

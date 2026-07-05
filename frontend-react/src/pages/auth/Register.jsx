@@ -19,7 +19,9 @@ export default function Register() {
   const [error, setError] = useState('');
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
-
+{/**
+   * Handles sending OTP to the user's phone number
+   */}
   const handleSendOtp = async (e) => {
     e.preventDefault();
     setError('');
