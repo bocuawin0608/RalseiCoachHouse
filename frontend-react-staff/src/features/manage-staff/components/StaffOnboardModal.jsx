@@ -44,12 +44,20 @@ export default function StaffOnboardModal({ isOpen, onClose, onSuccess, ticketAg
     const handleSubmit = async (e) => {
         e.preventDefault();
         setErrorMsg('');
+
+        const phone = form.phone.trim().replace(/\s/g, '');
+        const phoneRegex = /^(0|\+84)(3[2-9]|5[2689]|7[0-9]|8[1-9]|9[0-9])\d{7}$/;
+        if (!phoneRegex.test(phone)) {
+            setErrorMsg('Số điện thoại không hợp lệ. Phải là số ĐTDĐ Việt Nam (bắt đầu 03, 05, 07, 08, 09).');
+            return;
+        }
+
         setIsSubmitting(true);
         setResult(null);
         try {
             const payload = {
                 staffName: form.staffName.trim(),
-                phone: form.phone.trim(),
+                phone: phone,
                 email: form.email.trim() || null,
                 cccd: form.cccd.trim() || null,
                 dob: form.dob || null,
