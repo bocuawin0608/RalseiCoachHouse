@@ -8,7 +8,7 @@ export default function CoachTypePage() {
     const navigate = useNavigate();
 
     const {
-        coachTypes, loading, pageInfo, setPageInfo, refetch,
+        coachTypes, loading, pageInfo, setPageInfo,
         filters, handleFilterChange, handleReset, error
     } = useCoachTypes();
 

@@ -45,6 +45,17 @@ export default function SeatMapBuilder({ mode = 'CREATE', rows, cols, initialMat
         if (onChange) onChange(newMatrix); 
     };
 
+    const handleSeatCodeChange = (rowIndex, colIndex, newCode) => {
+        const newMatrix = [...matrix].map(row => [...row]);
+        const currentCell = newMatrix[rowIndex][colIndex];
+
+        if (objectMode && currentCell) {
+            newMatrix[rowIndex][colIndex] = { ...currentCell, seatCode: newCode };
+            setMatrix(newMatrix);
+            if (onChange) onChange(newMatrix);
+        }
+    };
+
     const getCellProps = (cell) => {
         const isSeat = objectMode ? cell !== null : cell === 'SEAT';
         
@@ -125,10 +136,35 @@ export default function SeatMapBuilder({ mode = 'CREATE', rows, cols, initialMat
                             }}
                         >
                             <SeatIcon />
-                            {objectMode && isSeat && seatCode && (
-                                <span style={{ fontSize: '0.65rem', fontWeight: 'bold', marginTop: '2px' }}>
-                                    {seatCode}
-                                </span>
+                            {objectMode && isSeat && (
+                                mode === 'EDIT-SEAT' ? (
+                                    <input
+                                        type="text"
+                                        value={seatCode}
+                                        onClick={(e) => e.stopPropagation()} // Ngăn việc đổi trạng thái isActive khi click vào ô nhập
+                                        onChange={(e) => handleSeatCodeChange(rIndex, cIndex, e.target.value)}
+                                        style={{
+                                            width: '85%',
+                                            fontSize: '0.65rem',
+                                            fontWeight: 'bold',
+                                            textAlign: 'center',
+                                            border: 'none',
+                                            background: 'transparent',
+                                            color: 'inherit',
+                                            outline: 'none',
+                                            borderBottom: '1px dashed rgba(255,255,255,0.7)',
+                                            marginTop: '2px',
+                                            padding: '0'
+                                        }}
+                                        maxLength={10}
+                                    />
+                                ) : (
+                                    seatCode && (
+                                        <span style={{ fontSize: '0.65rem', fontWeight: 'bold', marginTop: '2px' }}>
+                                            {seatCode}
+                                        </span>
+                                    )
+                                )
                             )}
                         </div>
                     );

@@ -263,6 +263,7 @@ public class CoachServiceImpl implements CoachService {
                 throw new IllegalArgumentException("Ghế ID " + toggle.seatId() + " không thuộc xe này!");
             }
             seat.setActive(toggle.isActive());
+            seat.setSeatCode(toggle.seatCode());
         }
     }
 
