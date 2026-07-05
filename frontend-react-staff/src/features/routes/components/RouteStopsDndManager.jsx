@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { Badge, Button, Col, Row } from 'react-bootstrap';
+import { useState, useMemo, useEffect } from 'react';
+import { Badge, Button, Col, Row, Form } from 'react-bootstrap';
+import { BsSearch } from 'react-icons/bs';
 import {
     DndContext,
     closestCorners,
@@ -60,7 +61,7 @@ function SortableStopItem({ stop, isSelected, orderIndex }) {
 }
 
 // --- Droppable Container Component ---
-function DroppableContainer({ id, items, title, badgeCount, badgeColor, onClear, children }) {
+function DroppableContainer({ id, items, title, badgeCount, badgeColor, onClear, searchBox, children }) {
     const { setNodeRef, isOver } = useDroppable({ id });
 
     return (
@@ -76,6 +77,7 @@ function DroppableContainer({ id, items, title, badgeCount, badgeColor, onClear,
                     </Button>
                 )}
             </div>
+            {searchBox && <div className="mb-3">{searchBox}</div>}
             <div
                 ref={setNodeRef}
                 className="flex-grow-1 p-3 rounded"
@@ -103,6 +105,46 @@ function DroppableContainer({ id, items, title, badgeCount, badgeColor, onClear,
 
 export default function RouteStopsDndManager({ available, setAvailable, selected, setSelected }) {
     const [activeId, setActiveId] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedSearchQuery, setSelectedSearchQuery] = useState('');
+    
+    // Debounced search queries
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+    const [debouncedSelectedSearchQuery, setDebouncedSelectedSearchQuery] = useState('');
+
+    useEffect(() => {
+        const timerId = setTimeout(() => {
+            setDebouncedSearchQuery(searchQuery);
+        }, 300);
+        return () => clearTimeout(timerId);
+    }, [searchQuery]);
+
+    useEffect(() => {
+        const timerId = setTimeout(() => {
+            setDebouncedSelectedSearchQuery(selectedSearchQuery);
+        }, 300);
+        return () => clearTimeout(timerId);
+    }, [selectedSearchQuery]);
+
+    const filteredAvailable = useMemo(() => {
+        if (!debouncedSearchQuery) return available;
+        const lowerQuery = debouncedSearchQuery.toLowerCase();
+        return available.filter(stop => 
+            (stop.stopPointName && stop.stopPointName.toLowerCase().includes(lowerQuery)) ||
+            (stop.city && stop.city.toLowerCase().includes(lowerQuery)) ||
+            (stop.address && stop.address.toLowerCase().includes(lowerQuery))
+        );
+    }, [available, debouncedSearchQuery]);
+
+    const filteredSelected = useMemo(() => {
+        if (!debouncedSelectedSearchQuery) return selected;
+        const lowerQuery = debouncedSelectedSearchQuery.toLowerCase();
+        return selected.filter(stop => 
+            (stop.stopPointName && stop.stopPointName.toLowerCase().includes(lowerQuery)) ||
+            (stop.city && stop.city.toLowerCase().includes(lowerQuery)) ||
+            (stop.address && stop.address.toLowerCase().includes(lowerQuery))
+        );
+    }, [selected, debouncedSelectedSearchQuery]);
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -201,11 +243,29 @@ export default function RouteStopsDndManager({ available, setAvailable, selected
                     <DroppableContainer
                         id="available"
                         title="Danh sách tất cả trạm dừng (Kéo để thêm)"
-                        items={available.map(s => String(s.stopPointId))}
-                        badgeCount={available.length}
+                        items={filteredAvailable.map(s => String(s.stopPointId))}
+                        badgeCount={filteredAvailable.length}
                         badgeColor="secondary"
+                        searchBox={
+                            <div className="position-relative">
+                                <BsSearch
+                                    size={14}
+                                    className="position-absolute text-secondary"
+                                    style={{ left: '10px', top: '50%', transform: 'translateY(-50%)' }}
+                                />
+                                <Form.Control
+                                    type="text"
+                                    size="sm"
+                                    placeholder="Tìm kiếm trạm dừng..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    style={{ paddingLeft: '32px' }}
+                                    className="rounded-pill"
+                                />
+                            </div>
+                        }
                     >
-                        {available.map(stop => (
+                        {filteredAvailable.map(stop => (
                             <SortableStopItem key={stop.stopPointId} stop={stop} isSelected={false} />
                         ))}
                     </DroppableContainer>
@@ -214,17 +274,38 @@ export default function RouteStopsDndManager({ available, setAvailable, selected
                     <DroppableContainer
                         id="selected"
                         title="Trạm dừng Tuyến chính"
-                        items={selected.map(s => String(s.stopPointId))}
-                        badgeCount={selected.length}
+                        items={filteredSelected.map(s => String(s.stopPointId))}
+                        badgeCount={filteredSelected.length}
                         badgeColor="secondary"
                         onClear={() => {
                             setAvailable(prev => [...prev, ...selected]);
                             setSelected([]);
                         }}
+                        searchBox={
+                            <div className="position-relative">
+                                <BsSearch
+                                    size={14}
+                                    className="position-absolute text-secondary"
+                                    style={{ left: '10px', top: '50%', transform: 'translateY(-50%)' }}
+                                />
+                                <Form.Control
+                                    type="text"
+                                    size="sm"
+                                    placeholder="Tìm kiếm trạm dừng đã chọn..."
+                                    value={selectedSearchQuery}
+                                    onChange={(e) => setSelectedSearchQuery(e.target.value)}
+                                    style={{ paddingLeft: '32px' }}
+                                    className="rounded-pill"
+                                />
+                            </div>
+                        }
                     >
-                        {selected.map((stop, index) => (
-                            <SortableStopItem key={stop.stopPointId} stop={stop} isSelected={true} orderIndex={index} />
-                        ))}
+                        {filteredSelected.map((stop) => {
+                            const originalIndex = selected.findIndex(s => s.stopPointId === stop.stopPointId);
+                            return (
+                                <SortableStopItem key={stop.stopPointId} stop={stop} isSelected={true} orderIndex={originalIndex} />
+                            );
+                        })}
                     </DroppableContainer>
                 </Col>
             </Row>

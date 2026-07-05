@@ -3,8 +3,9 @@ import { CSS } from "@dnd-kit/utilities";
 import { Button } from "react-bootstrap";
 import { BsTrash, BsGripVertical, BsPlusCircleFill } from "react-icons/bs";
 import { MdDangerous } from "react-icons/md";
+import { FaCirclePlus } from "react-icons/fa6";
 
-export default function SortableRouteStopRow({ stop, onDelete, showAddButton, onAddAtOrder }) {
+export default function SortableRouteStopRow({ stop, isDraftMode, pendingCoachStop, onInsertPending, isDeleteMode, isSelected, onToggleSelection }) {
     const {
         attributes,
         listeners,
@@ -12,7 +13,10 @@ export default function SortableRouteStopRow({ stop, onDelete, showAddButton, on
         transform,
         transition,
         isDragging,
-    } = useSortable({ id: stop.routeStopId });
+    } = useSortable({
+        id: stop.routeStopId || stop.id,
+        disabled: !isDraftMode
+    });
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -24,40 +28,43 @@ export default function SortableRouteStopRow({ stop, onDelete, showAddButton, on
     };
 
     return (
-        <tr ref={setNodeRef} style={style} className={!stop.stopPointActive ? 'table-danger' : ''}>
-            {/* Green + insert button — shown as a narrow leading cell when a stop is pending */}
-            <td
-                style={{
-                    width: showAddButton ? '36px' : '0px',
-                    padding: showAddButton ? '4px 2px' : '0px',
-                    overflow: 'hidden',
-                    transition: 'width 0.2s ease, padding 0.2s ease',
-                    borderRight: showAddButton ? undefined : 'none',
-                    verticalAlign: 'middle',
-                }}
-            >
-                {showAddButton && (
-                    <Button
-                        size="sm"
-                        className="d-flex align-items-center justify-content-center rounded-circle p-0 custom-btn-general"
-                        style={{ width: '26px', height: '26px', margin: '0 auto' }}
-                        onClick={() => onAddAtOrder(stop.stopOrder)}
-                        title={`Chèn sau vị trí ${stop.stopOrder}`}
-                    >
-                        <BsPlusCircleFill size={13} />
-                    </Button>
-                )}
-            </td>
+        <tr
+            ref={setNodeRef}
+            style={{ ...style, cursor: isDraftMode ? 'grab' : 'default' }}
+            className={!stop.stopPointActive ? 'table-danger' : ''}
+            {...attributes}
+            {...(isDraftMode ? listeners : {})}
+            title={isDraftMode ? "Kéo thả để sắp xếp" : ""}
+        >
+            {isDeleteMode && (
+                <td>
+                    <div className="d-flex align-items-center justify-content-center h-100 mt-1">
+                        <input
+                            type="checkbox"
+                            className="form-check-input mt-0"
+                            style={{ cursor: 'pointer', width: '18px', height: '18px' }}
+                            checked={isSelected || false}
+                            onChange={(e) => { e.stopPropagation(); onToggleSelection(); }}
+                            onPointerDown={(e) => e.stopPropagation()}
+                            disabled={!stop.routeStopId} // disable if it's a draft stop that hasn't been saved yet
+                        />
+                    </div>
+                </td>
+            )}
             <td className={`fw-bold ${!stop.stopPointActive ? 'text-danger' : 'text-primary'}`}>
                 <div className="d-flex align-items-center justify-content-center gap-2">
-                    <span
-                        {...attributes}
-                        {...listeners}
-                        style={{ cursor: 'grab', display: 'flex', alignItems: 'center' }}
-                        title="Kéo thả để sắp xếp"
-                    >
-                        <BsGripVertical size={20} className="text-secondary" />
-                    </span>
+                    {pendingCoachStop && (
+                        <Button
+                            variant="none"
+                            className="p-0 text-success d-flex align-items-center justify-content-center"
+                            style={{ minWidth: '24px' }}
+                            onClick={(e) => { e.stopPropagation(); onInsertPending(); }}
+                            onPointerDown={(e) => e.stopPropagation()}
+                            title="Thêm vào sau vị trí này"
+                        >
+                            <FaCirclePlus size={20} />
+                        </Button>
+                    )}
                     <span>{stop.stopOrder}</span>
                     {!stop.stopPointActive && (
                         <MdDangerous size={18} className="text-danger" title="Ngừng HĐ" />
@@ -66,16 +73,8 @@ export default function SortableRouteStopRow({ stop, onDelete, showAddButton, on
             </td>
             <td className="text-start fw-medium">{stop.stopPointName}</td>
             <td className="text-start fw-medium">{stop.city}</td>
-            <td>{stop.kilometersFromStart === 0 && stop.stopOrder != 1 ? "- -" : stop.kilometersFromStart + " km"}</td>
-            <td>{stop.minutesFromStart === 0 && stop.stopOrder != 1 ? "- -" : (stop.minutesFromStart >= 60 ? Math.floor(stop.minutesFromStart / 60) + " giờ " + (stop.minutesFromStart % 60) + " phút" : stop.minutesFromStart + " phút")} </td>
-            <td>
-                <div className="d-flex gap-2 justify-content-center">
-
-                    <Button variant="danger" size="sm" onClick={() => onDelete(stop.routeStopId)} title="Xóa điểm dừng">
-                        <BsTrash />
-                    </Button>
-                </div>
-            </td>
+            <td>{stop.kilometersFromStart === 0 && stop.stopOrder != 1 || stop.kilometersFromStart === 1.2 ? "- -" : stop.kilometersFromStart + " km"}</td>
+            <td>{stop.minutesFromStart === 0 && stop.stopOrder != 1 || stop.minutesFromStart === 1.2 ? "- -" : (stop.minutesFromStart >= 60 ? Math.floor(stop.minutesFromStart / 60) + " giờ " + (stop.minutesFromStart % 60) + " phút" : stop.minutesFromStart + " phút")} </td>
         </tr>
     );
 }

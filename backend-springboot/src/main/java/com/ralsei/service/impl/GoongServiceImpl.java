@@ -5,7 +5,6 @@ import com.ralsei.dto.request.goong.CalculateRouteDistancesRequest;
 import com.ralsei.dto.request.goong.DistanceTimeRequest;
 import com.ralsei.dto.response.goong.CalculateRouteDistancesResponse;
 import com.ralsei.dto.response.goong.DistanceTimeResponse;
-import com.ralsei.model.Route;
 import com.ralsei.model.RouteStop;
 import com.ralsei.repository.RouteRepository;
 import com.ralsei.repository.RouteStopRepository;
@@ -77,12 +76,11 @@ public class GoongServiceImpl implements GoongService {
         calculateAndSetRouteStopsDistances(stops);
         routeStopRepository.saveAll(stops);
 
-        // update route total kilometers and total minutes correponding to the last
+        // update route total kilometers and total minutes corresponding to the last
         // stops
-        Route route = stops.get(0).getRoute();
-        route.setTotalKilometers(stops.get(stops.size() - 1).getKilometersFromStart());
-        route.setTotalMinutes(stops.get(stops.size() - 1).getMinutesFromStart());
-        routeRepository.save(route);
+        RouteStop lastStop = stops.get(stops.size() - 1);
+        BigDecimal km = lastStop.getKilometersFromStart() != null ? lastStop.getKilometersFromStart() : BigDecimal.ZERO;
+        routeRepository.updateRouteTotals(routeId, km, lastStop.getMinutesFromStart());
 
         return CalculateRouteDistancesResponse.builder()
                 .message("Đã tính toán khoảng cách và thời gian cho " + (stops.size() - 1) + " điểm dừng.")

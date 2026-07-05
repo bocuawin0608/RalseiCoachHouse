@@ -74,7 +74,10 @@ export default function RoutePage() {
             <RouteViewDetailModal
                 isOpen={modalState.type === 'VIEW_DETAIL'}
                 data={modalState.data}
-                onClose={closeModal}
+                onClose={() => {
+                    closeModal();
+                    refetch();
+                }}
             />
 
         </Container>
