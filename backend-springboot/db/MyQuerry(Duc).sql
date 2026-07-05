@@ -684,13 +684,6 @@ JOIN coach co ON co.coachId = t.coachId
 JOIN coach_type ct ON ct.coachTypeId = co.coachTypeId
 LEFT JOIN payment pay ON pay.passengerTicketId = pt.passengerTicketId
 WHERE c.accountId = @historyAccountId
-  AND c.phone IS NOT NULL
-  AND EXISTS (
-      SELECT 1
-      FROM passenger_ticket_detail contact_detail
-      WHERE contact_detail.passengerTicketId = pt.passengerTicketId
-        AND contact_detail.phone = c.phone
-  )
   AND (@ticketCode IS NULL OR pt.ticketCode = @ticketCode)
 ORDER BY t.departureTime DESC, pt.passengerTicketId DESC, ptd.ticketDetailId;
 
@@ -701,14 +694,7 @@ FROM passenger_ticket_detail ptd
 JOIN passenger_ticket pt ON pt.passengerTicketId = ptd.passengerTicketId
 JOIN customer c ON c.customerId = pt.customerId
 WHERE ptd.ticketDetailId = @ticketDetailId
-  AND c.accountId = @historyAccountId
-  AND c.phone IS NOT NULL
-  AND EXISTS (
-      SELECT 1
-      FROM passenger_ticket_detail contact_detail
-      WHERE contact_detail.passengerTicketId = pt.passengerTicketId
-        AND contact_detail.phone = c.phone
-  );
+  AND c.accountId = @historyAccountId;
 
 -- Inspect the cancellation/refund result without mutating DDL or fake data.
 DECLARE @cancelledTicketCode VARCHAR(64) = 'REPLACE_WITH_TICKET_CODE';

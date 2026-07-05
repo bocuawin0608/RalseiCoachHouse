@@ -17,13 +17,11 @@ import com.ralsei.dto.request.customer.CustomerTicketCancellationRequest;
 import com.ralsei.dto.response.customer.CustomerTicketCancellationResponse;
 import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.exception.ResourceNotFoundException;
-import com.ralsei.model.Customer;
 import com.ralsei.model.Payment;
 import com.ralsei.model.Refund;
 import com.ralsei.model.enums.PassengerTicketDetailStatus;
 import com.ralsei.model.enums.PassengerTicketStatus;
 import com.ralsei.model.enums.TripSeatStatus;
-import com.ralsei.repository.CustomerRepository;
 import com.ralsei.repository.PassengerTicketDetailRepository;
 import com.ralsei.repository.PassengerTicketRepository;
 import com.ralsei.repository.PaymentRepository;
@@ -31,7 +29,6 @@ import com.ralsei.repository.RefundRepository;
 import com.ralsei.repository.TripSeatRepository;
 import com.ralsei.service.CustomerTicketHistoryService;
 import com.ralsei.util.QRCreateUitility;
-import com.ralsei.util.PhoneNumberUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -44,7 +41,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CustomerTicketHistoryServiceImpl implements CustomerTicketHistoryService {
 
-    private final CustomerRepository customerRepository;
     private final PassengerTicketDetailRepository ticketDetailRepository;
     private final PassengerTicketRepository ticketRepository;
     private final PaymentRepository paymentRepository;
@@ -55,23 +51,21 @@ public class CustomerTicketHistoryServiceImpl implements CustomerTicketHistorySe
 
     /** {@inheritDoc} */
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public List<CustomerTicketHistoryResponse> getHistory(Integer accountId) {
         validateAccountId(accountId);
-        ensureLegacyContactPhone(accountId);
         return assembleTickets(ticketDetailRepository.findCustomerTicketHistory(accountId, null));
     }
 
     /** {@inheritDoc} */
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public CustomerTicketHistoryResponse getDetail(Integer accountId, String ticketCode) {
         if (ticketCode == null || ticketCode.isBlank()) {
             throw new ResourceNotFoundException("Mã vé không hợp lệ.");
         }
 
         validateAccountId(accountId);
-        ensureLegacyContactPhone(accountId);
         return assembleTickets(ticketDetailRepository.findCustomerTicketHistory(accountId, ticketCode))
             .stream()
             .findFirst()
@@ -80,10 +74,9 @@ public class CustomerTicketHistoryServiceImpl implements CustomerTicketHistorySe
 
     /** {@inheritDoc} */
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public byte[] getSeatQrImage(Integer accountId, Integer ticketDetailId) {
         validateAccountId(accountId);
-        ensureLegacyContactPhone(accountId);
         String token = ticketDetailRepository.findOwnedQrToken(ticketDetailId, accountId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy mã QR của ghế trong tài khoản của bạn."));
         return qrCreateUitility.createPng(token);
@@ -98,7 +91,6 @@ public class CustomerTicketHistoryServiceImpl implements CustomerTicketHistorySe
         CustomerTicketCancellationRequest request
     ) {
         validateAccountId(accountId);
-        ensureLegacyContactPhone(accountId);
 
         CustomerTicketHistoryResponse ownedTicket = getOwnedTicket(accountId, ticketCode);
         if (!PassengerTicketStatus.CONFIRMED.name().equals(ownedTicket.status())) {
@@ -183,24 +175,6 @@ public class CustomerTicketHistoryServiceImpl implements CustomerTicketHistorySe
         if (accountId == null || accountId < 1) {
             throw new ResourceNotFoundException("Không xác định được tài khoản khách hàng.");
         }
-    }
-
-    /**
-     * Backfills contact data for OAuth customers created before booking phone
-     * synchronization. The source booking is already owned by the same account.
-     */
-    private void ensureLegacyContactPhone(Integer accountId) {
-        Customer customer = customerRepository.findByAccountId(accountId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ khách hàng."));
-
-        if (customer.getPhone() != null && !customer.getPhone().isBlank()) {
-            return;
-        }
-
-        ticketDetailRepository.findLatestOwnedContactPhone(accountId).ifPresent(phone -> {
-            customer.setPhone(PhoneNumberUtility.normalizeToLocalFormat(phone));
-            customerRepository.save(customer);
-        });
     }
 
     /**
