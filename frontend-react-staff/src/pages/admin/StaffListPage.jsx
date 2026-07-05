@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Container, Card } from 'react-bootstrap';
-import { useStaff, StaffFilter, StaffTable, StaffUpdateModal, StaffDetailModal, staffApi } from '../../features/manage-staff';
+import { Container, Button, Card } from 'react-bootstrap';
+import { BsPlusLg, BsPersonCheck } from 'react-icons/bs';
+import { useStaff, StaffFilter, StaffTable, StaffUpdateModal, StaffDetailModal, StaffOnboardModal, staffApi } from '../../features/manage-staff';
 import { ticketAgencyApi } from '../../features/manage-ticket-agencies';
 import Pagination from '../../components/common/Pagination';
 
@@ -37,6 +38,9 @@ export default function StaffListPage() {
         <Container fluid className="py-3">
             <div className="d-flex justify-content-between align-items-center mb-3">
                 <h4 className="fw-bold m-0">Quản lý nhân viên</h4>
+                <Button variant="success" size="sm" onClick={() => setModalState({ type: 'onboard', data: null })}>
+                    <BsPersonCheck className="me-1" /> Onboard nhân viên
+                </Button>
             </div>
             <StaffFilter filters={filters} onFilterChange={handleFilterChange} onReset={handleReset} ticketAgencies={ticketAgencies} />
             <Card>
@@ -54,6 +58,7 @@ export default function StaffListPage() {
             </Card>
             <StaffUpdateModal isOpen={modalState.type === 'edit'} data={modalState.data} onClose={closeModal} onSuccess={refetch} ticketAgencies={ticketAgencies} />
             <StaffDetailModal isOpen={modalState.type === 'detail'} data={modalState.data} onClose={closeModal} />
+            <StaffOnboardModal isOpen={modalState.type === 'onboard'} onClose={closeModal} onSuccess={refetch} ticketAgencies={ticketAgencies} />
         </Container>
     );
 }

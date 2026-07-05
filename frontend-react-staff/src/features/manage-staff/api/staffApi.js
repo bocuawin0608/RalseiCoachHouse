@@ -8,6 +8,7 @@ const staffApi = {
     update: (id, data) => axiosClient.put(`${BASE}/${id}`, data),
     toggleActive: (id) => axiosClient.patch(`${BASE}/${id}/toggle-active`),
     remove: (id) => axiosClient.delete(`${BASE}/${id}`),
+    onboard: (data) => axiosClient.post(`${BASE}/onboard`, data),
 };
 
 export default staffApi;
