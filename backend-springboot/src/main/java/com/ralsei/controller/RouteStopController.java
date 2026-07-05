@@ -34,7 +34,8 @@ public class RouteStopController {
     }
 
     @PutMapping("/bulk-update-orders")
-    public ResponseEntity<List<RouteStopResponse>> bulkUpdateOrders(@Valid @RequestBody List<RouteStopOrderUpdateRequest> requests) {
+    public ResponseEntity<List<RouteStopResponse>> bulkUpdateOrders(
+            @Valid @RequestBody List<RouteStopOrderUpdateRequest> requests) {
         List<RouteStopResponse> responses = routeStopService.bulkUpdateOrders(requests);
         return ResponseEntity.ok(responses);
     }

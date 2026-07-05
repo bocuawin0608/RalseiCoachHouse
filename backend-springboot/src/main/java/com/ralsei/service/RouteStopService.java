@@ -7,6 +7,7 @@ import com.ralsei.dto.request.route.RouteStopOrderUpdateRequest;
 import com.ralsei.dto.response.CoachAndRouteStop.RouteStopResponse;
 import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.model.RouteStop;
+
 public interface RouteStopService {
     RouteStopResponse createRouteStop(RouteStopRequest request);
 

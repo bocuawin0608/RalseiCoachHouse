@@ -91,6 +91,7 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
                     stopOrder: stop.stopOrder
                 }));
                 await routeStopApi.bulkUpdateOrders(payload);
+                await routeStopApi.calculateDistances({ routeId: Number(detail.routeId) });
                 fetchRouteDetail();
             } catch (err) {
                 alert(err.response?.data?.message || "Có lỗi xảy ra khi lưu thứ tự mới.");
@@ -212,6 +213,8 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
                 minutesFromStart: 0
             });
 
+            await routeStopApi.calculateDistances({ routeId: Number(detail.routeId) });
+
             await fetchRouteDetail();
         } catch (err) {
             alert(err.response?.data?.message || "Có lỗi xảy ra khi thêm điểm dừng.");
@@ -235,6 +238,8 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
                 kilometersFromStart: 0,
                 minutesFromStart: 0
             });
+
+            await routeStopApi.calculateDistances({ routeId: Number(detail.routeId) });
 
             await fetchRouteDetail();
         } catch (err) {
