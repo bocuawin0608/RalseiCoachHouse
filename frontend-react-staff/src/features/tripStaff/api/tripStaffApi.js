@@ -12,4 +12,15 @@ export const tripStaffApi = {
 
     checkInManual: (tripId, ticketDetailId) =>
         axiosClient.post(`${BASE}/${tripId}/passengers/${ticketDetailId}/check-in`),
+
+    getCargoList: (tripId) => axiosClient.get(`${BASE}/${tripId}/cargo`),
+
+    loadCargo: (tripId, cargoTicketId) =>
+        axiosClient.post(`${BASE}/${tripId}/cargo/${cargoTicketId}/load`),
+
+    unloadCargo: (tripId, cargoTicketId) =>
+        axiosClient.post(`${BASE}/${tripId}/cargo/${cargoTicketId}/unload`),
+
+    deliverCargo: (tripId, cargoTicketId) =>
+        axiosClient.post(`${BASE}/${tripId}/cargo/${cargoTicketId}/deliver`),
 };

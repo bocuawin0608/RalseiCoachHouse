@@ -84,7 +84,7 @@ export default function TripDashboardPage() {
             <TripDashboardTabs activeTab={activeTab} onChange={setActiveTab} />
 
             {activeTab === 'cargo' ? (
-                <CargoTabPlaceholder />
+                <CargoTabPlaceholder tripId={tripId} />
             ) : (
                 <>
                     <Form.Control

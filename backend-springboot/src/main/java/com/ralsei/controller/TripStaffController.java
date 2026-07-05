@@ -19,7 +19,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ralsei.dto.projection.tripstaff.AssignedTripProjection;
 import com.ralsei.dto.request.tripstaff.QrCheckInRequest;
 import com.ralsei.dto.response.tripstaff.CheckInResponse;
+import com.ralsei.dto.response.tripstaff.TripStaffCargoResponse;
 import com.ralsei.dto.response.tripstaff.TripStaffDashboardResponse;
+import com.ralsei.service.tripstaff.TripStaffCargoService;
 import com.ralsei.service.tripstaff.TripStaffPassengerService;
 
 import jakarta.validation.Valid;
@@ -34,6 +36,7 @@ import lombok.RequiredArgsConstructor;
 public class TripStaffController {
 
     private final TripStaffPassengerService tripStaffPassengerService;
+    private final TripStaffCargoService tripStaffCargoService;
 
     @GetMapping
     public ResponseEntity<List<AssignedTripProjection>> getAssignedTrips(
@@ -63,5 +66,39 @@ public class TripStaffController {
             @PathVariable @Min(value = 1, message = "ID chuyến phải lớn hơn 0.") Integer tripId,
             @PathVariable @Min(value = 1, message = "ID chi tiết vé phải lớn hơn 0.") Integer ticketDetailId) {
         return ResponseEntity.ok(tripStaffPassengerService.checkInManual(authorizationHeader, tripId, ticketDetailId));
+    }
+
+    @GetMapping("/{tripId}/cargo")
+    public ResponseEntity<TripStaffCargoResponse> getCargoList(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable @Min(value = 1, message = "ID chuyến phải lớn hơn 0.") Integer tripId) {
+        return ResponseEntity.ok(tripStaffCargoService.getCargoList(authorizationHeader, tripId));
+    }
+
+    @PostMapping("/{tripId}/cargo/{cargoTicketId}/load")
+    public ResponseEntity<Void> loadCargo(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable @Min(value = 1, message = "ID chuyến phải lớn hơn 0.") Integer tripId,
+            @PathVariable @Min(value = 1, message = "ID đơn hàng phải lớn hơn 0.") Integer cargoTicketId) {
+        tripStaffCargoService.loadCargo(authorizationHeader, tripId, cargoTicketId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{tripId}/cargo/{cargoTicketId}/unload")
+    public ResponseEntity<Void> unloadCargo(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable @Min(value = 1, message = "ID chuyến phải lớn hơn 0.") Integer tripId,
+            @PathVariable @Min(value = 1, message = "ID đơn hàng phải lớn hơn 0.") Integer cargoTicketId) {
+        tripStaffCargoService.unloadCargo(authorizationHeader, tripId, cargoTicketId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{tripId}/cargo/{cargoTicketId}/deliver")
+    public ResponseEntity<Void> deliverCargo(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable @Min(value = 1, message = "ID chuyến phải lớn hơn 0.") Integer tripId,
+            @PathVariable @Min(value = 1, message = "ID đơn hàng phải lớn hơn 0.") Integer cargoTicketId) {
+        tripStaffCargoService.markDelivered(authorizationHeader, tripId, cargoTicketId);
+        return ResponseEntity.ok().build();
     }
 }
