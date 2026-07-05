@@ -47,4 +47,10 @@ export const bookingApi = {
             headers: cancelToken ? { 'X-Cancel-Token': cancelToken } : undefined,
         });
     },
+
+    checkPhone: (phone) => {
+        return axiosClient.get(`${BASE}/check-phone`, {
+            params: { phone },
+        });
+    },
 }
