@@ -7,7 +7,7 @@ export function useCoachTypes() {
     const [coachTypes, setCoachTypes] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [filters, setFilters] = useState({ coachTypeName: '' });
+    const [filters, setFilters] = useState({ isActive: true });
     const [pageInfo, setPageInfo] = useState({ 
         page: 0,
         size: 10, 
@@ -55,7 +55,7 @@ export function useCoachTypes() {
     };
 
     const handleReset = () => {
-        setFilters({ coachTypeName: '' });
+        setFilters({ isActive: true });
         setError(null);
         setPageInfo(prev => ({ ...prev, page: 0 }));
     };
