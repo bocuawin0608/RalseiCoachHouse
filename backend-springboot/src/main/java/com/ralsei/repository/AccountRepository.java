@@ -29,4 +29,5 @@ public interface AccountRepository extends JpaRepository<Account, Integer> {
     Optional<AccountProjection> findByUsernameWithRoles(@Param("username") String username);
 
     boolean existsByUsername(String username);
+    Optional<Account> findByUsername(String username);
 }

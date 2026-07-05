@@ -41,7 +41,8 @@ export default function PublicHeader() {
                                 {isCustomer && (
                                     <>
                                         <Button variant="light" size="sm" className="fw-bold rounded-pill px-3" onClick={() => navigate('/profile')}>Tài khoản</Button>
-                                        <Button variant="light" size="sm" className="fw-bold rounded-pill px-3" onClick={() => navigate('/booking-history')}>Lịch sử</Button>
+                                        <Button variant="light" size="sm" className="fw-bold rounded-pill px-3" onClick={() => navigate('/booking-history')}>Lịch sử vé</Button>
+                                        <Button variant="light" size="sm" className="fw-bold rounded-pill px-3" onClick={() => navigate('/cargo-history')}>Hàng hóa</Button>
                                     </>
                                 )}
                                 
