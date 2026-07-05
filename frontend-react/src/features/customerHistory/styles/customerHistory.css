@@ -3,7 +3,7 @@
     min-height: 70vh;
     padding: 46px 20px 72px;
     background:
-        linear-gradient(rgba(238, 247, 243, .94), rgba(238, 247, 243, .94)),
+        linear-gradient(color-mix(in srgb, var(--color-bg-body) 94%, transparent), color-mix(in srgb, var(--color-bg-body) 94%, transparent)),
         url('/images/RalseiWallpaper.jpg') center / cover fixed;
 }
 
@@ -16,61 +16,81 @@
 .customer-history-heading { margin-bottom: 24px; }
 .customer-history-heading > span,
 .customer-detail-heading > div > span,
-.customer-qr-card > span { color: #28785f; font-size: .75rem; font-weight: 800; letter-spacing: .12em; }
+.customer-qr-card > span { color: var(--ralsei-black); font-size: .75rem; font-weight: 800; letter-spacing: .12em; }
 .customer-history-heading h1 { margin: 4px 0; color: var(--ralsei-black); font-size: clamp(2rem, 5vw, 2.8rem); }
 .customer-history-heading p { margin: 0; color: var(--color-text-muted); }
 .customer-history-list { display: grid; gap: 14px; }
-.customer-history-state { width: min(940px, 100%); margin: auto; padding: 44px 24px; border: 1px solid #d6e8e1; border-radius: 16px; background: white; text-align: center; }
-.customer-history-state--error { color: #b42318; }
+.customer-history-state { width: min(940px, 100%); margin: auto; padding: 44px 24px; border: 1px solid var(--ralsei-green); border-radius: 16px; background: var(--color-bg-white); text-align: center; }
+.customer-history-state--error { color: var(--ralsei-pink); }
 
-.customer-history-card { padding: 21px 23px; border: 1px solid #d4e6df; border-radius: 16px; background: rgba(255, 255, 255, .96); box-shadow: 0 8px 24px rgba(10, 64, 48, .08); cursor: pointer; transition: transform .2s ease, box-shadow .2s ease; }
+.customer-history-card { padding: 21px 23px; border: 1px solid var(--ralsei-green); border-radius: 16px; background: color-mix(in srgb, var(--color-bg-white) 96%, transparent); box-shadow: var(--box-shadow-card); cursor: pointer; transition: transform .2s ease, box-shadow .2s ease; }
 .customer-history-card:hover,
-.customer-history-card:focus-visible { outline: 3px solid rgba(81, 201, 167, .45); transform: translateY(-2px); box-shadow: 0 13px 30px rgba(10, 64, 48, .14); }
+.customer-history-card:focus-visible { outline: 3px solid var(--ralsei-footer); transform: translateY(-2px); box-shadow: var(--box-shadow-card); }
 .customer-history-card__topline,
 .customer-history-card__route,
 .customer-history-card__footer { display: flex; align-items: center; gap: 9px; }
 .customer-history-card__topline { justify-content: space-between; }
-.customer-history-card__topline > span { color: #28785f; font-size: .78rem; font-weight: 800; }
+.customer-history-card__topline > span { color: var(--ralsei-black); font-size: .78rem; font-weight: 800; }
 .customer-history-card h2 { margin: 11px 0 7px; color: var(--ralsei-black); font-size: 1.2rem; }
-.customer-history-card__route { color: #4b5e58; }
-.customer-history-card__route svg { flex: none; color: #e85132; }
-.customer-history-card__footer { margin-top: 16px; padding-top: 14px; border-top: 1px solid #e8efec; color: var(--color-text-muted); font-size: .88rem; flex-wrap: wrap; }
+.customer-history-card__route { color: var(--color-text-muted); }
+.customer-history-card__route svg { flex: none; color: var(--ralsei-footer); }
+.customer-history-card__footer { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--ralsei-green); color: var(--color-text-muted); font-size: .88rem; flex-wrap: wrap; }
 .customer-history-card__footer span { display: inline-flex; align-items: center; gap: 5px; }
-.customer-history-card__footer > strong { margin-left: auto; color: #e85132; }
+.customer-history-card__footer > strong { margin-left: auto; color: var(--ralsei-black); }
+.customer-history-card__actions { display: flex; justify-content: flex-end; margin-top: 14px; }
+.customer-history-card__actions button { min-width: 125px; padding: 9px 22px; border: 0; border-radius: 999px; background: var(--ralsei-black); color: var(--ralsei-white); }
+.customer-history-card__actions button:hover:not(:disabled) { background: var(--ralsei-pink); }
+.customer-history-card__actions button:disabled { background: var(--ralsei-footer); cursor: not-allowed; opacity: .66; }
 
-.ticket-status { display: inline-flex; width: fit-content; padding: 4px 9px; border: 1px solid #25a463; border-radius: 999px; color: #16834f; background: #effbf4; font-size: .75rem; }
-.ticket-status--pending { border-color: #dd9c26; color: #8a5a08; background: #fff8e8; }
+.ticket-status { display: inline-flex; width: fit-content; padding: 4px 9px; border: 1px solid var(--ralsei-footer); border-radius: 999px; color: var(--ralsei-black); background: var(--ralsei-green); font-size: .75rem; }
+.ticket-status--pending { border-color: var(--ralsei-pink); color: var(--ralsei-black); background: color-mix(in srgb, var(--ralsei-pink) 18%, var(--ralsei-white)); }
 .ticket-status--cancelled,
-.ticket-status--expired { border-color: #df5a50; color: #b42318; background: #fff1f0; }
+.ticket-status--expired { border-color: var(--ralsei-pink); color: var(--ralsei-pink); background: color-mix(in srgb, var(--ralsei-pink) 10%, var(--ralsei-white)); }
 
 .customer-detail-heading { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 18px; margin-bottom: 20px; }
-.customer-detail-heading > button { justify-self: start; display: inline-flex; align-items: center; gap: 7px; padding: 8px 13px; border: 1px solid #bfd6ce; border-radius: 999px; background: white; color: var(--ralsei-black); }
+.customer-detail-heading > button { justify-self: start; display: inline-flex; align-items: center; gap: 7px; padding: 8px 13px; border: 1px solid var(--ralsei-footer); border-radius: 999px; background: var(--ralsei-white); color: var(--ralsei-black); }
 .customer-detail-heading > div { text-align: center; }
 .customer-detail-heading h1 { margin: 2px 0 0; color: var(--ralsei-black); font-size: 1.35rem; }
 .customer-detail-heading > .ticket-status { justify-self: end; }
 .customer-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-.customer-detail-panel { padding: 23px; border: 1px solid #d6e8e1; border-radius: 16px; background: rgba(255, 255, 255, .97); box-shadow: 0 8px 24px rgba(10, 64, 48, .07); }
+.customer-detail-panel { padding: 23px; border: 1px solid var(--ralsei-green); border-radius: 16px; background: color-mix(in srgb, var(--ralsei-white) 97%, transparent); box-shadow: var(--box-shadow-card); }
 .customer-detail-panel--wide { grid-column: 1 / -1; }
 .customer-detail-panel h2 { margin: 0 0 15px; color: var(--ralsei-black); font-size: .86rem; letter-spacing: .05em; text-transform: uppercase; }
 .customer-detail-route { display: flex; align-items: center; gap: 7px; color: var(--ralsei-black); font-weight: 700; }
-.customer-detail-route svg { color: #e85132; }
+.customer-detail-route svg { color: var(--ralsei-footer); }
 .customer-detail-note { margin: -7px 0 14px; color: var(--color-text-muted); font-size: .88rem; }
 .customer-detail-panel dl { margin: 0; }
-.customer-detail-panel dl > div { display: flex; justify-content: space-between; gap: 22px; padding: 10px 0; border-bottom: 1px solid #e9efed; }
+.customer-detail-panel dl > div { display: flex; justify-content: space-between; gap: 22px; padding: 10px 0; border-bottom: 1px solid var(--ralsei-green); }
 .customer-detail-panel dt { color: var(--color-text-muted); font-weight: 400; }
 .customer-detail-panel dd { margin: 0; text-align: right; font-weight: 650; }
-.customer-detail-price { color: #e85132; font-size: 1.06rem; }
+.customer-detail-price { color: var(--ralsei-black); font-size: 1.06rem; }
 .customer-seat-list { display: flex; gap: 9px; flex-wrap: wrap; }
-.customer-seat-list button { min-width: 88px; padding: 9px 13px; border: 1px solid var(--ralsei-footer); border-radius: 9px; background: #e9faf4; color: var(--ralsei-black); font-weight: 800; }
+.customer-seat-list button { min-width: 88px; padding: 9px 13px; border: 1px solid var(--ralsei-footer); border-radius: 9px; background: var(--ralsei-green); color: var(--ralsei-black); font-weight: 800; }
 .customer-seat-list button:hover { background: var(--ralsei-black); color: white; }
 
 .customer-qr-modal { position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center; padding: 20px; background: rgba(5, 28, 21, .7); backdrop-filter: blur(4px); }
-.customer-qr-card { position: relative; width: min(420px, 100%); padding: 28px; border-radius: 20px; background: white; text-align: center; box-shadow: 0 24px 65px rgba(0, 0, 0, .34); }
+.customer-qr-card { position: relative; width: min(420px, 100%); padding: 28px; border-radius: 20px; background: var(--ralsei-white); text-align: center; box-shadow: var(--box-shadow-card); }
 .customer-qr-card h2 { margin: 4px 0 9px; color: var(--ralsei-black); }
 .customer-qr-card img { display: block; width: min(320px, 100%); margin: 8px auto; }
 .customer-qr-card p { margin: 8px 0 0; color: var(--color-text-muted); }
-.customer-qr-card__close { position: absolute; top: 11px; right: 11px; display: grid; width: 36px; height: 36px; place-items: center; border: 0; border-radius: 50%; background: #edf5f2; }
-.customer-qr-card__error { color: #b42318 !important; }
+.customer-qr-card__close { position: absolute; top: 11px; right: 11px; display: grid; width: 36px; height: 36px; place-items: center; border: 0; border-radius: 50%; background: var(--ralsei-green); }
+.customer-qr-card__error { color: var(--ralsei-pink) !important; }
+
+.ticket-cancel-modal { position: fixed; inset: 0; z-index: 1250; display: grid; place-items: center; padding: 18px; background: rgba(20, 28, 25, .55); backdrop-filter: blur(3px); }
+.ticket-cancel-card { width: min(430px, 100%); padding: 24px 15px 20px; border-radius: 13px; background: var(--ralsei-white); box-shadow: var(--box-shadow-card); }
+.ticket-cancel-card h2 { margin: -4px -15px 16px; padding: 0 15px 15px; border-bottom: 1px solid var(--ralsei-green); color: var(--ralsei-black); font-size: 1rem; text-align: center; }
+.ticket-cancel-card > p { margin: 0 0 14px; color: var(--color-text-main); font-size: .87rem; line-height: 1.4; }
+.ticket-cancel-card label { display: block; margin: 10px 0 5px; color: var(--ralsei-black); font-size: .83rem; font-weight: 650; }
+.ticket-cancel-card input { width: 100%; padding: 10px 12px; border: 1px solid var(--ralsei-footer); border-radius: 9px; background: var(--ralsei-white); }
+.ticket-cancel-card input:focus { border-color: var(--ralsei-black); box-shadow: 0 0 0 3px var(--ralsei-green); }
+.ticket-cancel-card > small { display: block; margin-top: 12px; color: var(--color-text-muted); font-style: italic; }
+.ticket-cancel-card__error { margin-top: 11px; color: var(--ralsei-pink); font-size: .84rem; }
+.ticket-cancel-card footer { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+.ticket-cancel-card footer button { padding: 10px 14px; border-radius: 999px; font-weight: 700; }
+.ticket-cancel-card__back { border: 1px solid var(--ralsei-footer); background: var(--ralsei-white); color: var(--ralsei-black); }
+.ticket-cancel-card__confirm { border: 0; background: var(--ralsei-black); color: var(--ralsei-white); }
+.ticket-cancel-card__confirm:hover:not(:disabled) { background: var(--ralsei-pink); }
+.ticket-cancel-card footer button:disabled { cursor: wait; opacity: .65; }
 
 @media (max-width: 700px) {
     .customer-history-page { padding-top: 28px; }

@@ -709,3 +709,13 @@ WHERE ptd.ticketDetailId = @ticketDetailId
       WHERE contact_detail.passengerTicketId = pt.passengerTicketId
         AND contact_detail.phone = c.phone
   );
+
+-- Inspect the cancellation/refund result without mutating DDL or fake data.
+DECLARE @cancelledTicketCode VARCHAR(64) = 'REPLACE_WITH_TICKET_CODE';
+SELECT pt.ticketCode, pt.status AS ticketStatus, p.refundAmount,
+       r.amount AS requestedRefundAmount, r.refundMethod,
+       r.status AS refundStatus, r.callbackData AS bankDestination
+FROM passenger_ticket pt
+JOIN payment p ON p.passengerTicketId = pt.passengerTicketId
+LEFT JOIN refund r ON r.paymentId = p.paymentId
+WHERE pt.ticketCode = @cancelledTicketCode;

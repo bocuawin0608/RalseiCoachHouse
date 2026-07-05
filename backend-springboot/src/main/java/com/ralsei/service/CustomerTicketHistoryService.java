@@ -3,6 +3,8 @@ package com.ralsei.service;
 import java.util.List;
 
 import com.ralsei.dto.response.customer.CustomerTicketHistoryResponse;
+import com.ralsei.dto.request.customer.CustomerTicketCancellationRequest;
+import com.ralsei.dto.response.customer.CustomerTicketCancellationResponse;
 
 /**
  * Defines authenticated customer operations for booking history and boarding QR images.
@@ -34,4 +36,11 @@ public interface CustomerTicketHistoryService {
      * @return PNG image bytes
      */
     byte[] getSeatQrImage(Integer accountId, Integer ticketDetailId);
+
+    /** Cancels an owned future ticket and creates its pending bank refund. */
+    CustomerTicketCancellationResponse cancelTicket(
+        Integer accountId,
+        String ticketCode,
+        CustomerTicketCancellationRequest request
+    );
 }
