@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { routeApi } from "../api/routeApi";
 import { coachStopApi } from "../../coachStops/api/coachStopApi";
 import { routeStopApi } from "../api/routeStopApi";
-import RouteStopUpdateInfoModal from "./RouteStopUpdateInfoModal";
+
 import { Alert, Badge, Button, Form, Modal, Spinner, Table } from "react-bootstrap";
 import { BsExclamationTriangleFill, BsTrash, BsPencilFill, BsPlusCircleFill, BsGeoAltFill, BsXLg, BsSearch } from "react-icons/bs";
 import { FaArrowRightLong } from "react-icons/fa6";
@@ -24,7 +24,7 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
     const [detail, setDetail] = useState(INITIAL_DETAIL);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [editingStop, setEditingStop] = useState(null);
+
 
     // Right panel state
     const [showRightPanel, setShowRightPanel] = useState(false);
@@ -447,7 +447,7 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
                                                                 <SortableRouteStopRow
                                                                     key={stop.routeStopId}
                                                                     stop={stop}
-                                                                    onEdit={setEditingStop}
+
                                                                     onDelete={handleDeleteRouteStop}
                                                                     showAddButton={!!pendingCoachStop}
                                                                     onAddAtOrder={handleInsertCoachStopAtOrder}
@@ -584,18 +584,6 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
                     Đóng
                 </Button>
             </Modal.Footer>
-
-            <RouteStopUpdateInfoModal
-                isOpen={!!editingStop}
-                data={editingStop}
-                routeTotalKilometers={detail.totalKilometers}
-                routeTotalMinutes={detail.totalMinutes}
-                onClose={() => setEditingStop(null)}
-                onSuccess={() => {
-                    setEditingStop(null);
-                    fetchRouteDetail();
-                }}
-            />
 
             {/* Inline styles for slide-in animation and hover */}
             <style>{`
