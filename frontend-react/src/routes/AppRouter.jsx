@@ -12,7 +12,6 @@ import Login from '../pages/auth/Login';
 import Register from '../pages/auth/Register';
 import BookingPaymentPage from '../pages/public/booking/BookingPaymentPage';
 import BookingTripPage from '../pages/public/booking/BookingTripPage';
-import CargoHistoryPage from '../pages/customer/CargoHistoryPage';
 // Nested routes
 import { publicTripRoutes } from '../features/trips';
 
@@ -40,7 +39,6 @@ const AppRouter = () => {
                 <Route element={<PublicLayout />}>
                     <Route path="/profile" element={<div>Trang cá nhân của khách</div>} />
                     <Route path="/booking-history" element={<div>Lịch sử đặt vé</div>} />
-                    <Route path="/cargo-history" element={<CargoHistoryPage />} />
                 </Route>
             </Route>
 
