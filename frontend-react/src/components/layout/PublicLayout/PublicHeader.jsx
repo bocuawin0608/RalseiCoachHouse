@@ -28,7 +28,6 @@ export default function PublicHeader() {
                 <Navbar.Collapse id="public-navbar-nav">
                     <Nav className="me-auto gap-2">
                         <Button variant="link" className="text-decoration-none fw-bold" style={{ color: 'var(--ralsei-black)' }} onClick={() => navigate('/')}>Trang chủ</Button>
-                        <Button variant="link" className="text-decoration-none fw-bold" style={{ color: 'var(--ralsei-black)' }} onClick={() => navigate('/tra-cuu')}>Tra cứu đơn</Button>
                     </Nav>
 
                     <Nav className="align-items-lg-center gap-2 mt-3 mt-lg-0">
@@ -41,7 +40,8 @@ export default function PublicHeader() {
                                 {isCustomer && (
                                     <>
                                         <Button variant="light" size="sm" className="fw-bold rounded-pill px-3" onClick={() => navigate('/profile')}>Tài khoản</Button>
-                                        <Button variant="light" size="sm" className="fw-bold rounded-pill px-3" onClick={() => navigate('/booking-history')}>Lịch sử</Button>
+                                        <Button variant="light" size="sm" className="fw-bold rounded-pill px-3" onClick={() => navigate('/booking-history')}>Lịch sử vé</Button>
+                                        <Button variant="light" size="sm" className="fw-bold rounded-pill px-3" onClick={() => navigate('/cargo-history')}>Hàng hóa</Button>
                                     </>
                                 )}
                                 
