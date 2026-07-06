@@ -4,7 +4,7 @@ import { Collapse } from 'react-bootstrap';
 import {
     BsList, BsGrid1X2, BsBusFront, BsSignpostSplit,
     BsChevronDown, BsChevronRight, BsTags, BsGeoAlt,
-    BsBoxSeam, BsCashCoin, BsGift, BsPeopleFill, BsShieldCheck, BsPersonBadge, BsBuilding
+    BsBoxSeam, BsCashCoin, BsGift, BsPeopleFill, BsShieldCheck, BsPersonBadge, BsBuilding, BsTicketPerforated
 } from 'react-icons/bs';
 import { useAuth } from '../../../features/auth';
 
@@ -198,6 +198,18 @@ export default function Sidebar() {
                             <NavLink to="/management/manage-staff" className={navLinkClass} end>
                                 <BsPersonBadge size={20} className="flex-shrink-0" />
                                 <span>Quản lý nhân viên</span>
+                            </NavLink>
+                        </>
+                    )}
+
+                    {hasAccess(['TICKET_STAFF']) && (
+                        <>
+                            <NavLink to="/staff/passenger-tickets/search" className={navLinkClass} end>
+                                <BsTicketPerforated size={20} className="flex-shrink-0" />
+                                <span>Vé hành khách</span>
+                            </NavLink>
+                        </>
+                    )}
                             </NavLink>
                         </>
                     )}

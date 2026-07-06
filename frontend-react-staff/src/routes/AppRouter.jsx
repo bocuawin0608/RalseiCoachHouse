@@ -19,6 +19,7 @@ import { roleRoutes } from '../features/manage-roles';
 import { customerRoutes } from '../features/manage-customers';
 import { ticketAgencyRoutes } from '../features/manage-ticket-agencies';
 import { staffRoutes } from '../features/manage-staff';
+import { passengerTicketRoutes } from '../features/passenger-tickets';
 
 const AppRouter = () => {
     return (
@@ -55,9 +56,8 @@ const AppRouter = () => {
 
             <Route path="/staff">
                 <Route element={<RoleGuard allowedRoles={['TICKET_STAFF']} />}>
-                    <Route element={<DesktopLayout />}> 
-                        <Route path="ticket/sell" element={<div>Bán vé</div>} />
-                        <Route path="ticket/history" element={<div>Lịch sử bán</div>} />
+                    <Route element={<DesktopLayout />}>
+                        {passengerTicketRoutes}
                     </Route>
                 </Route>
 
