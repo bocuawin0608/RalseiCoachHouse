@@ -3,7 +3,6 @@ package com.ralsei.dto.request.cargoticket;
 import java.math.BigDecimal;
 
 import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -33,10 +32,6 @@ public class CargoTicketRequest {
     @Size(max = 20, message = "Sender phone must not exceed 20 characters")
     private String senderPhone;
 
-    @Email(message = "Sender email is invalid")
-    @Size(max = 100, message = "Sender email must not exceed 100 characters")
-    private String senderEmail;
-
     @NotBlank(message = "Receiver name is required")
     @Size(max = 100, message = "Receiver name must not exceed 100 characters")
     private String receiverName;
@@ -44,10 +39,6 @@ public class CargoTicketRequest {
     @NotBlank(message = "Receiver phone is required")
     @Size(max = 20, message = "Receiver phone must not exceed 20 characters")
     private String receiverPhone;
-
-    @Email(message = "Receiver email is invalid")
-    @Size(max = 100, message = "Receiver email must not exceed 100 characters")
-    private String receiverEmail;
 
     @Size(max = 50, message = "Ticket code must not exceed 50 characters")
     private String ticketCode;
@@ -73,8 +64,7 @@ public class CargoTicketRequest {
     private int dropoffStopId;
 
     @NotBlank(message = "Status is required")
-    @Pattern(regexp = "RECEIVED|LOADED|ARRIVED|DELIVERED|CANCELLED|REJECTED|ABANDONED",
-            message = "Cargo ticket status is invalid")
+    @Pattern(regexp = "RECEIVED|LOADED|ARRIVED|DELIVERED|CANCELLED|REJECTED|ABANDONED", message = "Cargo ticket status is invalid")
     private String status;
 
     @Min(value = 1, message = "Seller ID must be greater than 0")

@@ -15,6 +15,9 @@ public interface StaffRepository extends JpaRepository<Staff, Integer> {
     @Query(value = "SELECT staffId, staffName FROM staff WHERE isActive = 1 AND staffPosition = 'TICKET_STAFF' ORDER BY staffName", nativeQuery = true)
     List<CargoTicketStaffOptionProjection> findCargoTicketSellerOptions();
 
+    @Query(value = "SELECT s.staffId, s.staffName, a.username AS username FROM staff s LEFT JOIN account a ON s.accountId = a.accountId WHERE s.isActive = 1 AND s.staffPosition = 'TICKET_STAFF' ORDER BY s.staffName", nativeQuery = true)
+    List<CargoTicketStaffOptionProjection> findCargoTicketSellerOptionsWithUsername();
+
     @Query(value = "SELECT staffId, staffName FROM staff WHERE isActive = 1 AND staffPosition IN ('ATTENDANT', 'TICKET_STAFF') ORDER BY staffName", nativeQuery = true)
     List<CargoTicketStaffOptionProjection> findCargoTicketHandlerOptions();
 
