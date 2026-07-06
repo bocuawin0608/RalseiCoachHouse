@@ -18,6 +18,9 @@ import com.ralsei.util.JwtAccountIdExtractor;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * REST controller for cargo tracking operations.
+ */
 @RestController
 @RequestMapping("/api/v1/cargo-tracking")
 @RequiredArgsConstructor
@@ -25,12 +28,18 @@ public class CargoTrackingController {
 
     private final CargoTrackingService cargoTrackingService;
 
+    /**
+     * Looks up a cargo order by its public ticket code (unauthenticated).
+     */
     @GetMapping("/{ticketCode}")
     public ResponseEntity<CargoTrackingResponse> trackByCode(@PathVariable String ticketCode) {
         CargoTrackingResponse response = cargoTrackingService.trackByCode(ticketCode);
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Returns a list of cargo orders belonging to the authenticated customer, optionally filtered by status.
+     */
     @GetMapping("/my-cargo")
     @PreAuthorize("hasRole('CUSTOMER')")
     public ResponseEntity<List<CargoHistoryListResponse>> getMyCargo(
@@ -41,6 +50,9 @@ public class CargoTrackingController {
         return ResponseEntity.ok(list);
     }
 
+    /**
+     * Returns full detail for a specific cargo order owned by the authenticated customer.
+     */
     @GetMapping("/my-cargo/{cargoTicketId:\\d+}")
     @PreAuthorize("hasRole('CUSTOMER')")
     public ResponseEntity<CargoTrackingResponse> getMyCargoDetail(

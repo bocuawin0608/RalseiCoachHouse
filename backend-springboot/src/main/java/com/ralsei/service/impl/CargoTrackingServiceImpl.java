@@ -28,6 +28,9 @@ import com.ralsei.service.CargoTrackingService;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Implementation of cargo tracking operations.
+ */
 @Service
 @RequiredArgsConstructor
 public class CargoTrackingServiceImpl implements CargoTrackingService {
@@ -45,7 +48,6 @@ public class CargoTrackingServiceImpl implements CargoTrackingService {
     public CargoTrackingResponse trackByCode(String ticketCode) {
         CargoTicket ticket = cargoTicketRepository.findByTicketCode(ticketCode)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng với mã: " + ticketCode));
-
         return buildTrackingResponse(ticket);
     }
 
@@ -85,7 +87,6 @@ public class CargoTrackingServiceImpl implements CargoTrackingService {
     public CargoTrackingResponse getCargoDetail(Integer cargoTicketId) {
         CargoTicket ticket = cargoTicketRepository.findById(cargoTicketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng!"));
-
         return buildTrackingResponse(ticket);
     }
 

@@ -13,8 +13,13 @@ import com.ralsei.model.CargoTicket;
 
 @Repository
 public interface CargoTicketRepository extends JpaRepository<CargoTicket, Integer> {
+    /** Finds a cargo order by its public ticket code. */
     Optional<CargoTicket> findByTicketCode(String ticketCode);
 
+    /**
+     * Lists cargo orders where the given customer is the sender (customerId)
+     * or the receiver (receiverPhone), with optional status group filter.
+     */
     @Query(value = """
         SELECT ct.cargoTicketId   AS cargoTicketId,
             ct.ticketCode          AS ticketCode,

@@ -8,6 +8,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Full detail response for a single cargo order, including line items.
+ */
 @Data
 @Builder
 @AllArgsConstructor
@@ -28,6 +31,7 @@ public class CargoTrackingResponse {
     private LocalDateTime tripDepartureTime;
     private List<CargoDetailItem> items;
 
+    /** A single line item within a cargo order. */
     @Data
     @Builder
     @AllArgsConstructor
