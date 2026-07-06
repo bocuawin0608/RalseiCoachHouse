@@ -24,6 +24,9 @@ public interface StaffRepository extends JpaRepository<Staff, Integer> {
     boolean existsByStaffIdAndIsActiveTrueAndStaffPosition(int staffId, String staffPosition);
 
     boolean existsByStaffIdAndIsActiveTrueAndStaffPositionIn(int staffId, java.util.Collection<String> positions);
+
+    java.util.Optional<Staff> findByAccountId(Integer accountId);
+
     @Query(value = """
                 SELECT s.staffName AS staffName
                 FROM staff s

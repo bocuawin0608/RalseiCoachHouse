@@ -66,6 +66,8 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.CONFLICT.value())
                 .error("Conflict")
                 .message(ex.getMessage())
+                .code(ex.getCode())
+                .details(ex.getDetails())
                 .path(request.getRequestURI())
                 .build();
 

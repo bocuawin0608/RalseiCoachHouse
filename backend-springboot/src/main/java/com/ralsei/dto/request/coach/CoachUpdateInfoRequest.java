@@ -1,11 +1,10 @@
 package com.ralsei.dto.request.coach;
 
-import com.ralsei.model.enums.CoachStatus;
-
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
@@ -20,6 +19,10 @@ public record CoachUpdateInfoRequest(
 
     @NotBlank(message = "Biển số xe không được để trống.")
     @Size(max = 20, message = "Biển số xe không được vượt quá 100 ký tự.")
+    @Pattern(
+        regexp = "^[0-9]{2}[A-Z]{1,2}-([0-9]{4}|[0-9]{3}\\.[0-9]{2})$",
+        message = "Biển số xe không đúng định dạng chuẩn ô tô (Ví dụ hợp lệ: 73B-555.22 hoặc 29A-1234)."
+    )
     String licensePlate,
 
     @NotBlank(message = "Hãng xe không được để trống.")
@@ -29,8 +32,5 @@ public record CoachUpdateInfoRequest(
     @NotNull(message = "Năm sản xuất không được để trống.")
     @Min(value = 2000, message = "Năm sản xuất phải lớn hơn hoặc bằng 2000.")
     @Max(value = 2026, message = "Năm sản xuất không được lớn hơn năm hiện tại.")
-    Integer year,
-
-    @NotNull(message = "Trạng thái xe không được để trống.")
-    CoachStatus status
+    Integer year
 ) {}

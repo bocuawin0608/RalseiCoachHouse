@@ -1,8 +1,6 @@
 import { Table, Badge, Button } from 'react-bootstrap';
-import { BsEye, BsLayoutSplit, BsPencilFill } from 'react-icons/bs';
 
-export default function CoachTable({ data, loading, statusLabels, onViewDetail, onEditInfo, onEditSeatMap }) {
-    
+export default function CoachTable({ data, loading, statusLabels, onRowClick }) {
     if (loading) {
         return (
             <div className="text-center p-5 text-secondary fw-medium">
@@ -26,7 +24,7 @@ export default function CoachTable({ data, loading, statusLabels, onViewDetail, 
             <tbody>
                 {!data || data.length === 0 ? (
                     <tr>
-                        <td colSpan="7" className="text-center p-5 text-muted">
+                        <td colSpan="6" className="text-center p-5 text-muted">
                             Không tìm thấy dữ liệu
                         </td>
                     </tr>
@@ -37,32 +35,22 @@ export default function CoachTable({ data, loading, statusLabels, onViewDetail, 
                         <td className="px-3">{coach.manufacturerAndYear}</td>
                         <td className="px-3">{coach.totalSeat}</td>
                         <td className="px-3">
-                            <Badge bg={statusLabels[coach.status || 'RETIRED'].bg}>
+                            <Badge bg={statusLabels[coach.status || 'RETIRED'].bg} className="px-2 py-1 rounded-pill">
                                 {statusLabels[coach.status || 'RETIRED'].text}
                             </Badge>
                         </td>
-                        <td className="px-3">
-                            <div className="d-flex gap-2 justify-content-center align-items-center">
-                                <Button className="d-flex align-items-center custom-btn-general" 
-                                    onClick={() => onViewDetail(coach)} title='Xem chi tiết'>
-                                        <BsEye size={16} />
-                                </Button>
-                                <Button className="d-flex align-items-center custom-btn-general" 
-                                    onClick={() => onEditInfo(coach)} title='Sửa thông tin'>
-                                        <BsPencilFill size={16} />
-                                </Button>
-                                <Button 
-                                    className="d-flex align-items-center custom-btn-general"
-                                    onClick={() => onEditSeatMap?.(coach)}
-                                    title="Sửa sơ đồ ghế của xe"
-                                >
-                                    <BsLayoutSplit size={16} />
-                                </Button>
-                            </div>
+                        <td className="px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                            <Button
+                                size="sm"
+                                className="fw-medium shadow-sm custom-btn-general"
+                                onClick={() => onRowClick(coach)}
+                            >
+                                Quản lý
+                            </Button>
                         </td>
                     </tr>
                 )))}
             </tbody>
         </Table>
     );
-};
+}

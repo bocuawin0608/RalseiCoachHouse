@@ -6,6 +6,19 @@ const axiosClient = axios.create({
     headers: {'Content-Type': 'application/json'},
     withCredentials: true,
     timeout: 10000,
+    paramsSerializer: (params) => {
+        const searchParams = new URLSearchParams();
+        Object.entries(params).forEach(([key, value]) => {
+            if (Array.isArray(value)) {
+                // Nếu là mảng (như statuses), lặp qua từng phần tử và append chung 1 key
+                value.forEach(v => searchParams.append(key, v));
+            } else if (value !== undefined && value !== null && value !== '') {
+                // Bỏ qua các param rỗng như licensePlate=&coachTypeId= để URL sạch hơn
+                searchParams.append(key, value);
+            }
+        });
+        return searchParams.toString();
+    }
 });
 
 axiosClient.interceptors.request.use(

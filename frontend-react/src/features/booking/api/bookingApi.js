@@ -30,11 +30,27 @@ export const bookingApi = {
         });
     },
 
-    getPaymentPage: (transactionId) => {
-        return axiosClient.get(`${BASE}/payments/${transactionId}`);
+    getPaymentPage: (transactionId, cancelToken) => {
+        return axiosClient.get(`${BASE}/payments/${transactionId}`, {
+            headers: cancelToken ? { 'X-Cancel-Token': cancelToken } : undefined,
+        });
     },
 
-    expirePayment: (transactionId) => {
-        return axiosClient.post(`${BASE}/payments/${transactionId}/expire`);
+    expirePayment: (transactionId, cancelToken) => {
+        return axiosClient.post(`${BASE}/payments/${transactionId}/expire`, null, {
+            headers: cancelToken ? { 'X-Cancel-Token': cancelToken } : undefined,
+        });
+    },
+
+    cancelPayment: (transactionId, cancelToken) => {
+        return axiosClient.post(`${BASE}/payments/${transactionId}/cancel`, null, {
+            headers: cancelToken ? { 'X-Cancel-Token': cancelToken } : undefined,
+        });
+    },
+
+    checkPhone: (phone) => {
+        return axiosClient.get(`${BASE}/check-phone`, {
+            params: { phone },
+        });
     },
 }
