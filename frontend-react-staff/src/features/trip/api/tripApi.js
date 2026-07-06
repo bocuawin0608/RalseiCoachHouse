@@ -19,6 +19,15 @@ export const tripApi = {
         return response;
     },
 
+    /** Load coaches that are genuinely free for the complete trip window. */
+    getAvailableCoaches: (params) => axiosClient.get('/v1/manager/trips/available-coaches', { params }),
+
+    /** Load drivers that are genuinely free for the complete trip window. */
+    getAvailableDrivers: (params) => axiosClient.get('/v1/manager/trips/available-drivers', { params }),
+
+    /** Load attendants that are genuinely free for the complete trip window. */
+    getAvailableAttendants: (params) => axiosClient.get('/v1/manager/trips/available-attendants', { params }),
+
     /** Soft-delete (cancel) a trip by ID (Manager) */
     deleteTrip: async (id) => {
         const response = await axiosClient.delete(`/v1/manager/trips/delete/${id}`);

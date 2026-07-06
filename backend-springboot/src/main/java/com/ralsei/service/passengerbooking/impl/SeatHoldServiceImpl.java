@@ -90,4 +90,14 @@ public class SeatHoldServiceImpl implements SeatHoldService {
         }
         return true;
     }
+
+    @Override
+    public void forceReleaseSeatsByIds(List<Integer> tripSeatIds) {
+        if (tripSeatIds == null || tripSeatIds.isEmpty()) {
+            return;
+        }
+        for (Integer tripSeatId : tripSeatIds) {
+            redisTemplate.delete(buildLockKey(tripSeatId));
+        }
+    }
 }

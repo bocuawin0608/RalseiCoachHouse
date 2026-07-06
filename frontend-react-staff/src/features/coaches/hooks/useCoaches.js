@@ -2,35 +2,44 @@ import { useState, useEffect, useCallback } from 'react';
 import { coachApi } from '../api/coachApi';
 import { useDebounce } from '../../../hooks/useDebounce';
 
-const INITIAL_FILTER = { licensePlate: '', statuses: [], coachTypeId: '', routeName: '' };
+const INITIAL_FILTER = { licensePlate: '', statuses: ['ACTIVE'], coachTypeId: '', routeName: '' };
 
-export const useCoaches = () => {
+export const useCoaches = (initialCoachTypeId = '') => {
     const [coaches, setCoaches] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [pageInfo, setPageInfo] = useState({ 
+    const [pageInfo, setPageInfo] = useState({
         page: 0,
-        size: 10, 
-        totalElements: 0, 
-        totalPages: 0 
+        size: 10,
+        totalElements: 0,
+        totalPages: 0
     });
-    const [filters, setFilters] = useState(INITIAL_FILTER);
+    const [filters, setFilters] = useState({
+        ...INITIAL_FILTER,
+        coachTypeId: initialCoachTypeId,
+    });
     const debouncedFilters = useDebounce(filters, 250);
+
+    useEffect(() => {
+        if (initialCoachTypeId) {
+            setFilters((prev) => ({ ...prev, coachTypeId: initialCoachTypeId }));
+        }
+    }, [initialCoachTypeId]);
 
     const fetchCoaches = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
-            const response = await coachApi.filterCoaches({ 
-                ...debouncedFilters, 
-                page: pageInfo.page, 
-                size: pageInfo.size 
+            const response = await coachApi.filterCoaches({
+                ...debouncedFilters,
+                page: pageInfo.page,
+                size: pageInfo.size
             });
 
             setCoaches(response.content);
             setPageInfo(prev => ({
                 ...prev,
-                totalElements: response.page.totalElements, 
+                totalElements: response.page.totalElements,
                 totalPages: response.page.totalPages
             }));
         } catch (err) {
@@ -42,24 +51,43 @@ export const useCoaches = () => {
     }, [debouncedFilters, pageInfo.page, pageInfo.size]);
 
     useEffect(() => {
-        const load = () => {
-            fetchCoaches();
-        }
-        load();
+        fetchCoaches();
     }, [fetchCoaches]);
 
-    const handleCheckboxChange = (e) => {
-        const {value, checked } = e.target;
+    const handleFilterChange = useCallback((e) => {
+        const { name, value } = e.target;
+        setFilters(prev => ({ ...prev, [name]: value }));
+        setPageInfo(prev => ({ ...prev, page: 0 })); 
+    }, []);
 
-        if(checked) setFilters({...filters, statuses: [...filters.statuses, value]});
-        else setFilters({...filters, statuses: filters.statuses.filter(status => status != value)})
-    }
+    const handleCheckboxChange = useCallback((e) => {
+        const { value, checked } = e.target;
 
-    return { 
-        coaches, loading, error, pageInfo, setPageInfo, filters, 
-        handleFilterChange: (e) => setFilters(prev => ({...prev, [e.target.name]: e.target.value})),
+        setFilters(prev => {
+            const currentStatuses = prev.statuses || [];
+            const nextStatuses = checked 
+                ? [...currentStatuses, value] 
+                : currentStatuses.filter(status => status !== value);
+                
+            return { ...prev, statuses: nextStatuses };
+        });
+        
+        setPageInfo(prev => ({ ...prev, page: 0 }));
+    }, []);
+
+    const handleReset = useCallback(() => {
+        setFilters({
+            ...INITIAL_FILTER,
+            coachTypeId: initialCoachTypeId
+        });
+        setPageInfo(prev => ({ ...prev, page: 0 }));
+    }, [initialCoachTypeId]);
+
+    return {
+        coaches, loading, error, pageInfo, setPageInfo, filters,
+        handleFilterChange,
         handleCheckboxChange,
-        handleReset: () => setFilters(INITIAL_FILTER),
-        refetch: fetchCoaches 
+        handleReset,
+        refetch: fetchCoaches
     };
 };

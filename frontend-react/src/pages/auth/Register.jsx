@@ -19,7 +19,9 @@ export default function Register() {
   const [error, setError] = useState('');
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
-
+{/**
+   * Handles sending OTP to the user's phone number
+   */}
   const handleSendOtp = async (e) => {
     e.preventDefault();
     setError('');
@@ -113,13 +115,14 @@ export default function Register() {
             </Form.Group>
 
             <Form.Group className="mb-4">
-              <Form.Label style={{ fontWeight: '600', color: '#334155', fontSize: '14px' }}>Email <span className="text-muted" style={{ fontWeight: '400' }}>(tùy chọn)</span></Form.Label>
+              <Form.Label style={{ fontWeight: '600', color: '#334155', fontSize: '14px' }}>Email <span className="text-danger">*</span></Form.Label>
               <Form.Control
                 type="email"
                 name="email"
                 placeholder="name@example.com"
                 value={formData.email}
                 onChange={handleChange}
+                required
               />
             </Form.Group>
 

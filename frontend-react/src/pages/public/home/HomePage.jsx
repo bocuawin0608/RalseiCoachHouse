@@ -6,6 +6,7 @@ import { buildTripInfoFromSearchCard } from '../../../features/booking';
 
 const SEARCH_HISTORY_COOKIE = 'ralsei_trip_search_history';
 const MAX_SEARCH_HISTORY = 4;
+const TRIPS_PER_PAGE = 5;
 const TRIP_TYPE = {
     ONE_WAY: 'ONE_WAY',
     ROUND_TRIP: 'ROUND_TRIP',
@@ -52,6 +53,12 @@ const SvgIcon = ({ name, className = '' }) => {
         ),
         close: (
             <path d="m6 6 12 12M18 6 6 18" />
+        ),
+        previous: (
+            <path d="m15 18-6-6 6-6" />
+        ),
+        next: (
+            <path d="m9 18 6-6-6-6" />
         ),
     };
 
@@ -257,15 +264,18 @@ const HomePage = () => {
     const [tripType, setTripType] = useState(TRIP_TYPE.ONE_WAY);
     const [departure, setDeparture] = useState('');
     const [destination, setDestination] = useState('');
-    const [date, setDate] = useState(today);
+    const [date, setDate] = useState('');
     const [returnDate, setReturnDate] = useState('');
     const [routes, setRoutes] = useState([]);
     const [searchHistory, setSearchHistory] = useState([]);
     const [trips, setTrips] = useState([]);
     const [loading, setLoading] = useState(false);
     const [hasSearched, setHasSearched] = useState(false);
+    const [resultMessage, setResultMessage] = useState('');
     const [currentSearchRoute, setCurrentSearchRoute] = useState('');
     const [activeJourneyLeg, setActiveJourneyLeg] = useState(JOURNEY_LEG.OUTBOUND);
+    const [pagination, setPagination] = useState({ pageNumber: 0, totalElements: 0, totalPages: 0 });
+    const [stopModal, setStopModal] = useState({ trip: null, stops: [], loading: false, error: '' });
 
     const [selectedTimeSlots, setSelectedTimeSlots] = useState([]);
     const [selectedLayouts, setSelectedLayouts] = useState([]);
@@ -278,6 +288,24 @@ const HomePage = () => {
             .then(setRoutes)
             .catch(() => setRoutes([]));
     }, []);
+
+    useEffect(() => {
+        if (!stopModal.trip) return undefined;
+
+        const previousOverflow = document.body.style.overflow;
+        const closeOnEscape = (event) => {
+            if (event.key === 'Escape') {
+                setStopModal({ trip: null, stops: [], loading: false, error: '' });
+            }
+        };
+
+        document.body.style.overflow = 'hidden';
+        document.addEventListener('keydown', closeOnEscape);
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            document.removeEventListener('keydown', closeOnEscape);
+        };
+    }, [stopModal.trip]);
 
     const locationOptions = useMemo(() => extractLocationsFromRoutes(routes), [routes]);
     const departureOptions = locationOptions;
@@ -310,15 +338,10 @@ const HomePage = () => {
     };
 
     /**
-     * Keeps date inputs from drifting into the past through typing or keyboard
-     * spinner shortcuts.
+     * Keeps the exact date selected by the customer. Validation must report an
+     * invalid date instead of silently replacing it with another date.
      */
-    const clampDate = (nextDate, fallbackDate = today) => {
-        if (!nextDate || nextDate < fallbackDate) {
-            return fallbackDate;
-        }
-        return nextDate;
-    };
+    const preserveDate = (nextDate) => nextDate || '';
 
     const blockDateKeyboardEditing = (event) => {
         if (!['Tab', 'Enter'].includes(event.key)) {
@@ -365,16 +388,35 @@ const HomePage = () => {
     /**
      * Executes the customer trip search and reuses the same API for filter changes.
      */
-    const executeSearch = async (isAdvancedSearch = false, updatedFilters = {}, journeyLeg = activeJourneyLeg) => {
-        const { searchDeparture, searchDestination, searchDate } = resolveSearchContext(journeyLeg);
+    const executeSearch = async (
+        isAdvancedSearch = false,
+        updatedFilters = {},
+        journeyLeg = activeJourneyLeg,
+        pageNumber = 0,
+        searchOverride = null
+    ) => {
+        const { searchDeparture, searchDestination, searchDate } = searchOverride || resolveSearchContext(journeyLeg);
+        const effectiveTripType = searchOverride?.tripType || tripType;
+        const effectiveOutboundDate = searchOverride?.outboundDate || date;
+        const effectiveReturnDate = searchOverride?.returnDate ?? returnDate;
         if (!searchDate || !searchDeparture || !searchDestination || searchDeparture === searchDestination) return;
-        if (tripType === TRIP_TYPE.ROUND_TRIP && (!returnDate || returnDate < date)) return;
+        if (effectiveTripType === TRIP_TYPE.ROUND_TRIP
+            && (!effectiveReturnDate || effectiveReturnDate < effectiveOutboundDate)) return;
 
-        setLoading(true);
         setHasSearched(true);
         setActiveJourneyLeg(journeyLeg);
         const routeText = `${searchDeparture.trim()} - ${searchDestination.trim()}`;
         setCurrentSearchRoute(routeText);
+
+        if (searchDate < today) {
+            setTrips([]);
+            setPagination({ pageNumber: 0, totalElements: 0, totalPages: 0 });
+            setResultMessage('Ngày đã chọn nằm trong quá khứ. Không có chuyến xe để tìm kiếm.');
+            return;
+        }
+
+        setLoading(true);
+        setResultMessage('');
 
         try {
             const filters = isAdvancedSearch
@@ -384,8 +426,8 @@ const HomePage = () => {
             const searchParams = {
                 route: routeText,
                 date: searchDate,
-                page: 0,
-                size: 20,
+                page: pageNumber,
+                size: TRIPS_PER_PAGE,
                 isAdvanced: true,
                 timeSlots: filters.timeSlots.join(','),
                 layouts: filters.layouts.join(','),
@@ -400,11 +442,18 @@ const HomePage = () => {
 
             const responseData = await tripService.searchTrips(searchParams);
             setTrips(responseData?.content || []);
+            setPagination({
+                pageNumber: responseData?.pageNumber ?? pageNumber,
+                totalElements: responseData?.totalElements ?? 0,
+                totalPages: responseData?.totalPages ?? 0,
+            });
             if (!isAdvancedSearch && journeyLeg === JOURNEY_LEG.OUTBOUND) {
                 saveSearchHistory(`${departure.trim()} - ${destination.trim()}`);
             }
         } catch (error) {
             setTrips([]);
+            setPagination({ pageNumber: 0, totalElements: 0, totalPages: 0 });
+            setResultMessage('Không thể tải lịch trình. Vui lòng thử lại.');
             console.error('Không thể tải lịch trình khách hàng:', error);
         } finally {
             setLoading(false);
@@ -438,6 +487,38 @@ const HomePage = () => {
         if (hasSearched) executeSearch(true, { timeSlots: selectedTimeSlots, layouts: selectedLayouts, priceRange: nextPrice }, activeJourneyLeg);
     };
 
+    /**
+     * Loads one compact result page while preserving the active journey and filters.
+     */
+    const handlePageChange = (pageNumber) => {
+        if (loading || pageNumber < 0 || pageNumber >= pagination.totalPages) return;
+        executeSearch(
+            true,
+            { timeSlots: selectedTimeSlots, layouts: selectedLayouts, priceRange },
+            activeJourneyLeg,
+            pageNumber
+        );
+    };
+
+    /**
+     * Opens the stop timeline and resolves route data using the selected trip id.
+     */
+    const openTripStops = async (trip) => {
+        setStopModal({ trip, stops: [], loading: true, error: '' });
+        try {
+            const stops = await tripService.getTripStops(trip.tripId);
+            setStopModal({ trip, stops: Array.isArray(stops) ? stops : [], loading: false, error: '' });
+        } catch (error) {
+            console.error('Không thể tải điểm đón trả của chuyến:', error);
+            setStopModal({ trip, stops: [], loading: false, error: 'Không thể tải điểm đón trả. Vui lòng thử lại.' });
+        }
+    };
+
+    /** Closes the trip-stop modal and clears its request state. */
+    const closeTripStops = () => {
+        setStopModal({ trip: null, stops: [], loading: false, error: '' });
+    };
+
     const clearAllFilters = () => {
         setSelectedTimeSlots([]);
         setSelectedLayouts([]);
@@ -447,14 +528,42 @@ const HomePage = () => {
         }
     };
 
+    /**
+     * Restores a history item and searches immediately with its concrete values.
+     * Passing an override avoids waiting for asynchronous React state updates.
+     */
     const applyHistory = (item) => {
-        setTripType(item.tripType || TRIP_TYPE.ONE_WAY);
-        setDeparture(item.departure);
-        setDestination(item.destination);
-        const nextDate = clampDate(item.date);
+        const routeParts = (item.route || '').split('-');
+        const nextDeparture = item.departure || routeParts[0]?.trim() || '';
+        const nextDestination = item.destination || routeParts[1]?.trim() || '';
+        const nextTripType = item.tripType || TRIP_TYPE.ONE_WAY;
+        const nextDate = preserveDate(item.date);
+        const nextReturnDate = preserveDate(item.returnDate);
+
+        setTripType(nextTripType);
+        setDeparture(nextDeparture);
+        setDestination(nextDestination);
         setDate(nextDate);
-        setReturnDate(item.returnDate ? clampDate(item.returnDate, nextDate) : '');
+        setReturnDate(nextReturnDate);
         setActiveJourneyLeg(JOURNEY_LEG.OUTBOUND);
+        setSelectedTimeSlots([]);
+        setSelectedLayouts([]);
+        setPriceRange({ min: null, max: null });
+
+        executeSearch(
+            true,
+            { timeSlots: [], layouts: [], priceRange: { min: null, max: null } },
+            JOURNEY_LEG.OUTBOUND,
+            0,
+            {
+                searchDeparture: nextDeparture,
+                searchDestination: nextDestination,
+                searchDate: nextDate,
+                tripType: nextTripType,
+                outboundDate: nextDate,
+                returnDate: nextReturnDate,
+            }
+        );
     };
 
     const handleJourneyTabChange = (journeyLeg) => {
@@ -478,7 +587,7 @@ const HomePage = () => {
                 <form onSubmit={handleSearchSubmit} className="search-form">
                     <div className="form-tier-top">
                         <div className="radio-group" aria-label="Loại chuyến">
-                            <label className="radio-label">
+                            {/* <label className="radio-label">
                                 <input
                                     type="radio"
                                     name="trip-type"
@@ -501,7 +610,7 @@ const HomePage = () => {
                                     }}
                                 />
                                 <span className="radio-checkmark"></span> Khứ hồi
-                            </label>
+                            </label> */}
                         </div>
                         <div className="policy-links">
                             <a href="#guide">Hướng dẫn đặt lịch trình</a>
@@ -534,7 +643,7 @@ const HomePage = () => {
                                     onKeyDown={blockDateKeyboardEditing}
                                     onPaste={(event) => event.preventDefault()}
                                     onChange={(event) => {
-                                        const nextDate = clampDate(event.target.value);
+                                        const nextDate = preserveDate(event.target.value);
                                         setDate(nextDate);
                                         if (returnDate && returnDate < nextDate) {
                                             setReturnDate(nextDate);
@@ -560,7 +669,7 @@ const HomePage = () => {
                                         inputMode="none"
                                         onKeyDown={blockDateKeyboardEditing}
                                         onPaste={(event) => event.preventDefault()}
-                                        onChange={(event) => setReturnDate(clampDate(event.target.value, date || today))}
+                                        onChange={(event) => setReturnDate(preserveDate(event.target.value))}
                                         required
                                     />
                                 </div>
@@ -664,7 +773,7 @@ const HomePage = () => {
                         </aside>
 
                         <div className="results-content">
-                            <h3 className="results-main-title">Kết quả lịch trình: {currentSearchRoute} ({trips.length})</h3>
+                            <h3 className="results-main-title">Kết quả lịch trình: {currentSearchRoute} ({pagination.totalElements})</h3>
 
                             <div className="journey-tabs" role="tablist" aria-label="Chiều chuyến đi">
                                 <button
@@ -691,7 +800,7 @@ const HomePage = () => {
                             </div>
 
                             {trips.length === 0 ? (
-                                <p className="no-results-msg">Không tìm thấy chuyến xe nào hợp lệ ứng với bộ lọc.</p>
+                                <p className="no-results-msg">{resultMessage || 'Không tìm thấy chuyến xe nào hợp lệ ứng với bộ lọc.'}</p>
                             ) : (
                                 <div className="advanced-trips-list">
                                     {trips.map((trip, index) => {
@@ -744,7 +853,7 @@ const HomePage = () => {
                                                 </div>
 
                                                 <div className="trip-card-actions-bar">
-                                                    <button type="button" className="btn-secondary-info">Xem điểm đón trả</button>
+                                                    <button type="button" className="btn-secondary-info" onClick={() => openTripStops(trip)}>Xem điểm đón trả</button>
                                                     <button type="button" className="btn-primary-select" 
                                                         onClick={
                                                             () => navigate(`/booking/trip/${trip.tripId}`, {state: buildTripInfoFromSearchCard(trip)})
@@ -756,10 +865,93 @@ const HomePage = () => {
                                     })}
                                 </div>
                             )}
+
+                            {pagination.totalPages > 1 && (
+                                <nav className="trip-pagination" aria-label="Phân trang lịch trình">
+                                    <button
+                                        type="button"
+                                        className="pagination-icon-btn"
+                                        onClick={() => handlePageChange(pagination.pageNumber - 1)}
+                                        disabled={loading || pagination.pageNumber === 0}
+                                        aria-label="Trang trước"
+                                        title="Trang trước"
+                                    >
+                                        <SvgIcon name="previous" />
+                                    </button>
+                                    <span className="pagination-status">
+                                        Trang {pagination.pageNumber + 1} / {pagination.totalPages}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        className="pagination-icon-btn"
+                                        onClick={() => handlePageChange(pagination.pageNumber + 1)}
+                                        disabled={loading || pagination.pageNumber + 1 >= pagination.totalPages}
+                                        aria-label="Trang sau"
+                                        title="Trang sau"
+                                    >
+                                        <SvgIcon name="next" />
+                                    </button>
+                                </nav>
+                            )}
                         </div>
                     </div>
                 )}
             </div>
+
+            {stopModal.trip && (
+                <div className="trip-stops-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && closeTripStops()}>
+                    <section className="trip-stops-modal" role="dialog" aria-modal="true" aria-labelledby="trip-stops-title">
+                        <header className="trip-stops-header">
+                            <div>
+                                <h3 id="trip-stops-title">Điểm đón trả</h3>
+                                <p>{stopModal.trip.routeName || currentSearchRoute}</p>
+                            </div>
+                            <button type="button" className="trip-stops-close" onClick={closeTripStops} aria-label="Đóng" title="Đóng">
+                                <SvgIcon name="close" />
+                            </button>
+                        </header>
+
+                        <div className="trip-stops-summary">
+                            <strong>{formatTime(stopModal.trip.departureTime)}</strong>
+                            <span>{stopModal.trip.duration || '7 giờ 12 phút'}</span>
+                            <strong>{formatTime(stopModal.trip.arrivalTime || forecastArrivalTime(stopModal.trip.departureTime))}</strong>
+                        </div>
+
+                        <div className="trip-stops-body">
+                            {stopModal.loading && <p className="trip-stops-message">Đang tải điểm đón trả...</p>}
+                            {!stopModal.loading && stopModal.error && <p className="trip-stops-message error">{stopModal.error}</p>}
+                            {!stopModal.loading && !stopModal.error && stopModal.stops.length === 0 && (
+                                <p className="trip-stops-message">Chuyến này chưa được cấu hình điểm đón trả.</p>
+                            )}
+                            {!stopModal.loading && !stopModal.error && stopModal.stops.length > 0 && (
+                                <ol className="trip-stops-timeline">
+                                    {stopModal.stops.map((stop, index) => (
+                                        <li key={`${stop.stopPointId}-${stop.stopOrder}`} className="trip-stop-item">
+                                            <time>{formatTime(stop.estimatedStopTime)}</time>
+                                            <span className={`trip-stop-dot ${index === 0 || index === stopModal.stops.length - 1 ? 'terminal' : ''}`}></span>
+                                            <div className="trip-stop-copy">
+                                                <strong>{stop.stopPointName}</strong>
+                                                <span>{[stop.address, stop.city].filter(Boolean).join(', ')}</span>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ol>
+                            )}
+                        </div>
+
+                        <footer className="trip-stops-actions">
+                            <button type="button" className="trip-stops-dismiss" onClick={closeTripStops}>Đóng</button>
+                            <button
+                                type="button"
+                                className="btn-primary-select"
+                                onClick={() => navigate(`/booking/trip/${stopModal.trip.tripId}`, { state: buildTripInfoFromSearchCard(stopModal.trip) })}
+                            >
+                                Chọn chuyến
+                            </button>
+                        </footer>
+                    </section>
+                </div>
+            )}
         </div>
     );
 };

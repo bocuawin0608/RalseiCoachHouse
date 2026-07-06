@@ -58,6 +58,10 @@ public interface CoachRepository extends JpaRepository<Coach, Integer> {
 
     boolean existsByLicensePlateIgnoreCase(String licensePlate);
 
+    List<Coach> findByCoachType_CoachTypeIdAndStatusNot(Integer coachTypeId, CoachStatus status);
+
+    long countByCoachType_CoachTypeIdAndStatusNot(Integer coachTypeId, CoachStatus status);
+
     @Query(value = """
                 SELECT c.licensePlate, ct.coachTypeName
                 FROM coach c

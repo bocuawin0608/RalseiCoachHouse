@@ -21,7 +21,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
 
     Optional<Payment> findByPassengerTicketId(Integer passengerTicketId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
         UPDATE Payment p
         SET p.status = :newStatus
@@ -32,7 +32,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
                               @Param("expectedStatus") String expectedStatus,
                               @Param("newStatus") String newStatus);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
         UPDATE Payment p
         SET p.status = :newStatus,
@@ -47,6 +47,9 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
                           @Param("paymentTime") LocalDateTime paymentTime,
                           @Param("callbackData") String callbackData);
 
+    @Query("SELECT p.status FROM Payment p WHERE p.transactionId = :transactionId")
+    Optional<String> findStatusByTransactionId(@Param("transactionId") String transactionId);
+
     @Query("""
         SELECT DISTINCT p.transactionId
         FROM Payment p
@@ -57,4 +60,14 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
         AND ptd.expiredAt <= :now
     """)
     List<String> findOverduePendingPassengerTransactionIds(@Param("now") LocalDateTime now, Pageable pageable);
+
+    @Query("""
+        SELECT COUNT(p) > 0
+        FROM Payment p
+        WHERE p.transactionId = :transactionId
+        AND p.cancelToken = :cancelToken
+        AND p.status = 'PENDING'
+    """)
+    boolean isValidCancelToken(@Param("transactionId") String transactionId,
+                               @Param("cancelToken") String cancelToken);
 }

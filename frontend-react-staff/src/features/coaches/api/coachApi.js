@@ -2,23 +2,24 @@ import axiosClient from '../../../api/axiosClient';
 const BASE = '/v1/coaches';
 
 export const coachApi = {
-    /**
-     * @param {Object} params - Chứa các trường filter (licensePlate, statuses (dsach), coachTypeId (hien thi coachTypeName), routeName, page, size)
-     */
-    filterCoaches: (params) => { return axiosClient.get(BASE, { params }); },
+    filterCoaches: (params) => axiosClient.get(BASE, { params }),
 
-    /**
-     * @param {Object} data - Chứa thông tin tạo mới (coachTypeId, routeId, licensePlate, manufacturer, year)
-     */
-    createCoach: (data) => { return axiosClient.post(BASE, data); },
+    createCoach: (data) => axiosClient.post(BASE, data),
 
-    /**
-     * @param {number|string} id - ID của Coach cần sửa
-     * @param {Object} data - Chứa thông tin cần cập nhật (routeId, coachTypeId, licensePlate, manufacturer, year, status)
-     */
-    updateCoachInfo: (id, data) => { return axiosClient.put(`${BASE}/${id}`, data); },
+    getCoachDetail: (id) => axiosClient.get(`${BASE}/${id}`),
 
-    getCoachDetailForView: (id) => { return axiosClient.get(`${BASE}/${id}/view-detail`)},
+    updateCoachInfo: (id, data) => axiosClient.put(`${BASE}/${id}`, data),
 
-    getCoachDetailForEdit: (id) => { return axiosClient.get(`${BASE}/${id}/view-edit`) },
-}
+    updateCoachSeats: (id, data) => axiosClient.patch(`${BASE}/${id}/seats`, data),
+
+    getStatusChangeCheck: (id, target) =>
+        axiosClient.get(`${BASE}/${id}/status-change-check`, { params: { target } }),
+
+    reportMaintenance: (id, data) => axiosClient.post(`${BASE}/${id}/report-maintenance`, data),
+
+    reactivate: (id, data) => axiosClient.post(`${BASE}/${id}/reactivate`, data),
+
+    retire: (id, data) => axiosClient.post(`${BASE}/${id}/retire`, data),
+
+    getStatusLogs: (id, params) => axiosClient.get(`${BASE}/${id}/status-logs`, { params }),
+};
