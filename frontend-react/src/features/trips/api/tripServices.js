@@ -10,6 +10,14 @@ export const tripService = {
     },
 
     /**
+     * Loads customer-search locations from the dedicated route projection.
+     * Existing route dropdown consumers keep their original API contract.
+     */
+    getCustomerRouteLocations: async () => {
+        return axiosClient.get('/v1/routes/customer-locations', { skipAuth: true });
+    },
+
+    /**
      * Loads the ordered stop timeline for the concrete trip selected by the customer.
      */
     getTripStops: async (tripId) => {

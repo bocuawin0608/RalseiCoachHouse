@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ralsei.dto.request.CoachAndRouteStop.RouteRequest;
+import com.ralsei.dto.projection.route.RouteLocationDropdownProjection;
 import com.ralsei.dto.response.CoachAndRouteStop.RouteDropdownDTO;
 import com.ralsei.dto.response.CoachAndRouteStop.RouteResponse;
 import com.ralsei.dto.response.CoachAndRouteStop.RouteStopResponse;
@@ -155,5 +156,11 @@ public class RouteServiceImpl implements RouteService {
     @Override
     public List<RouteDropdownDTO> findRoutesForDropdown() {
         return routeRepository.findRoutesForDropdown();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public List<RouteLocationDropdownProjection> findRouteLocationsForCustomerDropdown() {
+        return routeRepository.findRouteLocationsForCustomerDropdown();
     }
 }
