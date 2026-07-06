@@ -23,6 +23,8 @@ export function usePhoneVerification() {
         if (!trimmed) return;
 
         setVerifiedPhones((prev) => {
+            if(!prev[trimmed]) return prev;
+
             const next = { ...prev };
             delete next[trimmed];
             return next;
