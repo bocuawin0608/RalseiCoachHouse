@@ -271,6 +271,8 @@ public class AccountServiceImpl implements AccountService {
             proj.getStaffId(),
             proj.getStaffName(),
             proj.getStaffPosition(),
+            proj.getPhone(),
+            proj.getEmail(),
             null
         );
     }
