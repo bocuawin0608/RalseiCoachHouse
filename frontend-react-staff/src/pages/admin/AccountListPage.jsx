@@ -31,7 +31,7 @@ export default function AccountListPage() {
     return (
         <Container fluid className="py-3">
             <div className="d-flex justify-content-between align-items-center mb-3">
-                <h4 className="fw-bold m-0">Quản lý tài khoản nhân viên</h4>
+                <h4 className="fw-bold m-0">Quản lý tài khoản</h4>
                 <Button variant="success" size="sm" onClick={() => setModalState({ type: 'create', data: null })}>
                     <BsPlusLg className="me-1" /> Thêm tài khoản
                 </Button>

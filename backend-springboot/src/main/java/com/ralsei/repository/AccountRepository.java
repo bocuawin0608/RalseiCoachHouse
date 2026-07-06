@@ -45,6 +45,8 @@ public interface AccountRepository extends JpaRepository<Account, Integer> {
             s.staffId            AS staffId,
             s.staffName          AS staffName,
             s.staffPosition      AS staffPosition,
+            s.phone              AS phone,
+            s.email              AS email,
             CONVERT(VARCHAR, a.createdAt, 120) AS createdAt
         FROM account a
         LEFT JOIN account_role ar ON a.accountId = ar.accountId
@@ -52,7 +54,7 @@ public interface AccountRepository extends JpaRepository<Account, Integer> {
         LEFT JOIN staff s         ON a.accountId = s.accountId
         GROUP BY a.accountId, a.username, a.authProvider, a.isActive,
                 a.lastLogin, a.createdAt,
-                s.staffId, s.staffName, s.staffPosition
+                s.staffId, s.staffName, s.staffPosition, s.phone, s.email
         ORDER BY a.createdAt DESC
     """, nativeQuery = true)
     List<AccountListProjection> findAllAccountList();

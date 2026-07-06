@@ -13,4 +13,6 @@ public interface AccountListProjection {
     Integer getStaffId();
     String getStaffName();
     String getStaffPosition();
+    String getPhone();
+    String getEmail();
 }
