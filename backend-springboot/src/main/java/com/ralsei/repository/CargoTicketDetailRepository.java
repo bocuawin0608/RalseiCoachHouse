@@ -12,6 +12,8 @@ import com.ralsei.model.CargoTicketDetail;
 
 public interface CargoTicketDetailRepository extends JpaRepository<CargoTicketDetail, Integer> {
 
+    List<CargoTicketDetail> findByCargoTicketId(int cargoTicketId);
+
     @Query(value = """
         SELECT ct.cargoTicketId AS cargoTicketId,
                ct.ticketCode AS ticketCode,
