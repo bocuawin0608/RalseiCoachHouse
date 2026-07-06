@@ -2,7 +2,7 @@ import axios from 'axios';
 import { authStorage } from '../features/auth';
 
 const axiosClient = axios.create({
-    baseURL: 'https://localhost:9090/api',
+    baseURL: '/api',
     headers: {'Content-Type': 'application/json'},
     withCredentials: true,
     timeout: 10000,
