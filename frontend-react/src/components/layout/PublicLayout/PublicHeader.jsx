@@ -81,7 +81,6 @@ export default function PublicHeader() {
                                         {openPanel === 'history' && (
                                             <HistoryNotificationDropdown onClose={() => setOpenPanel(null)} />
                                         )}
-                                        <Button variant="light" size="sm" className="fw-bold rounded-pill px-3" onClick={() => navigate('/cargo-history')}>Hàng hóa</Button>
                                     </>
                                 )}
                                 <Button
@@ -96,6 +95,7 @@ export default function PublicHeader() {
                                     <div className="public-header__account-menu">
                                         {isCustomer && <button type="button" onClick={() => navigateFromMenu('/profile')}><FiUser /> Thông tin cá nhân</button>}
                                         {isCustomer && <button type="button" onClick={() => navigateFromMenu('/history')}><FiClock /> Lịch sử dịch vụ</button>}
+                                        {isCustomer && <button type="button" onClick={() => navigateFromMenu('/cargo-history')}><FiClock /> Hàng hóa</button>}
                                         <button type="button" onClick={handleLogout}><FiLogOut /> Đăng xuất</button>
                                     </div>
                                 )}
