@@ -41,6 +41,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CustomerTicketHistoryServiceImpl implements CustomerTicketHistoryService {
 
+    private static final long CANCELLATION_CUTOFF_HOURS = 5;
+
     private final PassengerTicketDetailRepository ticketDetailRepository;
     private final PassengerTicketRepository ticketRepository;
     private final PaymentRepository paymentRepository;
@@ -96,8 +98,9 @@ public class CustomerTicketHistoryServiceImpl implements CustomerTicketHistorySe
         if (!PassengerTicketStatus.CONFIRMED.name().equals(ownedTicket.status())) {
             throw new BusinessRuleException("Chỉ vé đã thanh toán và chưa hủy mới có thể yêu cầu hoàn tiền.");
         }
-        if (ownedTicket.departureTime() == null || !ownedTicket.departureTime().isAfter(LocalDateTime.now())) {
-            throw new BusinessRuleException("Không thể hủy vé sau thời gian xuất bến.");
+        LocalDateTime cancellationDeadline = LocalDateTime.now().plusHours(CANCELLATION_CUTOFF_HOURS);
+        if (ownedTicket.departureTime() == null || !ownedTicket.departureTime().isAfter(cancellationDeadline)) {
+            throw new BusinessRuleException("Chỉ có thể hủy vé trước giờ xuất bến ít nhất 5 tiếng.");
         }
 
         Payment payment = paymentRepository.findByPassengerTicketId(ownedTicket.passengerTicketId())
