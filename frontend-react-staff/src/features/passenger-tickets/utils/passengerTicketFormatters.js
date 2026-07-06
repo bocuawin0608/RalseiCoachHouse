@@ -37,6 +37,42 @@ export function hasSearchTrigger(filters, hiddenTripId) {
     return hasVisibleSearchFilter(filters) || Boolean(hiddenTripId);
 }
 
+export const EMPTY_FILTERS = {
+    phone: '',
+    ticketCode: '',
+    status: '',
+    routeId: '',
+    departureDate: '',
+};
+
+export function parseFiltersFromSearchParams(searchParams) {
+    return {
+        phone: searchParams.get('phone') || '',
+        ticketCode: searchParams.get('ticketCode') || '',
+        status: searchParams.get('status') || '',
+        routeId: searchParams.get('routeId') || '',
+        departureDate: searchParams.get('departureDate') || '',
+    };
+}
+
+/** Builds URL query params for the search list page. */
+export function buildListQueryParams(filters, { tripId, page = 0, size = 20 } = {}) {
+    const params = new URLSearchParams();
+
+    const phone = filters.phone?.trim();
+    const ticketCode = filters.ticketCode?.trim();
+    if (phone) params.set('phone', phone);
+    if (ticketCode) params.set('ticketCode', ticketCode);
+    if (filters.status) params.set('status', filters.status);
+    if (filters.routeId) params.set('routeId', String(filters.routeId));
+    if (filters.departureDate) params.set('departureDate', filters.departureDate);
+    if (tripId) params.set('tripId', String(tripId));
+    if (page > 0) params.set('page', String(page));
+    if (size !== 20) params.set('size', String(size));
+
+    return params;
+}
+
 export function buildSearchParams(filters, hiddenTripId, pageInfo) {
     const params = {
         page: pageInfo.page,
