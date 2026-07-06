@@ -112,6 +112,13 @@ const normalizeLocationName = (value = '') => {
 const extractLocationsFromRoutes = (routes) => {
     const locations = new Set(FALLBACK_LOCATIONS);
     routes.forEach((route) => {
+        const stopLocation = normalizeLocationName(route.locationName || '');
+        if (stopLocation) {
+            locations.add(stopLocation);
+            return;
+        }
+
+        // Compatibility fallback for an older backend response during rolling deployment.
         const routeName = route.routeName || '';
         routeName.split('-').forEach((part) => {
             const location = normalizeLocationName(part);

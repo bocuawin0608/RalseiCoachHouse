@@ -27,7 +27,24 @@ public interface RouteRepository extends JpaRepository<Route, Integer> {
 
         Optional<Route> findByRouteIdAndIsActiveTrue(Integer routeId);
 
-        @Query("SELECT new com.ralsei.dto.response.CoachAndRouteStop.RouteDropdownDTO(r.routeId, r.routeName) FROM Route r WHERE r.isActive = true ORDER BY r.routeName")
+        /**
+         * Returns every distinct active city served by an active route in one query.
+         * The customer homepage uses the real coach-stop city instead of parsing
+         * display text from {@code routeName}.
+         */
+        @Query("""
+                SELECT DISTINCT new com.ralsei.dto.response.CoachAndRouteStop.RouteDropdownDTO(
+                    r.routeId,
+                    r.routeName,
+                    cs.city
+                )
+                FROM Route r
+                JOIN r.routeStops rs
+                JOIN rs.coachStop cs
+                WHERE r.isActive = true
+                  AND cs.isActive = true
+                ORDER BY r.routeName, cs.city
+                """)
         List<RouteDropdownDTO> findRoutesForDropdown();
 
         @Query(value = """
