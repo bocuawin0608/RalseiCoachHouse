@@ -165,6 +165,7 @@ public class AccountServiceImpl implements AccountService {
             .orElseThrow(() -> new ResourceNotFoundException("Tài khoản không tồn tại!"));
 
         accountRoleRepo.deleteByAccountId(accountId);
+        accountRoleRepo.flush();
 
         for (Integer roleId : request.roleIds()) {
             Role role = roleRepo.findById(roleId)
