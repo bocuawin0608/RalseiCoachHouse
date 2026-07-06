@@ -60,7 +60,7 @@ export default function PublicHeader() {
                 <Navbar.Collapse id="public-navbar-nav">
                     <Nav className="me-auto gap-2">
                         <Button variant="link" className="text-decoration-none fw-bold" style={{ color: 'var(--ralsei-black)' }} onClick={() => navigate('/')}>Trang chủ</Button>
-                        <Button variant="link" className="text-decoration-none fw-bold" style={{ color: 'var(--ralsei-black)' }} onClick={() => navigate('/tra-cuu')}>Tra cứu đơn</Button>
+                        {/* <Button variant="link" className="text-decoration-none fw-bold" style={{ color: 'var(--ralsei-black)' }} onClick={() => navigate('/tra-cuu')}>Tra cứu đơn</Button> */}
                     </Nav>
 
                     <Nav className="public-header__actions align-items-lg-center gap-2 mt-3 mt-lg-0" ref={actionsRef}>
