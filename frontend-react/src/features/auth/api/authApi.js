@@ -10,7 +10,6 @@ const sendToBackend = async (idToken, username, endpoint, extraData = {}) => {
   const payload = { idToken, username, ...extraData };
   return await axiosClient.post(`/auth${endpoint}`, payload, {
     skipAuth: true,
-    skipAuthRefresh: true,
   });
 };
 
@@ -57,7 +56,7 @@ export const authApi = {
 
   // CHUNG để logout
   logout: async (refreshToken) => {
-    return await axiosClient.post('/auth/logout', { refreshToken }, { skipAuthRefresh: true });
+    return await axiosClient.post('/auth/logout', { refreshToken });
   }
 };
 

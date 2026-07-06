@@ -32,7 +32,6 @@ export const authStorage = {
 
   getToken: () => localStorage.getItem(KEYS.TOKEN) || sessionStorage.getItem(KEYS.TOKEN),
   setToken: (token, remember) => store(KEYS.TOKEN, token, remember),
-  isPersistentSession: () => localStorage.getItem(KEYS.TOKEN) !== null,
   removeToken: () => remove(KEYS.TOKEN),
 
   getRefreshToken: () => retrieve(KEYS.REFRESH_TOKEN),
