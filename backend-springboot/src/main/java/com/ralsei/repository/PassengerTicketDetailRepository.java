@@ -8,9 +8,10 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.ralsei.dto.projection.passengerbooking.PassengerProfileProjection;
-import com.ralsei.model.PassengerTicketDetail;
 import com.ralsei.dto.projection.customer.CustomerTicketHistoryProjection;
+import com.ralsei.dto.projection.passengerbooking.PassengerProfileProjection;
+import com.ralsei.dto.projection.staffpassengerticket.StaffPassengerTicketRowProjection;
+import com.ralsei.model.PassengerTicketDetail;
 
 public interface PassengerTicketDetailRepository extends JpaRepository<PassengerTicketDetail, Integer> {
 
@@ -130,6 +131,111 @@ public interface PassengerTicketDetailRepository extends JpaRepository<Passenger
     java.util.Optional<String> findOwnedQrToken(
         @Param("ticketDetailId") Integer ticketDetailId,
         @Param("accountId") Integer accountId
+    );
+
+    @Query(value = """
+        SELECT pt.passengerTicketId AS passengerTicketId,
+               ptd.ticketDetailId AS ticketDetailId,
+               pt.ticketCode AS ticketCode,
+               CAST(pt.status AS VARCHAR(30)) AS ticketStatus,
+               pt.totalPrice AS totalPrice,
+               pt.tripId AS tripId,
+               t.routeId AS routeId,
+               pt.pickupStopName AS pickupStopName,
+               pt.dropoffStopName AS dropoffStopName,
+               pt.createdAt AS bookedAt,
+               t.departureTime AS departureTime,
+               r.routeName AS routeName,
+               ct.coachTypeName AS coachTypeName,
+               co.licensePlate AS licensePlate,
+               pt.voucherCodeSnapshot AS voucherCodeSnapshot,
+               seller.staffName AS soldByStaffName,
+               pay.paymentMethod AS paymentMethod,
+               pay.status AS paymentStatus,
+               pay.amount AS paymentAmount,
+               pay.refundAmount AS paymentRefundAmount,
+               ptd.fullName AS fullName,
+               ptd.phone AS phone,
+               ptd.email AS email,
+               ptd.seatCodeSnapshot AS seatCode,
+               ptd.price AS seatPrice,
+               ptd.status AS detailStatus,
+               ac.fullname AS childFullname,
+               ac.birthYear AS childBirthYear
+        FROM passenger_ticket_detail ptd
+        JOIN passenger_ticket pt ON pt.passengerTicketId = ptd.passengerTicketId
+        JOIN trip t ON t.tripId = pt.tripId
+        JOIN route r ON r.routeId = t.routeId
+        JOIN coach co ON co.coachId = t.coachId
+        JOIN coach_type ct ON ct.coachTypeId = co.coachTypeId
+        LEFT JOIN payment pay ON pay.passengerTicketId = pt.passengerTicketId
+        LEFT JOIN staff seller ON seller.staffId = pt.soldBy
+        LEFT JOIN accompanied_child ac ON ac.ticketDetailId = ptd.ticketDetailId
+        WHERE pt.passengerTicketId IN (:passengerTicketIds)
+        ORDER BY t.departureTime DESC, pt.passengerTicketId DESC, ptd.ticketDetailId ASC
+        """, nativeQuery = true)
+    List<StaffPassengerTicketRowProjection> findStaffTicketRowsByPassengerTicketIds(
+        @Param("passengerTicketIds") List<Integer> passengerTicketIds
+    );
+
+    @Query(value = """
+        SELECT pt.passengerTicketId AS passengerTicketId,
+               ptd.ticketDetailId AS ticketDetailId,
+               pt.ticketCode AS ticketCode,
+               CAST(pt.status AS VARCHAR(30)) AS ticketStatus,
+               pt.totalPrice AS totalPrice,
+               pt.tripId AS tripId,
+               t.routeId AS routeId,
+               pt.pickupStopName AS pickupStopName,
+               pt.dropoffStopName AS dropoffStopName,
+               pt.createdAt AS bookedAt,
+               t.departureTime AS departureTime,
+               r.routeName AS routeName,
+               ct.coachTypeName AS coachTypeName,
+               co.licensePlate AS licensePlate,
+               pt.voucherCodeSnapshot AS voucherCodeSnapshot,
+               seller.staffName AS soldByStaffName,
+               pay.paymentMethod AS paymentMethod,
+               pay.status AS paymentStatus,
+               pay.amount AS paymentAmount,
+               pay.refundAmount AS paymentRefundAmount,
+               ptd.fullName AS fullName,
+               ptd.phone AS phone,
+               ptd.email AS email,
+               ptd.seatCodeSnapshot AS seatCode,
+               ptd.price AS seatPrice,
+               ptd.status AS detailStatus,
+               ac.fullname AS childFullname,
+               ac.birthYear AS childBirthYear
+        FROM passenger_ticket_detail ptd
+        JOIN passenger_ticket pt ON pt.passengerTicketId = ptd.passengerTicketId
+        JOIN trip t ON t.tripId = pt.tripId
+        JOIN route r ON r.routeId = t.routeId
+        JOIN coach co ON co.coachId = t.coachId
+        JOIN coach_type ct ON ct.coachTypeId = co.coachTypeId
+        LEFT JOIN payment pay ON pay.passengerTicketId = pt.passengerTicketId
+        LEFT JOIN staff seller ON seller.staffId = pt.soldBy
+        LEFT JOIN accompanied_child ac ON ac.ticketDetailId = ptd.ticketDetailId
+        WHERE pt.ticketCode = :ticketCode
+        ORDER BY ptd.ticketDetailId ASC
+        """, nativeQuery = true)
+    List<StaffPassengerTicketRowProjection> findStaffTicketRowsByTicketCode(
+        @Param("ticketCode") String ticketCode
+    );
+
+    /** Returns a boarding token for staff QR preview on confirmed seats. */
+    @Query(value = """
+        SELECT ptd.qrcode
+        FROM passenger_ticket_detail ptd
+        JOIN passenger_ticket pt ON pt.passengerTicketId = ptd.passengerTicketId
+        WHERE ptd.ticketDetailId = :ticketDetailId
+          AND pt.ticketCode = :ticketCode
+          AND pt.status IN ('CONFIRMED', 'CHANGED')
+          AND ptd.status IN ('CONFIRMED', 'CHECKED_IN')
+        """, nativeQuery = true)
+    java.util.Optional<String> findStaffQrToken(
+        @Param("ticketCode") String ticketCode,
+        @Param("ticketDetailId") Integer ticketDetailId
     );
 
 }

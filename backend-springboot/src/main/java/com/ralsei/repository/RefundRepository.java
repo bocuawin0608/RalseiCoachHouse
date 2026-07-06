@@ -11,4 +11,6 @@ public interface RefundRepository extends JpaRepository<Refund, Integer> {
 
     /** Prevents duplicate active refunds for the same completed payment. */
     boolean existsByPaymentIdAndStatusIn(Integer paymentId, Collection<String> statuses);
+
+    java.util.List<Refund> findByPaymentIdOrderByCreatedAtDesc(Integer paymentId);
 }
