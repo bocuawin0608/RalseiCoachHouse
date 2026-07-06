@@ -19,7 +19,5 @@ public record AccountListResponse(
     Integer staffId,
     String staffName,
     String staffPosition,
-    String phone,
-    String email,
     LocalDateTime createdAt
 ) {}
