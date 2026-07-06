@@ -5,7 +5,7 @@ import { useAuth } from '../../features/auth';
 
 export default function StaffLogin() {
   const navigate = useNavigate();
-  const { loginStaff } = useAuth();
+  const { loginStaff, user } = useAuth();
   
   const [formData, setFormData] = useState({
     username: '',
@@ -32,18 +32,15 @@ export default function StaffLogin() {
 
     setLoading(true);
     try {
-      const response = await loginStaff(formData);
-      const roles = response.roles || [];
+      await loginStaff(formData);
 
+      const roles = user.roles || [];
       if (roles.includes('MANAGER') || roles.includes('ADMIN')) {
-        navigate('/management/dashboard');
-      } else if (roles.includes('TICKET_STAFF')) {
-        navigate('/staff/ticket/sell');
-      } else if (roles.includes('TRIP_STAFF')) {
-        navigate('/staff/trip/list');
-      } else {
-        navigate('/staff/login');
-      }
+            navigate("/management/dashboard");
+        }
+        if (roles.includes('TICKET_STAFF') || roles.includes('TRIP_STAFF')) {
+            navigate("/staff");
+        }
 
     } catch (err) {
       setError(err.response?.data?.message || 'Không thể kết nối đến máy chủ!');
