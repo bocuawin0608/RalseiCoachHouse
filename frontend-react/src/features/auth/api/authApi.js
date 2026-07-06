@@ -8,7 +8,9 @@ import axiosClient from '../../../api/axiosClient';
 
 const sendToBackend = async (idToken, username, endpoint, extraData = {}) => {
   const payload = { idToken, username, ...extraData };
-  return await axiosClient.post(`/auth${endpoint}`, payload);
+  return await axiosClient.post(`/auth${endpoint}`, payload, {
+    skipAuth: true,
+  });
 };
 
 export const authApi = {

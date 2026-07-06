@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navbar, Container, Nav, Button } from 'react-bootstrap';
-import { FiBell, FiChevronDown, FiClock, FiLogOut, FiUser } from 'react-icons/fi';
+import { FiBell, FiBox, FiChevronDown, FiClock, FiLogOut, FiMap, FiUser } from 'react-icons/fi';
 import { useAuth } from '../../../features/auth';
 import { HistoryNotificationDropdown } from '../../../features/customerHistory';
 import './PublicHeader.css';
@@ -60,7 +60,6 @@ export default function PublicHeader() {
                 <Navbar.Collapse id="public-navbar-nav">
                     <Nav className="me-auto gap-2">
                         <Button variant="link" className="text-decoration-none fw-bold" style={{ color: 'var(--ralsei-black)' }} onClick={() => navigate('/')}>Trang chủ</Button>
-                        {/* <Button variant="link" className="text-decoration-none fw-bold" style={{ color: 'var(--ralsei-black)' }} onClick={() => navigate('/tra-cuu')}>Tra cứu đơn</Button> */}
                     </Nav>
 
                     <Nav className="public-header__actions align-items-lg-center gap-2 mt-3 mt-lg-0" ref={actionsRef}>
@@ -94,7 +93,18 @@ export default function PublicHeader() {
                                 {openPanel === 'account' && (
                                     <div className="public-header__account-menu">
                                         {isCustomer && <button type="button" onClick={() => navigateFromMenu('/profile')}><FiUser /> Thông tin cá nhân</button>}
-                                        {isCustomer && <button type="button" onClick={() => navigateFromMenu('/history')}><FiClock /> Lịch sử dịch vụ</button>}
+                                        {isCustomer && (
+                                            <div className="public-header__account-history">
+                                                <button type="button" className="public-header__account-history-trigger">
+                                                    <FiClock /> Lịch sử dịch vụ
+                                                    <FiChevronDown className="public-header__account-history-chevron" aria-hidden="true" />
+                                                </button>
+                                                <div className="public-header__account-history-options">
+                                                    <button type="button" onClick={() => navigateFromMenu('/history')}><FiMap /> Chuyến đi</button>
+                                                    <button type="button" onClick={() => navigateFromMenu('/cargo-history')}><FiBox /> Đơn hàng</button>
+                                                </div>
+                                            </div>
+                                        )}
                                         <button type="button" onClick={handleLogout}><FiLogOut /> Đăng xuất</button>
                                     </div>
                                 )}
