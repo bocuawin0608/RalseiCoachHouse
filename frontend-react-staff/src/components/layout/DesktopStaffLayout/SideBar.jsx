@@ -4,7 +4,7 @@ import { Collapse } from 'react-bootstrap';
 import {
     BsList, BsGrid1X2, BsBusFront, BsSignpostSplit,
     BsChevronDown, BsChevronRight, BsTags, BsGeoAlt,
-    BsBoxSeam, BsCashCoin, BsGift
+    BsBoxSeam, BsCashCoin, BsGift, BsTicketPerforated
 } from 'react-icons/bs';
 import { useAuth } from '../../../features/auth';
 
@@ -174,6 +174,15 @@ export default function Sidebar() {
                             <NavLink to="/management/trips" className={navLinkClass} end>
                                 <BsBusFront size={20} className="flex-shrink-0" />
                                 <span>Quản lý chuyến xe</span>
+                            </NavLink>
+                        </>
+                    )}
+
+                    {hasAccess(['TICKET_STAFF']) && (
+                        <>
+                            <NavLink to="/staff/passenger-tickets/search" className={navLinkClass} end>
+                                <BsTicketPerforated size={20} className="flex-shrink-0" />
+                                <span>Vé hành khách</span>
                             </NavLink>
                         </>
                     )}

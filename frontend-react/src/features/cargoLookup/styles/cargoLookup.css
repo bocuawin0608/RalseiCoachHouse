@@ -1,0 +1,39 @@
+.cargo-history-page { flex: 1; min-height: 70vh; padding: 46px 20px 72px; background: linear-gradient(rgba(248,250,252,.92),rgba(248,250,252,.92)),url('/images/RalseiLLogisticV2-clean.png') center/cover fixed; }
+.cargo-history-shell,.cargo-detail-shell { width: min(940px,100%); margin: auto; }
+.cargo-history-heading { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; }
+.cargo-history-heading>svg { width: 48px; height: 48px; padding: 11px; border-radius: 13px; background: var(--ralsei-green); color: var(--ralsei-black); }
+.cargo-history-heading span,.cargo-detail-heading span { color: var(--ralsei-black); font-size: .74rem; font-weight: 800; letter-spacing: .12em; }
+.cargo-history-heading h1 { margin: 3px 0; color: var(--ralsei-black); }
+.cargo-history-heading p { margin: 0; color: var(--color-text-muted); }
+.cargo-history-state { padding: 40px; border: 1px solid var(--ralsei-green); border-radius: 15px; background: white; text-align: center; }
+.cargo-history-state--error { color: var(--ralsei-pink); }
+.cargo-history-list { display: grid; gap: 14px; }
+.cargo-history-card { display: grid; grid-template-columns: 1fr auto; width: 100%; padding: 22px; border: 1px solid var(--ralsei-green); border-radius: 15px; background: white; color: var(--color-text-main); text-align: left; }
+.cargo-history-card:hover { transform: translateY(-2px); box-shadow: var(--box-shadow-card); }
+.cargo-history-card>span { color: var(--ralsei-black); font-size: .78rem; font-weight: 800; }
+.cargo-history-card>strong { padding: 4px 9px; border-radius: 999px; background: var(--ralsei-green); color: var(--ralsei-black); font-size: .75rem; }
+.cargo-history-card h2,.cargo-history-card p,.cargo-history-card footer { grid-column: 1/-1; }
+.cargo-history-card h2 { margin: 12px 0 7px; color: var(--ralsei-black); }
+.cargo-history-card p,.cargo-history-card footer { display: flex; align-items: center; gap: 8px; color: var(--color-text-muted); }
+.cargo-history-card footer { justify-content: space-between; margin-top: 15px; padding-top: 14px; border-top: 1px solid var(--ralsei-green); }
+.cargo-detail-heading { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+.cargo-detail-heading button { padding: 8px 13px; border: 1px solid var(--ralsei-footer); border-radius: 999px; background: white; }
+.cargo-detail-heading h1 { color: var(--ralsei-black); font-size: 1.3rem; }
+.cargo-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.cargo-detail-panel { padding: 22px; border: 1px solid var(--ralsei-green); border-radius: 15px; background: white; }
+.cargo-detail-panel--wide { grid-column: 1/-1; }
+.cargo-detail-panel h2 { color: var(--ralsei-black); font-size: .88rem; text-transform: uppercase; }
+.cargo-detail-panel dl>div { display: flex; justify-content: space-between; gap: 20px; padding: 9px 0; border-bottom: 1px solid var(--ralsei-green); }
+.cargo-detail-panel dd { margin: 0; text-align: right; font-weight: 650; }
+.cargo-detail-panel dd small { display: block; }
+.cargo-detail-route { border: 0; background: transparent; color: var(--ralsei-black); font-weight: 700; }
+.cargo-item-list section { margin-top: 9px; padding: 13px; border-radius: 10px; background: #f4fbf8; }
+.cargo-item-list section>div,.cargo-item-list ul { display: flex; justify-content: space-between; gap: 15px; }
+.cargo-item-list ul { padding: 0; list-style: none; }
+.cargo-route-modal { position: fixed; inset: 0; z-index: 1300; display: grid; place-items: center; padding: 18px; background: rgba(7,28,23,.62); }
+.cargo-route-card { width: min(610px,100%); padding: 22px; border-radius: 15px; background: white; }
+.cargo-route-card header,.cargo-route-card footer { display: flex; justify-content: space-between; }
+.cargo-route-timeline { padding: 18px; list-style: none; }
+.cargo-route-timeline li { display: grid; grid-template-columns: 70px 1fr; min-height: 65px; }
+.cargo-route-timeline span { display: block; color: var(--color-text-muted); }
+@media(max-width:700px){.cargo-detail-grid{grid-template-columns:1fr}.cargo-detail-panel--wide{grid-column:auto}.cargo-history-card footer{align-items:flex-start;flex-direction:column}}

@@ -37,6 +37,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/bookings/**").permitAll()
                         .requestMatchers("/api/v1/trips/**").permitAll()
                         .requestMatchers("/api/v1/routes/dropdown").permitAll()
+                        .requestMatchers("/api/v1/routes/customer-locations").permitAll()
                         .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll() 
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated())

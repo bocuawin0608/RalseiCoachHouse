@@ -705,3 +705,25 @@ FROM passenger_ticket pt
 JOIN payment p ON p.passengerTicketId = pt.passengerTicketId
 LEFT JOIN refund r ON r.paymentId = p.paymentId
 WHERE pt.ticketCode = @cancelledTicketCode;
+
+
+-- Test authenticated cargo history without multiplying each item by every route stop.
+-- The seller determines the agency; pickup/drop-off come directly from the order.
+DECLARE @cargoHistoryAccountId INT = 2;
+SELECT ct.ticketCode, ta.ticketAgencyName, co.licensePlate, driver.staffName,
+       pickup.stopPointName AS pickupStopName, pickup.[address] AS pickupAddress, pickup.city AS pickupCity,
+       dropoff.stopPointName AS dropoffStopName, dropoff.[address] AS dropoffAddress, dropoff.city AS dropoffCity,
+       ct.feePayer, ct.senderName, ct.senderPhone, ct.receiverName, ct.receiverPhone,
+       ctd.createdAt, ctd.dimensionVol, ctd.quantity, ctd.weightKg, ctd.[description]
+FROM cargo_ticket_detail ctd
+JOIN cargo_ticket ct ON ct.cargoTicketId = ctd.cargoTicketId
+LEFT JOIN customer customer ON customer.customerId = ct.customerId
+LEFT JOIN trip t ON t.tripId = ct.tripId
+LEFT JOIN coach co ON co.coachId = t.coachId
+LEFT JOIN staff driver ON driver.staffId = t.driverId AND driver.staffPosition = 'DRIVER'
+JOIN staff seller ON seller.staffId = ct.soldBy
+LEFT JOIN ticket_agency ta ON ta.ticketAgencyId = seller.ticketAgencyId
+JOIN coach_stop pickup ON pickup.stopPointId = ct.pickupStopId
+JOIN coach_stop dropoff ON dropoff.stopPointId = ct.dropoffStopId
+WHERE customer.accountId = @cargoHistoryAccountId
+ORDER BY ct.createdAt DESC, ctd.cargoTicketDetailId;
