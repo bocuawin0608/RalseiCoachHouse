@@ -124,7 +124,7 @@ public class AccountServiceImpl implements AccountService {
         Account account = accountRepo.findById(accountId)
             .orElseThrow(() -> new ResourceNotFoundException("Tài khoản không tồn tại!"));
 
-        Staff staff = staffRepo.findByAccountId(accountId);
+        Staff staff = staffRepo.findByAccountId(accountId).orElse(null);
         if (staff == null) {
             staff = Staff.builder()
                 .accountId(accountId)
@@ -218,7 +218,7 @@ public class AccountServiceImpl implements AccountService {
         account.setActive(!account.isActive());
         accountRepo.save(account);
 
-        Staff staff = staffRepo.findByAccountId(accountId);
+        Staff staff = staffRepo.findByAccountId(accountId).orElse(null);
         if (staff != null) {
             staff.setActive(account.isActive());
             staffRepo.save(staff);
@@ -231,7 +231,7 @@ public class AccountServiceImpl implements AccountService {
         Account account = accountRepo.findById(accountId)
             .orElseThrow(() -> new ResourceNotFoundException("Tài khoản không tồn tại!"));
 
-        Staff staff = staffRepo.findByAccountId(accountId);
+        Staff staff = staffRepo.findByAccountId(accountId).orElse(null);
         if (staff != null) {
             staff.setAccountId(null);
             staff.setActive(false);
@@ -279,7 +279,7 @@ public class AccountServiceImpl implements AccountService {
             .filter(r -> r != null)
             .collect(Collectors.toList());
 
-        Staff staff = staffRepo.findByAccountId(account.getAccountId());
+        Staff staff = staffRepo.findByAccountId(account.getAccountId()).orElse(null);
         StaffInfoResponse staffInfo = staff != null ? new StaffInfoResponse(
             staff.getStaffId(),
             staff.getStaffName(),
