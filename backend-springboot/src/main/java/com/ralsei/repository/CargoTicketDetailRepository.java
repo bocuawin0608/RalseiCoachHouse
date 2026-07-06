@@ -90,4 +90,3 @@ public interface CargoTicketDetailRepository extends JpaRepository<CargoTicketDe
         """, nativeQuery = true)
     List<CargoOrderStopProjection> findCargoOrderStopsByAccountId(@Param("accountId") Integer accountId);
 }
-}
