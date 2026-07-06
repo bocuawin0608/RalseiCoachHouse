@@ -46,6 +46,7 @@ export const mapPaymentPageResponse = (response, existing = {}) => ({
     tripId: response.tripId,
     tripTitle: existing.tripTitle,
     tripDate: existing.tripDate,
+    cancelToken: existing.cancelToken,
 });
 
 export const mapConfirmResponse = (response, summary = {}) => ({
@@ -55,6 +56,7 @@ export const mapConfirmResponse = (response, summary = {}) => ({
     bankAccountNumber: response.bankAccountNumber,
     bankName: response.bankName,
     paymentExpiresAt: response.paymentExpiresAt,
+    cancelToken: response.cancelToken,
     status: 'PENDING',
     primaryPassengerName: summary.primaryPassengerName,
     primaryPassengerPhone: summary.primaryPassengerPhone,

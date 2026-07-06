@@ -36,7 +36,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/cargo-tracking/**").permitAll()
                         .requestMatchers("/api/payment/**").permitAll()
                         .requestMatchers("/api/v1/bookings/**").permitAll()
-                        .requestMatchers("/api/v1/trips/home").permitAll() 
+                        .requestMatchers("/api/v1/trips/**").permitAll()
                         .requestMatchers("/api/v1/routes/dropdown").permitAll()
                         .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll() 
                         .requestMatchers("/error").permitAll()

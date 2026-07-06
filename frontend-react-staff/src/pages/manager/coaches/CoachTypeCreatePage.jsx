@@ -29,7 +29,7 @@ export default function CoachTypeCreatePage() {
                     return oldMatrix;
                 }
                 
-                return Array(formData.rows).fill().map(() => Array(formData.cols).fill("EMPTY"));
+                return Array(formData.rows).fill().map(() => Array(formData.cols).fill("SEAT"));
             });
             return newFloorData;
         });
@@ -91,7 +91,7 @@ export default function CoachTypeCreatePage() {
         }
 
         if (currentTotalSeats === 0) {
-            setErrorMsg('Vui lòng click vào sơ đồ để chọn ít nhất 1 vị trí làm Ghế ngồi!');
+            setErrorMsg('Vui lòng giữ lại ít nhất 1 vị trí ghế ngồi trên sơ đồ!');
             return;
         }
 
@@ -257,7 +257,7 @@ export default function CoachTypeCreatePage() {
                             <Card.Body className="p-4">
                                 <h4 className="fw-bold mb-2">Thiết kế sơ đồ mặt bằng xe</h4>
                                 <p className="text-secondary small mb-4">
-                                    * Click chuột vào các ô vuông bên dưới để biến nó thành vị trí đặt <span className="text-success fw-bold">Ghế ngồi</span>. Ô màu xám mặc định sẽ là <span className="text-muted fw-bold">Khoang trống</span>.
+                                    * Toàn bộ ô mặc định là <span className="text-success fw-bold">Ghế ngồi</span>. Click để đánh dấu <span className="text-muted fw-bold">Khoang trống</span> (ghế phụ xe, WC...).
                                 </p>
                                 
                                 <div className="d-flex justify-content-center gap-2 overflow-x-auto align-items-center bg-light rounded border border-2 border-dashed p-4 min-vh-50" style={{ minHeight: '350px' }}>

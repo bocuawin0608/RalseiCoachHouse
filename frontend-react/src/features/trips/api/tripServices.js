@@ -6,7 +6,14 @@ export const tripService = {
      * departure and destination dropdowns from real route data.
      */
     getRouteDropdown: async () => {
-        return axiosClient.get('/v1/routes/dropdown');
+        return axiosClient.get('/v1/routes/dropdown', { skipAuth: true });
+    },
+
+    /**
+     * Loads the ordered stop timeline for the concrete trip selected by the customer.
+     */
+    getTripStops: async (tripId) => {
+        return axiosClient.get(`/v1/trips/${tripId}/stops`, { skipAuth: true });
     },
 
     /**
@@ -29,7 +36,10 @@ export const tripService = {
                 if (searchParams.maxPrice !== undefined && searchParams.maxPrice !== null) params.maxPrice = searchParams.maxPrice;
             }
 
-            const responseData = await axiosClient.get('/v1/trips/home', { params });
+            const responseData = await axiosClient.get('/v1/trips/home', {
+                params,
+                skipAuth: true
+            });
             return responseData;
         } catch (error) {
             console.error("Lỗi nghẽn mạch tại tầng Trip Service:", error);

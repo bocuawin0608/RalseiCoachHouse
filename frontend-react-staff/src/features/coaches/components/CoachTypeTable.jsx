@@ -1,16 +1,7 @@
-import { BsEye, BsPencilFill, BsCashStack, BsLayoutSplit } from "react-icons/bs";
-import { Badge, Button, Table } from "react-bootstrap";
-import { formatCurrency } from "../../../utils/formatters";
+import { Table, Badge, Button } from 'react-bootstrap';
+import { formatCurrency } from '../../../utils/formatters';
 
-export default function CoachTypeTable({ 
-    data, 
-    loading, 
-    onEditInfo, 
-    onEditSeatMap,
-    onViewDetail, 
-    onEditPrice  
-}) {
-    
+export default function CoachTypeTable({ data, loading, onRowClick }) {
     if (loading) {
         return (
             <div className="text-center p-5 text-secondary fw-medium">
@@ -50,47 +41,21 @@ export default function CoachTypeTable({
                                 {formatCurrency(item.currentPrice || item.seatPrice)}
                             </td>
                             <td className="px-3">
-                                <Badge 
-                                    bg={item.isActive ? 'success' : 'danger'} 
+                                <Badge
+                                    bg={item.isActive ? 'success' : 'danger'}
                                     className="px-2 py-1 rounded-pill"
                                 >
-                                    {item.isActive ? 'Đang hoạt động' : 'Đã tắt'}
+                                    {item.isActive ? 'Đang hoạt động' : 'Ngừng hoạt động'}
                                 </Badge>
                             </td>
-                            <td className="px-3">
-                                <div className="d-flex gap-2 justify-content-center align-items-center">
-                                    <Button 
-                                        className="d-flex align-items-center custom-btn-general"
-                                        onClick={() => onViewDetail(item)}
-                                        title="Xem chi tiết"
-                                    >
-                                        <BsEye size={16} />
-                                    </Button>
-
-                                    <Button 
-                                        className="d-flex align-items-center custom-btn-general"
-                                        onClick={() => onEditInfo(item)}
-                                        title="Sửa thông tin"
-                                    >
-                                        <BsPencilFill size={16} />
-                                    </Button>
-
-                                    <Button 
-                                        className="d-flex align-items-center custom-btn-general"
-                                        onClick={() => onEditPrice(item)}
-                                        title="Sửa giá"
-                                    >
-                                        <BsCashStack size={16} />
-                                    </Button>
-
-                                    <Button 
-                                        className="d-flex align-items-center custom-btn-general"
-                                        onClick={() => onEditSeatMap(item)}
-                                        title="Sửa sơ đồ ghế"
-                                    >
-                                        <BsLayoutSplit size={16} />
-                                    </Button>
-                                </div>
+                            <td className="px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                                <Button
+                                    size="sm"
+                                    className="fw-medium shadow-sm custom-btn-general"
+                                    onClick={() => onRowClick(item)}
+                                >
+                                    Quản lý
+                                </Button>
                             </td>
                         </tr>
                     ))
