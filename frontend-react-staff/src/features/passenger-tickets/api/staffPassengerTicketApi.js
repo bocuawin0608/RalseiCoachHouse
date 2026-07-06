@@ -15,4 +15,11 @@ export const staffPassengerTicketApi = {
             { responseType: 'blob' }
         );
     },
+
+    changePassengerInfo(ticketCode, ticketDetailId, payload) {
+        return axiosClient.patch(
+            `/v1/staff/passenger-tickets/${encodeURIComponent(ticketCode)}/details/${ticketDetailId}/passenger-info`,
+            payload
+        );
+    },
 };

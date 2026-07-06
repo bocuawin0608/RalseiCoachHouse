@@ -8,6 +8,7 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 import com.ralsei.dto.projection.staffpassengerticket.StaffPassengerTicketRowProjection;
+import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.model.enums.PassengerTicketDetailStatus;
 import com.ralsei.model.enums.PassengerTicketStatus;
 
@@ -40,6 +41,39 @@ public class PassengerTicketStaffPolicy {
 
     public boolean canCancel(long hoursUntilDeparture) {
         return hoursUntilDeparture >= CHANGE_CUTOFF_HOURS;
+    }
+
+    public void assertPassengerInfoChangeAllowed(
+        String ticketStatus,
+        String detailStatus,
+        String paymentStatus,
+        LocalDateTime departureTime,
+        String tripStatus
+    ) {
+        boolean ticketActive = PassengerTicketStatus.CONFIRMED.name().equals(ticketStatus)
+            || PassengerTicketStatus.CHANGED.name().equals(ticketStatus);
+
+        if (!ticketActive) {
+            throw new BusinessRuleException("Chỉ được sửa thông tin hành khách trên vé đã xác nhận.");
+        }
+
+        if (!PassengerTicketDetailStatus.CONFIRMED.name().equals(detailStatus)) {
+            throw new BusinessRuleException("Chỉ được sửa thông tin ghế đang ở trạng thái đã xác nhận.");
+        }
+
+        if (!"COMPLETED".equals(paymentStatus)) {
+            throw new BusinessRuleException("Vé chưa thanh toán đầy đủ, không thể sửa thông tin hành khách.");
+        }
+
+        if (!"SCHEDULED".equals(tripStatus)) {
+            throw new BusinessRuleException("Chỉ được sửa thông tin hành khách trên chuyến đang lên lịch.");
+        }
+
+        if (!canModify(hoursUntilDeparture(departureTime))) {
+            throw new BusinessRuleException(
+                "Không thể sửa thông tin hành khách trong vòng " + CHANGE_CUTOFF_HOURS + " giờ trước giờ khởi hành."
+            );
+        }
     }
 
     public List<String> resolveAllowedActions(

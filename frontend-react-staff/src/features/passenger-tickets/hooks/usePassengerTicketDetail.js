@@ -11,7 +11,7 @@ export function usePassengerTicketDetail(ticketCode) {
             setData(null);
             setError(null);
             setLoading(false);
-            return;
+            return null;
         }
 
         setLoading(true);
@@ -20,17 +20,24 @@ export function usePassengerTicketDetail(ticketCode) {
         try {
             const response = await staffPassengerTicketApi.getDetail(ticketCode);
             setData(response);
+            return response;
         } catch (requestError) {
             setData(null);
             setError(requestError.response?.data?.message || 'Không thể tải chi tiết vé.');
+            return null;
         } finally {
             setLoading(false);
         }
     }, [ticketCode]);
 
+    const applyDetail = useCallback((nextDetail) => {
+        setData(nextDetail);
+        setError(null);
+    }, []);
+
     useEffect(() => {
         fetchDetail();
     }, [fetchDetail]);
 
-    return { data, loading, error, refetch: fetchDetail };
+    return { data, loading, error, refetch: fetchDetail, applyDetail };
 }
