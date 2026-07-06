@@ -58,7 +58,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
                         : List.of())
                 .customers(customerRepository.findCargoTicketCustomerOptions())
                 .stops(coachStopRepository.findCargoTicketStopOptions())
-                .sellers(staffRepository.findCargoTicketSellerOptions())
+                .sellers(staffRepository.findCargoTicketSellerOptionsWithUsername())
                 .handlers(staffRepository.findCargoTicketHandlerOptions())
                 .drivers(staffRepository.findCargoTicketDriverOptions())
                 .build();
@@ -93,12 +93,10 @@ public class CargoTicketServiceImpl implements CargoTicketService {
 
     @Override
     @Transactional
-    public void softDeleteCargoTicket(int id) {
+    public void disable(int id) {
         CargoTicket ticket = findByIdOrThrow(id);
-        if (paymentRepository.existsByCargoTicket_CargoTicketId(id)) {
-            throw new BusinessRuleException("Không thể xóa vé hàng hóa đã có giao dịch thanh toán.");
-        }
-        ticket.setStatus(STATUS_ABANDONED);
+
+        ticket.setStatus("CANCELLED");
         cargoTicketRepository.save(ticket);
     }
 
@@ -173,10 +171,8 @@ public class CargoTicketServiceImpl implements CargoTicketService {
         ticket.setCustomerId(request.getCustomerId());
         ticket.setSenderName(request.getSenderName().trim());
         ticket.setSenderPhone(request.getSenderPhone().trim());
-        ticket.setSenderEmail(trimToNull(request.getSenderEmail()));
         ticket.setReceiverName(request.getReceiverName().trim());
         ticket.setReceiverPhone(request.getReceiverPhone().trim());
-        ticket.setReceiverEmail(trimToNull(request.getReceiverEmail()));
         ticket.setTicketCode(ticketCode);
         ticket.setTotalPrice(request.getTotalPrice());
         ticket.setDescription(trimToNull(request.getDescription()));
@@ -186,9 +182,14 @@ public class CargoTicketServiceImpl implements CargoTicketService {
         ticket.setDropoffStopId(request.getDropoffStopId());
         ticket.setStatus(request.getStatus());
         ticket.setSoldBy(staffRepository.findById(request.getSoldBy()).orElse(null));
-        ticket.setLoadedBy(request.getLoadedBy() != null ? staffRepository.findById(request.getLoadedBy()).orElse(null) : null);
-        ticket.setUnloadedBy(request.getUnloadedBy() != null ? staffRepository.findById(request.getUnloadedBy()).orElse(null) : null);
-        ticket.setDeliveredBy(request.getDeliveredBy() != null ? staffRepository.findById(request.getDeliveredBy()).orElse(null) : null);
+        ticket.setLoadedBy(
+                request.getLoadedBy() != null ? staffRepository.findById(request.getLoadedBy()).orElse(null) : null);
+        ticket.setUnloadedBy(
+                request.getUnloadedBy() != null ? staffRepository.findById(request.getUnloadedBy()).orElse(null)
+                        : null);
+        ticket.setDeliveredBy(
+                request.getDeliveredBy() != null ? staffRepository.findById(request.getDeliveredBy()).orElse(null)
+                        : null);
     }
 
     private String trimToNull(String value) {
@@ -199,23 +200,27 @@ public class CargoTicketServiceImpl implements CargoTicketService {
     }
 
     private CargoTicketResponse mapToResponse(CargoTicket ticket) {
+        String pickupStopName = coachStopRepository.findById(ticket.getPickupStopId())
+                .map(stop -> stop.getStopPointName()).orElse(null);
+        String dropoffStopName = coachStopRepository.findById(ticket.getDropoffStopId())
+                .map(stop -> stop.getStopPointName()).orElse(null);
+
         return CargoTicketResponse.builder()
                 .cargoTicketId(ticket.getCargoTicketId())
                 .tripId(ticket.getTripId())
                 .customerId(ticket.getCustomerId())
                 .senderName(ticket.getSenderName())
                 .senderPhone(ticket.getSenderPhone())
-                .senderEmail(ticket.getSenderEmail())
                 .receiverName(ticket.getReceiverName())
-                .receiverPhone(ticket.getReceiverPhone())
-                .receiverEmail(ticket.getReceiverEmail())
                 .ticketCode(ticket.getTicketCode())
                 .totalPrice(ticket.getTotalPrice())
                 .description(ticket.getDescription())
                 .feePayer(ticket.getFeePayer())
                 .codAmount(ticket.getCodAmount())
                 .pickupStopId(ticket.getPickupStopId())
+                .pickupStopName(pickupStopName)
                 .dropoffStopId(ticket.getDropoffStopId())
+                .dropoffStopName(dropoffStopName)
                 .status(ticket.getStatus())
                 .soldBy(ticket.getSoldBy() != null ? ticket.getSoldBy().getStaffId() : 0)
                 .loadedBy(ticket.getLoadedBy() != null ? ticket.getLoadedBy().getStaffId() : null)

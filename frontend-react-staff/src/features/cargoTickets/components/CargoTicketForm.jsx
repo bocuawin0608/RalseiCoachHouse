@@ -1,11 +1,12 @@
 import { Alert, Button, Card, Col, Form, Row } from 'react-bootstrap';
 import { BsCheckCircle, BsExclamationTriangleFill } from 'react-icons/bs';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useCargoTicketFormOptions } from '../hooks/useCargoTicketFormOptions';
+import { useAuth } from '../../auth/context/AuthContext';
 
 const EMPTY_FORM = {
-    tripId: '', customerId: '', senderName: '', senderPhone: '', senderEmail: '',
-    receiverName: '', receiverPhone: '', receiverEmail: '',
+    tripId: '', customerId: '', senderName: '', senderPhone: '',
+    receiverName: '', receiverPhone: '',
     totalPrice: '', description: '', feePayer: 'SENDER', codAmount: 0,
     pickupStopId: '', dropoffStopId: '', status: 'RECEIVED', soldBy: '',
     loadedBy: '', unloadedBy: '', deliveredBy: ''
@@ -15,10 +16,20 @@ export default function CargoTicketForm({ initialData, onSubmit, submitLabel = '
     const [formData, setFormData] = useState(() => ({ ...EMPTY_FORM, ...initialData }));
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
+    const { user } = useAuth();
     const { trips, customers, stops, sellers, handlers, drivers, loading: optionsLoading, error: optionsError } = useCargoTicketFormOptions(
         formData.pickupStopId,
         formData.dropoffStopId
     );
+
+    useEffect(() => {
+        if (sellers?.length > 0 && user?.username && !formData.soldBy && !initialData?.cargoTicketId) {
+            const match = sellers.find(s => s.username === user.username);
+            if (match) {
+                setFormData(prev => ({ ...prev, soldBy: match.staffId }));
+            }
+        }
+    }, [sellers, user, formData.soldBy, initialData]);
     const eligibleTrips = useMemo(
         () => filterTripsForSelectedStops(trips, stops, formData.pickupStopId, formData.dropoffStopId),
         [trips, stops, formData.pickupStopId, formData.dropoffStopId]
@@ -91,7 +102,7 @@ export default function CargoTicketForm({ initialData, onSubmit, submitLabel = '
                         <Col md={4}><Field label="Tổng tiền (VNĐ)" name="totalPrice" type="number" value={formData.totalPrice} onChange={handleChange} required min="0" /></Col>
                         <Col md={4}><Field label="Tiền thu hộ COD (VNĐ)" name="codAmount" type="number" value={formData.codAmount} onChange={handleChange} required min="0" /></Col>
                         <Col md={4}><Form.Group><Form.Label className="fw-semibold">Người trả phí *</Form.Label><Form.Select name="feePayer" value={formData.feePayer} onChange={handleChange}><option value="SENDER">Người gửi</option><option value="RECEIVER">Người nhận</option></Form.Select></Form.Group></Col>
-                        <Col md={6}><Dropdown label="Nhân viên bán" name="soldBy" value={formData.soldBy} onChange={handleChange} loading={optionsLoading} options={sellers} optionValue="staffId" renderOption={(item) => item.staffName} required /></Col>
+                        <Col md={6}><Dropdown label="Nhân viên bán" name="soldBy" value={formData.soldBy} onChange={handleChange} loading={optionsLoading} options={sellers} optionValue="staffId" renderOption={(item) => item.staffName} required disabled style={{ backgroundImage: 'none' }} /></Col>
                         <Col md={6}><Dropdown label="Nhân viên xếp hàng" name="loadedBy" value={formData.loadedBy ?? ''} onChange={handleChange} loading={optionsLoading} emptyLabel="Chưa phân công" options={handlers} optionValue="staffId" renderOption={(item) => item.staffName} /></Col>
                         <Col md={6}><Dropdown label="Nhân viên dỡ hàng" name="unloadedBy" value={formData.unloadedBy ?? ''} onChange={handleChange} loading={optionsLoading} emptyLabel="Chưa phân công" options={handlers} optionValue="staffId" renderOption={(item) => item.staffName} /></Col>
                         <Col md={6}><Dropdown label="Nhân viên giao hàng" name="deliveredBy" value={formData.deliveredBy ?? ''} onChange={handleChange} loading={optionsLoading} emptyLabel="Chưa phân công" options={drivers} optionValue="staffId" renderOption={(item) => item.staffName} /></Col>
@@ -109,9 +120,8 @@ export default function CargoTicketForm({ initialData, onSubmit, submitLabel = '
 
 function PartyCard({ title, prefix, data, onChange }) {
     return <Card className="shadow-sm border-0 h-100"><Card.Header className="bg-white py-3"><h5 className="fw-bold mb-0">{title}</h5></Card.Header><Card.Body className="p-4 d-flex flex-column gap-3">
-        <Field label="Họ tên" name={`${prefix}Name`} value={data[`${prefix}Name`]} onChange={onChange} required maxLength={100} />
         <Field label="Số điện thoại" name={`${prefix}Phone`} value={data[`${prefix}Phone`]} onChange={onChange} required maxLength={20} />
-        <Field label="Email" name={`${prefix}Email`} type="email" value={data[`${prefix}Email`] || ''} onChange={onChange} maxLength={100} />
+        <Field label="Họ tên" name={`${prefix}Name`} value={data[`${prefix}Name`]} onChange={onChange} required maxLength={100} />
     </Card.Body></Card>;
 }
 
@@ -178,10 +188,8 @@ function buildCargoTicketRequest(form) {
         customerId: optionalId(form.customerId),
         senderName: form.senderName.trim(),
         senderPhone: form.senderPhone.trim(),
-        senderEmail: optionalText(form.senderEmail),
         receiverName: form.receiverName.trim(),
         receiverPhone: form.receiverPhone.trim(),
-        receiverEmail: optionalText(form.receiverEmail),
         totalPrice: Number(form.totalPrice),
         description: optionalText(form.description),
         feePayer: form.feePayer,

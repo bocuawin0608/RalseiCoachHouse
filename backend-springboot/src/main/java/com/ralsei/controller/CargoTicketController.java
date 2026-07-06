@@ -64,9 +64,9 @@ public class CargoTicketController {
         return ResponseEntity.ok(cargoTicketService.updateCargoTicket(id, request));
     }
 
-    @PutMapping("/{id:\\d+}/soft-delete")
-    public ResponseEntity<Void> softDeleteCargoTicket(@PathVariable @Min(1) int id) {
-        cargoTicketService.softDeleteCargoTicket(id);
+    @PutMapping("/{id:\\d+}/disable")
+    public ResponseEntity<Void> disable(@PathVariable @Min(1) int id) {
+        cargoTicketService.disable(id);
         return ResponseEntity.noContent().build();
     }
 }

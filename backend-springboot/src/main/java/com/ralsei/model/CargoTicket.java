@@ -33,6 +33,7 @@ public class CargoTicket extends BaseEntity {
     @Column(name = "cargoTicketId")
     private int cargoTicketId;
 
+    // thieu mapping one to many voi trip
     @Column(name = "tripId")
     private Integer tripId;
 
@@ -45,17 +46,11 @@ public class CargoTicket extends BaseEntity {
     @Column(name = "senderPhone", nullable = false)
     private String senderPhone;
 
-    @Column(name = "senderEmail")
-    private String senderEmail;
-
     @Column(name = "receiverName", nullable = false)
     private String receiverName;
 
     @Column(name = "receiverPhone", nullable = false)
     private String receiverPhone;
-
-    @Column(name = "receiverEmail")
-    private String receiverEmail;
 
     @Column(name = "ticketCode", nullable = false, unique = true)
     private String ticketCode;

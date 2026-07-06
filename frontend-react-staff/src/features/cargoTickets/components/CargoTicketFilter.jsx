@@ -1,15 +1,34 @@
 import { BsArrowClockwise } from 'react-icons/bs';
 import { Button, Card, Form } from 'react-bootstrap';
+import { useState, useEffect } from 'react';
 
 export default function CargoTicketFilter({ filters, onFilterChange, onReset }) {
+    const [localSearch, setLocalSearch] = useState(filters.search || '');
+
+    useEffect(() => {
+        setLocalSearch(filters.search || '');
+    }, [filters.search]);
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            if (localSearch !== (filters.search || '')) {
+                onFilterChange({ target: { name: 'search', value: localSearch } });
+            }
+        }, 300);
+        return () => clearTimeout(handler);
+    }, [localSearch, filters.search, onFilterChange]);
+
+    const handleSearchChange = (e) => {
+        setLocalSearch(e.target.value);
+    };
     return (
         <Card className="mb-4 shadow-sm border-0">
             <Card.Body className="p-4">
                 <Form className="d-flex flex-wrap gap-3 align-items-center justify-content-center">
                     <Form.Control
                         name="search"
-                        value={filters.search}
-                        onChange={onFilterChange}
+                        value={localSearch}
+                        onChange={handleSearchChange}
                         placeholder="Tìm mã vé, người gửi, người nhận..."
                         style={{ width: '340px' }}
                     />
