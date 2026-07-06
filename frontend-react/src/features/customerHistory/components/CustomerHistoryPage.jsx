@@ -10,6 +10,8 @@ import {
 import '../styles/customerHistory.css';
 import TicketCancellationModal from './TicketCancellationModal';
 
+const CANCELLATION_CUTOFF_MILLISECONDS = 5 * 60 * 60 * 1000;
+
 /**
  * Full customer service-history page backed entirely by authenticated API data.
  */
@@ -31,10 +33,10 @@ export default function CustomerHistoryPage() {
         }
     };
 
-    /** A ticket remains cancellable only while confirmed and before departure. */
+    /** A ticket remains cancellable only until five hours before departure. */
     const canCancel = (booking) => booking.status === 'CONFIRMED'
         && booking.departureTime
-        && new Date(booking.departureTime).getTime() > pageOpenedAt;
+        && new Date(booking.departureTime).getTime() > pageOpenedAt + CANCELLATION_CUTOFF_MILLISECONDS;
 
     /** Opens the refund form without triggering navigation on the parent card. */
     const openCancellation = (event, booking) => {
@@ -95,6 +97,7 @@ export default function CustomerHistoryPage() {
                                 <button
                                     type="button"
                                     disabled={!canCancel(booking)}
+                                    title={canCancel(booking) ? 'Hủy vé và yêu cầu hoàn tiền' : 'Chỉ được hủy vé trước giờ xuất bến ít nhất 5 tiếng'}
                                     onClick={(event) => openCancellation(event, booking)}
                                 >
                                     Hủy vé
