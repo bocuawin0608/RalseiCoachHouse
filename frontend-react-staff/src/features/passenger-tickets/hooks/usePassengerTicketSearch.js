@@ -1,28 +1,26 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { staffPassengerTicketApi } from '../api/staffPassengerTicketApi';
-import { buildSearchParams, hasSearchTrigger } from '../utils/passengerTicketFormatters';
-
-const EMPTY_FILTERS = {
-    phone: '',
-    ticketCode: '',
-    status: '',
-    routeId: '',
-    departureDate: '',
-};
+import {
+    buildListQueryParams,
+    buildSearchParams,
+    EMPTY_FILTERS,
+    hasSearchTrigger,
+    parseFiltersFromSearchParams,
+} from '../utils/passengerTicketFormatters';
 
 export function usePassengerTicketSearch() {
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const hiddenTripId = searchParams.get('tripId');
 
-    const [filters, setFilters] = useState(EMPTY_FILTERS);
+    const [filters, setFilters] = useState(() => parseFiltersFromSearchParams(searchParams));
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [hasSearched, setHasSearched] = useState(false);
     const [pageInfo, setPageInfo] = useState({
-        page: 0,
-        size: 20,
+        page: Number(searchParams.get('page') || 0),
+        size: Number(searchParams.get('size') || 20),
         totalElements: 0,
         totalPages: 0,
     });
@@ -32,7 +30,7 @@ export function usePassengerTicketSearch() {
             setError(null);
             setData([]);
             setHasSearched(false);
-            setPageInfo((prev) => ({ ...prev, totalElements: 0, totalPages: 0 }));
+            setPageInfo((prev) => ({ ...prev, page: 0, totalElements: 0, totalPages: 0 }));
             return;
         }
 
@@ -62,12 +60,27 @@ export function usePassengerTicketSearch() {
     }, []);
 
     useEffect(() => {
-        if (hiddenTripId) {
-            fetchSearch(filters, 0, pageInfo.size, hiddenTripId);
+        const urlFilters = parseFiltersFromSearchParams(searchParams);
+        const tripId = searchParams.get('tripId');
+        const page = Number(searchParams.get('page') || 0);
+        const size = Number(searchParams.get('size') || 20);
+
+        setFilters(urlFilters);
+
+        if (hasSearchTrigger(urlFilters, tripId)) {
+            fetchSearch(urlFilters, page, size, tripId);
+        } else {
+            setError(null);
+            setData([]);
+            setHasSearched(false);
+            setPageInfo((prev) => ({
+                ...prev,
+                page: 0,
+                totalElements: 0,
+                totalPages: 0,
+            }));
         }
-        // Auto-search only when deep-linking with tripId.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [hiddenTripId]);
+    }, [searchParams, fetchSearch]);
 
     const handleFilterChange = (event) => {
         const { name, value } = event.target;
@@ -76,22 +89,27 @@ export function usePassengerTicketSearch() {
 
     const handleReset = () => {
         setFilters(EMPTY_FILTERS);
-        setError(null);
-        setData([]);
-        setHasSearched(false);
-        setPageInfo((prev) => ({ ...prev, page: 0, totalElements: 0, totalPages: 0 }));
+        setSearchParams({}, { replace: true });
     };
 
     const handleSearch = () => {
-        fetchSearch(filters, 0, pageInfo.size, hiddenTripId);
+        const params = buildListQueryParams(filters, {
+            tripId: hiddenTripId,
+            page: 0,
+            size: pageInfo.size,
+        });
+        setSearchParams(params, { replace: true });
     };
 
     const handlePageChange = (updater) => {
         setPageInfo((prev) => {
             const next = typeof updater === 'function' ? updater(prev) : updater;
-            if (hasSearched || hiddenTripId) {
-                fetchSearch(filters, next.page, next.size, hiddenTripId);
-            }
+            const params = buildListQueryParams(filters, {
+                tripId: hiddenTripId,
+                page: next.page,
+                size: next.size,
+            });
+            setSearchParams(params, { replace: true });
             return next;
         });
     };
@@ -108,6 +126,5 @@ export function usePassengerTicketSearch() {
         handleFilterChange,
         handleReset,
         handleSearch,
-        refetch: () => fetchSearch(filters, pageInfo.page, pageInfo.size, hiddenTripId),
     };
 }
