@@ -79,12 +79,12 @@ INSERT INTO [voucher] (voucherCode, discountValue, startEffectiveDate, endEffect
 ('HE2026', 10.00, '2026-01-01', '2028-12-31', 'PERCENT', 50000.00, 200000.00, 1000), 
 ('GIAM50K', 50000.00, '2026-01-01', '2028-12-31', 'FIXED', 50000.00, 0.00, 1000);
 
-INSERT INTO [coach_stop] (stopPointName, address, city, surcharge, isActive) VALUES 
-(N'Bến Xe Nước Ngầm', N'Số 1 Ngọc Hồi, Hoàng Mai', N'Hà Nội', 0.00, 1),        
-(N'Sảnh T1+T2 - Sân bay Nội Bài', N'Sảnh E, Nhà ga T1, Sóc Sơn', N'Hà Nội', 100000.00, 1),
-(N'Văn Phòng Đồng Hới', N'Trần Hưng Đạo, Đồng Hới', N'Quảng Bình', 0.00, 1),
-(N'Trạm Dừng Lệ Thủy', N'Quốc Lộ 1A, Lệ Thủy', N'Quảng Bình', 0.00, 1),
-(N'Trạm Dừng Ba Đồn', N'Phường Ba Đồn, Thị xã Ba Đồn', N'Quảng Bình', 0.00, 1);
+INSERT INTO [coach_stop] (stopPointName, address, city, surcharge, isActive, latitude, longitude) VALUES
+(N'Bến Xe Nước Ngầm', N'Số 1 Ngọc Hồi, Hoàng Mai', N'Hà Nội',0.00, 1,20.939917437, 105.844225125),
+(N'Sảnh T1+T2 - Sân bay Nội Bài', N'Sảnh E, Nhà ga T1, Sóc Sơn', N'Hà Nội',100000.00, 1, 21.2149337, 105.8007099),
+(N'Văn Phòng Đồng Hới', N'Trần Hưng Đạo, Đồng Hới', N'Quảng Bình',0.00, 1,17.4691879169492, 106.61043838942),
+(N'Trạm Dừng Lệ Thủy', N'Quốc Lộ 1A, Lệ Thủy', N'Quảng Bình',0.00, 1,17.2425945873282, 106.814788476285),
+(N'Trạm Dừng Ba Đồn', N'Phường Ba Đồn, Thị xã Ba Đồn', N'Quảng Bình',0.00, 1,17.7546377497501, 106.42331210725);
 
 INSERT INTO [route] (routeName, totalKilometers, totalMinutes) VALUES 
 (N'Hà Nội - Quảng Bình', 500.00, 600), 
@@ -355,6 +355,13 @@ BEGIN
 
     SET @c = @c + 1;
 END;
+
+-- Mẫu lịch sử trạng thái xe (xe đang bảo trì)
+INSERT INTO [coach_status_log] (coachId, fromStatus, toStatus, reason, expectedEndAt)
+SELECT c.coachId, 'ACTIVE', 'MAINTENANCE', N'Bảo dưỡng định kỳ hệ thống phanh', DATEADD(day, 7, GETDATE())
+FROM [coach] c
+WHERE c.[status] = 'MAINTENANCE'
+  AND c.coachId IN (SELECT TOP 5 coachId FROM [coach] WHERE [status] = 'MAINTENANCE' ORDER BY coachId);
 
 -- ============================================================================
 -- LEVEL 4: OPERATIONAL ENTITIES - TRIPS & TRIP_SEATS

@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseToken;
 import com.ralsei.dto.projection.AccountProjection;
 import com.ralsei.dto.request.auth.CustomerLoginRequest;
@@ -33,6 +32,7 @@ import com.ralsei.repository.CustomerRepository;
 import com.ralsei.repository.RefreshTokenRepository;
 import com.ralsei.repository.RoleRepository;
 import com.ralsei.service.AuthService;
+import com.ralsei.service.FirebaseTokenVerifier;
 import com.ralsei.service.JwtService;
 
 import jakarta.transaction.Transactional;
@@ -48,8 +48,8 @@ public class AuthServiceImpl implements AuthService {
     private final AccountRoleRepository accountRoleRepository;
     private final CustomerRepository customerRepository;
     private final RoleRepository roleRepository;
-    private final Optional<FirebaseAuth> firebaseAuth;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final FirebaseTokenVerifier firebaseTokenVerifier;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private final JwtService jwtService;
@@ -169,15 +169,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private FirebaseToken verifyFirebaseToken(String idToken) {
-        if (firebaseAuth.isEmpty()) {
-            throw new BusinessRuleException("Firebase chưa được cấu hình!");
-        }
-        try {
-            return firebaseAuth.get().verifyIdToken(idToken);
-        } catch (Exception e) {
-            log.error("Firebase token verification failed", e);
-            throw new BusinessRuleException("Xác thực Firebase thất bại!");
-        }
+        return firebaseTokenVerifier.verifyIdToken(idToken);
     }
 
     @SuppressWarnings("unchecked")

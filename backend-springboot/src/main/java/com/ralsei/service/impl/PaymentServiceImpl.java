@@ -2,8 +2,10 @@ package com.ralsei.service.impl;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -15,7 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ralsei.dto.request.payment.PaymentCheckoutRequest;
 import com.ralsei.dto.request.sePay.SepayWebhookRequest;
 import com.ralsei.exception.BusinessRuleException;
-import com.ralsei.model.PassengerTicket;
+import com.ralsei.model.PassengerTicketDetail;
 import com.ralsei.model.Payment;
 import com.ralsei.model.enums.PassengerTicketDetailStatus;
 import com.ralsei.model.enums.PassengerTicketStatus;
@@ -26,7 +28,9 @@ import com.ralsei.repository.PaymentRepository;
 import com.ralsei.repository.TripSeatRepository;
 import com.ralsei.service.PaymentService;
 import com.ralsei.service.TransactionIdGenerator;
-import com.ralsei.service.VoucherService;
+import com.ralsei.service.notification.PassengerTicketEmailAssembler;
+import com.ralsei.service.notification.TicketEmailService;
+import com.ralsei.service.passengerbooking.BoardingQrTokenGenerator;
 import com.ralsei.service.passengerbooking.PaymentSseService;
 
 import lombok.RequiredArgsConstructor;
@@ -44,7 +48,9 @@ public class PaymentServiceImpl implements PaymentService {
     private final ObjectMapper objectMapper;
     private final TransactionIdGenerator transactionIdGenerator;
     private final PaymentSseService paymentSseService;
-    private final VoucherService voucherService;
+    private final BoardingQrTokenGenerator boardingQrTokenGenerator;
+    private final PassengerTicketEmailAssembler passengerTicketEmailAssembler;
+    private final TicketEmailService ticketEmailService;
 
     @Override
     @Transactional
@@ -59,6 +65,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .amount(request.getAmount())
                 .paymentMethod(request.getPaymentMethod())
                 .transactionId(transactionId)
+                .cancelToken(UUID.randomUUID().toString())
                 .status("PENDING")
                 .refundAmount(BigDecimal.ZERO)
                 .build();
@@ -93,16 +100,30 @@ public class PaymentServiceImpl implements PaymentService {
 
             // Verify transfer amount
             if (payment.getAmount().compareTo(request.getTransferAmount()) <= 0) {
-                payment.setStatus("COMPLETED");
-                payment.setPaymentTime(LocalDateTime.now());
-
+                String callbackData;
                 try {
-                    payment.setCallbackData(objectMapper.writeValueAsString(request));
+                    callbackData = objectMapper.writeValueAsString(request);
                 } catch (JsonProcessingException e) {
-                    payment.setCallbackData(request.toString());
+                    callbackData = request.toString();
                 }
 
-                paymentRepository.save(payment);
+                LocalDateTime paymentTime = LocalDateTime.now();
+                int rowsUpdated = paymentRepository.completeIfCurrent(
+                        transactionId,
+                        "PENDING",
+                        "COMPLETED",
+                        paymentTime,
+                        callbackData);
+
+                if (rowsUpdated == 0) {
+                    log.info("Payment already processed before webhook completion, transactionId={}", transactionId);
+                    return;
+                }
+
+                // completeIfCurrent evicts the managed entity; sync in-memory copy for downstream use only.
+                payment.setStatus("COMPLETED");
+                payment.setPaymentTime(paymentTime);
+                payment.setCallbackData(callbackData);
 
                 if (payment.getPassengerTicketId() != null) {
                     completePassengerPaymentTarget(payment);
@@ -112,7 +133,7 @@ public class PaymentServiceImpl implements PaymentService {
                     throw new BusinessRuleException("Dữ liệu thanh toán không hợp lệ!");
                 }
 
-                paymentSseService.sendStatusUpdate(transactionId, payment.getStatus());
+                paymentSseService.sendStatusUpdate(transactionId, "COMPLETED");
 
             } else {
                 throw new IllegalArgumentException("Transfer amount is less than required payment amount");
@@ -133,24 +154,15 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
-    public void cancelPayment(String transactionId) {
-        Payment payment = paymentRepository.findByTransactionId(transactionId)
-                .orElseThrow(
-                        () -> new IllegalArgumentException("Không tìm thấy thanh toán có mã giao dịch: " + transactionId));
-        if (!"COMPLETED".equals(payment.getStatus())) {
-            payment.setStatus("FAILED");
-            paymentRepository.save(payment);
-            
-            if (payment.getPassengerTicketId() != null) {
-                cancelPassengerPaymentTarget(payment);
-            } else if (payment.getCargoTicketId() != null) {
-                cancelCargoPaymentTarget(payment); 
-            } else {
-                throw new BusinessRuleException("Dữ liệu thanh toán không hợp lệ!");
-            }
-
-            paymentSseService.sendStatusUpdate(transactionId, payment.getStatus());
+    public boolean failPendingPayment(String transactionId) {
+        int rowsUpdated = paymentRepository.updateStatusIfCurrent(transactionId, "PENDING", "FAILED");
+        if (rowsUpdated == 0) {
+            log.info("Skip fail pending payment because payment is no longer pending, transactionId={}", transactionId);
+            return false;
         }
+
+        paymentSseService.sendStatusUpdate(transactionId, "FAILED");
+        return true;
     }
 
     private void validateCheckoutRequest(PaymentCheckoutRequest request) {
@@ -180,53 +192,38 @@ public class PaymentServiceImpl implements PaymentService {
             throw new BusinessRuleException("Thao tác thất bại: Vé không tồn tại hoặc trạng thái vé đã thay đổi trước đó!");
         }
 
-        passengerTicketDetailRepository.updateStatusByPassengerTicketId(
-                payment.getPassengerTicketId(),
-                PassengerTicketDetailStatus.CONFIRMED.name());
+        List<PassengerTicketDetail> details = passengerTicketDetailRepository
+            .findByPassengerTicketId(payment.getPassengerTicketId());
 
-        List<Integer> tripSeatIds = passengerTicketDetailRepository
-                .findTripSeatIdsByPassengerTicketId(payment.getPassengerTicketId());
-        if (!tripSeatIds.isEmpty()) {
-            tripSeatRepository.updateStatusByTripSeatIds(tripSeatIds, TripSeatStatus.SOLD);
-        }
-    }
-
-    private void cancelPassengerPaymentTarget(Payment payment) {
-        passengerTicketRepository.updateStatusIfCurrent(
-                payment.getPassengerTicketId(),
-                PassengerTicketStatus.PENDING,
-                PassengerTicketStatus.CANCELLED);
-
-        passengerTicketDetailRepository.updateStatusByPassengerTicketId(
-                payment.getPassengerTicketId(),
-                PassengerTicketDetailStatus.EXPIRED.name());
-
-        List<Integer> tripSeatIds = passengerTicketDetailRepository
-                .findTripSeatIdsByPassengerTicketId(payment.getPassengerTicketId());
-        if (!tripSeatIds.isEmpty()) {
-            tripSeatRepository.updateStatusByTripSeatIds(tripSeatIds, TripSeatStatus.AVAILABLE);
+        if (!details.isEmpty()) {
+            List<Integer> tripSeatIds = new ArrayList<>();
+            
+            for (PassengerTicketDetail detail : details) {
+                detail.setStatus(PassengerTicketDetailStatus.CONFIRMED.name());
+                detail.setQrcode(boardingQrTokenGenerator.generateToken());
+                
+                if (detail.getTripSeatId() > 0) {
+                    tripSeatIds.add(detail.getTripSeatId());
+                }
+            }
+            
+            passengerTicketDetailRepository.saveAll(details);
+            
+            if (!tripSeatIds.isEmpty()) {
+                tripSeatRepository.updateStatusByTripSeatIds(tripSeatIds, TripSeatStatus.SOLD);
+            }
         }
 
-        passengerTicketRepository.findById(payment.getPassengerTicketId()).ifPresent(ticket -> {
-            releaseVoucherUsageIfApplied(ticket);
-        });
-    }
-
-    private void releaseVoucherUsageIfApplied(PassengerTicket ticket) {
-        if (ticket.getVoucherId() == null || ticket.getVoucherCodeSnapshot() == null) {
-            return;
-        }
-        int rowsUpdated = voucherService.decrementUsedCountIfApplied(ticket.getVoucherId());
-        if (rowsUpdated == 0) {
-            log.warn("Không thể hoàn lượt voucher id={} khi hủy vé {}", ticket.getVoucherId(), ticket.getTicketCode());
+        try {
+            ticketEmailService.sendTicketConfirmation(
+                passengerTicketEmailAssembler.assemble(payment.getPassengerTicketId()));
+        } catch (Exception ex) {
+            log.warn("Ticket email on hold failed for passengerTicketId={}: {}",
+                payment.getPassengerTicketId(), ex.getMessage());
         }
     }
 
     private void completeCargoPaymentTarget(Payment payment) {
-        return;
-    }
-
-    private void cancelCargoPaymentTarget(Payment payment) {
         return;
     }
 }

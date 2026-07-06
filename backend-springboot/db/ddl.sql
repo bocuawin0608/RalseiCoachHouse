@@ -12,6 +12,7 @@ DROP TABLE IF EXISTS [passenger_ticket];
 DROP TABLE IF EXISTS [trip_seat];
 DROP TABLE IF EXISTS [trip];
 DROP TABLE IF EXISTS [seat];
+DROP TABLE IF EXISTS [coach_status_log];
 DROP TABLE IF EXISTS [coach];
 DROP TABLE IF EXISTS [cargo_type_price];
 DROP TABLE IF EXISTS [coach_type_price];
@@ -129,6 +130,8 @@ CREATE TABLE [coach_stop] (
     [city] NVARCHAR(255) NOT NULL,
     [surcharge] DECIMAL(15,2) NOT NULL DEFAULT 0.00,
     [isActive] BIT NOT NULL DEFAULT 1,
+    [latitude] DECIMAL(12, 8) NOT NULL,
+    [longitude] DECIMAL(12, 8) NOT NULL,
     [createdAt] DATETIME DEFAULT GETDATE(),
     [createdBy] INT NULL,
     [updatedAt] DATETIME DEFAULT GETDATE(),
@@ -310,6 +313,18 @@ CREATE TABLE [coach] (
 	CONSTRAINT CK_Coach_Status CHECK ([status] IN ('ACTIVE', 'MAINTENANCE', 'RETIRED'))
 );
 
+CREATE TABLE [coach_status_log] (
+    [coachStatusLogId] INT IDENTITY(1,1) PRIMARY KEY,
+    [coachId] INT NOT NULL,
+    [fromStatus] VARCHAR(50) NULL,
+    [toStatus] VARCHAR(50) NOT NULL,
+    [reason] NVARCHAR(500) NOT NULL,
+    [expectedEndAt] DATETIME NULL,
+    [createdAt] DATETIME DEFAULT GETDATE(),
+    [createdBy] INT NULL,
+    FOREIGN KEY ([coachId]) REFERENCES [coach]([coachId]),
+    CONSTRAINT CK_CoachStatusLog_ToStatus CHECK ([toStatus] IN ('ACTIVE', 'MAINTENANCE', 'RETIRED'))
+);
 
 CREATE TABLE [seat] (
     [seatId] INT IDENTITY(1,1) PRIMARY KEY,
@@ -413,10 +428,8 @@ CREATE TABLE [cargo_ticket] (
     [customerId] INT NULL,
     [senderName] NVARCHAR(100) NOT NULL,
     [senderPhone] VARCHAR(20) NOT NULL,
-    [senderEmail] VARCHAR(100) NULL,
     [receiverName] NVARCHAR(100) NOT NULL,
     [receiverPhone] VARCHAR(20) NOT NULL,
-    [receiverEmail] VARCHAR(100) NULL,
     [ticketCode] VARCHAR(50) NOT NULL UNIQUE,
     [totalPrice] DECIMAL(15, 2) NOT NULL,
     [description] NVARCHAR(MAX) NULL,
@@ -505,6 +518,7 @@ CREATE TABLE [payment] (
     [refundAmount] DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
     [paymentTime] DATETIME NULL,
     [callbackData] NVARCHAR(MAX) NULL,
+    [cancelToken] VARCHAR(255) NULL,
     [createdAt] DATETIME DEFAULT GETDATE(),
     [createdBy] INT NULL,
     [updatedAt] DATETIME DEFAULT GETDATE(),

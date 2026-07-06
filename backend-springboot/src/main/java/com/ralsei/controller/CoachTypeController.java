@@ -20,11 +20,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ralsei.dto.request.coachtype.CoachTypeCreateRequest;
 import com.ralsei.dto.request.coachtype.CoachTypeFilterRequest;
+import com.ralsei.dto.request.coachtype.CoachTypePriceCreateRequest;
 import com.ralsei.dto.request.coachtype.CoachTypeUpdateInfoRequest;
 import com.ralsei.dto.request.coachtype.CoachTypeUpdatePriceRequest;
 import com.ralsei.dto.request.coachtype.CoachTypeUpdateSeatmapRequest;
+import com.ralsei.dto.response.coachtype.CoachTypeDeactivationCheckResponse;
 import com.ralsei.dto.response.coachtype.CoachTypeDetailResponse;
 import com.ralsei.dto.response.coachtype.CoachTypeDropdownDTO;
+import com.ralsei.dto.response.coachtype.CoachTypePriceResponse;
 import com.ralsei.dto.response.coachtype.CoachTypeResponse;
 import com.ralsei.service.CoachTypeService;
 
@@ -87,7 +90,7 @@ public class CoachTypeController {
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/{id}/seat-layout")
+    @PatchMapping("/{id:\\d+}/seat-layout")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<Void> updateSeatLayout(
         @PathVariable @Min(value = 1, message = "ID của Loại xe phải lớn hơn 0.") Integer id,
@@ -95,5 +98,31 @@ public class CoachTypeController {
     ) {
         coachTypeService.updateCoachTypeSeatmap(id, updateRequest);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id:\\d+}/prices")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<List<CoachTypePriceResponse>> getCoachTypePrices(
+        @PathVariable @Min(value = 1, message = "ID của Loại xe phải lớn hơn 0.") Integer id
+    ) {
+        return ResponseEntity.ok(coachTypeService.getCoachTypePrices(id));
+    }
+
+    @PostMapping("/{id:\\d+}/prices")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<Void> addCoachTypePrice(
+        @PathVariable @Min(value = 1, message = "ID của Loại xe phải lớn hơn 0.") Integer id,
+        @Valid @RequestBody CoachTypePriceCreateRequest request
+    ) {
+        coachTypeService.addCoachTypePrice(id, request);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @GetMapping("/{id:\\d+}/deactivation-check")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<CoachTypeDeactivationCheckResponse> getDeactivationCheck(
+        @PathVariable @Min(value = 1, message = "ID của Loại xe phải lớn hơn 0.") Integer id
+    ) {
+        return ResponseEntity.ok(coachTypeService.getDeactivationCheck(id));
     }
 }

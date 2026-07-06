@@ -4,28 +4,49 @@ import { BsExclamationTriangleFill, BsPersonFill, BsMapFill, BsTicketPerforatedF
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
+import { useAuth } from '../../auth';
 import { setPassengerInfo, setPaymentInfo } from '../reducers/bookingSlice';
 import { useStep2InitData } from '../hooks/useStep2InitData';
 import { usePriceCalculation } from '../hooks/usePriceCalculation';
+import { usePhoneVerification } from '../hooks/usePhoneVerification';
 import { formatCurrency, formatDateTime } from '../../../utils/formatters';
 import { bookingApi } from '../api/bookingApi';
 import { transformFormToPassengerPayload } from '../utils/passengerPayload';
 import { mapConfirmResponse, savePaymentSession } from '../utils/paymentSession';
 import { bookingValidationRules } from '../utils/bookingValidation';
+import { buildTripShellLabels, computePickupPresentBy, formatPickupPresentByLabel } from '../utils/tripInfo';
+import TripSummaryPanel from './TripSummaryPanel';
+import PhoneOtpModal from './PhoneOtpModal';
 
 export default function Step2PassengerInfo({ tripId }) {
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    const { selectedSeats, holdToken } = useSelector(state => state.booking);
+    const { selectedSeats, holdToken, tripInfo } = useSelector(state => state.booking);
+    const { token, user } = useAuth();
+    const isAuthenticated = Boolean(token && user);
 
     const { initData, loading, error } = useStep2InitData(tripId, holdToken);
+    const {
+        verifiedPhones,
+        phoneCheckLoading,
+        phoneCheckError,
+        otpPhone,
+        markKnownPhone,
+        clearPhoneVerification,
+        isPhoneVerified,
+        getUnverifiedPhones,
+        handleOtpVerified,
+        closeOtpModal,
+        checkPhoneOnBlur,
+        openOtpForPhone,
+    } = usePhoneVerification();
 
     const [showVoucherModal, setShowVoucherModal] = useState(false);
     const [typedVoucherCode, setTypedVoucherCode] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState('');
     
-    const { register, handleSubmit, control, watch, setValue, formState: { errors } } = useForm({
+    const { register, handleSubmit, control, watch, setValue, getValues, formState: { errors } } = useForm({
         defaultValues: {
             pickupStopId: '',
             dropoffStopId: '',
@@ -46,18 +67,31 @@ export default function Step2PassengerInfo({ tripId }) {
     const { fields } = useFieldArray({ control, name: 'passengers' });
 
     const currentVoucherId = watch('voucherId');
+    const effectiveVoucherId = isAuthenticated ? currentVoucherId : '';
     const pickupStopId = watch('pickupStopId');
     const dropoffStopId = watch('dropoffStopId');
 
     const { priceData, loading: priceLoading, error: priceError } = usePriceCalculation(tripId, holdToken, {
         pickupStopId,
         dropoffStopId,
-        voucherId: currentVoucherId,
+        voucherId: effectiveVoucherId,
     });
 
     const seatCount = selectedSeats.length;
+    const seatCodes = selectedSeats.map((seat) => seat.seatCode).filter(Boolean);
+    const pickupStop = initData.pickupStopPoints?.find((point) => String(point.stopPointId) === String(pickupStopId));
+    const dropoffStop = initData.dropoffStopPoints?.find((point) => String(point.stopPointId) === String(dropoffStopId));
+    const pickupPresentBy = pickupStop && tripInfo?.departureTime
+        ? computePickupPresentBy(tripInfo.departureTime, pickupStop.minutesFromStart)
+        : null;
 
     useEffect(() => {
+        if (!isAuthenticated) {
+            setValue('voucherId', '');
+            setTypedVoucherCode('');
+            setShowVoucherModal(false);
+            return;
+        }
         if (!currentVoucherId) {
             setTypedVoucherCode('');
             return;
@@ -66,9 +100,24 @@ export default function Step2PassengerInfo({ tripId }) {
         if (selected) {
             setTypedVoucherCode(selected.voucherCode);
         }
-    }, [currentVoucherId, initData.vouchers]);
+    }, [currentVoucherId, initData.vouchers, isAuthenticated, setValue]);
+
+    useEffect(() => {
+        if (!initData?.customerProfile || fields.length === 0) {
+            return;
+        }
+
+        const profile = initData.customerProfile;
+        setValue('passengers.0.fullname', profile.fullname || '');
+        setValue('passengers.0.phone', profile.phone || '');
+        setValue('passengers.0.email', profile.email || '');
+        if (profile.phone) {
+            markKnownPhone(profile.phone);
+        }
+    }, [initData?.customerProfile, fields.length, setValue, markKnownPhone]);
 
     const handleSelectVoucher = (voucher) => {
+        if (!isAuthenticated) return;
         setValue('voucherId', voucher.voucherId);
     };
 
@@ -82,6 +131,7 @@ export default function Step2PassengerInfo({ tripId }) {
     };
 
     const handleApplyManualVoucher = () => {
+        if (!isAuthenticated) return;
         if (!typedVoucherCode.trim()) return;
         const matched = initData.vouchers?.find(v => v.voucherCode.toLowerCase() === typedVoucherCode.trim().toLowerCase());
         if (matched) {
@@ -94,12 +144,19 @@ export default function Step2PassengerInfo({ tripId }) {
 
     const onSubmit = async (formData) => {
         setSubmitError('');
-        const formattedPassengers = transformFormToPassengerPayload(formData.passengers);
+
+        const unverifiedPhones = getUnverifiedPhones(formData.passengers);
+        if (unverifiedPhones.length > 0) {
+            setSubmitError(`Vui lòng xác thực OTP cho số điện thoại: ${unverifiedPhones.join(', ')}`);
+            return;
+        }
+
+        const formattedPassengers = transformFormToPassengerPayload(formData.passengers, verifiedPhones);
 
         const payload = {
             pickupStopId: Number(formData.pickupStopId),
             dropoffStopId: Number(formData.dropoffStopId),
-            voucherId: formData.voucherId ? Number(formData.voucherId) : null,
+            voucherId: isAuthenticated && formData.voucherId ? Number(formData.voucherId) : null,
             passengers: formattedPassengers,
         };
 
@@ -111,11 +168,14 @@ export default function Step2PassengerInfo({ tripId }) {
                 holdToken
             );
 
+            const { tripTitle, tripDate } = buildTripShellLabels(tripInfo);
             const paymentInfo = mapConfirmResponse(response, {
                 tripId: Number(tripId),
                 primaryPassengerName: formattedPassengers[0]?.fullname,
                 primaryPassengerPhone: formattedPassengers[0]?.phone,
-                seatCodes: selectedSeats.map((seat) => seat.seatCode).filter(Boolean),
+                seatCodes,
+                tripTitle,
+                tripDate
             });
 
             dispatch(setPassengerInfo(payload));
@@ -139,6 +199,12 @@ export default function Step2PassengerInfo({ tripId }) {
                 </Alert>
             )}
 
+            {phoneCheckError && (
+                <Alert variant="warning" className="mb-4 rounded-3 border-0 shadow-sm" style={{ fontSize: '0.9rem' }}>
+                    {phoneCheckError}
+                </Alert>
+            )}
+
             {submitError && (
                 <Alert variant='danger' className="mb-4 d-flex align-items-center gap-2 rounded-3 border-0 shadow-sm" style={{ fontSize: '0.9rem' }}>
                     <BsExclamationTriangleFill /> {submitError}
@@ -155,7 +221,13 @@ export default function Step2PassengerInfo({ tripId }) {
                             <BsPersonFill size={18} /> Thông tin hành khách
                         </div>
                         
-                        {fields.map((field, index) => (
+                        {fields.map((field, index) => {
+                            const phoneRegister = register(`passengers.${index}.phone`, bookingValidationRules.phone);
+                            const passengerPhone = watch(`passengers.${index}.phone`);
+                            const phoneVerified = isPhoneVerified(passengerPhone);
+                            const phoneVerification = passengerPhone?.trim() ? verifiedPhones[passengerPhone.trim()] : null;
+
+                            return (
                             <Card key={field.id} className="border-0 rounded-3 mb-3 bg-white overflow-hidden" style={{ border: '1px solid #f0f0f0', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.08)' }}>
                                 <Card.Header className="bg-white p-3 fw-semibold text-secondary d-flex justify-content-between align-items-center" style={{ fontSize: '0.9rem' }}>
                                     <span>Hành khách ngồi <span className="fw-bold" style={{ color: 'var(--ralsei-black)' }}>vị trí {field.seatCode}</span></span>
@@ -178,19 +250,53 @@ export default function Step2PassengerInfo({ tripId }) {
                                         <Form.Group as={Col} md={6}>
                                             <Form.Label className="fw-medium text-muted mb-1" style={{ fontSize: '0.85rem' }}>Số điện thoại <span className="text-danger">*</span></Form.Label>
                                             <Form.Control 
-                                                {...register(`passengers.${index}.phone`, bookingValidationRules.phone)}
+                                                {...phoneRegister}
+                                                onBlur={(event) => {
+                                                    phoneRegister.onBlur(event);
+                                                    checkPhoneOnBlur(event.target.value, index, setValue, getValues);
+                                                }}
+                                                onChange={(event) => {
+                                                    const previousPhone = watch(`passengers.${index}.phone`);
+                                                    phoneRegister.onChange(event);
+                                                    if (previousPhone?.trim()) {
+                                                        clearPhoneVerification(previousPhone.trim());
+                                                    }
+                                                }}
                                                 isInvalid={!!errors.passengers?.[index]?.phone}
                                                 type="tel" placeholder="VD: 0912345678" className="rounded-3 shadow-none" style={{ fontSize: '0.9rem' }}
                                             />
                                             <Form.Control.Feedback type="invalid">{errors.passengers?.[index]?.phone?.message}</Form.Control.Feedback>
+                                            <div className="d-flex align-items-center justify-content-between mt-1 gap-2">
+                                                {phoneCheckLoading === passengerPhone?.trim() ? (
+                                                    <small className="text-muted">Đang kiểm tra số điện thoại...</small>
+                                                ) : phoneVerified ? (
+                                                    <small className="text-success">
+                                                        {phoneVerification?.isKnown ? 'Số điện thoại đã biết' : 'Đã xác thực OTP'}
+                                                    </small>
+                                                ) : (
+                                                    <small className="text-warning">Chưa xác thực số điện thoại</small>
+                                                )}
+                                                {!phoneVerified && passengerPhone?.trim() && !phoneCheckLoading && (
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="outline-dark"
+                                                        className="rounded-pill px-3"
+                                                        style={{ fontSize: '0.75rem' }}
+                                                        onClick={() => openOtpForPhone(passengerPhone.trim())}
+                                                    >
+                                                        Xác thực OTP
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </Form.Group>
 
                                         <Form.Group as={Col} md={12}>
-                                            <Form.Label className="fw-medium text-muted mb-1" style={{ fontSize: '0.85rem' }}>Email (Nhận vé điện tử)</Form.Label>
+                                            <Form.Label className="fw-medium text-muted mb-1" style={{ fontSize: '0.85rem' }}>Email (Nhận vé điện tử) <span className="text-danger">*</span></Form.Label>
                                             <Form.Control 
                                                 {...register(`passengers.${index}.email`, bookingValidationRules.email)}
                                                 isInvalid={!!errors.passengers?.[index]?.email}
-                                                type="email" placeholder="name@example.com" className="rounded-3 shadow-none" style={{ fontSize: '0.9rem' }}
+                                                type="email" placeholder="VD: name@example.com" className="rounded-3 shadow-none" style={{ fontSize: '0.9rem' }}
                                             />
                                             <Form.Control.Feedback type="invalid">{errors.passengers?.[index]?.email?.message}</Form.Control.Feedback>
                                         </Form.Group>
@@ -255,7 +361,8 @@ export default function Step2PassengerInfo({ tripId }) {
                                     </div>
                                 </Card.Body>
                             </Card>
-                        ))}
+                            );
+                        })}
 
                         {/* ĐIỂM ĐÓN VÀ TRẢ */}
                         <div className="mt-4 pt-2">
@@ -278,6 +385,11 @@ export default function Step2PassengerInfo({ tripId }) {
                                                 ))}
                                             </Form.Select>
                                             <Form.Control.Feedback type="invalid">{errors.pickupStopId?.message}</Form.Control.Feedback>
+                                            {pickupStop && pickupPresentBy && (
+                                                <Alert variant="info" className="mt-2 mb-0 py-2 px-3 rounded-3 border-0" style={{ fontSize: '0.8rem' }}>
+                                                    Quý khách vui lòng có mặt tại <strong>{pickupStop.stopPointName}</strong> trước <strong>{formatPickupPresentByLabel(pickupPresentBy)}</strong> để được trung chuyển hoặc kiểm tra thông tin trước khi lên xe.
+                                                </Alert>
+                                            )}
                                         </Form.Group>
                                     </Col>
                                     <Col md={6}>
@@ -301,60 +413,83 @@ export default function Step2PassengerInfo({ tripId }) {
                         </div>
                     </Col>
 
-                    {/* CỘT PHẢI: VOUCHER */}
+                    {/* CỘT PHẢI: THÔNG TIN CHUYẾN + VOUCHER */}
                     <Col lg={4} md={12}>
                         <Card className="border-0 rounded-4 shadow-sm bg-white p-4 sticky-top" style={{ top: '20px', zIndex: 10, border: '1px solid #f0f0f0' }}>
-                            <div className="d-flex justify-content-between align-items-center mb-3">
-                                <div className="fw-bold m-0 d-flex align-items-center gap-2" style={{ fontSize: '1.05rem', color: 'var(--ralsei-black)' }}>
-                                    <BsTicketPerforatedFill size={18} /> Mã giảm giá
-                                </div>
-                                <span className="fw-semibold" style={{ fontSize: '0.85rem', color: 'var(--ralsei-black)', cursor: 'pointer' }} onClick={() => setShowVoucherModal(true)}>
-                                    Xem tất cả
-                                </span>
-                            </div>
-
-                            <InputGroup className="mb-3">
-                                <Form.Control
-                                    placeholder="Nhập mã giảm giá..."
-                                    className="rounded-start-3 shadow-none border-end-0" style={{ fontSize: '0.9rem' }}
-                                    value={typedVoucherCode} onChange={e => setTypedVoucherCode(e.target.value)}
-                                />
-                                <Button className="rounded-end-3 fw-semibold border-start-0 booking-btn-general2" style={{ fontSize: '0.9rem' }} onClick={handleApplyManualVoucher}>
-                                    Áp dụng
-                                </Button>
-                            </InputGroup>
-
-                            <div className="voucher-list d-flex flex-column gap-2 mb-4">
-                                {initData.vouchers?.slice(0, 2).map(voucher => {
-                                    const isSelected = currentVoucherId == voucher.voucherId;
-                                    return (
-                                        <div 
-                                            key={voucher.voucherId} 
-                                            className={`d-flex border rounded-3 overflow-hidden align-items-center ${isSelected ? 'bg-light' : ''}`}
-                                            style={{ cursor: 'pointer', transition: 'all 0.2s', borderColor: isSelected ? 'var(--ralsei-black)' : '#e0e0e0', borderWidth: isSelected ? '2px' : '1px' }}
-                                            onClick={() => handleSelectVoucher(voucher)} 
-                                        >
-                                            <div className="text-white fw-bold d-flex align-items-center justify-content-center p-2 h-100" style={{ minWidth: '65px', minHeight: '70px', fontSize: '0.95rem', backgroundColor: isSelected ? 'var(--ralsei-black)' : '#8c8c8c' }}>
-                                                {formatDiscountBadge(voucher)}
-                                            </div>
-                                            <div className="p-2 flex-grow-1 position-relative">
-                                                <div className="fw-bold text-dark mb-0" style={{ fontSize: '0.85rem' }}>{voucher.voucherCode}</div>
-                                                <div className="text-muted" style={{ fontSize: '0.75rem' }}>Đơn tối thiểu {voucher.minOrderValue.toLocaleString()}đ</div>
-                                                <OverlayTrigger placement="top" overlay={<Tooltip style={{ fontSize: '0.75rem' }}>HSD: {new Date(voucher.endEffectiveDate).toLocaleDateString('vi-VN')}</Tooltip>}>
-                                                    <span className="position-absolute bg-transparent text-secondary" style={{ bottom: '8px', right: '8px', fontSize: '0.85rem' }}><BsInfoCircle /></span>
-                                                </OverlayTrigger>
-                                            </div>
+                            <TripSummaryPanel
+                                tripInfo={tripInfo}
+                                pickupStopName={pickupStop?.stopPointName}
+                                dropoffStopName={dropoffStop?.stopPointName}
+                                seatCount={seatCount}
+                                seatCodes={seatCodes}
+                            />
+                            
+                            {isAuthenticated ? (
+                                <>
+                                    <div className="d-flex justify-content-between align-items-center mb-3">
+                                        <div className="fw-bold m-0 d-flex align-items-center gap-2" style={{ fontSize: '1.05rem', color: 'var(--ralsei-black)' }}>
+                                            <BsTicketPerforatedFill size={18} /> Mã giảm giá
                                         </div>
-                                    );
-                                })}
-                            </div>
+                                        <span className="fw-semibold" style={{ fontSize: '0.85rem', color: 'var(--ralsei-black)', cursor: 'pointer' }} onClick={() => setShowVoucherModal(true)}>
+                                            Xem tất cả
+                                        </span>
+                                    </div>
 
-                            {currentVoucherId && (
-                                <div className="text-end mb-3">
-                                    <span className="text-danger fw-medium" style={{ cursor: 'pointer', fontSize: '0.8rem' }} onClick={handleClearVoucher}>
-                                        Hủy chọn mã hiện tại ✕
-                                    </span>
-                                </div>
+                                    <InputGroup className="mb-3">
+                                        <Form.Control
+                                            placeholder="Nhập mã giảm giá..."
+                                            className="rounded-start-3 shadow-none border-end-0" style={{ fontSize: '0.9rem' }}
+                                            value={typedVoucherCode} onChange={e => setTypedVoucherCode(e.target.value)}
+                                        />
+                                        <Button className="rounded-end-3 fw-semibold border-start-0 booking-btn-general2" style={{ fontSize: '0.9rem' }} onClick={handleApplyManualVoucher}>
+                                            Áp dụng
+                                        </Button>
+                                    </InputGroup>
+
+                                    <div className="voucher-list d-flex flex-column gap-2 mb-4">
+                                        {initData.vouchers?.slice(0, 2).map(voucher => {
+                                            const isSelected = currentVoucherId == voucher.voucherId;
+                                            return (
+                                                <div 
+                                                    key={voucher.voucherId} 
+                                                    className={`d-flex border rounded-3 overflow-hidden align-items-center ${isSelected ? 'bg-light' : ''}`}
+                                                    style={{ cursor: 'pointer', transition: 'all 0.2s', borderColor: isSelected ? 'var(--ralsei-black)' : '#e0e0e0', borderWidth: isSelected ? '2px' : '1px' }}
+                                                    onClick={() => handleSelectVoucher(voucher)} 
+                                                >
+                                                    <div className="text-white fw-bold d-flex align-items-center justify-content-center p-2 h-100" style={{ minWidth: '65px', minHeight: '70px', fontSize: '0.95rem', backgroundColor: isSelected ? 'var(--ralsei-black)' : '#8c8c8c' }}>
+                                                        {formatDiscountBadge(voucher)}
+                                                    </div>
+                                                    <div className="p-2 flex-grow-1 position-relative">
+                                                        <div className="fw-bold text-dark mb-0" style={{ fontSize: '0.85rem' }}>{voucher.voucherCode}</div>
+                                                        <div className="text-muted" style={{ fontSize: '0.75rem' }}>Đơn tối thiểu {voucher.minOrderValue.toLocaleString()}đ</div>
+                                                        <OverlayTrigger placement="top" overlay={<Tooltip style={{ fontSize: '0.75rem' }}>HSD: {new Date(voucher.endEffectiveDate).toLocaleDateString('vi-VN')}</Tooltip>}>
+                                                            <span className="position-absolute bg-transparent text-secondary" style={{ bottom: '8px', right: '8px', fontSize: '0.85rem' }}><BsInfoCircle /></span>
+                                                        </OverlayTrigger>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {currentVoucherId && (
+                                        <div className="text-end mb-3">
+                                            <span className="text-danger fw-medium" style={{ cursor: 'pointer', fontSize: '0.8rem' }} onClick={handleClearVoucher}>
+                                                Hủy chọn mã hiện tại ✕
+                                            </span>
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <Alert 
+                                    variant="warning" 
+                                    className="d-flex align-items-center gap-3 rounded-4 border-0 shadow-sm py-3 px-4"
+                                    style={{ backgroundColor: '#FFF9E6', color: '#8A6D3B' }}
+                                >
+                                    <BsExclamationTriangleFill className="text-warning fs-4 flex-shrink-0" />
+                                    <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>
+                                        <span className="fw-bold text-dark">Đăng nhập</span> để được áp dụng mã giảm giá!
+                                    </div>
+                                </Alert>
                             )}
 
                             <hr className="my-3" style={{ borderColor: '#e0e0e0' }} />
@@ -463,6 +598,13 @@ export default function Step2PassengerInfo({ tripId }) {
                     </div>
                 </Modal.Body>
             </Modal>
+
+            <PhoneOtpModal
+                phone={otpPhone}
+                show={Boolean(otpPhone)}
+                onVerified={({ idToken }) => handleOtpVerified(otpPhone, idToken)}
+                onClose={closeOtpModal}
+            />
         </div>
     );
 }

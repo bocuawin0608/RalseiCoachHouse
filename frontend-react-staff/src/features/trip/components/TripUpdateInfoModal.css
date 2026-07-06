@@ -13,3 +13,8 @@
     padding-left: 1.5rem;
     padding-right: 1.5rem;
 }
+
+.trip-update-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.trip-update-grid label { color: #52606d; font-weight: 600; }
+.trip-update-loading, .trip-update-alert { grid-column: 1 / -1; display: flex; align-items: center; gap: .5rem; }
+@media (max-width: 768px) { .trip-update-grid { grid-template-columns: 1fr; } }

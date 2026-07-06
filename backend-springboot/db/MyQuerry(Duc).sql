@@ -16,27 +16,43 @@ FROM route_stop
 SELECT *
 FROM trip_seat
 
--- My new view all available trip query
-SELECT t.tripId,
-    t.[status] AS [TRANG THAI CHUYEN DI],
-    c.manufacturer,
-    ct.coachTypeName,
+-- Customer trip seat count: same logic used by TripRepository.
+DECLARE @departureTime DATETIME = '2026-07-01 08:00:00';
+
+SELECT
+    t.tripId,
+    t.coachId,
     c.licensePlate,
-    c.[status] AS [TINH TRANG XE],
-    CAST(t.departureTime AS DATE) AS departureDate,
-    CAST(t.departureTime AS TIME) AS departureTime,
-    (SELECT COUNT(*)
-    FROM trip_seat ts
-    WHERE ts.tripId = t.tripId AND ts.[status] = 'AVAILABLE') AS availableSeats,
-    (SELECT COUNT(*)
-    FROM trip_seat ts
-    WHERE ts.tripId = t.tripId) AS totalSeats
+    t.departureTime,
+    COUNT(ts.tripSeatId) AS totalSeatsInTrip,
+    SUM(CASE WHEN ts.[status] = 'AVAILABLE' THEN 1 ELSE 0 END) AS availableSeats,
+    SUM(CASE WHEN ts.[status] IN ('LOCKED', 'SOLD') THEN 1 ELSE 0 END) AS unavailableSeats
 FROM trip t
     JOIN coach c ON c.coachId = t.coachId
-    JOIN coach_type ct ON ct.coachTypeId = c.coachTypeId
--- KHÔNG JOIN TRIP_SEAT Ở ĐÂY NỮA!
-WHERE CAST(t.departureTime AS DATE) = '2026-06-15'
-ORDER BY t.departureTime ASC;
+    JOIN trip_seat ts ON ts.tripId = t.tripId
+    JOIN seat s ON s.seatId = ts.seatId
+WHERE t.departureTime = @departureTime
+    AND t.[status] = 'SCHEDULED'
+    AND s.isActive = 1
+GROUP BY
+    t.tripId,
+    t.coachId,
+    c.licensePlate,
+    t.departureTime;
+
+-- Debug one tripId directly from trip_seat.
+DECLARE @TripId INT = 1;
+SELECT
+    ts.tripId,
+    COUNT(ts.tripSeatId) AS totalSeatsInTrip,
+    SUM(CASE WHEN ts.[status] = 'AVAILABLE' THEN 1 ELSE 0 END) AS availableSeats,
+    SUM(CASE WHEN ts.[status] IN ('LOCKED', 'SOLD') THEN 1 ELSE 0 END) AS unavailableSeats
+FROM trip_seat ts
+    JOIN seat s ON s.seatId = ts.seatId
+WHERE ts.tripId = @TripId
+    AND s.isActive = 1
+GROUP BY ts.tripId;
+
 USE VeXeDB;
 GO
 
@@ -112,7 +128,7 @@ WHERE tripId = 10;
 GO
 USE VeXeDB
 -- Giả sử Manager số 2 thực hiện sinh lịch tự động cho 1 tuần từ ngày 01/06/2026
-EXEC sp_AutoGenerateWeeklySchedule_Final @StartDate = '2026-06-23';
+EXEC sp_AutoGenerateWeeklySchedule_Final @StartDate = '2026-06-27';
 
 -- Lệnh 1: Kiểm tra tổng số lượng chuyến xe sinh ra trong ngày đầu tiên xem có chạm mốc 20 chuyến không
 SELECT CAST(departureTime AS DATE) AS NgayChay, COUNT(*) AS TongSoChuyenTrongNgay
@@ -418,60 +434,274 @@ FROM trip
 SELECT routeName
 FROM route
 
-SELECT * FROM COACH
-SELECT * FROM coach_type
+SELECT *
+FROM COACH
+SELECT *
+FROM coach_type
 
-SELECT * FROM TRIP 
+SELECT *
+FROM TRIP
 
 SELECT licensePlate, ct.coachTypeName
-FROM coach c JOIN coach_type ct 
-ON c.coachTypeId = ct.coachTypeId
-JOIN trip t ON t.coachId = c.coachId
-JOIN route rt ON rt.routeId = t.tripId
+FROM coach c JOIN coach_type ct
+    ON c.coachTypeId = ct.coachTypeId
+    JOIN trip t ON t.coachId = c.coachId
+    JOIN route rt ON rt.routeId = t.tripId
 WHERE CAST(t.departureTime AS DATE) = '2026-01-01'
 
 
 
 USE VeXeDB
 
-SELECT s.staffName 
+SELECT s.staffName
 FROM staff s
-JOIN account a ON a.accountId = s.accountId
-JOIN account_role ar ON ar.accountId = a.accountId
-JOIN [role] r ON r.roleId = ar.roleId
+    JOIN account a ON a.accountId = s.accountId
+    JOIN account_role ar ON ar.accountId = a.accountId
+    JOIN [role] r ON r.roleId = ar.roleId
 WHERE r.roleName = 'TRIP_STAFF' AND s.staffPosition = 'DRIVER'
-AND EXISTS (
-    SELECT 1 
-    FROM trip t 
-    WHERE t.driverId = s.staffId 
-    AND CAST(t.departureTime AS DATE) = '2026-01-01'
+    AND EXISTS (
+    SELECT 1
+    FROM trip t
+    WHERE t.driverId = s.staffId
+        AND CAST(t.departureTime AS DATE) = '2026-01-01'
 );
 
-SELECT s.staffName 
+SELECT s.staffName
 FROM staff s
-JOIN account a ON a.accountId = s.accountId
-JOIN account_role ar ON ar.accountId = a.accountId
-JOIN [role] r ON r.roleId = ar.roleId
- 
+    JOIN account a ON a.accountId = s.accountId
+    JOIN account_role ar ON ar.accountId = a.accountId
+    JOIN [role] r ON r.roleId = ar.roleId
+
 WHERE r.roleName = 'TRIP_STAFF' AND s.staffPosition = 'DRIVER' OR s.staffPosition = 'ATTENDANT'
-AND EXISTS (
-    SELECT 1 
-    FROM trip t 
-    WHERE t.driverId = s.staffId 
-    AND CAST(t.departureTime AS DATE) = '2026-01-01'
+    AND EXISTS (
+    SELECT 1
+    FROM trip t
+    WHERE t.driverId = s.staffId
+        AND CAST(t.departureTime AS DATE) = '2026-01-01'
 );
 
-SELECT routeName FROM ROUTE WHERE routeName LIKE N'Hà Nội%'
+SELECT routeName
+FROM ROUTE
+WHERE routeName LIKE N'Hà Nội%'
 
-SELECT * FROM staff where staffPosition = 'ATTENDANT'
+SELECT *
+FROM staff
+where staffPosition = 'ATTENDANT'
 
-SELECT routeName FROM ROUTE
+SELECT routeName
+FROM ROUTE
 
-SELECT * FROM [role]
-SELECT * FROM STAFF
-SELECT * FROM account_role
-SELECt * FROM account
+SELECT *
+FROM [role]
+SELECT *
+FROM STAFF
+SELECT *
+FROM account_role
+SELECt *
+FROM account
 
 USE VeXeDB
-SELECT * FROM trip_seat ts 
-JOIN trip t ON t.tripId = ts.tripSeatId
+SELECT *
+FROM trip_seat ts
+    JOIN trip t ON t.tripId = ts.tripSeatId
+
+SELECT *
+FROM account_role ar JOIN account a ON ar.accountId = a.accountId JOIN role r on r.roleId = ar.roleId
+
+SELECT *
+FROM coach_type
+
+
+SELECT COUNT(*)
+FROM trip_seat ts JOIN trip t on ts.tripId = t.tripId
+WHERE ts.tripId = t.tripId
+
+
+SELECT *
+FROM TRIP
+
+
+------------------
+DECLARE @departureTime DATETIME = '2026-07-01 08:00:00';
+
+SELECT
+    t.tripId,
+    t.coachId,
+    c.licensePlate,
+    t.departureTime,
+
+    COUNT(ts.tripSeatId) AS totalSeatsInTrip,
+
+    SUM(CASE 
+        WHEN ts.status = 'AVAILABLE' THEN 1 
+        ELSE 0 
+    END) AS availableSeats,
+
+    SUM(CASE 
+        WHEN ts.status IN ('LOCKED', 'SOLD') THEN 1 
+        ELSE 0 
+    END) AS unavailableSeats
+
+FROM trip t
+    JOIN coach c
+    ON c.coachId = t.coachId
+    JOIN trip_seat ts
+    ON ts.tripId = t.tripId
+    JOIN seat s
+    ON s.seatId = ts.seatId
+
+WHERE 
+   t.departureTime = @departureTime
+    AND t.status = 'SCHEDULED'
+    AND s.isActive = 1
+
+GROUP BY
+    t.tripId,
+    t.coachId,
+    c.licensePlate,
+    t.departureTime;
+
+
+EXEC sp_AutoGenerateWeeklySchedule_Final @StartDate = '2026-07-01';
+
+USE VeXeDB;
+
+SELECT *
+FROM route
+
+SELECT *
+FROM route
+
+SELECT *
+FROM trip
+
+
+
+SELECT *
+FROM route_stop
+
+SELECT *
+FROM coach_stop
+
+-- Test customer stop timeline by concrete trip, not ambiguous coach/date.
+DECLARE @TripId INT = 1;
+
+SELECT
+    t.tripId,
+    r.routeName,
+    cs.stopPointId,
+    cs.stopPointName,
+    cs.[address],
+    cs.city,
+    rs.stopOrder,
+    rs.minutesFromStart,
+    DATEADD(MINUTE, rs.minutesFromStart, t.departureTime) AS estimatedStopTime
+FROM trip t
+    JOIN route r ON r.routeId = t.routeId
+    JOIN route_stop rs ON rs.routeId = t.routeId
+    JOIN coach_stop cs ON cs.stopPointId = rs.stopPointId
+WHERE t.tripId = @TripId
+    AND cs.isActive = 1
+ORDER BY rs.stopOrder ASC;
+
+USE VeXeDB;
+SELECT
+    r.routeName AS routeName,
+    c.manufacturer AS manufacturer,
+    t.[status] AS tripStatus,
+    ct.coachTypeName AS coachTypeName,
+    c.licensePlate AS licensePlate,
+    c.[status] AS coachStatus,
+    CAST(t.departureTime AS DATE) AS departureDate,
+    CAST(t.departureTime AS TIME) AS departureTime,
+    COALESCE(seat_counts.availableSeats, 0) AS availableSeats,
+    COALESCE(seat_counts.totalSeats, 0) AS totalSeats
+FROM trip t
+    LEFT JOIN route r ON t.routeId = r.routeId
+    LEFT JOIN coach c ON t.coachId = c.coachId
+    LEFT JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId
+    LEFT JOIN (
+                SELECT
+        ts.tripId,
+        CAST(SUM(CASE WHEN UPPER(LTRIM(RTRIM(ts.[status]))) = 'AVAILABLE' THEN 1 ELSE 0 END) AS INT) AS availableSeats,
+        CAST(COUNT(ts.tripSeatId) AS INT) AS totalSeats
+    FROM trip_seat ts
+        JOIN seat s ON s.seatId = ts.seatId
+    WHERE s.isActive = 1
+    GROUP BY ts.tripId
+    
+            ) seat_counts ON seat_counts.tripId = t.tripId
+WHERE CAST(t.departureTime AS DATE) = '2026-01-01'
+ORDER BY t.departureTime ASC
+
+USE VeXeDB;
+SELECT * FROM passenger_ticket_detail
+
+SELECT * FROM customer
+
+
+
+
+select pt.qrcode, ts.tripSeatId, t.tripId FROM trip_seat ts join trip t on ts.tripId = t.tripId
+join passenger_ticket_detail pt
+on ts.tripSeatId = pt.tripSeatId
+JOIN passenger_ticket p on pt.passengerTicketId = p.passengerTicketId
+JOIN CUSTOMER c on p.customerId = c.customerId
+WHERE c.accountId = 193 AND cast(t.departureTime AS DATE) = '2026-01-11'
+
+
+
+
+select pt.qrcode FROM trip_seat ts join trip t on ts.tripId = t.tripId
+join passenger_ticket_detail pt
+on ts.tripSeatId = pt.tripSeatId
+JOIN passenger_ticket p on pt.passengerTicketId = p.passengerTicketId
+JOIN CUSTOMER c on p.customerId = c.customerId
+WHERE c.accountId = 193 AND cast(t.departureTime AS DATE) = '2026-01-11'
+AND ts.tripSeatId = 15011 AND t.tripId = 501
+
+SELECT * FROM trip_seat
+
+SELECT * FROM trip
+
+-- Booking-history rows used by CustomerTicketHistoryService.
+-- Set @ticketCode to NULL for the full history or a code for one detail page.
+DECLARE @historyAccountId INT = 193;
+DECLARE @ticketCode VARCHAR(64) = NULL;
+
+SELECT pt.passengerTicketId, ptd.ticketDetailId, pt.ticketCode,
+       pt.status AS ticketStatus, pt.totalPrice, pt.pickupStopName,
+       pt.dropoffStopName, pt.createdAt AS bookedAt, t.departureTime,
+       r.routeName, ct.coachTypeName, pay.paymentMethod,
+       pay.status AS paymentStatus, ptd.fullName, ptd.phone, ptd.email,
+       ptd.seatCodeSnapshot AS seatCode, ptd.price AS seatPrice
+FROM passenger_ticket_detail ptd
+JOIN passenger_ticket pt ON pt.passengerTicketId = ptd.passengerTicketId
+JOIN customer c ON c.customerId = pt.customerId
+JOIN trip t ON t.tripId = pt.tripId
+JOIN route r ON r.routeId = t.routeId
+JOIN coach co ON co.coachId = t.coachId
+JOIN coach_type ct ON ct.coachTypeId = co.coachTypeId
+LEFT JOIN payment pay ON pay.passengerTicketId = pt.passengerTicketId
+WHERE c.accountId = @historyAccountId
+  AND (@ticketCode IS NULL OR pt.ticketCode = @ticketCode)
+ORDER BY t.departureTime DESC, pt.passengerTicketId DESC, ptd.ticketDetailId;
+
+-- Ownership-safe QR lookup corresponding to GET /customer/history/seats/{id}/qr.
+DECLARE @ticketDetailId INT = 1;
+SELECT ptd.qrcode
+FROM passenger_ticket_detail ptd
+JOIN passenger_ticket pt ON pt.passengerTicketId = ptd.passengerTicketId
+JOIN customer c ON c.customerId = pt.customerId
+WHERE ptd.ticketDetailId = @ticketDetailId
+  AND c.accountId = @historyAccountId;
+
+-- Inspect the cancellation/refund result without mutating DDL or fake data.
+DECLARE @cancelledTicketCode VARCHAR(64) = 'REPLACE_WITH_TICKET_CODE';
+SELECT pt.ticketCode, pt.status AS ticketStatus, p.refundAmount,
+       r.amount AS requestedRefundAmount, r.refundMethod,
+       r.status AS refundStatus, r.callbackData AS bankDestination
+FROM passenger_ticket pt
+JOIN payment p ON p.passengerTicketId = pt.passengerTicketId
+LEFT JOIN refund r ON r.paymentId = p.paymentId
+WHERE pt.ticketCode = @cancelledTicketCode;

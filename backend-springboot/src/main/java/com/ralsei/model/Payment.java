@@ -55,4 +55,7 @@ public class Payment extends BaseEntity {
 
     @Column(name = "callbackData", columnDefinition = "NVARCHAR(MAX)")
     private String callbackData;
+
+    @Column(name = "cancelToken")
+    private String cancelToken;
 }

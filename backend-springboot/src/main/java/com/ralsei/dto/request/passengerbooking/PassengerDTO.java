@@ -27,6 +27,7 @@ public record PassengerDTO(
     )
     String phone,
 
+    @NotBlank(message = "Vui lòng nhập email!")
     @Pattern(
         regexp = BookingValidationPatterns.EMAIL,
         message = "Email không hợp lệ!"
@@ -34,5 +35,7 @@ public record PassengerDTO(
     String email,
 
     @Valid
-    AccompaniedChildDTO accompaniedChild
+    AccompaniedChildDTO accompaniedChild,
+
+    String firebaseIdToken
 ) {}

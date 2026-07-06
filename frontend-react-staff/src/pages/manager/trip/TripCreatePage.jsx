@@ -4,9 +4,11 @@ import { Alert, Button, Card, Col, Container, Form, Row } from 'react-bootstrap'
 import { BsArrowLeft, BsCheckCircle, BsExclamationTriangleFill } from 'react-icons/bs';
 import { tripApi } from '../../../features/trip';
 import './TripCreatePage.css';
+import { useRouteDropdown } from '../../../hooks/useRouteDropdown';
 
 export default function TripCreatePage() {
     const navigate = useNavigate();
+    const { routes, loadingRoutes } = useRouteDropdown(true);
 
     /** Form state - lưu trữ thông tin chuyến xe */
     const [formData, setFormData] = useState({
@@ -27,10 +29,16 @@ export default function TripCreatePage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoadingResources, setIsLoadingResources] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
+    const today = new Date().toLocaleDateString('en-CA');
 
     /** Handler cập nhật state khi người dùng nhập liệu */
     const handleInputChange = (e) => {
         const { name, value } = e.target;
+        if (name === 'departureDate' && value && value < today) {
+            setFormData(prev => ({ ...prev, departureDate: today, departureTime: '' }));
+            setErrorMsg('Không thể chọn ngày trong quá khứ.');
+            return;
+        }
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
@@ -55,9 +63,9 @@ export default function TripCreatePage() {
                     ]);
 
                     // Đổ dữ liệu trả về từ ResponseEntity vào các Dropdown tương ứng
-                    setAvailableCoaches(coachesRes.data || []);
-                    setAvailableDrivers(driversRes.data || []);
-                    setAvailableAttendants(attendantsRes.data || []);
+                    setAvailableCoaches(coachesRes || []);
+                    setAvailableDrivers(driversRes || []);
+                    setAvailableAttendants(attendantsRes || []);
                 } catch (err) {
                     console.error('Lỗi tự động tải tài nguyên:', err);
                     setErrorMsg('Không thể tự động cập nhật danh sách xe và nhân sự phù hợp cho lịch trình này.');
@@ -80,6 +88,12 @@ export default function TripCreatePage() {
         if (!formData.routeId) return 'Vui lòng chọn tuyến đường!';
         if (!formData.departureDate) return 'Vui lòng chọn ngày khởi hành!';
         if (!formData.departureTime) return 'Vui lòng chọn giờ khởi hành!';
+        const departureMinute = new Date(`${formData.departureDate}T${formData.departureTime}:00`);
+        const currentMinute = new Date();
+        currentMinute.setSeconds(0, 0);
+        if (departureMinute < currentMinute) {
+            return 'Thời gian khởi hành phải ở tương lai!';
+        }
         if (!formData.coachId) return 'Vui lòng chọn xe khách từ danh sách!';
         if (!formData.driverId) return 'Vui lòng chọn tài xế từ danh sách!';
         if (!formData.attendantId) return 'Vui lòng chọn phụ xe từ danh sách!';
@@ -162,10 +176,10 @@ export default function TripCreatePage() {
                                         value={formData.routeId}
                                         onChange={handleInputChange}
                                         className="py-2"
+                                        disabled={loadingRoutes}
                                     >
                                         <option value="">Chọn tuyến đường</option>
-                                        <option value="1">Hà Nội - Quảng Bình</option>
-                                        <option value="2">Quảng Bình - Hà Nội</option>
+                                        {routes.map((route) => <option key={route.routeId} value={route.routeId}>{route.routeName}</option>)}
                                     </Form.Select>
                                 </Form.Group>
 
@@ -179,6 +193,7 @@ export default function TripCreatePage() {
                                         name="departureDate"
                                         required
                                         value={formData.departureDate}
+                                        min={today}
                                         onChange={handleInputChange}
                                         className="py-2"
                                     />
@@ -194,6 +209,10 @@ export default function TripCreatePage() {
                                         name="departureTime"
                                         required
                                         value={formData.departureTime}
+                                        min={formData.departureDate === today
+                                            ? new Date().toTimeString().slice(0, 5)
+                                            : undefined}
+                                        step="300"
                                         onChange={handleInputChange}
                                         className="py-2"
                                     />
@@ -212,12 +231,12 @@ export default function TripCreatePage() {
                                         required
                                         value={formData.coachId}
                                         onChange={handleInputChange}
-                                        disabled={!formData.routeId || !formData.departureDate || !formData.departureTime}
+                                        disabled={!formData.routeId || !formData.departureDate || !formData.departureTime || isLoadingResources}
                                     >
                                         <option value="">-- Chọn xe trống lịch --</option>
                                         {availableCoaches.map(coach => (
                                             <option key={coach.id} value={coach.id}>
-                                                {coach.licensePlate} ({coach.coachType})
+                                                {coach.displayName} ({coach.secondaryText})
                                             </option>
                                         ))}
                                     </Form.Select>
@@ -238,7 +257,7 @@ export default function TripCreatePage() {
                                         <option value="">-- Chọn tài xế sẵn sàng --</option>
                                         {availableDrivers.map(driver => (
                                             <option key={driver.id} value={driver.id}>
-                                                {driver.fullName}
+                                                {driver.displayName}
                                             </option>
                                         ))}
                                     </Form.Select>
@@ -259,7 +278,7 @@ export default function TripCreatePage() {
                                         <option value="">-- Chọn phụ xe sẵn sàng --</option>
                                         {availableAttendants.map(attendant => (
                                             <option key={attendant.id} value={attendant.id}>
-                                                {attendant.fullName}
+                                                {attendant.displayName}
                                             </option>
                                         ))}
                                     </Form.Select>
@@ -272,9 +291,8 @@ export default function TripCreatePage() {
                                     </Form.Label>
                                     <Form.Select name="status" value={formData.status} onChange={handleInputChange}>
                                         <option value="SCHEDULED">Đã lên lịch</option>
-                                        <option value="ACTIVE">Đang hoạt động</option>
+                                        <option value="IN_PROGRESS">Đang hoạt động</option>
                                         <option value="COMPLETED">Hoàn thành</option>
-                                        <option value="CANCELLED">Đã hủy</option>
                                     </Form.Select>
                                 </Form.Group>
 
