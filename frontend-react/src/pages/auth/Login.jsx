@@ -109,7 +109,7 @@ export default function Login() {
               {loading ? 'Đang gửi mã...' : 'Nhận mã OTP'}
             </Button>
 
-            {/* <div className="d-flex align-items-center mb-3">
+            <div className="d-flex align-items-center mb-3">
               <hr className="flex-grow-1" style={{ opacity: 0.1 }} />
               <span className="mx-3 text-muted" style={{ fontSize: '12px', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Hoặc đăng nhập với</span>
               <hr className="flex-grow-1" style={{ opacity: 0.1 }} />
@@ -142,7 +142,7 @@ export default function Login() {
                 </svg>
                 <span style={{ color: '#334155', fontWeight: '500', fontSize: '14px' }}>Facebook</span>
               </Button>
-            </div> */}
+            </div>
           </Form>
         ) : (
           <Form onSubmit={handleVerifyOtp}>
