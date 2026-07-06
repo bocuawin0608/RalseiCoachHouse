@@ -77,8 +77,8 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
                 stopPointName: coachStop.stopPointName,
                 city: coachStop.city,
                 stopOrder: 1,
-                kilometersFromStart: 1.2,
-                minutesFromStart: 1.2,
+                kilometersFromStart: 0,
+                minutesFromStart: 0,
                 stopPointActive: coachStop.active !== undefined ? coachStop.active : true
             };
             setDraftRouteStops([newStop]);
@@ -96,8 +96,8 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
             stopPointName: pendingCoachStop.stopPointName,
             city: pendingCoachStop.city,
             stopOrder: 0,
-            kilometersFromStart: 1.2,
-            minutesFromStart: 1.2,
+            kilometersFromStart: 0,
+            minutesFromStart: 0,
             stopPointActive: pendingCoachStop.active !== undefined ? pendingCoachStop.active : true
         };
 
@@ -248,8 +248,8 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
                             routeId: Number(detail.routeId),
                             stopPointId: stop.stopPointId,
                             stopOrder: i + 1,
-                            kilometersFromStart: 1.2,
-                            minutesFromStart: 1.2
+                            kilometersFromStart: 0,
+                            minutesFromStart: 0
                         });
                     }
                 }

@@ -88,8 +88,6 @@ public class RouteStopServiceImpl implements RouteStopService {
                                 .build();
 
                 RouteStop saved = routeStopRepository.save(Objects.requireNonNull(routeStop));
-                routeStopRepository.flush();
-                syncRouteTotals(route.getRouteId());
                 return mapToResponse(saved);
         }
 
