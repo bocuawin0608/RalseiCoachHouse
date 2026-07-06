@@ -2,6 +2,7 @@ package com.ralsei.repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -12,7 +13,8 @@ import com.ralsei.dto.projection.staff.StaffProjection;
 import com.ralsei.model.Staff;
 
 public interface StaffRepository extends JpaRepository<Staff, Integer> {
-    Staff findByAccountId(Integer accountId);
+
+    Optional<Staff> findByAccountId(Integer accountId);
     boolean existsByAccountId(Integer accountId);
     boolean existsByPhoneIgnoreCase(String phone);
     long countByTicketAgencyId(Integer ticketAgencyId);

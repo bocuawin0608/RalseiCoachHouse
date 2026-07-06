@@ -107,11 +107,18 @@ const normalizeLocationName = (value = '') => {
 };
 
 /**
- * Converts route dropdown rows into unique searchable locations.
+ * Converts dedicated route-location projection rows into unique search options.
  */
 const extractLocationsFromRoutes = (routes) => {
     const locations = new Set(FALLBACK_LOCATIONS);
     routes.forEach((route) => {
+        const stopLocation = normalizeLocationName(route.locationName || '');
+        if (stopLocation) {
+            locations.add(stopLocation);
+            return;
+        }
+
+        // Compatibility fallback for an older backend response during rolling deployment.
         const routeName = route.routeName || '';
         routeName.split('-').forEach((part) => {
             const location = normalizeLocationName(part);
@@ -267,7 +274,7 @@ const HomePage = () => {
     const [date, setDate] = useState('');
     const [returnDate, setReturnDate] = useState('');
     const [routes, setRoutes] = useState([]);
-    const [searchHistory, setSearchHistory] = useState([]);
+    const [searchHistory, setSearchHistory] = useState(readSearchHistory);
     const [trips, setTrips] = useState([]);
     const [loading, setLoading] = useState(false);
     const [hasSearched, setHasSearched] = useState(false);
@@ -282,9 +289,8 @@ const HomePage = () => {
     const [priceRange, setPriceRange] = useState({ min: null, max: null });
 
     useEffect(() => {
-        setSearchHistory(readSearchHistory());
         tripService
-            .getRouteDropdown()
+            .getCustomerRouteLocations()
             .then(setRoutes)
             .catch(() => setRoutes([]));
     }, []);
