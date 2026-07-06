@@ -75,7 +75,7 @@ export default function Sidebar() {
                     )}
 
                     {hasAccess(['TICKET_STAFF']) && (
-                        <NavLink to="/staff/ticket/cargo-tickets" className={navLinkClass} end>
+                        <NavLink to="/staff/cargo-tickets" className={navLinkClass} end>
                             <BsReceipt size={20} className="flex-shrink-0" />
                             <span>Vé hàng hóa</span>
                         </NavLink>
