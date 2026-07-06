@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { coachApi } from '../api/coachApi';
 import { useDebounce } from '../../../hooks/useDebounce';
 
-const INITIAL_FILTER = { licensePlate: '', statuses: [], coachTypeId: '', routeName: '' };
+const INITIAL_FILTER = { licensePlate: '', statuses: ['ACTIVE'], coachTypeId: '', routeName: '' };
 
 export const useCoaches = (initialCoachTypeId = '') => {
     const [coaches, setCoaches] = useState([]);
@@ -54,18 +54,40 @@ export const useCoaches = (initialCoachTypeId = '') => {
         fetchCoaches();
     }, [fetchCoaches]);
 
-    const handleCheckboxChange = (e) => {
+    const handleFilterChange = useCallback((e) => {
+        const { name, value } = e.target;
+        setFilters(prev => ({ ...prev, [name]: value }));
+        setPageInfo(prev => ({ ...prev, page: 0 })); 
+    }, []);
+
+    const handleCheckboxChange = useCallback((e) => {
         const { value, checked } = e.target;
 
-        if (checked) setFilters({ ...filters, statuses: [...filters.statuses, value] });
-        else setFilters({ ...filters, statuses: filters.statuses.filter(status => status != value) });
-    };
+        setFilters(prev => {
+            const currentStatuses = prev.statuses || [];
+            const nextStatuses = checked 
+                ? [...currentStatuses, value] 
+                : currentStatuses.filter(status => status !== value);
+                
+            return { ...prev, statuses: nextStatuses };
+        });
+        
+        setPageInfo(prev => ({ ...prev, page: 0 }));
+    }, []);
+
+    const handleReset = useCallback(() => {
+        setFilters({
+            ...INITIAL_FILTER,
+            coachTypeId: initialCoachTypeId
+        });
+        setPageInfo(prev => ({ ...prev, page: 0 }));
+    }, [initialCoachTypeId]);
 
     return {
         coaches, loading, error, pageInfo, setPageInfo, filters,
-        handleFilterChange: (e) => setFilters(prev => ({ ...prev, [e.target.name]: e.target.value })),
+        handleFilterChange,
         handleCheckboxChange,
-        handleReset: () => setFilters(INITIAL_FILTER),
+        handleReset,
         refetch: fetchCoaches
     };
 };

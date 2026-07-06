@@ -8,7 +8,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.ralsei.repository.PaymentRepository;
-import com.ralsei.service.PaymentService;
+import com.ralsei.service.passengerbooking.PassengerPendingPaymentService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +21,7 @@ public class PassengerPaymentExpiryScheduler {
     private static final int BATCH_SIZE = 200;
 
     private final PaymentRepository paymentRepository;
-    private final PaymentService paymentService;
+    private final PassengerPendingPaymentService passengerPendingPaymentService;
 
     @Scheduled(fixedDelayString = "${booking.payment-expiry-scan-delay-ms:30000}")
     public void expireOverduePendingPassengerPayments() {
@@ -31,7 +31,7 @@ public class PassengerPaymentExpiryScheduler {
 
         for (String transactionId : transactionIds) {
             try {
-                paymentService.cancelPayment(transactionId);
+                passengerPendingPaymentService.expireIfOverdue(transactionId);
             } catch (RuntimeException ex) {
                 log.warn("Failed to expire overdue payment transactionId={}: {}", transactionId, ex.getMessage());
             }

@@ -23,14 +23,18 @@ import com.ralsei.dto.request.passengerbooking.PriceCalculationRequest;
 import com.ralsei.dto.request.passengerbooking.SeatLockRequest;
 import com.ralsei.dto.response.passengerbooking.BookingConfirmResponse;
 import com.ralsei.dto.response.passengerbooking.BookingPaymentPageResponse;
+import com.ralsei.dto.response.passengerbooking.CheckPhoneResponse;
 import com.ralsei.dto.response.passengerbooking.PriceCalculationResponse;
 import com.ralsei.dto.response.passengerbooking.SeatLockResponse;
 import com.ralsei.dto.response.passengerbooking.Step2InitResponse;
 import com.ralsei.dto.response.passengerbooking.TripSeatResponse;
+import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.service.passengerbooking.PassengerBookingService;
+import com.ralsei.util.validation.BookingValidationPatterns;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -77,6 +81,14 @@ public class PassengerBookingController {
         bookingService.releaseSeatsByBecon(holdToken);
     }
 
+    @GetMapping("/check-phone")
+    public ResponseEntity<CheckPhoneResponse> checkPhone(
+            @RequestParam
+            @Pattern(regexp = BookingValidationPatterns.PHONE, message = "Số điện thoại không hợp lệ!")
+            String phone) {
+        return ResponseEntity.ok(bookingService.checkPhone(phone));
+    }
+
     @GetMapping("/trips/{tripId}/step2-init-data")
     public ResponseEntity<Step2InitResponse> getStep2InitData(
         @PathVariable @Min(value = 1, message = "ID của Chuyến phải lớn hơn 0.") Integer tripId,
@@ -114,10 +126,12 @@ public class PassengerBookingController {
 
     @GetMapping("/payments/{transactionId}")
     public ResponseEntity<BookingPaymentPageResponse> getPaymentPage(
-        @PathVariable String transactionId
+        @PathVariable String transactionId,
+        @RequestHeader(value = "X-Cancel-Token", required = false) String cancelToken,
+        @RequestHeader(value = "Authorization", required = false) String accessToken
     ) {
         bookingService.expirePendingPaymentIfOverdue(transactionId);
-        return ResponseEntity.ok(bookingService.getPaymentPage(transactionId));
+        return ResponseEntity.ok(bookingService.getPaymentPage(transactionId, cancelToken, accessToken));
     }
 
     @GetMapping(value = "/payments/{transactionId}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
@@ -127,8 +141,25 @@ public class PassengerBookingController {
     }
 
     @PostMapping("/payments/{transactionId}/expire")
-    public ResponseEntity<BookingPaymentPageResponse> expirePaymentIfOverdue(@PathVariable String transactionId) {
+    public ResponseEntity<BookingPaymentPageResponse> expirePaymentIfOverdue(
+            @PathVariable String transactionId,
+            @RequestHeader(value = "X-Cancel-Token", required = false) String cancelToken,
+            @RequestHeader(value = "Authorization", required = false) String accessToken) {
         bookingService.expirePendingPaymentIfOverdue(transactionId);
-        return ResponseEntity.ok(bookingService.getPaymentPage(transactionId));
+        return ResponseEntity.ok(bookingService.getPaymentPage(transactionId, cancelToken, accessToken));
+    }
+
+    @PostMapping("/payments/{transactionId}/cancel")
+    public ResponseEntity<BookingPaymentPageResponse> cancelPendingPayment(
+            @PathVariable String transactionId,
+            @RequestHeader(value = "X-Cancel-Token", required = false) String cancelToken,
+            @RequestHeader(value = "Authorization", required = false) String accessToken) {
+
+        if (!bookingService.canCancelPendingPayment(transactionId, cancelToken, accessToken)) {
+            throw new BusinessRuleException("Bạn không có quyền hủy giao dịch này!");
+        }
+
+        bookingService.cancelPendingPaymentByUser(transactionId);
+        return ResponseEntity.ok(bookingService.getPaymentPage(transactionId, cancelToken, accessToken));
     }
 }
