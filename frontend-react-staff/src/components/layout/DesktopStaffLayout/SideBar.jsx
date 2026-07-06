@@ -210,9 +210,6 @@ export default function Sidebar() {
                             </NavLink>
                         </>
                     )}
-                            </NavLink>
-                        </>
-                    )}
 
                 </nav>
             </div>
