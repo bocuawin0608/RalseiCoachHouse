@@ -7,7 +7,7 @@ const ROUTE_MAP = {
     ADMIN: "/management/dashboard",
     MANAGER: "/management/dashboard",
     TICKET_STAFF: "/staff/ticket/sell",
-    TRIP_STAFF: "/staff/trip/scan",
+    TRIP_STAFF: "/staff",
 }
 
 export default function GuestGuard() {

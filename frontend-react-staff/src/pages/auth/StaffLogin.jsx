@@ -32,14 +32,16 @@ export default function StaffLogin() {
 
     setLoading(true);
     try {
-      await loginStaff(formData);
+      const response = await loginStaff(formData);
+      const roles = response?.roles || [];
 
-      const roles = user.roles || [];
       if (roles.includes('MANAGER') || roles.includes('ADMIN')) {
             navigate("/management/dashboard");
+            return;
         }
         if (roles.includes('TICKET_STAFF') || roles.includes('TRIP_STAFF')) {
             navigate("/staff");
+            return;
         }
 
     } catch (err) {

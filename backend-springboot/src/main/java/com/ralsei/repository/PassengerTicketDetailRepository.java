@@ -1,6 +1,7 @@
 package com.ralsei.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -115,6 +116,19 @@ public interface PassengerTicketDetailRepository extends JpaRepository<Passenger
         @Param("accountId") Integer accountId,
         @Param("ticketCode") String ticketCode
     );
+
+    Optional<PassengerTicketDetail> findByQrcode(String qrcode);
+
+    @Modifying
+    @Query("""
+        UPDATE PassengerTicketDetail ptd
+        SET ptd.status = :newStatus
+        WHERE ptd.ticketDetailId = :ticketDetailId
+        AND ptd.status = :expectedStatus
+    """)
+    int updateStatusIfCurrent(@Param("ticketDetailId") int ticketDetailId,
+                              @Param("expectedStatus") String expectedStatus,
+                              @Param("newStatus") String newStatus);
 
     /** Returns a boarding token only when the requested seat belongs to the account. */
     @Query(value = """
