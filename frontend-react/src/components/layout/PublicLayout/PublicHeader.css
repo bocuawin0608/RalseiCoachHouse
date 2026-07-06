@@ -11,7 +11,16 @@
 .public-header__account-menu { position: absolute; top: calc(100% + 10px); right: 0; z-index: 1080; width: 220px; padding: 7px; border: 1px solid var(--ralsei-footer); border-radius: 13px; background: var(--ralsei-white); box-shadow: var(--box-shadow-card); }
 .public-header__account-menu button { display: flex; width: 100%; align-items: center; gap: 9px; padding: 10px 11px; border: 0; border-radius: 8px; background: transparent; text-align: left; }
 .public-header__account-menu button:hover { background: var(--ralsei-green); }
-.public-header__account-menu button:last-child { color: var(--ralsei-pink); }
+.public-header__account-menu > button:last-child { color: var(--ralsei-pink); }
+.public-header__account-history { position: relative; }
+.public-header__account-history-trigger { color: var(--ralsei-black); font-weight: 600; }
+.public-header__account-history-chevron { margin-left: auto; transition: transform .2s ease; }
+.public-header__account-history-options { display: none; padding: 3px 0 3px 22px; }
+.public-header__account-history:hover .public-header__account-history-options,
+.public-header__account-history:focus-within .public-header__account-history-options { display: block; }
+.public-header__account-history:hover .public-header__account-history-chevron,
+.public-header__account-history:focus-within .public-header__account-history-chevron { transform: rotate(180deg); }
+.public-header__account-history-options button { color: var(--ralsei-black); font-size: .9rem; }
 
 .history-notifications { position: absolute; top: calc(100% + 10px); right: 155px; z-index: 1080; width: min(390px, calc(100vw - 24px)); border: 1px solid var(--ralsei-footer); border-radius: 14px; background: var(--ralsei-white); box-shadow: var(--box-shadow-card); overflow: hidden; }
 .history-notifications__header { display: flex; align-items: center; justify-content: space-between; padding: 13px 15px; border-bottom: 1px solid var(--ralsei-green); }

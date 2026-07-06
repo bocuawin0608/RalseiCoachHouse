@@ -16,6 +16,7 @@ import BookingTripPage from '../pages/public/booking/BookingTripPage';
 // Nested routes
 import { publicTripRoutes } from '../features/trips';
 import { customerHistoryRoutes } from '../features/customerHistory';
+import { cargoLookupRoutes } from '../features/cargoLookup';
 
 const AppRouter = () => {
     return (
@@ -43,6 +44,7 @@ const AppRouter = () => {
                     <Route path="/booking-history" element={<Navigate to="/history" replace />} />
                     <Route path="/cargo-history" element={<CargoHistoryPage />} />
                     {customerHistoryRoutes}
+                    {cargoLookupRoutes}
                 </Route>
             </Route>
 
