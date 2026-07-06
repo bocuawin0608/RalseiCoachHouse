@@ -1,0 +1,93 @@
+package com.ralsei.service.passengerticket;
+
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.stereotype.Component;
+
+import com.ralsei.dto.projection.staffpassengerticket.StaffPassengerTicketRowProjection;
+import com.ralsei.model.enums.PassengerTicketDetailStatus;
+import com.ralsei.model.enums.PassengerTicketStatus;
+
+@Component
+public class PassengerTicketStaffPolicy {
+
+    private static final long CHANGE_CUTOFF_HOURS = 3;
+    private static final long FULL_REFUND_CUTOFF_HOURS = 5;
+
+    public long hoursUntilDeparture(LocalDateTime departureTime) {
+        if (departureTime == null) {
+            return Long.MIN_VALUE;
+        }
+        return Duration.between(LocalDateTime.now(), departureTime).toHours();
+    }
+
+    public String resolveRefundTierLabel(long hoursUntilDeparture) {
+        if (hoursUntilDeparture < CHANGE_CUTOFF_HOURS) {
+            return "Không được hủy";
+        }
+        if (hoursUntilDeparture > FULL_REFUND_CUTOFF_HOURS) {
+            return "100%";
+        }
+        return "50%";
+    }
+
+    public boolean canModify(long hoursUntilDeparture) {
+        return hoursUntilDeparture >= CHANGE_CUTOFF_HOURS;
+    }
+
+    public boolean canCancel(long hoursUntilDeparture) {
+        return hoursUntilDeparture >= CHANGE_CUTOFF_HOURS;
+    }
+
+    public List<String> resolveAllowedActions(
+        String ticketStatus,
+        List<StaffPassengerTicketRowProjection> seatRows,
+        LocalDateTime departureTime,
+        String paymentStatus
+    ) {
+        List<String> actions = new ArrayList<>();
+        long hoursLeft = hoursUntilDeparture(departureTime);
+        boolean modifiableWindow = canModify(hoursLeft);
+        boolean cancellableWindow = canCancel(hoursLeft);
+        boolean paymentCompleted = "COMPLETED".equals(paymentStatus);
+
+        boolean ticketActive = PassengerTicketStatus.CONFIRMED.name().equals(ticketStatus)
+            || PassengerTicketStatus.CHANGED.name().equals(ticketStatus);
+
+        if (!ticketActive || !paymentCompleted) {
+            return actions;
+        }
+
+        long confirmedSeats = seatRows.stream()
+            .filter(row -> PassengerTicketDetailStatus.CONFIRMED.name().equals(row.getDetailStatus()))
+            .count();
+
+        if (confirmedSeats == 0) {
+            return actions;
+        }
+
+        if (modifiableWindow) {
+            boolean hasConfirmedSeat = seatRows.stream()
+                .anyMatch(row -> PassengerTicketDetailStatus.CONFIRMED.name().equals(row.getDetailStatus()));
+            if (hasConfirmedSeat) {
+                actions.add("CHANGE_PASSENGER_INFO");
+                actions.add("CHANGE_SEAT");
+            }
+            if (confirmedSeats >= 1) {
+                actions.add("TRANSFER_TRIP");
+            }
+        }
+
+        if (cancellableWindow) {
+            actions.add("CANCEL_FULL");
+            if (confirmedSeats >= 2) {
+                actions.add("CANCEL_PARTIAL");
+            }
+        }
+
+        return actions;
+    }
+}
