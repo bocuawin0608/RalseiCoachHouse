@@ -1,5 +1,9 @@
 package com.ralsei.dto.projection;
 
+/**
+ * AccountListProjection
+ */
+
 public interface AccountListProjection {
     Integer getAccountId();
     String getUsername();

@@ -12,6 +12,10 @@ import com.ralsei.dto.projection.staff.StaffListProjection;
 import com.ralsei.dto.projection.staff.StaffProjection;
 import com.ralsei.model.Staff;
 
+/**
+ * Repository interface for {@link com.ralsei.model.Staff} entity.
+ */
+
 public interface StaffRepository extends JpaRepository<Staff, Integer> {
 
     Optional<Staff> findByAccountId(Integer accountId);

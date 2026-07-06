@@ -33,6 +33,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Validated
 @PreAuthorize("hasRole('ADMIN')")
+/**
+ * REST controller for managing customer operations.
+ * All endpoints require ADMIN role.
+ */
+
 public class CustomerController {
     private final CustomerService customerService;
 

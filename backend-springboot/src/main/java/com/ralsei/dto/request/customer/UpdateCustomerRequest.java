@@ -5,6 +5,10 @@ import java.time.LocalDate;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+/**
+ * UpdateCustomerRequest
+ */
+
 public record UpdateCustomerRequest(
     @NotBlank(message = "Tên khách hàng không được để trống.")
     @Size(max = 100, message = "Tên khách hàng không được vượt quá 100 ký tự.")

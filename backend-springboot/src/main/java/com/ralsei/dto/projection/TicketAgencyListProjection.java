@@ -1,5 +1,9 @@
 package com.ralsei.dto.projection;
 
+/**
+ * TicketAgencyListProjection
+ */
+
 public interface TicketAgencyListProjection {
     Integer getTicketAgencyId();
     String getTicketAgencyName();

@@ -38,6 +38,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Validated
 @PreAuthorize("hasRole('ADMIN')")
+/**
+ * REST controller for managing account operations.
+ * All endpoints require ADMIN role.
+ */
+
 public class AccountController {
     private final AccountService accountService;
 

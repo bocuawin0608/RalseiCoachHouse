@@ -4,6 +4,10 @@ import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * StaffListResponse
+ */
+
 public record StaffListResponse(
     Integer staffId,
     String staffName,

@@ -29,6 +29,10 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+/**
+ * Implementation of {@link com.ralsei.service.TicketAgencyService}.
+ */
+
 public class TicketAgencyServiceImpl implements TicketAgencyService {
 
     private final TicketAgencyRepository ticketAgencyRepo;

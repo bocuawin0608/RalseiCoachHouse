@@ -14,6 +14,10 @@ import com.ralsei.dto.response.account.AccountDetailResponse;
 import com.ralsei.dto.response.account.AccountListResponse;
 import com.ralsei.dto.response.account.RoleResponse;
 
+/**
+ * Service interface for account management operations.
+ */
+
 public interface AccountService {
     Page<AccountListResponse> filterAccounts(AccountFilterRequest filterRequest, Pageable pageable);
     AccountDetailResponse getAccountDetail(Integer accountId);

@@ -9,6 +9,10 @@ import com.ralsei.dto.request.role.UpdateRoleRequest;
 import com.ralsei.dto.response.role.RoleDetailResponse;
 import com.ralsei.dto.response.role.RoleListResponse;
 
+/**
+ * Service interface for role management operations.
+ */
+
 public interface RoleService {
     Page<RoleListResponse> filterRoles(RoleFilterRequest filterRequest, Pageable pageable);
     RoleDetailResponse getRoleDetail(Integer roleId);

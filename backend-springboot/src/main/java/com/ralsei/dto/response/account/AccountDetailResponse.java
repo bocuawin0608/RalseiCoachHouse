@@ -5,6 +5,10 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * AccountDetailResponse
+ */
+
 public record AccountDetailResponse(
     Integer accountId,
     String username,

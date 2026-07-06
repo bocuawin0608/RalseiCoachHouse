@@ -9,6 +9,10 @@ import org.springframework.data.repository.query.Param;
 import com.ralsei.dto.projection.TicketAgencyListProjection;
 import com.ralsei.model.TicketAgency;
 
+/**
+ * Repository interface for {@link com.ralsei.model.TicketAgency} entity.
+ */
+
 public interface TicketAgencyRepository extends JpaRepository<TicketAgency, Integer> {
 
     @Query(value = """

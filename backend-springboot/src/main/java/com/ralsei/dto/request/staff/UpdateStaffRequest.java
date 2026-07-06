@@ -4,6 +4,10 @@ import java.time.LocalDate;
 
 import jakarta.validation.constraints.NotBlank;
 
+/**
+ * UpdateStaffRequest
+ */
+
 public record UpdateStaffRequest(
     @NotBlank(message = "Tên nhân viên không được để trống.")
     String staffName,

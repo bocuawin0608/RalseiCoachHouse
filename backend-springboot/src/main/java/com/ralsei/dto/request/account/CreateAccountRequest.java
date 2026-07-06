@@ -8,6 +8,10 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
+/**
+ * CreateAccountRequest
+ */
+
 public record CreateAccountRequest(
     @NotBlank(message = "Tên đăng nhập không được để trống.")
     @Size(max = 50, message = "Tên đăng nhập không được vượt quá 50 ký tự.")

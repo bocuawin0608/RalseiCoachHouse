@@ -10,6 +10,10 @@ import org.springframework.data.repository.query.Param;
 import com.ralsei.dto.projection.CustomerListProjection;
 import com.ralsei.model.Customer;
 
+/**
+ * Repository interface for {@link com.ralsei.model.Customer} entity.
+ */
+
 public interface CustomerRepository extends JpaRepository<Customer, Integer> {
     Optional<Customer> findByAccountId(Integer accountId);
     boolean existsByPhone(String phone);

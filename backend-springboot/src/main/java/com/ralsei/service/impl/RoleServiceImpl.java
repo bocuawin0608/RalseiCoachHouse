@@ -25,6 +25,10 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+/**
+ * Implementation of {@link com.ralsei.service.RoleService}.
+ */
+
 public class RoleServiceImpl implements RoleService {
 
     private final RoleRepository roleRepo;

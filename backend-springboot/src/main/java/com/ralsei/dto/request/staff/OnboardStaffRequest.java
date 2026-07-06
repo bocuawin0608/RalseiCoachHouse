@@ -8,6 +8,10 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
+/**
+ * OnboardStaffRequest
+ */
+
 public record OnboardStaffRequest(
     @NotBlank(message = "Tên nhân viên không được để trống.")
     @Size(max = 100, message = "Tên nhân viên không được vượt quá 100 ký tự.")

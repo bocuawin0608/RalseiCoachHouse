@@ -25,6 +25,10 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+/**
+ * Implementation of {@link com.ralsei.service.CustomerService}.
+ */
+
 public class CustomerServiceImpl implements CustomerService {
 
     private final CustomerRepository customerRepo;

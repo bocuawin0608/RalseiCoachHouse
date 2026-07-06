@@ -19,6 +19,10 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Role entity.
+ */
+
 public class Role extends BaseEntity {
 
     @Id
