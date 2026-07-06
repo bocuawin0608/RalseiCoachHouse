@@ -12,6 +12,10 @@ import com.ralsei.dto.projection.AccountListProjection;
 import com.ralsei.dto.projection.AccountProjection;
 import com.ralsei.model.Account;
 
+/**
+ * Repository interface for {@link com.ralsei.model.Account} entity.
+ */
+
 public interface AccountRepository extends JpaRepository<Account, Integer> {
     
     @Query(value = """

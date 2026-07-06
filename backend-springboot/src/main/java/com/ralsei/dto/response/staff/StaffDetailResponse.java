@@ -5,6 +5,10 @@ import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * StaffDetailResponse
+ */
+
 public record StaffDetailResponse(
     Integer staffId,
     Integer accountId,

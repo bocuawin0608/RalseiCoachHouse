@@ -37,6 +37,10 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+/**
+ * Implementation of {@link com.ralsei.service.AccountService}.
+ */
+
 public class AccountServiceImpl implements AccountService {
 
     private final AccountRepository accountRepo;

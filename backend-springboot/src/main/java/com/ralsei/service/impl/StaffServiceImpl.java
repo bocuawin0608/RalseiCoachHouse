@@ -37,6 +37,10 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+/**
+ * Implementation of {@link com.ralsei.service.StaffService}.
+ */
+
 public class StaffServiceImpl implements StaffService {
 
     private final StaffRepository staffRepo;

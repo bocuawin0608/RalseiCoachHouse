@@ -5,6 +5,10 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
+/**
+ * CreateTicketAgencyRequest
+ */
+
 public record CreateTicketAgencyRequest(
     @NotBlank(message = "Tên bến xe không được để trống.")
     @Size(max = 200, message = "Tên bến xe không được vượt quá 200 ký tự.")

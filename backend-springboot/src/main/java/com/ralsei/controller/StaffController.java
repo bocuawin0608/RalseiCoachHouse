@@ -34,6 +34,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Validated
 @PreAuthorize("hasRole('ADMIN')")
+/**
+ * REST controller for managing staff operations.
+ * All endpoints require ADMIN role.
+ */
+
 public class StaffController {
     private final StaffService staffService;
 

@@ -2,6 +2,10 @@ package com.ralsei.dto.response.account;
 
 import java.time.LocalDate;
 
+/**
+ * StaffInfoResponse
+ */
+
 public record StaffInfoResponse(
     Integer staffId,
     String staffName,

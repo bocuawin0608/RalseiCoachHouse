@@ -11,6 +11,10 @@ import com.ralsei.dto.request.customer.UpdateCustomerRequest;
 import com.ralsei.dto.response.customer.CustomerDetailResponse;
 import com.ralsei.dto.response.customer.CustomerListResponse;
 
+/**
+ * Service interface for customer management operations.
+ */
+
 public interface CustomerService {
     Page<CustomerListResponse> filterCustomers(CustomerFilterRequest filterRequest, Pageable pageable);
     CustomerDetailResponse getCustomerDetail(Integer customerId);

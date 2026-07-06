@@ -11,6 +11,10 @@ import java.util.List;
 import com.ralsei.dto.projection.RoleListProjection;
 import com.ralsei.model.Role;
 
+/**
+ * Repository interface for {@link com.ralsei.model.Role} entity.
+ */
+
 public interface RoleRepository extends JpaRepository<Role, Integer> {
     Optional<Role> findByRoleName(String roleName);
 

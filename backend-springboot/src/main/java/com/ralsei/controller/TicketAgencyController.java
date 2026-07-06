@@ -36,6 +36,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Validated
 @PreAuthorize("hasRole('ADMIN')")
+/**
+ * REST controller for managing ticketagency operations.
+ * All endpoints require ADMIN role.
+ */
+
 public class TicketAgencyController {
     private final TicketAgencyService ticketAgencyService;
 

@@ -4,6 +4,10 @@ import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * RoleDetailResponse
+ */
+
 public record RoleDetailResponse(
     Integer roleId,
     String roleName,

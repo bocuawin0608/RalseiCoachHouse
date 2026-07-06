@@ -12,6 +12,10 @@ import com.ralsei.dto.response.ticketagency.CoachStopDropdownDTO;
 import com.ralsei.dto.response.ticketagency.TicketAgencyDetailResponse;
 import com.ralsei.dto.response.ticketagency.TicketAgencyListResponse;
 
+/**
+ * Service interface for ticketagency management operations.
+ */
+
 public interface TicketAgencyService {
     Page<TicketAgencyListResponse> filterTicketAgencies(TicketAgencyFilterRequest filterRequest, Pageable pageable);
     TicketAgencyDetailResponse getTicketAgencyDetail(Integer ticketAgencyId);
