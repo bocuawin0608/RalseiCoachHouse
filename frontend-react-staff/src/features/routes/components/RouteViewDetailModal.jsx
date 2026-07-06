@@ -236,6 +236,12 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
                 const originalIds = originalRouteStops.map(s => s.routeStopId);
                 const draftIds = draftRouteStops.map(s => s.routeStopId).filter(Boolean);
                 const deletedIds = originalIds.filter(id => !draftIds.includes(id));
+
+                if (draftRouteStops.length < 2) {
+                    alert("Không thể lưu. Một tuyến đường phải có ít nhất 2 trạm dừng.");
+                    return;
+                }
+
                 for (const id of deletedIds) {
                     await routeStopApi.deleteRouteStop(id);
                 }
@@ -292,6 +298,11 @@ export default function RouteViewDetailModal({ isOpen, data, onClose }) {
     const handleConfirmDelete = async () => {
         if (selectedForDeletion.length === 0) {
             setIsDeleteMode(false);
+            return;
+        }
+
+        if (originalRouteStops.length - selectedForDeletion.length < 2) {
+            alert("Không thể xóa. Một tuyến đường phải có ít nhất 2 trạm dừng.");
             return;
         }
 

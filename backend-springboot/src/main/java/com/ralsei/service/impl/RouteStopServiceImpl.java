@@ -180,6 +180,11 @@ public class RouteStopServiceImpl implements RouteStopService {
 
                 int routeId = routeStop.getRoute().getRouteId();
 
+                List<RouteStop> currentStops = routeStopRepository.findByRoute_RouteIdOrderByStopOrderAsc(routeId);
+                if (currentStops.size() <= 2) {
+                        throw new IllegalArgumentException("Cannot delete RouteStop. A route must have at least 2 stops.");
+                }
+
                 routeStopRepository.delete(routeStop);
                 routeStopRepository.flush();
 
