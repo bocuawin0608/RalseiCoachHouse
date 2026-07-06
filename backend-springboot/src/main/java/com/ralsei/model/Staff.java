@@ -14,8 +14,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import org.hibernate.annotations.DynamicUpdate;
-
 @Entity
 @Table(name = "staff")
 @Getter
@@ -23,7 +21,6 @@ import org.hibernate.annotations.DynamicUpdate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@DynamicUpdate
 /**
  * Staff entity.
  */
