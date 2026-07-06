@@ -1,17 +1,25 @@
 import { Alert, Modal } from 'react-bootstrap';
+import { useState } from 'react';
 import { usePassengerTicketDetail } from '../hooks/usePassengerTicketDetail';
 import { usePassengerTicketSeatQr } from '../hooks/usePassengerTicketSeatQr';
+import ChangePassengerInfoModal from './ChangePassengerInfoModal';
 import PassengerTicketDetailPanel from './PassengerTicketDetailPanel';
 import PassengerTicketSeatQrModal from './PassengerTicketSeatQrModal';
 
 export default function PassengerTicketDetailModal({ ticketCode, onClose }) {
     const isOpen = Boolean(ticketCode);
-    const { data, loading, error } = usePassengerTicketDetail(isOpen ? ticketCode : null);
+    const { data, loading, error, applyDetail } = usePassengerTicketDetail(isOpen ? ticketCode : null);
     const { qrPreview, showQr, closeQr } = usePassengerTicketSeatQr(isOpen ? ticketCode : null);
+    const [editSeat, setEditSeat] = useState(null);
 
     const handleCloseDetail = () => {
         closeQr();
+        setEditSeat(null);
         onClose();
+    };
+
+    const handlePassengerInfoUpdated = (updatedTicket) => {
+        applyDetail(updatedTicket);
     };
 
     return (
@@ -23,7 +31,7 @@ export default function PassengerTicketDetailModal({ ticketCode, onClose }) {
                 scrollable
                 centered
                 backdrop="static"
-                enforceFocus={!qrPreview}
+                enforceFocus={!qrPreview && !editSeat}
             >
                 <Modal.Header closeButton>
                     <Modal.Title>
@@ -41,6 +49,7 @@ export default function PassengerTicketDetailModal({ ticketCode, onClose }) {
                         <PassengerTicketDetailPanel
                             ticket={data}
                             onShowQr={showQr}
+                            onEditPassenger={setEditSeat}
                             activeQrDetailId={qrPreview?.ticketDetailId}
                             qrLoading={Boolean(qrPreview?.loading)}
                         />
@@ -49,6 +58,14 @@ export default function PassengerTicketDetailModal({ ticketCode, onClose }) {
             </Modal>
 
             <PassengerTicketSeatQrModal preview={qrPreview} onClose={closeQr} />
+
+            <ChangePassengerInfoModal
+                isOpen={Boolean(editSeat)}
+                ticketCode={ticketCode}
+                seat={editSeat}
+                onClose={() => setEditSeat(null)}
+                onSuccess={handlePassengerInfoUpdated}
+            />
         </>
     );
 }

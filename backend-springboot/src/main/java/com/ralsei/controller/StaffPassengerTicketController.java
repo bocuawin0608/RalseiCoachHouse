@@ -9,16 +9,23 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ralsei.dto.request.staffpassengerticket.StaffPassengerChangePassengerRequest;
 import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.dto.response.staffpassengerticket.StaffPassengerTicketDetailResponse;
 import com.ralsei.dto.response.staffpassengerticket.StaffPassengerTicketListItemResponse;
+import com.ralsei.service.JwtService;
+import com.ralsei.service.passengerticket.StaffPassengerTicketChangeService;
 import com.ralsei.service.passengerticket.StaffPassengerTicketQueryService;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +38,8 @@ import lombok.RequiredArgsConstructor;
 public class StaffPassengerTicketController {
 
     private final StaffPassengerTicketQueryService queryService;
+    private final StaffPassengerTicketChangeService changeService;
+    private final JwtService jwtService;
 
     @GetMapping("/search")
     public ResponseEntity<PagedResponse<StaffPassengerTicketListItemResponse>> search(
@@ -64,5 +73,20 @@ public class StaffPassengerTicketController {
             .cacheControl(CacheControl.noStore())
             .contentType(MediaType.IMAGE_PNG)
             .body(queryService.getSeatQrImage(ticketCode, ticketDetailId));
+    }
+
+    @PatchMapping("/{ticketCode:[A-Za-z0-9_-]+}/details/{detailId}/passenger-info")
+    public ResponseEntity<StaffPassengerTicketDetailResponse> changePassengerInfo(
+        @RequestHeader("Authorization") String authorizationHeader,
+        @PathVariable @Pattern(regexp = "[A-Za-z0-9_-]{3,64}") String ticketCode,
+        @PathVariable("detailId") @Min(1) Integer ticketDetailId,
+        @Valid @RequestBody StaffPassengerChangePassengerRequest request
+    ) {
+        return ResponseEntity.ok(changeService.changePassengerInfo(
+            jwtService.extractAccountId(authorizationHeader),
+            ticketCode,
+            ticketDetailId,
+            request
+        ));
     }
 }

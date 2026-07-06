@@ -10,10 +10,13 @@ const QR_ELIGIBLE_STATUSES = new Set(['CONFIRMED', 'CHECKED_IN']);
 export default function PassengerTicketDetailPanel({
     ticket,
     onShowQr,
+    onEditPassenger,
     activeQrDetailId = null,
     qrLoading = false,
 }) {
     if (!ticket) return null;
+
+    const canChangePassengerInfo = ticket.allowedActions?.includes('CHANGE_PASSENGER_INFO');
 
     const policyHint = ticket.hoursUntilDeparture != null && ticket.hoursUntilDeparture >= 0
         ? `Còn ${ticket.hoursUntilDeparture} giờ trước giờ xe khởi hành • Được phép hoàn tiền: ${ticket.refundTierLabel}`
@@ -92,11 +95,13 @@ export default function PassengerTicketDetailPanel({
                                 <th>Giá ghế</th>
                                 <th>Trạng thái</th>
                                 <th>QR</th>
+                                <th>Thao tác</th>
                             </tr>
                         </thead>
                         <tbody>
                             {ticket.seats.map((seat) => {
                                 const canShowQr = QR_ELIGIBLE_STATUSES.has(seat.status);
+                                const canEditPassenger = canChangePassengerInfo && seat.status === 'CONFIRMED';
                                 const isActive = activeQrDetailId === seat.ticketDetailId;
 
                                 return (
@@ -121,6 +126,17 @@ export default function PassengerTicketDetailPanel({
                                                     disabled={qrLoading && isActive}
                                                 >
                                                     {qrLoading && isActive ? 'Đang tải...' : 'Xem QR'}
+                                                </Button>
+                                            ) : '—'}
+                                        </td>
+                                        <td>
+                                            {canEditPassenger ? (
+                                                <Button
+                                                    variant="outline-secondary"
+                                                    size="sm"
+                                                    onClick={() => onEditPassenger?.(seat)}
+                                                >
+                                                    Sửa thông tin
                                                 </Button>
                                             ) : '—'}
                                         </td>
