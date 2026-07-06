@@ -21,6 +21,7 @@ import com.ralsei.dto.response.CoachAndRouteStop.RouteResponse;
 import com.ralsei.dto.response.CoachAndRouteStop.RouteWithStopsResponse;
 import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.service.RouteService;
+import com.ralsei.dto.projection.route.RouteLocationDropdownProjection;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -55,6 +56,15 @@ public class RouteController {
     @GetMapping("/dropdown")
     public ResponseEntity<List<RouteDropdownDTO>> searchRoutesForDropdown() {
         return ResponseEntity.ok(routeService.findRoutesForDropdown());
+    }
+
+    /**
+     * Supplies real coach-stop cities to the public trip search without altering
+     * the existing route dropdown endpoint used elsewhere in the application.
+     */
+    @GetMapping("/customer-locations")
+    public ResponseEntity<List<RouteLocationDropdownProjection>> getCustomerRouteLocations() {
+        return ResponseEntity.ok(routeService.findRouteLocationsForCustomerDropdown());
     }
 
     @GetMapping("/{id:\\d+}")

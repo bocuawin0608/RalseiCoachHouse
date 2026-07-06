@@ -5,9 +5,10 @@ import Step1SeatSelection from './Step1SeatSelection';
 import Step2PassengerInfo from './Step2PassengerInfo';
 import BookingWizardShell from './BookingWizardShell';
 import { bookingApi } from '../api/bookingApi';
-import { resetBooking, setStep, setTripInfo } from '../reducers/bookingSlice';
+import { resetBooking, setPaymentInfo, setStep, setTripInfo } from '../reducers/bookingSlice';
 import axiosClient from '../../../api/axiosClient';
 import { buildTripShellLabels } from '../utils/tripInfo';
+import { clearActivePaymentSessionByTrip, loadActivePaymentSessionByTrip } from '../utils/paymentSession';
 
 export default function BookingWizard({ tripId }) {
     const navigate = useNavigate();
@@ -21,28 +22,43 @@ export default function BookingWizard({ tripId }) {
     useEffect(() => {
         window.scrollTo(0, 0);
 
-        if (paymentInfo && paymentInfo.transactionId) {
-            const isExpired = new Date(paymentInfo.paymentExpiresAt) <= new Date();
-            
-            if (!isExpired) {
-                navigate(`/booking/payment/${paymentInfo.transactionId}`);
-                return;
-            }
+        const previousState = latestStateRef.current;
+        const previousTripChanged = String(previousState.tripId) !== String(tripId);
+
+        if (previousTripChanged && previousState.selectedSeats.length > 0 && !previousState.paymentInfo) {
+            bookingApi
+                .releaseSeats(
+                    previousState.tripId,
+                    { tripSeatIds: previousState.selectedSeats.map((seatObj) => seatObj.tripSeatId) },
+                    previousState.holdToken
+                )
+                .catch(() => {});
+        }
+
+        const currentPayment = previousState.paymentInfo || loadActivePaymentSessionByTrip(tripId);
+        const paymentBelongsToCurrentTrip = String(currentPayment?.tripId) === String(tripId);
+        const hasPendingPaymentForCurrentTrip = currentPayment?.transactionId
+            && paymentBelongsToCurrentTrip
+            && currentPayment.status === 'PENDING';
+
+        if (hasPendingPaymentForCurrentTrip) {
+            dispatch(setPaymentInfo(currentPayment));
+            navigate(`/booking/payment/${currentPayment.transactionId}`, { replace: true });
+            return;
+        }
+
+        if (currentPayment?.transactionId && paymentBelongsToCurrentTrip && currentPayment.status !== 'PENDING') {
+            clearActivePaymentSessionByTrip(tripId);
         }
 
         dispatch(resetBooking());
 
-    }, [tripId, dispatch, navigate, paymentInfo]);
-
-    useEffect(() => {
-        const incomingTripInfo = location.state; 
-
-        if (incomingTripInfo) {
-            dispatch(setTripInfo(incomingTripInfo));
-        } else if (!tripInfo) {
+        if (location.state) {
+            dispatch(setTripInfo(location.state));
+        } else {
             navigate('/', { replace: true });
         }
-    }, [location.state, tripInfo, dispatch, navigate]);
+    }, [tripId, location.state, dispatch, navigate]);
 
     useEffect(() => {
         latestStateRef.current = { selectedSeats, step, holdToken, tripId, paymentInfo };

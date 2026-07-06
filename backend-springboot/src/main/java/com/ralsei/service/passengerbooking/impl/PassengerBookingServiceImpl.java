@@ -23,7 +23,9 @@ import com.ralsei.dto.request.passengerbooking.SeatLockRequest;
 import com.ralsei.dto.request.payment.PaymentCheckoutRequest;
 import com.ralsei.dto.response.passengerbooking.BookingConfirmResponse;
 import com.ralsei.dto.response.passengerbooking.BookingPaymentPageResponse;
+import com.ralsei.dto.response.passengerbooking.CheckPhoneResponse;
 import com.ralsei.dto.response.passengerbooking.CoachStopDropdownDTO;
+import com.ralsei.dto.response.passengerbooking.CustomerProfileDTO;
 import com.ralsei.dto.response.passengerbooking.PriceCalculationResponse;
 import com.ralsei.dto.response.passengerbooking.SeatLockResponse;
 import com.ralsei.dto.response.passengerbooking.Step2InitResponse;
@@ -31,8 +33,10 @@ import com.ralsei.dto.response.passengerbooking.TripSeatResponse;
 import com.ralsei.dto.response.passengerbooking.VoucherDTO;
 import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.exception.ResourceNotFoundException;
+import com.ralsei.model.Account;
 import com.ralsei.model.AccompaniedChild;
 import com.ralsei.model.CoachStop;
+import com.ralsei.model.Customer;
 import com.ralsei.model.PassengerTicket;
 import com.ralsei.model.PassengerTicketDetail;
 import com.ralsei.model.Payment;
@@ -44,9 +48,11 @@ import com.ralsei.model.enums.PassengerTicketStatus;
 import com.ralsei.model.enums.TripSeatStatus;
 import com.ralsei.model.enums.VoucherType;
 import com.ralsei.repository.AccompaniedChildRepository;
+import com.ralsei.repository.AccountRepository;
 import com.ralsei.repository.CustomerRepository;
 import com.ralsei.repository.PassengerTicketDetailRepository;
 import com.ralsei.repository.PassengerTicketRepository;
+import com.ralsei.repository.PaymentRepository;
 import com.ralsei.repository.RouteStopRepository;
 import com.ralsei.repository.TripRepository;
 import com.ralsei.repository.TripSeatRepository;
@@ -55,9 +61,14 @@ import com.ralsei.service.PaymentService;
 import com.ralsei.service.RouteStopService;
 import com.ralsei.service.VoucherService;
 import com.ralsei.service.passengerbooking.PassengerBookingService;
+import com.ralsei.service.passengerbooking.PassengerPendingPaymentService;
+import com.ralsei.service.passengerbooking.PassengerPhoneVerificationService;
 import com.ralsei.service.passengerbooking.PaymentSseService;
 import com.ralsei.service.passengerbooking.SeatHoldService;
 import com.ralsei.service.ticketgenerator.TicketCodeGenerator;
+import com.ralsei.util.PiiMaskingUtility;
+import com.ralsei.util.PhoneNumberUtility;
+import com.ralsei.util.validation.BookingValidationPatterns;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -70,22 +81,25 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
     private final TripRepository tripRepo;
     private final TripSeatRepository tripSeatRepo;
     private final RouteStopRepository routeStopRepo;
+    private final AccountRepository accountRepo;
     private final CustomerRepository customerRepo;
     private final PassengerTicketRepository ticketRepo;
     private final PassengerTicketDetailRepository ticketDetailRepo;
     private final AccompaniedChildRepository accompaniedChildRepo;
-    //lười nên vứt con repo ở đây thay vì tạo thêm service
 
     private final SeatHoldService seatHoldService;
     private final RouteStopService routeStopService;
     private final VoucherService voucherService;
     private final PaymentService paymentService;
+    private final PaymentRepository paymentRepository;
     private final PaymentSseService paymentSseService;
+    private final PassengerPendingPaymentService passengerPendingPaymentService;
+    private final PassengerPhoneVerificationService passengerPhoneVerificationService;
     private final TicketCodeGenerator ticketCodeGenerator;
     private final JwtService jwtService;
 
     private static final long BROWSING_HOLD_TTL_SECONDS = 600;
-    private static final long PAYMENT_HOLD_TTL_SECONDS = 60;
+    private static final long PAYMENT_HOLD_TTL_SECONDS = 90;
     private static final String BANK_TRANSFER_METHOD = "SEPAY";
 
     @Value("${sepay.bank.account}")
@@ -181,8 +195,15 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
             dropoffPoints,
             eligibleVouchers,
             priceData.totalRawPrice(),
-            priceData.basePrice()
+            priceData.basePrice(),
+            resolveCustomerProfile(accessToken)
         );
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public CheckPhoneResponse checkPhone(String phone) {
+        return passengerPhoneVerificationService.checkPhone(phone);
     }
 
     @Transactional(readOnly = true)
@@ -207,6 +228,7 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
     @Override
     public BookingConfirmResponse confirmBooking(Integer tripId, BookingConfirmRequest request, String holdToken, String accessToken) {
         validatePassengerChildBirthYears(request.passengers());
+        validatePassengerPhoneVerification(request.passengers());
 
         CoreCalculationResult coreResult = performCorePriceCalculation(
             tripId, holdToken, request.pickupStopId(), 
@@ -238,13 +260,14 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
             coreResult.totalFinalPrice(),
             sepayBankAccount, 
             sepayBankName,
-            LocalDateTime.now().plusSeconds(PAYMENT_HOLD_TTL_SECONDS)
+            LocalDateTime.now().plusSeconds(PAYMENT_HOLD_TTL_SECONDS),
+            payment.getCancelToken()
         );
     }
 
     @Transactional(readOnly = true)
     @Override
-    public BookingPaymentPageResponse getPaymentPage(String transactionId) {
+    public BookingPaymentPageResponse getPaymentPage(String transactionId, String cancelToken, String accessToken) {
         Payment payment = paymentService.getPaymentByTransactionId(transactionId);
         if (payment.getPassengerTicketId() == null) {
             throw new ResourceNotFoundException("Không tìm thấy thông tin thanh toán vé hành khách!");
@@ -263,6 +286,17 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
             .map(ticketDetail -> ticketDetail.getSeatCodeSnapshot())
             .toList();
 
+        boolean canViewFullPii = canCancelPendingPayment(transactionId, cancelToken, accessToken);
+        String passengerName = canViewFullPii
+                ? primaryDetail.getFullName()
+                : PiiMaskingUtility.maskFullName(primaryDetail.getFullName());
+        String passengerPhone = canViewFullPii
+                ? primaryDetail.getPhone()
+                : PiiMaskingUtility.maskPhone(primaryDetail.getPhone());
+
+        String paymentStatus = paymentRepository.findStatusByTransactionId(transactionId)
+                .orElse(payment.getStatus());
+
         return new BookingPaymentPageResponse(
             ticket.getTicketCode(),
             payment.getTransactionId(),
@@ -270,9 +304,9 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
             sepayBankAccount,
             sepayBankName,
             primaryDetail.getExpiredAt(),
-            payment.getStatus(),
-            primaryDetail.getFullName(),
-            primaryDetail.getPhone(),
+            paymentStatus,
+            passengerName,
+            passengerPhone,
             seatCodes,
             ticket.getTripId()
         );
@@ -281,19 +315,18 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
     @Transactional
     @Override
     public void expirePendingPaymentIfOverdue(String transactionId) {
-        try {
-            Payment payment = paymentService.getPaymentByTransactionId(transactionId);
-            if (!"PENDING".equals(payment.getStatus()) || payment.getPassengerTicketId() == null) return;
+        passengerPendingPaymentService.expireIfOverdue(transactionId);
+    }
 
-            ticketDetailRepo.findByPassengerTicketId(payment.getPassengerTicketId())
-                .stream().findFirst().ifPresent(detail -> {
-                    if (detail.getExpiredAt() != null && LocalDateTime.now().isAfter(detail.getExpiredAt())) {
-                        paymentService.cancelPayment(transactionId);
-                    }
-                });
-        } catch (IllegalArgumentException ex) {
-            log.warn("Không thể expire transaction: {}", transactionId);
-        }
+    @Transactional
+    @Override
+    public void cancelPendingPaymentByUser(String transactionId) {
+        passengerPendingPaymentService.cancelByUser(transactionId);
+    }
+
+    @Override
+    public boolean canCancelPendingPayment(String transactionId, String cancelToken, String accessToken) {
+        return passengerPendingPaymentService.canCancelByUser(transactionId, cancelToken, accessToken);
     }
 
     @Override
@@ -504,6 +537,64 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
             }
         }
         return null;
+    }
+
+    private CustomerProfileDTO resolveCustomerProfile(String accessToken) {
+        if (accessToken == null || accessToken.isBlank()) {
+            return null;
+        }
+
+        Integer accountId = jwtService.extractAccountId(accessToken);
+        if (accountId == null) {
+            return null;
+        }
+
+        Customer customer = customerRepo.findByAccountId(accountId).orElse(null);
+        Account account = accountRepo.findById(accountId).orElse(null);
+        if (customer == null && account == null) {
+            return null;
+        }
+
+        String fullname = customer != null ? customer.getCustomerName() : "User";
+        String phone = resolveProfilePhone(customer, account);
+        if (phone == null) {
+            return null;
+        }
+
+        String email = customer != null ? customer.getEmail() : null;
+        return new CustomerProfileDTO(fullname, phone, email);
+    }
+
+    private String resolveProfilePhone(Customer customer, Account account) {
+        if (customer != null && customer.getPhone() != null && !customer.getPhone().isBlank()) {
+            return PhoneNumberUtility.normalizeToLocalFormat(customer.getPhone());
+        }
+
+        if (account != null
+                && "firebase".equals(account.getAuthProvider())
+                && account.getUsername() != null
+                && account.getUsername().matches(BookingValidationPatterns.PHONE)) {
+            return account.getUsername();
+        }
+
+        return null;
+    }
+
+    private void validatePassengerPhoneVerification(List<PassengerDTO> passengers) {
+        java.util.Set<String> checkedPhones = new java.util.HashSet<>();
+
+        for (PassengerDTO passenger : passengers) {
+            String phone = PhoneNumberUtility.normalizeToLocalFormat(passenger.phone());
+            if (!checkedPhones.add(phone)) {
+                continue;
+            }
+
+            if (passengerPhoneVerificationService.isPhoneKnown(phone)) {
+                continue;
+            }
+
+            passengerPhoneVerificationService.verifyFirebasePhoneToken(phone, passenger.firebaseIdToken());
+        }
     }
 
     private List<CoachStopDropdownDTO> getStopPointDropdown(List<RouteStop> stopPointList, String province){

@@ -8,5 +8,6 @@ public record Step2InitResponse(
     List<CoachStopDropdownDTO> dropoffStopPoints,
     List<VoucherDTO> vouchers,
     BigDecimal totalPrice,
-    BigDecimal basePrice
+    BigDecimal basePrice,
+    CustomerProfileDTO customerProfile
 ) {}

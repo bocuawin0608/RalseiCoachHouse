@@ -26,6 +26,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
 
+    /**
+     * Keeps public customer endpoints independent from JWT state. Authentication
+     * remains optional inside booking services through the raw Authorization
+     * header, but an absent, stale, or non-JWT payment token cannot block access.
+     *
+     * @param request current HTTP request
+     * @return {@code true} when JWT authentication must be skipped
+     */
+    @Override
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
+        String path = request.getServletPath();
+        return "/api/payment/sepay-ipn".equals(path)
+                || path.startsWith("/api/v1/trips/")
+                || ("GET".equalsIgnoreCase(request.getMethod())
+                    && "/api/v1/routes/dropdown".equals(path));
+    }
+
     @Override
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,

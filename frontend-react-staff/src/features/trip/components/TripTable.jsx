@@ -25,7 +25,7 @@ const getStatusVariant = (status) => {
  * Render trip summaries in a responsive table.
  * Columns map directly to TripSummaryProjection fields.
  */
-export default function TripTable({ data, loading, onEditInfo, onDelete }) {
+export default function TripTable({ data, loading, onViewCrew, onEditInfo, onDelete }) {
     if (loading) {
         return <div className="trip-table-loading">Đang tải dữ liệu...</div>;
     }
@@ -34,7 +34,7 @@ export default function TripTable({ data, loading, onEditInfo, onDelete }) {
         <Table responsive hover className="align-middle mb-0">
             <thead className="table-light text-secondary">
                 <tr>
-                    <th className="py-3 px-3">ID</th>
+                    <th className="py-3 px-3">Tuyến đường</th>
                     <th className="py-3 px-3">Biển số xe</th>
                     <th className="py-3 px-3">Hãng xe</th>
                     <th className="py-3 px-3">Loại xe</th>
@@ -55,9 +55,17 @@ export default function TripTable({ data, loading, onEditInfo, onDelete }) {
                     </tr>
                 ) : (
                     data.map((item) => (
-                        <tr key={item.tripId}>
-                            {/* tripId */}
-                            <td className="trip-table-id">#{item.tripId}</td>
+                        <tr
+                            key={item.tripId}
+                            className="trip-table-clickable-row"
+                            onClick={() => onViewCrew(item)}
+                            onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ') onViewCrew(item);
+                            }}
+                            tabIndex="0"
+                            title="Nhấn để xem tổ lái"
+                        >
+                            <td className="trip-table-cell">{item.routeName || '—'}</td>
 
                             {/* licensePlate */}
                             <td className="trip-table-bold">{item.licensePlate}</td>
@@ -112,7 +120,7 @@ export default function TripTable({ data, loading, onEditInfo, onDelete }) {
                                 <div className="trip-table-action-group">
                                     <Button
                                         className="d-flex align-items-center custom-btn-general"
-                                        onClick={() => onEditInfo(item)}
+                                        onClick={(event) => { event.stopPropagation(); onEditInfo(item); }}
                                         title="Sửa thông tin"
                                     >
                                         <BsPencilFill size={16} />
@@ -120,7 +128,7 @@ export default function TripTable({ data, loading, onEditInfo, onDelete }) {
                                     <Button
                                         variant="outline-danger"
                                         className="d-flex align-items-center"
-                                        onClick={() => onDelete(item)}
+                                        onClick={(event) => { event.stopPropagation(); onDelete(item); }}
                                         title="Hủy chuyến"
                                     >
                                         <BsTrashFill size={16} />

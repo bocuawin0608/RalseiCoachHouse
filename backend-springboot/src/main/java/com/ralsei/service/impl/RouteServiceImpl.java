@@ -20,6 +20,7 @@ import com.ralsei.service.GoongService;
 import com.ralsei.dto.request.CoachAndRouteStop.RouteRequest;
 import com.ralsei.dto.request.CoachAndRouteStop.RouteStopCreateRequest;
 import com.ralsei.dto.request.CoachAndRouteStop.RouteWithStopsRequest;
+import com.ralsei.dto.projection.route.RouteLocationDropdownProjection;
 import com.ralsei.dto.response.CoachAndRouteStop.RouteDropdownDTO;
 import com.ralsei.dto.response.CoachAndRouteStop.RouteResponse;
 import com.ralsei.dto.response.CoachAndRouteStop.RouteStopResponse;
@@ -243,5 +244,11 @@ public class RouteServiceImpl implements RouteService {
     @Override
     public List<RouteDropdownDTO> findRoutesForDropdown() {
         return routeRepository.findRoutesForDropdown();
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public List<RouteLocationDropdownProjection> findRouteLocationsForCustomerDropdown() {
+        return routeRepository.findRouteLocationsForCustomerDropdown();
     }
 }

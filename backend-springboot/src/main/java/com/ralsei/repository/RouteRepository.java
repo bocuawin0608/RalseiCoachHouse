@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.ralsei.dto.projection.route.RouteNameDropdownProjection;
+import com.ralsei.dto.projection.route.RouteLocationDropdownProjection;
 import com.ralsei.dto.response.CoachAndRouteStop.RouteDropdownDTO;
 import com.ralsei.model.Route;
 
@@ -28,8 +29,31 @@ public interface RouteRepository extends JpaRepository<Route, Integer> {
 
   Optional<Route> findByRouteIdAndIsActiveTrue(Integer routeId);
 
+  /**
+   * Returns every distinct active city served by an active route in one query.
+   * The customer homepage uses the real coach-stop city instead of parsing
+   * display text from {@code routeName}.
+   */
   @Query("SELECT new com.ralsei.dto.response.CoachAndRouteStop.RouteDropdownDTO(r.routeId, r.routeName) FROM Route r WHERE r.isActive = true ORDER BY r.routeName")
   List<RouteDropdownDTO> findRoutesForDropdown();
+
+  /**
+   * Returns active route/city rows for the public customer search form.
+   * A dedicated projection protects the established RouteDropdownDTO and
+   * findRoutesForDropdown contract used by other screens.
+   */
+  @Query("""
+      SELECT DISTINCT r.routeId AS routeId,
+                      r.routeName AS routeName,
+                      cs.city AS locationName
+      FROM Route r
+      JOIN r.routeStops rs
+      JOIN rs.coachStop cs
+      WHERE r.isActive = true
+        AND cs.isActive = true
+      ORDER BY r.routeName, cs.city
+      """)
+  List<RouteLocationDropdownProjection> findRouteLocationsForCustomerDropdown();
 
   @Query(value = """
       SELECT routeName FROM ROUTE

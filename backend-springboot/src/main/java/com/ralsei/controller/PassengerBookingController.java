@@ -23,18 +23,23 @@ import com.ralsei.dto.request.passengerbooking.PriceCalculationRequest;
 import com.ralsei.dto.request.passengerbooking.SeatLockRequest;
 import com.ralsei.dto.response.passengerbooking.BookingConfirmResponse;
 import com.ralsei.dto.response.passengerbooking.BookingPaymentPageResponse;
+import com.ralsei.dto.response.passengerbooking.CheckPhoneResponse;
 import com.ralsei.dto.response.passengerbooking.PriceCalculationResponse;
 import com.ralsei.dto.response.passengerbooking.SeatLockResponse;
 import com.ralsei.dto.response.passengerbooking.Step2InitResponse;
 import com.ralsei.dto.response.passengerbooking.TripSeatResponse;
+import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.service.passengerbooking.PassengerBookingService;
+import com.ralsei.util.validation.BookingValidationPatterns;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1/bookings")
+@PreAuthorize("isAnonymous() or hasRole('CUSTOMER')")
 @RequiredArgsConstructor
 @Validated
 public class PassengerBookingController {
@@ -42,13 +47,11 @@ public class PassengerBookingController {
     private final PassengerBookingService bookingService;
 
     @GetMapping("/trips/{tripId}/seats")
-    @PreAuthorize("isAnonymous() or hasRole('CUSTOMER')")
     public ResponseEntity<List<TripSeatResponse>> getSeatMap(@PathVariable @Min(value = 1, message = "ID của Chuyến phải lớn hơn 0.") Integer tripId) {
         return ResponseEntity.ok(bookingService.getSeatMap(tripId));
     }
 
     @PostMapping("/trips/{tripId}/seats/lock")
-    @PreAuthorize("isAnonymous() or hasRole('CUSTOMER')")
     public ResponseEntity<SeatLockResponse> lockSeats(
         @PathVariable @Min(value = 1, message = "ID của Chuyến phải lớn hơn 0.") Integer tripId,
         @Valid @RequestBody SeatLockRequest request,
@@ -58,7 +61,6 @@ public class PassengerBookingController {
     }
 
     @PostMapping("/trips/{tripId}/seats/release")
-    @PreAuthorize("isAnonymous() or hasRole('CUSTOMER')")
     public ResponseEntity<Boolean> releaseSeats(
         @PathVariable @Min(value = 1, message = "ID chuyến xe phải lớn hơn 0.") Integer tripId,
         @Valid @RequestBody SeatLockRequest request, 
@@ -79,8 +81,15 @@ public class PassengerBookingController {
         bookingService.releaseSeatsByBecon(holdToken);
     }
 
+    @GetMapping("/check-phone")
+    public ResponseEntity<CheckPhoneResponse> checkPhone(
+            @RequestParam
+            @Pattern(regexp = BookingValidationPatterns.PHONE, message = "Số điện thoại không hợp lệ!")
+            String phone) {
+        return ResponseEntity.ok(bookingService.checkPhone(phone));
+    }
+
     @GetMapping("/trips/{tripId}/step2-init-data")
-    @PreAuthorize("isAnonymous() or hasRole('CUSTOMER')")
     public ResponseEntity<Step2InitResponse> getStep2InitData(
         @PathVariable @Min(value = 1, message = "ID của Chuyến phải lớn hơn 0.") Integer tripId,
         @RequestHeader("X-Booking-Session") String holdToken,
@@ -90,7 +99,6 @@ public class PassengerBookingController {
     }
 
     @PostMapping("/trips/{tripId}/calculate-price")
-    @PreAuthorize("isAnonymous() or hasRole('CUSTOMER')")
     public ResponseEntity<PriceCalculationResponse> calculatePrice(
         @PathVariable @Min(value = 1, message = "ID của Chuyến phải lớn hơn 0.") Integer tripId,
         @RequestBody PriceCalculationRequest request,
@@ -107,7 +115,6 @@ public class PassengerBookingController {
     }
 
     @PostMapping("/trips/{tripId}/confirm")
-    @PreAuthorize("isAnonymous() or hasRole('CUSTOMER')")
     public ResponseEntity<BookingConfirmResponse> confirmBooking(
         @PathVariable @Min(value = 1, message = "ID của Chuyến phải lớn hơn 0.") Integer tripId,
         @Valid @RequestBody BookingConfirmRequest request,
@@ -118,25 +125,41 @@ public class PassengerBookingController {
     }
 
     @GetMapping("/payments/{transactionId}")
-    @PreAuthorize("isAnonymous() or hasRole('CUSTOMER')")
     public ResponseEntity<BookingPaymentPageResponse> getPaymentPage(
-        @PathVariable String transactionId
+        @PathVariable String transactionId,
+        @RequestHeader(value = "X-Cancel-Token", required = false) String cancelToken,
+        @RequestHeader(value = "Authorization", required = false) String accessToken
     ) {
         bookingService.expirePendingPaymentIfOverdue(transactionId);
-        return ResponseEntity.ok(bookingService.getPaymentPage(transactionId));
+        return ResponseEntity.ok(bookingService.getPaymentPage(transactionId, cancelToken, accessToken));
     }
 
     @GetMapping(value = "/payments/{transactionId}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @PreAuthorize("isAnonymous() or hasRole('CUSTOMER')")
     public SseEmitter streamPaymentStatus(@PathVariable String transactionId) {
         bookingService.expirePendingPaymentIfOverdue(transactionId);
         return bookingService.subscribePaymentStatus(transactionId);
     }
 
     @PostMapping("/payments/{transactionId}/expire")
-    @PreAuthorize("isAnonymous() or hasRole('CUSTOMER')")
-    public ResponseEntity<BookingPaymentPageResponse> expirePaymentIfOverdue(@PathVariable String transactionId) {
+    public ResponseEntity<BookingPaymentPageResponse> expirePaymentIfOverdue(
+            @PathVariable String transactionId,
+            @RequestHeader(value = "X-Cancel-Token", required = false) String cancelToken,
+            @RequestHeader(value = "Authorization", required = false) String accessToken) {
         bookingService.expirePendingPaymentIfOverdue(transactionId);
-        return ResponseEntity.ok(bookingService.getPaymentPage(transactionId));
+        return ResponseEntity.ok(bookingService.getPaymentPage(transactionId, cancelToken, accessToken));
+    }
+
+    @PostMapping("/payments/{transactionId}/cancel")
+    public ResponseEntity<BookingPaymentPageResponse> cancelPendingPayment(
+            @PathVariable String transactionId,
+            @RequestHeader(value = "X-Cancel-Token", required = false) String cancelToken,
+            @RequestHeader(value = "Authorization", required = false) String accessToken) {
+
+        if (!bookingService.canCancelPendingPayment(transactionId, cancelToken, accessToken)) {
+            throw new BusinessRuleException("Bạn không có quyền hủy giao dịch này!");
+        }
+
+        bookingService.cancelPendingPaymentByUser(transactionId);
+        return ResponseEntity.ok(bookingService.getPaymentPage(transactionId, cancelToken, accessToken));
     }
 }

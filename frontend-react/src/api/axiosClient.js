@@ -1,8 +1,11 @@
 import axios from 'axios';
 import { authStorage } from '../features/auth';
 
+// Vite provides the same-origin API path and proxies it to Spring Boot.
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, '') || '/api';
+
 const axiosClient = axios.create({
-    baseURL: 'https://localhost:9090/api',
+    baseURL: apiBaseUrl,
     headers: {'Content-Type': 'application/json'},
     withCredentials: true,
     timeout: 10000,
@@ -11,7 +14,7 @@ const axiosClient = axios.create({
 axiosClient.interceptors.request.use(
     (config) => {
         const token = authStorage.getToken();
-        if (token) {
+        if (token && !config.skipAuth) {
             config.headers['Authorization'] = `Bearer ${token.replace(/['"]+/g, '')}`;    
         }
         return config;

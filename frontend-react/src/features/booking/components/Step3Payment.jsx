@@ -7,7 +7,7 @@ import { bookingApi } from '../api/bookingApi';
 import { usePaymentSse } from '../hooks/usePaymentSse';
 import { setPaymentInfo, setPaymentStatus } from '../reducers/bookingSlice';
 import { formatCurrency, formatDateTime } from '../../../utils/formatters';
-import { loadPaymentSession, mapPaymentPageResponse, savePaymentSession } from '../utils/paymentSession';
+import { clearActivePaymentSessionByTrip, loadPaymentSession, mapPaymentPageResponse, savePaymentSession } from '../utils/paymentSession';
 
 const PENDING = 'PENDING';
 const COMPLETED = 'COMPLETED';
@@ -55,6 +55,7 @@ export default function Step3Payment() {
     const [error, setError] = useState('');
     const [copiedField, setCopiedField] = useState('');
     const [timeLeft, setTimeLeft] = useState(null);
+    const [canceling, setCanceling] = useState(false);
     const hasRequestedExpireRef = useRef(false);
 
     const paymentInfo = storedPaymentInfo?.transactionId === transactionId ? storedPaymentInfo : null;
@@ -78,6 +79,9 @@ export default function Step3Payment() {
         const cached = loadPaymentSession(transactionId);
         if (cached) {
             savePaymentSession(transactionId, { ...cached, status: nextStatus });
+            if (nextStatus !== PENDING) {
+                clearActivePaymentSessionByTrip(cached.tripId);
+            }
         }
     }, [dispatch, transactionId]);
 
@@ -106,8 +110,8 @@ export default function Step3Payment() {
             setLoading(true);
             setError('');
             try {
-                const response = await bookingApi.getPaymentPage(transactionId);
                 const cached = loadPaymentSession(transactionId);
+                const response = await bookingApi.getPaymentPage(transactionId, cached?.cancelToken);
                 const mapped = mapPaymentPageResponse(response, cached || {});
                 savePaymentSession(transactionId, mapped);
                 if (!cancelled) {
@@ -151,11 +155,14 @@ export default function Step3Payment() {
 
         const expirePayment = async () => {
             try {
-                const response = await bookingApi.expirePayment(transactionId);
                 const cached = loadPaymentSession(transactionId);
+                const response = await bookingApi.expirePayment(transactionId, cached?.cancelToken);
                 const mapped = mapPaymentPageResponse(response, cached || {});
                 dispatch(setPaymentInfo(mapped));
                 savePaymentSession(transactionId, mapped);
+                if (mapped.status !== PENDING) {
+                    clearActivePaymentSessionByTrip(mapped.tripId);
+                }
             } catch (err) {
                 console.error('Không thể hết hạn giao dịch thanh toán:', err);
             }
@@ -184,6 +191,34 @@ export default function Step3Payment() {
         await navigator.clipboard.writeText(String(value));
         setCopiedField(field);
         setTimeout(() => setCopiedField(''), 1500);
+    };
+
+    const handleCancelPayment = async () => {
+        if (!window.confirm('Bạn có chắc muốn hủy thanh toán?')) {
+            return;
+        }
+
+        setCanceling(true);
+        setError('');
+        const sessionCached = loadPaymentSession(transactionId);
+        const cancelToken = paymentInfo.cancelToken || sessionCached?.cancelToken;
+        try {
+            const response = await bookingApi.cancelPayment(transactionId, cancelToken);
+            const cached = loadPaymentSession(transactionId);
+            const mapped = {
+                ...mapPaymentPageResponse(response, cached || {}),
+                cancelToken,
+                status: response?.paymentStatus || response?.status || 'FAILED',
+            };
+            dispatch(setPaymentInfo(mapped));
+            savePaymentSession(transactionId, mapped);
+            applyPaymentStatus('FAILED');
+            clearActivePaymentSessionByTrip(mapped.tripId);
+        } catch (err) {
+            setError(getErrorMessage(err));
+        } finally {
+            setCanceling(false);
+        }
     };
 
     if (loading) {
@@ -240,7 +275,7 @@ export default function Step3Payment() {
                                 <Alert variant={isCompleted ? 'success' : 'secondary'} className="text-start mb-0">
                                     {isCompleted
                                         ? 'Thanh toán đã hoàn tất. Mã QR không còn hiệu lực.'
-                                        : 'Mã QR không còn hiệu lực. Vui lòng đặt lại vé nếu cần thanh toán mới.'}
+                                        : 'Thanh toán thất bại. Mã QR không còn hiệu lực.'}
                                 </Alert>
                             )}
 
@@ -254,6 +289,18 @@ export default function Step3Payment() {
                                     Còn lại {formatCountdown(timeLeft)}
                                 </div>
                             )}
+
+                            {canPay && (
+                                <Button
+                                    type="button"
+                                    variant="outline-danger"
+                                    className="mt-3 rounded-pill px-4"
+                                    onClick={handleCancelPayment}
+                                    disabled={canceling}
+                                >
+                                    {canceling ? 'Đang hủy...' : 'Hủy thanh toán'}
+                                </Button>
+                            )}
                         </Card.Body>
                     </Card>
                 </Col>
@@ -265,12 +312,35 @@ export default function Step3Payment() {
                                 Thông tin chuyển khoản dự phòng
                             </div>
 
-                            <div className="d-flex flex-column gap-3">
-                                <TransferRow label="Ngân hàng" value={(isFailed || isExpired) ? 'N/A' : paymentInfo.bankName} field="bank" copiedField={copiedField} onCopy={handleCopy} disabled={!canPay} />
-                                <TransferRow label="Số tài khoản" value={(isFailed || isExpired) ? 'N/A' : paymentInfo.bankAccountNumber} field="account" copiedField={copiedField} onCopy={handleCopy} disabled={!canPay} />
-                                <TransferRow label="Số tiền" value={(isFailed || isExpired) ? 'N/A' : formatCurrency(paymentInfo.amount)} copyValue={paymentInfo.amount} field="amount" copiedField={copiedField} onCopy={handleCopy} disabled={!canPay} />
-                                <TransferRow label="Nội dung" value={(isFailed || isExpired) ? 'N/A' : paymentInfo.transactionId} field="description" copiedField={copiedField} onCopy={handleCopy} disabled={!canPay} />
-                            </div>
+                            {canPay ? (
+                                <div className="d-flex flex-column gap-3">
+                                    <TransferRow label="Ngân hàng" value={paymentInfo.bankName} field="bank" copiedField={copiedField} onCopy={handleCopy} disabled={!canPay} />
+                                    <TransferRow label="Số tài khoản" value={paymentInfo.bankAccountNumber} field="account" copiedField={copiedField} onCopy={handleCopy} disabled={!canPay} />
+                                    <TransferRow label="Số tiền" value={formatCurrency(paymentInfo.amount)} copyValue={paymentInfo.amount} field="amount" copiedField={copiedField} onCopy={handleCopy} disabled={!canPay} />
+                                    <TransferRow label="Nội dung" value={paymentInfo.transactionId} field="description" copiedField={copiedField} onCopy={handleCopy} disabled={!canPay} />
+                                </div>
+                            ) : (
+                                <div className="text-center p-4 rounded bg-light border d-flex flex-column align-items-center justify-content-center">
+                                    {isExpired && (
+                                        <>
+                                            <h5 className="fw-bold text-secondary mb-1">Giao dịch đã hết hạn</h5>
+                                            <p className="text-muted small mb-0">Vui lòng quay lại trang đặt vé để tạo yêu cầu mới.</p>
+                                        </>
+                                    )}
+                                    {isFailed && (
+                                        <>
+                                            <h5 className="fw-bold text-danger mb-1">Thanh toán thất bại</h5>
+                                            <p className="text-muted small mb-0">Giao dịch này đã bị hủy hoặc gặp sự cố.</p>
+                                        </>
+                                    )}
+                                    {isCompleted && (
+                                        <>
+                                            <h5 className="fw-bold text-success mb-1">Đã thanh toán thành công</h5>
+                                            <p className="text-muted small mb-0">Hệ thống đã ghi nhận thanh toán cho vé của bạn.</p>
+                                        </>
+                                    )}
+                                </div>
+                            )}
 
                             <hr className="my-4" />
 

@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Navigate, Routes, Route } from 'react-router-dom';
 // Layouts
 import PublicLayout from '../components/layout/PublicLayout/PublicLayout';
 import AuthLayout from '../components/layout/AuthLayout/AuthLayout';
@@ -13,6 +13,8 @@ import BookingPaymentPage from '../pages/public/booking/BookingPaymentPage';
 import BookingTripPage from '../pages/public/booking/BookingTripPage';
 // Nested routes
 import { publicTripRoutes } from '../features/trips';
+import { customerHistoryRoutes } from '../features/customerHistory';
+import { cargoLookupRoutes } from '../features/cargoLookup';
 
 const AppRouter = () => {
     return (
@@ -36,7 +38,9 @@ const AppRouter = () => {
             <Route element={<RoleGuard allowedRoles={['CUSTOMER']} />}>
                 <Route element={<PublicLayout />}>
                     <Route path="/profile" element={<div>Trang cá nhân của khách</div>} />
-                    <Route path="/booking-history" element={<div>Lịch sử đặt vé</div>} />
+                    <Route path="/booking-history" element={<Navigate to="/history" replace />} />
+                    {customerHistoryRoutes}
+                    {cargoLookupRoutes}
                 </Route>
             </Route>
 

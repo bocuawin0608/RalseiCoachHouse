@@ -15,6 +15,7 @@ import { voucherRoutes } from '../features/vouchers';
 import { cargoRoutes } from '../features/cargo';
 import { tripRoutes } from '../features/trip';
 import { cargoTicketRoutes } from '../features/cargoTickets';
+import { passengerTicketRoutes } from '../features/passenger-tickets';
 
 const AppRouter = () => {
     return (
@@ -35,7 +36,7 @@ const AppRouter = () => {
                     {cargoRoutes}
                     {voucherRoutes}
                     {tripRoutes}
-                    
+
                     {/* route dưới thì chỉ admin vào đc, manager thì ko */}
                     <Route element={<RoleGuard allowedRoles={['ADMIN']} />}>
                         <Route path="system-config" element={<div>Cấu hình hệ thống</div>} />
@@ -47,17 +48,16 @@ const AppRouter = () => {
 
             <Route path="/staff">
                 <Route element={<RoleGuard allowedRoles={['TICKET_STAFF']} />}>
-                    <Route element={<DesktopLayout />}> 
+                    <Route element={<DesktopLayout />}>
                         <Route path="ticket/sell" element={<div>Bán vé</div>} />
                         <Route path="ticket/history" element={<div>Lịch sử bán</div>} />
-                        <Route path="ticket">
-                            {cargoTicketRoutes}
-                        </Route>
+                        {cargoTicketRoutes}
+                        {passengerTicketRoutes}
                     </Route>
                 </Route>
 
                 <Route element={<RoleGuard allowedRoles={['TRIP_STAFF']} />}>
-                    <Route element={<MobileLayout />}> 
+                    <Route element={<MobileLayout />}>
                         <Route path="trip/scan" element={<div>Quét vé</div>} />
                         <Route path="trip/status" element={<div>Cập nhật trạng thái xe</div>} />
                     </Route>
