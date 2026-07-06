@@ -41,3 +41,29 @@ export const getMinDateTime = () => {
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     return now.toISOString().slice(0, 16); 
 };
+
+/**
+ * Validate và format biển số xe theo quy chuẩn Việt Nam (Ví dụ: 30B-537.11 hoặc 29A-1234)
+ * @param {string} input 
+ * @returns {{valid: boolean, data: string}} Trả về trạng thái validate và chuỗi đã format chuẩn
+ */
+export const validateAndFormatLicensePlate = (input) => {
+    if (!input) return { valid: false, data: input };
+
+    const cleanPlate = input.toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+    const match = cleanPlate.match(/^(\d{2})([A-Z]{1,2})(\d{4,5})$/);
+    if (!match) {
+        return { valid: false, data: input };
+    }
+
+    const tinh = match[1];     // Ví dụ: "30"
+    const seri = match[2];     // Ví dụ: "B"
+    let soDuoi = match[3];     // Ví dụ: "53711" hoặc "1234"
+
+    if (soDuoi.length === 5) {
+        soDuoi = soDuoi.slice(0, 3) + '.' + soDuoi.slice(3);
+    }
+
+    return { valid: true, data: `${tinh}${seri}-${soDuoi}` };
+};

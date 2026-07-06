@@ -6,6 +6,7 @@ import com.ralsei.dto.projection.trip.TripDetailProjection;
 import com.ralsei.dto.projection.trip.TripFilterProjection;
 import com.ralsei.dto.projection.trip.TripSummaryProjection;
 import com.ralsei.dto.projection.trip.TripStopProjection;
+import com.ralsei.dto.projection.trip.TripResourceProjection;
 import com.ralsei.dto.request.trip.TripCreateRequest;
 import com.ralsei.dto.request.trip.TripUpdateRequest;
 import com.ralsei.dto.response.PagedResponse;
@@ -47,7 +48,17 @@ public interface TripService {
                         int page,
                         int size);
 
-        PagedResponse<TripSummaryProjection> getAllTripSummaries(LocalDate date, int page, int size);
+        /** Returns staff trip summaries using user-facing date, route and period filters. */
+        PagedResponse<TripSummaryProjection> getAllTripSummaries(LocalDate date, Integer routeId, String period, int page, int size);
+
+        /** Returns coaches that can serve the requested trip window. */
+        List<TripResourceProjection> getAvailableCoaches(Integer routeId, LocalDateTime departureTime, Integer excludeTripId);
+
+        /** Returns drivers that can serve the requested trip window. */
+        List<TripResourceProjection> getAvailableDrivers(LocalDateTime departureTime, Integer excludeTripId);
+
+        /** Returns attendants that can serve the requested trip window. */
+        List<TripResourceProjection> getAvailableAttendants(LocalDateTime departureTime, Integer excludeTripId);
 
         /**
          * Loads the ordered route timeline for a concrete customer trip.

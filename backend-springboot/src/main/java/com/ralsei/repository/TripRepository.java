@@ -18,6 +18,7 @@ import com.ralsei.dto.projection.trip.TripDetailProjection;
 import com.ralsei.dto.projection.trip.TripFilterProjection;
 import com.ralsei.dto.projection.trip.TripSummaryProjection;
 import com.ralsei.dto.projection.trip.TripStopProjection;
+import com.ralsei.dto.projection.trip.TripResourceProjection;
 import com.ralsei.model.Trip;
 
 import jakarta.transaction.Transactional;
@@ -46,6 +47,46 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             @Param("status") String status,
             @Param("driverId") Integer driverId,
             @Param("attendantId") Integer attendantId);
+
+    /**
+     * Atomically updates an open trip using only statuses accepted by
+     * CK_Trip_Status.
+     *
+     * @return one when updated, otherwise zero
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = """
+            UPDATE trip
+            SET routeId = :routeId, coachId = :coachId,
+                departureTime = :departureTime, [status] = :status,
+                driverId = :driverId, attendantId = :attendantId,
+                updatedAt = GETDATE()
+            WHERE tripId = :tripId
+              AND [status] NOT IN ('CANCELLED', 'COMPLETED')
+            """, nativeQuery = true)
+    int updateOpenTrip(
+            @Param("tripId") Integer tripId,
+            @Param("routeId") Integer routeId,
+            @Param("coachId") Integer coachId,
+            @Param("departureTime") LocalDateTime departureTime,
+            @Param("status") String status,
+            @Param("driverId") Integer driverId,
+            @Param("attendantId") Integer attendantId);
+
+    /**
+     * Soft-deletes an open trip as CANCELLED. Physical deletion is forbidden by
+     * ticket and seat foreign keys and would destroy operational history.
+     *
+     * @return one when cancelled, otherwise zero
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = """
+            UPDATE trip
+            SET [status] = 'CANCELLED', updatedAt = GETDATE()
+            WHERE tripId = :tripId
+              AND [status] NOT IN ('CANCELLED', 'COMPLETED')
+            """, nativeQuery = true)
+    int cancelOpenTrip(@Param("tripId") Integer tripId);
 
     /**
      * Searches customer trips with optional time, coach type, and price filters.
@@ -204,10 +245,23 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             @Param("route") String route,
             Pageable pageable);
 
-    // Manager site - view all trip summaries
+    /**
+     * Returns the manager trip table for one day, optionally narrowed by route and
+     * half-day. Route and crew identifiers are included so the edit form can be
+     * populated without a second database-shaped details request.
+     */
     @Query(value = """
             SELECT
                 t.tripId AS tripId,
+                r.routeId AS routeId,
+                r.routeName AS routeName,
+                c.coachId AS coachId,
+                t.driverId AS driverId,
+                driver.staffName AS driverName,
+                driver.phone AS driverPhone,
+                t.attendantId AS attendantId,
+                attendant.staffName AS attendantName,
+                attendant.phone AS attendantPhone,
                 t.[status] AS tripStatus,
                 c.manufacturer AS manufacturer,
                 ct.coachTypeName AS coachTypeName,
@@ -218,8 +272,11 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
                 COALESCE(seat_counts.availableSeats, 0) AS availableSeats,
                 COALESCE(seat_counts.totalSeats, 0) AS totalSeats
             FROM trip t
+            LEFT JOIN route r ON t.routeId = r.routeId
             LEFT JOIN coach c ON t.coachId = c.coachId
             LEFT JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId
+            LEFT JOIN staff driver ON driver.staffId = t.driverId
+            LEFT JOIN staff attendant ON attendant.staffId = t.attendantId
             LEFT JOIN (
                 SELECT
                     ts.tripId,
@@ -231,15 +288,77 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
                 GROUP BY ts.tripId
             ) seat_counts ON seat_counts.tripId = t.tripId
             WHERE CAST(t.departureTime AS DATE) = :departureDate
+              AND t.departureTime >= :currentTime
+              AND t.[status] NOT IN ('CANCELED', 'CANCELLED')
+              AND (:routeId IS NULL OR t.routeId = :routeId)
+              AND (:period IS NULL
+                   OR (:period = 'MORNING' AND CAST(t.departureTime AS TIME) < '12:00:00')
+                   OR (:period = 'EVENING' AND CAST(t.departureTime AS TIME) >= '12:00:00'))
             ORDER BY t.departureTime ASC
             """, countQuery = """
             SELECT COUNT(*)
             FROM trip t
             WHERE CAST(t.departureTime AS DATE) = :departureDate
+              AND t.departureTime >= :currentTime
+              AND t.[status] NOT IN ('CANCELED', 'CANCELLED')
+              AND (:routeId IS NULL OR t.routeId = :routeId)
+              AND (:period IS NULL
+                   OR (:period = 'MORNING' AND CAST(t.departureTime AS TIME) < '12:00:00')
+                   OR (:period = 'EVENING' AND CAST(t.departureTime AS TIME) >= '12:00:00'))
             """, nativeQuery = true)
     Page<TripSummaryProjection> viewAllTripSummaries(
             @Param("departureDate") String departureDate,
+            @Param("currentTime") LocalDateTime currentTime,
+            @Param("routeId") Integer routeId,
+            @Param("period") String period,
             Pageable pageable);
+
+    /**
+     * Finds active coaches assigned to the selected route which do not overlap
+     * another non-cancelled trip in the standard 7 hour 12 minute trip window.
+     */
+    @Query(value = """
+            SELECT c.coachId AS id, c.licensePlate AS displayName,
+                   CONCAT(c.manufacturer, ' - ', ct.coachTypeName) AS secondaryText
+            FROM coach c
+            JOIN coach_type ct ON ct.coachTypeId = c.coachTypeId
+            WHERE c.[status] = 'ACTIVE'
+              AND (c.routeId IS NULL OR c.routeId = :routeId)
+              AND NOT EXISTS (
+                  SELECT 1 FROM trip busy
+                  WHERE busy.coachId = c.coachId
+                    AND busy.tripId <> COALESCE(:excludeTripId, -1)
+                    AND busy.[status] NOT IN ('CANCELED', 'CANCELLED')
+                    AND busy.departureTime < DATEADD(MINUTE, 432, :departureTime)
+                    AND DATEADD(MINUTE, 432, busy.departureTime) > :departureTime
+              )
+            ORDER BY c.licensePlate
+            """, nativeQuery = true)
+    List<TripResourceProjection> findAvailableCoaches(
+            @Param("routeId") Integer routeId,
+            @Param("departureTime") LocalDateTime departureTime,
+            @Param("excludeTripId") Integer excludeTripId);
+
+    /** Finds active trip staff in the requested position with no overlapping trip. */
+    @Query(value = """
+            SELECT s.staffId AS id, s.staffName AS displayName,
+                   CONCAT(s.phone, ' - ', s.staffPosition) AS secondaryText
+            FROM staff s
+            WHERE s.isActive = 1 AND s.staffPosition = :position
+              AND NOT EXISTS (
+                  SELECT 1 FROM trip busy
+                  WHERE (busy.driverId = s.staffId OR busy.attendantId = s.staffId)
+                    AND busy.tripId <> COALESCE(:excludeTripId, -1)
+                    AND busy.[status] NOT IN ('CANCELED', 'CANCELLED')
+                    AND busy.departureTime < DATEADD(MINUTE, 432, :departureTime)
+                    AND DATEADD(MINUTE, 432, busy.departureTime) > :departureTime
+              )
+            ORDER BY s.staffName
+            """, nativeQuery = true)
+    List<TripResourceProjection> findAvailableStaff(
+            @Param("position") String position,
+            @Param("departureTime") LocalDateTime departureTime,
+            @Param("excludeTripId") Integer excludeTripId);
 
     /**
      * Counts available seats for one concrete trip from its trip_seat snapshot.

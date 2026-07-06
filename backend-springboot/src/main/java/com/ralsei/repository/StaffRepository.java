@@ -7,14 +7,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.Optional;
-
 import com.ralsei.dto.projection.staff.StaffProjection;
 import com.ralsei.model.Staff;
 
 public interface StaffRepository extends JpaRepository<Staff, Integer> {
-
-    Optional<Staff> findByAccountId(Integer accountId);
     @Query(value = """
                 SELECT s.staffName AS staffName
                 FROM staff s

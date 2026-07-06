@@ -8,4 +8,6 @@ public interface SeatHoldService {
     boolean releaseSeats(List<Integer> tripSeatIds, String holdToken);
     List<Integer> getTripSeatIdsByToken(String holdToken);
     boolean extendLock(List<Integer> tripSeatIds, String holdToken, long newTtlSeconds);
+
+    void forceReleaseSeatsByIds(List<Integer> tripSeatIds);
 }
