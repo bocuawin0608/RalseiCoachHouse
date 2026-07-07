@@ -7,5 +7,6 @@ export { default as PassengerTicketSearchFilters } from './components/PassengerT
 export { default as PassengerTicketSearchResults } from './components/PassengerTicketSearchResults';
 export { default as PassengerTicketDetailPanel } from './components/PassengerTicketDetailPanel';
 export { default as ChangePassengerInfoModal } from './components/ChangePassengerInfoModal';
+export { default as ChangeSeatModal } from './components/ChangeSeatModal';
 export { default as CancelFullTicketModal } from './components/CancelFullTicketModal';
 export { default as PassengerTicketSeatQrModal } from './components/PassengerTicketSeatQrModal';

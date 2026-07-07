@@ -29,4 +29,32 @@ export const staffPassengerTicketApi = {
             payload
         );
     },
+
+    getTripSeatMap(tripId) {
+        return axiosClient.get(`/v1/staff/passenger-tickets/trips/${tripId}/seat-map`);
+    },
+
+    lockSeat(tripId, tripSeatId, holdToken) {
+        return axiosClient.post(
+            `/v1/staff/passenger-tickets/trips/${tripId}/seats/lock`,
+            { tripSeatIds: [tripSeatId] },
+            { headers: { 'X-Staff-Seat-Session': holdToken } }
+        );
+    },
+
+    releaseSeats(tripId, tripSeatIds, holdToken) {
+        return axiosClient.post(
+            `/v1/staff/passenger-tickets/trips/${tripId}/seats/release`,
+            { tripSeatIds },
+            { headers: { 'X-Staff-Seat-Session': holdToken } }
+        );
+    },
+
+    changeSeat(ticketCode, ticketDetailId, newTripSeatId, holdToken) {
+        return axiosClient.patch(
+            `/v1/staff/passenger-tickets/${encodeURIComponent(ticketCode)}/details/${ticketDetailId}/seat`,
+            { newTripSeatId },
+            { headers: { 'X-Staff-Seat-Session': holdToken } }
+        );
+    },
 };
