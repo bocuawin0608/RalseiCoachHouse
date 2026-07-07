@@ -14,5 +14,6 @@ public record TripStaffSeatResponse(
         Integer floorIndex,
         TripSeatStatus tripSeatStatus,
         String passengerDetailStatus,
-        String fullName
+        String fullName,
+        boolean noShow
 ) {}

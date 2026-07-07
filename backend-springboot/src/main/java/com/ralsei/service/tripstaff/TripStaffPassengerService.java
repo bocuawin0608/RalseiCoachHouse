@@ -25,4 +25,6 @@ public interface TripStaffPassengerService {
     void startTrip(String authorizationHeader, Integer tripId);
 
     void endTrip(String authorizationHeader, Integer tripId);
+
+    void markNoShow(String authorizationHeader, Integer tripId, Integer ticketDetailId);
 }

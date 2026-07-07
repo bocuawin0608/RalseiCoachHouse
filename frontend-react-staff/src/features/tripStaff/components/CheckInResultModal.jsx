@@ -41,10 +41,12 @@ export default function CheckInResultModal({
 
     if (!show) return null;
 
+    const isSuccess = variant === 'success';
+
     return (
         <div className="checkin-result-overlay">
             <div className={`checkin-result-modal ${variant}`}>
-                {variant === 'success' && result ? (
+                {isSuccess && result ? (
                     <>
                         <h5 className="text-success fw-bold mb-1">Check-in thành công</h5>
                         <p className="mb-0 fw-semibold">{result.fullName}</p>
@@ -62,6 +64,14 @@ export default function CheckInResultModal({
                         )}
                         <Button variant="success" onClick={onClose}>
                             {autoCloseMs ? 'Quét tiếp' : 'Đã hướng dẫn'}
+                        </Button>
+                    </>
+                ) : isSuccess && !result ? (
+                    <>
+                        <h5 className="text-success fw-bold mb-2">Thành công</h5>
+                        <p className="mb-4">{message}</p>
+                        <Button variant="success" onClick={onClose}>
+                            Đóng
                         </Button>
                     </>
                 ) : (
