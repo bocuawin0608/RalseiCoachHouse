@@ -118,9 +118,12 @@ public class StaffServiceImpl implements StaffService {
         Staff staff = staffRepo.findById(staffId)
             .orElseThrow(() -> new ResourceNotFoundException("Nhân viên không tồn tại!"));
 
-        if (staff.getAccountId() != null) {
-            accountRoleRepo.deleteByAccountId(staff.getAccountId());
-            accountRepo.deleteById(staff.getAccountId());
+        Integer accountId = staff.getAccountId();
+        if (accountId != null) {
+            accountRoleRepo.deleteByAccountId(accountId);
+            staff.setAccountId(null);
+            staffRepo.save(staff);
+            accountRepo.deleteById(accountId);
         }
 
         staffRepo.delete(staff);
