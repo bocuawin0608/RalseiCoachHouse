@@ -104,7 +104,6 @@ export default function CargoHistoryPage() {
             {!loading && !error && items.length > 0 && (
                 <Row className="g-3">
                     {items.map(item => {
-                        const isOngoing = ['RECEIVED', 'LOADED', 'ARRIVED'].includes(item.status);
                         return (
                             <Col md={6} lg={4} key={item.cargoTicketId}>
                                 <Card className="shadow-sm h-100">
@@ -128,13 +127,11 @@ export default function CargoHistoryPage() {
                                             <div className="fw-bold mt-1">{item.totalPrice?.toLocaleString('vi-VN')} đ</div>
                                         </div>
                                     </Card.Body>
-                                    {isOngoing && (
-                                        <Card.Footer className="bg-white border-top-0 text-end">
-                                            <Button variant="outline-dark" size="sm" onClick={() => openDetail(item)}>
-                                                <BsEye className="me-1" />Xem chi tiết
-                                            </Button>
-                                        </Card.Footer>
-                                    )}
+                                    <Card.Footer className="bg-white border-top-0 text-end">
+                                        <Button variant="outline-dark" size="sm" onClick={() => openDetail(item)}>
+                                            <BsEye className="me-1" />Xem chi tiết
+                                        </Button>
+                                    </Card.Footer>
                                 </Card>
                             </Col>
                         );
