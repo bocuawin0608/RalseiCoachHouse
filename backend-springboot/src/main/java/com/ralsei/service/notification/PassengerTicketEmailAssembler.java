@@ -23,6 +23,11 @@ import com.ralsei.repository.TripRepository;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Loads a confirmed passenger ticket and converts it into a detached email DTO.
+ * The assembler is read-only and deliberately reuses existing repositories so
+ * email delivery does not introduce a second, subtly different ticket query.
+ */
 @Service
 @RequiredArgsConstructor
 public class PassengerTicketEmailAssembler {
@@ -33,6 +38,13 @@ public class PassengerTicketEmailAssembler {
     private final TripRepository tripRepository;
     private final RouteStopRepository routeStopRepository;
 
+    /**
+     * Builds all information needed after the payment transaction has completed.
+     *
+     * @param passengerTicketId database identifier of the paid passenger ticket
+     * @return detached payload safe to use after the transaction commits
+     * @throws ResourceNotFoundException when the ticket or its seat details do not exist
+     */
     @Transactional(readOnly = true)
     public PassengerTicketEmailPayload assemble(Integer passengerTicketId) {
         PassengerTicket ticket = passengerTicketRepository.findById(passengerTicketId)
@@ -52,9 +64,13 @@ public class PassengerTicketEmailAssembler {
         String coachTypeName = trip != null && trip.getCoach() != null && trip.getCoach().getCoachType() != null
             ? trip.getCoach().getCoachType().getCoachTypeName()
             : null;
+        String coachLicensePlate = trip != null && trip.getCoach() != null
+            ? trip.getCoach().getLicensePlate()
+            : null;
 
         LocalDateTime departureTime = trip != null ? trip.getDepartureTime() : null;
-        LocalDateTime pickupPresentBy = resolvePickupPresentBy(trip, ticket.getPickupStopId());
+        LocalDateTime arrivalTime = resolveStopTime(trip, ticket.getDropoffStopId());
+        LocalDateTime pickupPresentBy = resolveStopTime(trip, ticket.getPickupStopId());
 
         PassengerTicketDetail primaryDetail = details.get(0);
         List<PassengerSeatEmailItem> seats = details.stream()
@@ -62,7 +78,7 @@ public class PassengerTicketEmailAssembler {
                 detail.getSeatCodeSnapshot(),
                 detail.getFullName(),
                 detail.getPhone(),
-                null // TODO: render QR image URL/CID from detail.getQrcode() when mailer is ready
+                detail.getQrcode()
             ))
             .toList();
 
@@ -72,8 +88,9 @@ public class PassengerTicketEmailAssembler {
             payment != null ? payment.getPaymentTime() : null,
             routeName,
             coachTypeName,
+            coachLicensePlate,
             departureTime,
-            null,
+            arrivalTime,
             ticket.getPickupStopName(),
             ticket.getDropoffStopName(),
             pickupPresentBy,
@@ -81,17 +98,21 @@ public class PassengerTicketEmailAssembler {
             primaryDetail.getPhone(),
             primaryDetail.getEmail(),
             ticket.getTotalPrice(),
-            seats
+            List.copyOf(seats)
         );
     }
 
-    private LocalDateTime resolvePickupPresentBy(Trip trip, int pickupStopId) {
+    /**
+     * Calculates when the coach reaches the selected pickup stop according to
+     * the route-stop schedule.
+     */
+    private LocalDateTime resolveStopTime(Trip trip, int stopPointId) {
         if (trip == null || trip.getDepartureTime() == null) {
             return null;
         }
-        Optional<RouteStop> pickupStop = routeStopRepository.findByRouteIdAndStopPointId(
-            trip.getRouteId(), pickupStopId);
-        int minutesFromStart = pickupStop.map(RouteStop::getMinutesFromStart).orElse(0);
+        Optional<RouteStop> stop = routeStopRepository.findByRouteIdAndStopPointId(
+            trip.getRouteId(), stopPointId);
+        int minutesFromStart = stop.map(RouteStop::getMinutesFromStart).orElse(0);
         return trip.getDepartureTime().plusMinutes(minutesFromStart);
     }
 }
