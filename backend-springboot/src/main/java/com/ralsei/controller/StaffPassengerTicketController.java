@@ -18,9 +18,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ralsei.dto.request.passengerbooking.SeatLockRequest;
 import com.ralsei.dto.request.staffpassengerticket.StaffPassengerChangePassengerRequest;
+import com.ralsei.dto.request.staffpassengerticket.StaffPassengerChangeSeatRequest;
 import com.ralsei.dto.request.staffpassengerticket.StaffPassengerTicketCancelRequest;
 import com.ralsei.dto.response.PagedResponse;
+import com.ralsei.dto.response.passengerbooking.SeatLockResponse;
+import com.ralsei.dto.response.passengerbooking.TripSeatResponse;
 import com.ralsei.dto.response.staffpassengerticket.StaffPassengerTicketDetailResponse;
 import com.ralsei.dto.response.staffpassengerticket.StaffPassengerTicketListItemResponse;
 import com.ralsei.service.JwtService;
@@ -30,8 +34,11 @@ import com.ralsei.service.passengerticket.StaffPassengerTicketQueryService;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/staff/passenger-tickets")
@@ -104,6 +111,49 @@ public class StaffPassengerTicketController {
             jwtService.extractAccountId(authorizationHeader),
             ticketCode,
             request
+        ));
+    }
+
+    @GetMapping("/trips/{tripId}/seat-map")
+    public ResponseEntity<List<TripSeatResponse>> getSeatMap(
+        @PathVariable @Min(1) Integer tripId
+    ) {
+        return ResponseEntity.ok(changeService.getSeatMap(tripId));
+    }
+
+    @PostMapping("/trips/{tripId}/seats/lock")
+    public ResponseEntity<SeatLockResponse> lockSeats(
+        @PathVariable @Min(1) Integer tripId,
+        @Valid @RequestBody SeatLockRequest request,
+        @RequestHeader("X-Staff-Seat-Session") @NotBlank String holdToken
+    ) {
+        return ResponseEntity.ok(changeService.lockSeats(tripId, request, holdToken));
+    }
+
+    @PostMapping("/trips/{tripId}/seats/release")
+    public ResponseEntity<Void> releaseSeats(
+        @PathVariable @Min(1) Integer tripId,
+        @Valid @RequestBody SeatLockRequest request,
+        @RequestHeader("X-Staff-Seat-Session") @NotBlank String holdToken
+    ) {
+        changeService.releaseSeats(request.tripSeatIds(), holdToken);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{ticketCode:[A-Za-z0-9_-]+}/details/{detailId}/seat")
+    public ResponseEntity<StaffPassengerTicketDetailResponse> changeSeat(
+        @RequestHeader("Authorization") String authorizationHeader,
+        @RequestHeader("X-Staff-Seat-Session") @NotBlank String holdToken,
+        @PathVariable @Pattern(regexp = "[A-Za-z0-9_-]{3,64}") String ticketCode,
+        @PathVariable("detailId") @Min(1) Integer ticketDetailId,
+        @Valid @RequestBody StaffPassengerChangeSeatRequest request
+    ) {
+        return ResponseEntity.ok(changeService.changeSeat(
+            jwtService.extractAccountId(authorizationHeader),
+            ticketCode,
+            ticketDetailId,
+            request,
+            holdToken
         ));
     }
 }

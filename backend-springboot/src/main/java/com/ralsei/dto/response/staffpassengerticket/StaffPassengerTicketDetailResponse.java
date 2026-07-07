@@ -32,6 +32,7 @@ public record StaffPassengerTicketDetailResponse(
 ) {
     public record SeatItem(
         Integer ticketDetailId,
+        Integer tripSeatId,
         String seatCode,
         String status,
         BigDecimal price,
