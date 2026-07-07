@@ -194,6 +194,8 @@ public class StaffServiceImpl implements StaffService {
             proj.getTicketAgencyName(),
             proj.getUsername(),
             proj.getIsActive() != null && proj.getIsActive(),
+            proj.getDob(),
+            proj.getHireDate(),
             proj.getCreatedAt()
         );
     }
