@@ -6,5 +6,5 @@ public interface PassengerPendingPaymentService {
 
     void cancelByUser(String transactionId);
 
-    boolean canCancelByUser(String transactionzzzzzzzzzzzzzId, String cancelToken, String accessToken);
+    boolean canCancelByUser(String transactionId, String cancelToken, String accessToken);
 }
