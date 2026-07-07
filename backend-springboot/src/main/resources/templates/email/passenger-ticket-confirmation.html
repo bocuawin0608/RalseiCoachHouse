@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xác nhận vé xe</title>
+</head>
+<body style="margin:0;background:#f3f4f6;font-family:Arial,sans-serif;color:#172033;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f3f4f6;padding:24px 12px;">
+    <tr><td align="center">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:680px;background:#ffffff;border-radius:16px;overflow:hidden;">
+            <tr><td style="background:#14532d;padding:28px 32px;color:#ffffff;">
+                <div style="font-size:13px;letter-spacing:1.2px;text-transform:uppercase;">Nhà xe Tuấn MV</div>
+                <h1 style="margin:8px 0 4px;font-size:26px;">Đặt vé thành công</h1>
+                <div style="font-size:15px;opacity:.9;">Mã vé: <strong th:text="${ticket.ticketCode}">VE123456</strong></div>
+            </td></tr>
+            <tr><td style="padding:30px 32px;">
+                <p style="margin:0 0 16px;font-size:18px;">Xin chào <strong th:text="${ticket.primaryFullName}">Quý khách</strong>,</p>
+                <p style="margin:0 0 24px;line-height:1.6;color:#4b5563;">
+                    Thanh toán của bạn đã được xác nhận. Xe <strong th:text="${coachNumber}"></strong>
+                    sẽ đón bạn theo thông tin dưới đây.
+                </p>
+
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:24px;">
+                    <tr><td style="padding:18px 20px;border-bottom:1px solid #e5e7eb;">
+                        <div style="font-size:12px;color:#6b7280;text-transform:uppercase;">Tuyến đường</div>
+                        <div style="font-size:18px;font-weight:700;margin-top:5px;" th:text="${ticket.routeName}">Tuyến đường</div>
+                    </td></tr>
+                    <tr><td style="padding:18px 20px;border-bottom:1px solid #e5e7eb;line-height:1.55;">
+                        <strong>Điểm đón:</strong> <span th:text="${ticket.pickupStopName}">Điểm đón</span><br>
+                        <strong>Giờ xe đón:</strong> <span th:text="${pickupTime}">19:15 ngày 26/04/2026</span><br>
+                        <span style="font-size:13px;color:#6b7280;">Vui lòng có mặt trước giờ đón ít nhất 15 phút.</span>
+                    </td></tr>
+                    <tr><td style="padding:18px 20px;line-height:1.55;">
+                        <strong>Điểm trả:</strong> <span th:text="${ticket.dropoffStopName}">Điểm trả</span><br>
+                        <strong>Dự kiến đến:</strong> <span th:text="${arrivalTime}"></span><br>
+                        <strong>Khởi hành đầu tuyến:</strong> <span th:text="${departureTime}"></span>
+                    </td></tr>
+                </table>
+
+                <h2 style="font-size:19px;margin:0 0 12px;">Ghế đã đặt: <span th:text="${#strings.listJoin(seatNumbers, ', ')}"></span></h2>
+                <div th:each="seat : ${seats}" style="border:1px solid #e5e7eb;border-radius:12px;padding:18px;margin-bottom:12px;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                        <tr>
+                            <td style="vertical-align:top;line-height:1.6;">
+                                <div style="font-size:18px;font-weight:700;">Ghế <span th:text="${seat.seatCode}"></span></div>
+                                <div th:text="${seat.passengerName}">Tên hành khách</div>
+                                <div style="color:#6b7280;" th:text="${seat.passengerPhone}">Số điện thoại</div>
+                            </td>
+                            <td th:if="${seat.qrContentId != null}" align="right" style="width:130px;">
+                                <img th:src="|cid:${seat.qrContentId}|" width="120" height="120" alt="Mã QR lên xe" style="display:block;border:0;">
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:22px;border-top:1px solid #e5e7eb;">
+                    <tr><td style="padding-top:18px;line-height:1.7;">
+                        <strong>Tổng thanh toán:</strong> <span th:text="${formattedTotal}">0 ₫</span><br>
+                        <strong>Mã giao dịch:</strong> <span th:text="${ticket.transactionId}">PAY123456</span><br>
+                        <strong>Thanh toán lúc:</strong> <span th:text="${paidAt}">22:02 ngày 26/04/2026</span>
+                    </td></tr>
+                </table>
+
+                <p style="margin:24px 0 0;padding:16px;background:#fff7ed;border-radius:10px;color:#9a3412;line-height:1.55;">
+                    Vui lòng giữ email và mã QR để làm thủ tục lên xe. Không chia sẻ mã QR với người khác.
+                </p>
+                <p style="margin:24px 0 0;color:#4b5563;line-height:1.6;">Chúc quý khách thượng lộ bình an.</p>
+            </td></tr>
+            <tr><td style="background:#f8fafc;padding:20px 32px;color:#6b7280;font-size:12px;line-height:1.5;">
+                Đây là email tự động xác nhận giao dịch. Vui lòng không trả lời email này.
+            </td></tr>
+        </table>
+    </td></tr>
+</table>
+</body>
+</html>
