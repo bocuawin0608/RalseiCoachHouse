@@ -29,3 +29,6 @@ TestResults.xml
 docs/
 tracker/
 
+//ignore agent skillset
+.agent
+
