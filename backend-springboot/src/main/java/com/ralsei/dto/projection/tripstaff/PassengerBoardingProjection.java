@@ -1,3 +1,7 @@
+/**
+ * Projection for a passenger on a trip, including
+ * check-in status and optional accompanied child information.
+ */
 package com.ralsei.dto.projection.tripstaff;
 
 public interface PassengerBoardingProjection {

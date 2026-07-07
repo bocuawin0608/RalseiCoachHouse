@@ -1,3 +1,7 @@
+/**
+ * Implementation of passenger check-in and dashboard operations for trip staff.
+ * Handles QR-based and manual check-in workflows with business rule enforcement.
+ */
 package com.ralsei.service.tripstaff.impl;
 
 import java.time.LocalDate;
@@ -236,6 +240,40 @@ public class TripStaffPassengerServiceImpl implements TripStaffPassengerService 
                 ticket.getDropoffStopName(),
                 PassengerTicketDetailStatus.CHECKED_IN.name(),
                 child);
+    }
+
+    @Override
+    @Transactional
+    public void startTrip(String authorizationHeader, Integer tripId) {
+        int staffId = resolveStaffId(authorizationHeader);
+        assertStaffCanAccessTrip(staffId, tripId);
+
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new ResourceNotFoundException("Chuyến đi không tồn tại"));
+
+        if (!"SCHEDULED".equals(trip.getStatus())) {
+            throw new BusinessRuleException("Chỉ có thể bắt đầu chuyến ở trạng thái SCHEDULED");
+        }
+
+        trip.setStatus("IN_PROGRESS");
+        tripRepository.save(trip);
+    }
+
+    @Override
+    @Transactional
+    public void endTrip(String authorizationHeader, Integer tripId) {
+        int staffId = resolveStaffId(authorizationHeader);
+        assertStaffCanAccessTrip(staffId, tripId);
+
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new ResourceNotFoundException("Chuyến đi không tồn tại"));
+
+        if (!"IN_PROGRESS".equals(trip.getStatus())) {
+            throw new BusinessRuleException("Chỉ có thể kết thúc chuyến ở trạng thái IN_PROGRESS");
+        }
+
+        trip.setStatus("COMPLETED");
+        tripRepository.save(trip);
     }
 
     private record TripContext(int tripId, Trip trip, Route route) {}

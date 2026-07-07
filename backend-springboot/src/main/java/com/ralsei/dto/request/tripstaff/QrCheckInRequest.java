@@ -1,3 +1,6 @@
+/**
+ * Request body for QR-based check-in containing the scanned QR token.
+ */
 package com.ralsei.dto.request.tripstaff;
 
 import jakarta.validation.constraints.NotBlank;

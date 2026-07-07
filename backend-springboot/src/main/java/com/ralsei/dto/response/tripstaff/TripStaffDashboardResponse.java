@@ -1,3 +1,7 @@
+/**
+ * Aggregated dashboard data for a trip, including trip summary,
+ * seat layout, and passenger list.
+ */
 package com.ralsei.dto.response.tripstaff;
 
 import java.util.List;
