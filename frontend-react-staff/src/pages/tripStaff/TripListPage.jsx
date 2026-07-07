@@ -1,17 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Alert, Form, Spinner } from 'react-bootstrap';
+import { Alert, Spinner } from 'react-bootstrap';
 import TripListCard from '../../features/tripStaff/components/TripListCard';
 import { useAssignedTrips } from '../../features/tripStaff/hooks/useAssignedTrips';
 import '../../features/tripStaff/components/TripStaff.css';
-
-const STATUS_OPTIONS = [
-    { value: '', label: 'Tất cả trạng thái' },
-    { value: 'SCHEDULED', label: 'SCHEDULED' },
-    { value: 'IN_PROGRESS', label: 'IN_PROGRESS' },
-    { value: 'COMPLETED', label: 'COMPLETED' },
-    { value: 'CANCELLED', label: 'CANCELLED' },
-];
 
 function toDateString(offsetDays = 0) {
     const d = new Date();
@@ -23,7 +15,7 @@ export default function TripListPage() {
     const navigate = useNavigate();
     const [dayOffset, setDayOffset] = useState(0);
     const date = useMemo(() => toDateString(dayOffset), [dayOffset]);
-    const { trips, loading, error, search, setSearch, statusFilter, setStatusFilter } = useAssignedTrips(date);
+    const { trips, loading, error } = useAssignedTrips(date);
 
     return (
         <div className="trip-staff-page">
@@ -48,24 +40,6 @@ export default function TripListPage() {
                 </button>
             </div>
 
-            <Form.Control
-                type="search"
-                placeholder="Tìm theo tên tuyến hoặc biển số..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="mb-2"
-            />
-
-            <Form.Select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="mb-3"
-            >
-                {STATUS_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-            </Form.Select>
-
             {error && <Alert variant="danger">{error}</Alert>}
 
             {loading ? (
@@ -73,7 +47,7 @@ export default function TripListPage() {
                     <Spinner animation="border" />
                 </div>
             ) : trips.length === 0 ? (
-                <p className="text-muted text-center py-4">Không có chuyến nào trong ngày này.</p>
+                <p className="text-muted text-center py-4">Không có chuyến nào {dayOffset === 1 ? 'trong ngày mai' : 'trong ngày này'}.</p>
             ) : (
                 trips.map((trip) => (
                     <TripListCard

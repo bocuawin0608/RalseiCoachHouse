@@ -58,6 +58,23 @@ public class TripStaffCheckInPolicy {
         }
     }
 
+    public void assertTripNotCompleted(Trip trip) {
+        String status = trip.getStatus();
+        if ("COMPLETED".equals(status)) {
+            throw new BusinessRuleException("Chuyến đã kết thúc, không thể thực hiện thao tác");
+        }
+        if ("CANCELLED".equals(status)) {
+            throw new BusinessRuleException("Chuyến đã bị hủy");
+        }
+    }
+
+    public void assertDepartureTimeArrived(Trip trip, LocalDateTime now) {
+        if (now.isBefore(trip.getDepartureTime())) {
+            throw new BusinessRuleException(
+                    "Chưa đến giờ khởi hành (" + trip.getDepartureTime().format(TIME_FORMAT) + ")");
+        }
+    }
+
     public void assertDetailReadyForCheckIn(PassengerTicketDetail detail) {
         String status = detail.getStatus();
         if (PassengerTicketDetailStatus.CHECKED_IN.name().equals(status)) {
