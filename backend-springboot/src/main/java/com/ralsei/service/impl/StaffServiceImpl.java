@@ -119,8 +119,8 @@ public class StaffServiceImpl implements StaffService {
             .orElseThrow(() -> new ResourceNotFoundException("Nhân viên không tồn tại!"));
 
         if (staff.getAccountId() != null) {
-            throw new BusinessRuleException(
-                "Không thể xóa nhân viên đã có tài khoản. Vui lòng vô hiệu hóa thay vì xóa!");
+            accountRoleRepo.deleteByAccountId(staff.getAccountId());
+            accountRepo.deleteById(staff.getAccountId());
         }
 
         staffRepo.delete(staff);
