@@ -37,6 +37,8 @@ public class CoachStopServiceImpl implements CoachStopService {
                 .stopPointName(request.getStopPointName().trim())
                 .address(request.getAddress().trim())
                 .city(request.getCity().trim())
+                .latitude(request.getLatitude())
+                .longitude(request.getLongitude())
                 .isActive(true)
                 .build();
         CoachStop saved = coachStopRepository.save(Objects.requireNonNull(coachStop));

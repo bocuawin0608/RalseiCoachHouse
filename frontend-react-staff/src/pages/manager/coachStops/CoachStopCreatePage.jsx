@@ -99,19 +99,31 @@ export default function CoachStopCreatePage() {
         setIsSubmitting(true);
 
         try {
+            // Call forward geocoding to get lat/lng from address
+            const fullAddress = `${formData.address}, ${formData.city}`;
+            const geocodeRes = await axiosClient.get(`/v2/goong/geocode?address=${encodeURIComponent(fullAddress)}`);
+
+            if (!geocodeRes || !geocodeRes.latitude || !geocodeRes.longitude) {
+                setErrorMsg('Không tìm thấy tọa độ cho địa chỉ này. Vui lòng kiểm tra lại địa chỉ.');
+                setIsSubmitting(false);
+                return;
+            }
+
             const payload = {
                 stopPointName: formData.stopPointName,
                 address: formData.address,
                 city: formData.city,
-                active: formData.active
+                active: formData.active,
+                latitude: geocodeRes.latitude,
+                longitude: geocodeRes.longitude
             };
 
             await coachStopApi.createCoachStop(payload);
 
             navigate('/management/coach-stops');
         } catch (error) {
-            console.error("Lỗi tạo điểm dừng:", error);
-            setErrorMsg(error.response.data.message || 'Có lỗi xảy ra khi lưu vào hệ thống.');
+            console.error("Lỗi tạo văn phòng:", error);
+            setErrorMsg(error.response?.data?.message || 'Có lỗi xảy ra khi lưu vào hệ thống.');
         } finally {
             setIsSubmitting(false);
         }
@@ -128,7 +140,7 @@ export default function CoachStopCreatePage() {
                 <BsArrowLeft size={18} /> Quay lại danh sách
             </Button>
 
-            <h2 className="mb-4 text-dark fw-bold">Thêm mới điểm dừng</h2>
+            <h2 className="mb-4 text-dark fw-bold">Thêm mới văn phòng</h2>
 
             {errorMsg && (
                 <Alert variant="danger" className="shadow-sm border-0 d-flex align-items-center gap-2">
@@ -145,7 +157,7 @@ export default function CoachStopCreatePage() {
                     <Card.Body className="p-4 d-flex flex-column gap-3">
 
                         <Form.Group>
-                            <Form.Label className="fw-semibold text-secondary mb-1">Tên điểm dừng <span className="text-danger">*</span></Form.Label>
+                            <Form.Label className="fw-semibold text-secondary mb-1">Tên văn phòng <span className="text-danger">*</span></Form.Label>
                             <Form.Control
                                 type="text"
                                 name="stopPointName"
@@ -254,7 +266,7 @@ export default function CoachStopCreatePage() {
                             className="w-100 py-3 mt-4 fw-medium d-flex justify-content-center align-items-center gap-2 fs-5 custom-btn-general"
                         >
                             <BsCheckCircle size={20} />
-                            {isSubmitting ? 'Đang lưu hệ thống...' : 'Lưu Điểm Dừng'}
+                            {isSubmitting ? 'Đang lưu hệ thống...' : 'Lưu Văn Phòng'}
                         </Button>
 
                     </Card.Body>

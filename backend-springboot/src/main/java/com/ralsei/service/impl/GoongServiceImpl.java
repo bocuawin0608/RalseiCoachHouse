@@ -5,6 +5,7 @@ import com.ralsei.dto.request.goong.CalculateRouteDistancesRequest;
 import com.ralsei.dto.request.goong.DistanceTimeRequest;
 import com.ralsei.dto.response.goong.CalculateRouteDistancesResponse;
 import com.ralsei.dto.response.goong.DistanceTimeResponse;
+import com.ralsei.dto.response.goong.GeocodeResponse;
 import com.ralsei.model.RouteStop;
 import com.ralsei.repository.RouteRepository;
 import com.ralsei.repository.RouteStopRepository;
@@ -139,5 +140,24 @@ public class GoongServiceImpl implements GoongService {
             sortedStops.get(i + 1).setKilometersFromStart(km);
             sortedStops.get(i + 1).setMinutesFromStart(minutes);
         }
+    }
+
+    @Override
+    public GeocodeResponse geocode(String address) {
+        String url = "https://rsapi.goong.io/v2/geocode?api_key=" + goongApiKey + "&address=" + address;
+        JsonNode response = restTemplate.getForObject(url, JsonNode.class);
+
+        if (response == null || !response.has("results") || response.path("results").isEmpty()) {
+            throw new RuntimeException("Không tìm thấy tọa độ cho địa chỉ: " + address);
+        }
+
+        JsonNode firstResult = response.path("results").path(0);
+        JsonNode location = firstResult.path("geometry").path("location");
+
+        return GeocodeResponse.builder()
+                .latitude(BigDecimal.valueOf(location.path("lat").asDouble()))
+                .longitude(BigDecimal.valueOf(location.path("lng").asDouble()))
+                .formattedAddress(firstResult.path("formatted_address").asText())
+                .build();
     }
 }
