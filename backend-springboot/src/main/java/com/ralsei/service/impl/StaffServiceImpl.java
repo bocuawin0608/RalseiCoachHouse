@@ -123,6 +123,7 @@ public class StaffServiceImpl implements StaffService {
             accountRoleRepo.deleteByAccountId(accountId);
             staff.setAccountId(null);
             staffRepo.save(staff);
+            staffRepo.flush();
             accountRepo.deleteById(accountId);
         }
 
