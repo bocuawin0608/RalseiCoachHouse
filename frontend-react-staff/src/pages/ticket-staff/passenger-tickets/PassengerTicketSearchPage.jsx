@@ -1,15 +1,14 @@
 import { Alert, Card, Container } from 'react-bootstrap';
-import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Pagination from '../../../components/common/Pagination';
 import {
     usePassengerTicketSearch,
     PassengerTicketSearchFilters,
     PassengerTicketSearchResults,
-    PassengerTicketDetailModal,
 } from '../../../features/passenger-tickets';
 
 export default function PassengerTicketSearchPage() {
-    const [selectedTicketCode, setSelectedTicketCode] = useState(null);
+    const navigate = useNavigate();
 
     const {
         filters,
@@ -24,6 +23,10 @@ export default function PassengerTicketSearchPage() {
         handleReset,
         handleSearch,
     } = usePassengerTicketSearch();
+
+    const handleSelectTicket = (ticketCode) => {
+        navigate(`/staff/passenger-tickets/${encodeURIComponent(ticketCode)}`);
+    };
 
     return (
         <Container fluid className="py-2" style={{ maxWidth: '1400px' }}>
@@ -55,7 +58,7 @@ export default function PassengerTicketSearchPage() {
                         data={data}
                         loading={loading}
                         hasSearched={hasSearched || Boolean(hiddenTripId)}
-                        onSelectTicket={setSelectedTicketCode}
+                        onSelectTicket={handleSelectTicket}
                     />
 
                     {(hasSearched || hiddenTripId) && (
@@ -65,11 +68,6 @@ export default function PassengerTicketSearchPage() {
                     )}
                 </Card.Body>
             </Card>
-
-            <PassengerTicketDetailModal
-                ticketCode={selectedTicketCode}
-                onClose={() => setSelectedTicketCode(null)}
-            />
         </Container>
     );
 }

@@ -1,5 +1,7 @@
 package com.ralsei.service.passengerticket;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -43,6 +45,56 @@ public class PassengerTicketStaffPolicy {
         return hoursUntilDeparture >= CHANGE_CUTOFF_HOURS;
     }
 
+    public BigDecimal calculateRefundAmount(long hoursUntilDeparture, BigDecimal paymentAmount) {
+        if (paymentAmount == null) {
+            throw new BusinessRuleException("Không xác định được số tiền thanh toán.");
+        }
+        if (hoursUntilDeparture < CHANGE_CUTOFF_HOURS) {
+            throw new BusinessRuleException(
+                "Không thể hủy vé trong vòng " + CHANGE_CUTOFF_HOURS + " giờ trước giờ khởi hành."
+            );
+        }
+        if (hoursUntilDeparture > FULL_REFUND_CUTOFF_HOURS) {
+            return paymentAmount;
+        }
+        return paymentAmount.multiply(new BigDecimal("0.5")).setScale(0, RoundingMode.HALF_UP);
+    }
+
+    public void assertCancelFullAllowed(
+        String ticketStatus,
+        List<StaffPassengerTicketRowProjection> seatRows,
+        String paymentStatus,
+        LocalDateTime departureTime,
+        String tripStatus
+    ) {
+        boolean ticketActive = PassengerTicketStatus.CONFIRMED.name().equals(ticketStatus)
+            || PassengerTicketStatus.CHANGED.name().equals(ticketStatus);
+
+        if (!ticketActive) {
+            throw new BusinessRuleException("Chỉ được hủy vé đã xác nhận hoặc đã có thay đổi.");
+        }
+
+        if (!"COMPLETED".equals(paymentStatus)) {
+            throw new BusinessRuleException("Vé chưa thanh toán đầy đủ, không thể hủy.");
+        }
+
+        if (!"SCHEDULED".equals(tripStatus)) {
+            throw new BusinessRuleException("Chỉ được hủy vé trên chuyến đang lên lịch.");
+        }
+
+        if (!canCancel(hoursUntilDeparture(departureTime))) {
+            throw new BusinessRuleException(
+                "Không thể hủy vé trong vòng " + CHANGE_CUTOFF_HOURS + " giờ trước giờ khởi hành."
+            );
+        }
+
+        boolean hasCheckedInSeat = seatRows.stream()
+            .anyMatch(row -> PassengerTicketDetailStatus.CHECKED_IN.name().equals(row.getDetailStatus()));
+        if (hasCheckedInSeat) {
+            throw new BusinessRuleException("Không thể hủy vé khi có ghế đã check-in.");
+        }
+    }
+
     public void assertPassengerInfoChangeAllowed(
         String ticketStatus,
         String detailStatus,
@@ -80,18 +132,20 @@ public class PassengerTicketStaffPolicy {
         String ticketStatus,
         List<StaffPassengerTicketRowProjection> seatRows,
         LocalDateTime departureTime,
-        String paymentStatus
+        String paymentStatus,
+        String tripStatus
     ) {
         List<String> actions = new ArrayList<>();
         long hoursLeft = hoursUntilDeparture(departureTime);
         boolean modifiableWindow = canModify(hoursLeft);
         boolean cancellableWindow = canCancel(hoursLeft);
         boolean paymentCompleted = "COMPLETED".equals(paymentStatus);
+        boolean tripScheduled = "SCHEDULED".equals(tripStatus);
 
         boolean ticketActive = PassengerTicketStatus.CONFIRMED.name().equals(ticketStatus)
             || PassengerTicketStatus.CHANGED.name().equals(ticketStatus);
 
-        if (!ticketActive || !paymentCompleted) {
+        if (!ticketActive || !paymentCompleted || !tripScheduled) {
             return actions;
         }
 
@@ -102,6 +156,9 @@ public class PassengerTicketStaffPolicy {
         if (confirmedSeats == 0) {
             return actions;
         }
+
+        boolean hasCheckedInSeat = seatRows.stream()
+            .anyMatch(row -> PassengerTicketDetailStatus.CHECKED_IN.name().equals(row.getDetailStatus()));
 
         if (modifiableWindow) {
             boolean hasConfirmedSeat = seatRows.stream()
@@ -115,7 +172,7 @@ public class PassengerTicketStaffPolicy {
             }
         }
 
-        if (cancellableWindow) {
+        if (cancellableWindow && !hasCheckedInSeat) {
             actions.add("CANCEL_FULL");
             if (confirmedSeats >= 2) {
                 actions.add("CANCEL_PARTIAL");

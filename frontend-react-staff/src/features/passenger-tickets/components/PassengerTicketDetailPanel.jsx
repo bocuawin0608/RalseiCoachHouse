@@ -11,12 +11,14 @@ export default function PassengerTicketDetailPanel({
     ticket,
     onShowQr,
     onEditPassenger,
+    onCancelFull,
     activeQrDetailId = null,
     qrLoading = false,
 }) {
     if (!ticket) return null;
 
     const canChangePassengerInfo = ticket.allowedActions?.includes('CHANGE_PASSENGER_INFO');
+    const canCancelFull = ticket.allowedActions?.includes('CANCEL_FULL');
 
     const policyHint = ticket.hoursUntilDeparture != null && ticket.hoursUntilDeparture >= 0
         ? `Còn ${ticket.hoursUntilDeparture} giờ trước giờ xe khởi hành • Được phép hoàn tiền: ${ticket.refundTierLabel}`
@@ -32,6 +34,24 @@ export default function PassengerTicketDetailPanel({
                             <div className="text-muted small">{policyHint}</div>
                         </div>
                         <div className="text-end">
+                            <span 
+                                title={!canCancelFull ? "Không thể hủy vé này" : "Bấm để hủy toàn bộ vé"} 
+                                className="d-inline-block"
+                            >
+                                <Button
+                                    variant="outline-danger"
+                                    size="sm"
+                                    className="mb-2"
+                                    onClick={() => onCancelFull?.()}
+                                    disabled={!canCancelFull}
+                                    style={{
+                                        cursor: !canCancelFull ? 'not-allowed' : 'pointer', 
+                                        pointerEvents: 'auto' 
+                                    }}
+                                >
+                                    Hủy vé
+                                </Button>
+                            </span>
                             <div className="fw-bold fs-5">{formatCurrency(ticket.totalPrice)}</div>
                             <div className="text-muted small">Tổng tiền vé</div>
                         </div>
