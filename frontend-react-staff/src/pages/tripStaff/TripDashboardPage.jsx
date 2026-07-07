@@ -20,6 +20,7 @@ export default function TripDashboardPage() {
     const [search, setSearch] = useState('');
     const [showSeatMap, setShowSeatMap] = useState(false);
     const [checkingId, setCheckingId] = useState(null);
+    const [noShowingId, setNoShowingId] = useState(null);
     const [modal, setModal] = useState({ show: false, variant: 'success', message: '', result: null });
     const [tripActionLoading, setTripActionLoading] = useState(false);
 
@@ -57,6 +58,24 @@ export default function TripDashboardPage() {
                 p.phone?.includes(keyword)
         );
     }, [dashboard, search]);
+
+    const handleNoShow = async (ticketDetailId) => {
+        setNoShowingId(ticketDetailId);
+        try {
+            await tripStaffApi.markNoShow(tripId, ticketDetailId);
+            setModal({ show: true, variant: 'success', message: 'Đã đánh dấu hành khách vắng mặt. Trạng thái vé chuyển thành CANCELLED.', result: null });
+            refetch();
+        } catch (err) {
+            setModal({
+                show: true,
+                variant: 'error',
+                message: err.response?.data?.message || 'Không thể cập nhật',
+                result: null,
+            });
+        } finally {
+            setNoShowingId(null);
+        }
+    };
 
     const handleManualCheckIn = async (ticketDetailId) => {
         setCheckingId(ticketDetailId);
@@ -150,6 +169,9 @@ export default function TripDashboardPage() {
                                 passenger={passenger}
                                 onCheckIn={handleManualCheckIn}
                                 checkingIn={checkingId === passenger.ticketDetailId}
+                                onNoShow={handleNoShow}
+                                noShowing={noShowingId === passenger.ticketDetailId}
+                                noShow={dashboard?.noShowTicketDetailIds?.includes(passenger.ticketDetailId)}
                             />
                         ))
                     )}

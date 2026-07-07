@@ -5,9 +5,11 @@
 package com.ralsei.dto.response.tripstaff;
 
 import java.util.List;
+import java.util.Set;
 
 public record TripStaffDashboardResponse(
         TripStaffSummaryResponse tripSummary,
         List<TripStaffSeatResponse> seats,
-        List<TripStaffPassengerResponse> passengers
+        List<TripStaffPassengerResponse> passengers,
+        Set<Integer> noShowTicketDetailIds
 ) {}

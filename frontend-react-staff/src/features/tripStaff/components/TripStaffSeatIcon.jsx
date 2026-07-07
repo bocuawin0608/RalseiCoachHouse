@@ -1,9 +1,13 @@
-export default function TripStaffSeatIcon({ status, code }) {
+export default function TripStaffSeatIcon({ status, code, noShow }) {
     let fillColor = '#d9d9d9';
     let strokeColor = '#d9d9d9';
     let textColor = '#64748b';
 
-    if (status === 'CONFIRMED') {
+    if (noShow) {
+        fillColor = '#dc2626';
+        strokeColor = '#b91c1c';
+        textColor = '#fff';
+    } else if (status === 'CONFIRMED') {
         fillColor = '#eab308';
         strokeColor = '#ca8a04';
         textColor = '#fff';

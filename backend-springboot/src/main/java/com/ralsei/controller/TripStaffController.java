@@ -113,6 +113,15 @@ public class TripStaffController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/{tripId}/passengers/{ticketDetailId}/no-show")
+    public ResponseEntity<Void> markNoShow(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable @Min(value = 1, message = "ID chuyến phải lớn hơn 0.") Integer tripId,
+            @PathVariable @Min(value = 1, message = "ID chi tiết vé phải lớn hơn 0.") Integer ticketDetailId) {
+        tripStaffPassengerService.markNoShow(authorizationHeader, tripId, ticketDetailId);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/{tripId}/cargo/{cargoTicketId}/deliver")
     public ResponseEntity<Void> deliverCargo(
             @RequestHeader("Authorization") String authorizationHeader,

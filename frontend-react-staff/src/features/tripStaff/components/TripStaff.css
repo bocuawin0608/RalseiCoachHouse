@@ -79,6 +79,11 @@
     margin-bottom: 10px;
 }
 
+.passenger-card-no-show {
+    border-color: var(--color-danger);
+    background: #fef2f2;
+}
+
 .passenger-card-child {
     margin-top: 8px;
     padding: 8px 10px;

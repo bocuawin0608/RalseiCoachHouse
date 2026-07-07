@@ -1,9 +1,17 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Alert, Spinner } from 'react-bootstrap';
+import { Alert, Form, Spinner } from 'react-bootstrap';
 import TripListCard from '../../features/tripStaff/components/TripListCard';
 import { useAssignedTrips } from '../../features/tripStaff/hooks/useAssignedTrips';
 import '../../features/tripStaff/components/TripStaff.css';
+
+const STATUS_OPTIONS = [
+    { value: '', label: 'Tất cả trạng thái' },
+    { value: 'SCHEDULED', label: 'SCHEDULED' },
+    { value: 'IN_PROGRESS', label: 'IN_PROGRESS' },
+    { value: 'COMPLETED', label: 'COMPLETED' },
+    { value: 'CANCELLED', label: 'CANCELLED' },
+];
 
 function toDateString(offsetDays = 0) {
     const d = new Date();
@@ -15,7 +23,7 @@ export default function TripListPage() {
     const navigate = useNavigate();
     const [dayOffset, setDayOffset] = useState(0);
     const date = useMemo(() => toDateString(dayOffset), [dayOffset]);
-    const { trips, loading, error } = useAssignedTrips(date);
+    const { trips, loading, error, search, setSearch, statusFilter, setStatusFilter } = useAssignedTrips(date);
 
     return (
         <div className="trip-staff-page">
@@ -39,6 +47,24 @@ export default function TripListPage() {
                     Ngày mai
                 </button>
             </div>
+
+            <Form.Control
+                type="search"
+                placeholder="Tìm theo tên tuyến hoặc biển số..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="mb-2"
+            />
+
+            <Form.Select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="mb-3"
+            >
+                {STATUS_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+            </Form.Select>
 
             {error && <Alert variant="danger">{error}</Alert>}
 

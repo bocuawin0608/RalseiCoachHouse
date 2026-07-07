@@ -6,9 +6,12 @@ package com.ralsei.service.tripstaff.impl;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,6 +63,8 @@ public class TripStaffPassengerServiceImpl implements TripStaffPassengerService 
     private final AccompaniedChildRepository accompaniedChildRepository;
     private final TripStaffCheckInPolicy checkInPolicy;
 
+    private final Set<Integer> noShowTicketDetailIds = Collections.synchronizedSet(new HashSet<>());
+
     @Override
     @Transactional(readOnly = true)
     public List<AssignedTripProjection> getAssignedTrips(String authorizationHeader, LocalDate date) {
@@ -90,6 +95,8 @@ public class TripStaffPassengerServiceImpl implements TripStaffPassengerService 
 
         List<TripStaffSeatResponse> seats = buildSeatResponses(tripId, passengerRows);
 
+        Set<Integer> noShowIds = new HashSet<>(noShowTicketDetailIds);
+
         TripStaffSummaryResponse tripSummary = new TripStaffSummaryResponse(
                 summary.getTripId(),
                 summary.getRouteName(),
@@ -101,7 +108,7 @@ public class TripStaffPassengerServiceImpl implements TripStaffPassengerService 
                 summary.getCheckedInCount() != null ? summary.getCheckedInCount() : 0,
                 summary.getTotalPassengers() != null ? summary.getTotalPassengers() : 0);
 
-        return new TripStaffDashboardResponse(tripSummary, seats, passengers);
+        return new TripStaffDashboardResponse(tripSummary, seats, passengers, noShowIds);
     }
 
     @Override
@@ -198,6 +205,7 @@ public class TripStaffPassengerServiceImpl implements TripStaffPassengerService 
         return seatMap.stream()
                 .map(seat -> {
                     PassengerBoardingProjection passenger = bySeatCode.get(seat.seatCode());
+                    boolean noShow = passenger != null && noShowTicketDetailIds.contains(passenger.getTicketDetailId());
                     return new TripStaffSeatResponse(
                             seat.tripSeatId(),
                             seat.seatCode(),
@@ -206,7 +214,8 @@ public class TripStaffPassengerServiceImpl implements TripStaffPassengerService 
                             seat.floorIndex(),
                             seat.status(),
                             passenger != null ? passenger.getStatus() : null,
-                            passenger != null ? passenger.getFullName() : null);
+                            passenger != null ? passenger.getFullName() : null,
+                            noShow);
                 })
                 .toList();
     }
@@ -274,6 +283,28 @@ public class TripStaffPassengerServiceImpl implements TripStaffPassengerService 
 
         trip.setStatus("COMPLETED");
         tripRepository.save(trip);
+    }
+
+    @Override
+    @Transactional
+    public void markNoShow(String authorizationHeader, Integer tripId, Integer ticketDetailId) {
+        int staffId = resolveStaffId(authorizationHeader);
+        assertStaffCanAccessTrip(staffId, tripId);
+
+        PassengerTicketDetail detail = passengerTicketDetailRepository.findById(ticketDetailId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hành khách"));
+
+        PassengerTicket ticket = passengerTicketRepository.findById(detail.getPassengerTicketId())
+                .orElseThrow(() -> new BusinessRuleException("Không tìm thấy vé"));
+
+        checkInPolicy.assertTicketBelongsToTrip(ticket, tripId);
+        checkInPolicy.assertTicketConfirmed(ticket);
+
+        if (!"CONFIRMED".equals(detail.getStatus())) {
+            throw new BusinessRuleException("Chỉ có thể đánh dấu vắng mặt cho hành khách chưa check-in");
+        }
+
+        noShowTicketDetailIds.add(ticketDetailId);
     }
 
     private record TripContext(int tripId, Trip trip, Route route) {}
