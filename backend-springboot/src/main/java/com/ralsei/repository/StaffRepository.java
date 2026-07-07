@@ -34,6 +34,8 @@ public interface StaffRepository extends JpaRepository<Staff, Integer> {
             ta.ticketAgencyName  AS ticketAgencyName,
             a.username           AS username,
             s.isActive           AS isActive,
+            s.dob                AS dob,
+            s.hireDate           AS hireDate,
             s.createdAt          AS createdAt
         FROM staff s
         LEFT JOIN ticket_agency ta ON ta.ticketAgencyId = s.ticketAgencyId

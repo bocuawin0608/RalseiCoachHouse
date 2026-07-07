@@ -1,12 +1,9 @@
 package com.ralsei.dto.response.staff;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-/**
- * StaffListResponse
- */
 
 public record StaffListResponse(
     Integer staffId,
@@ -19,5 +16,7 @@ public record StaffListResponse(
     String ticketAgencyName,
     String username,
     @JsonProperty("active") boolean isActive,
+    LocalDate dob,
+    LocalDate hireDate,
     LocalDateTime createdAt
 ) {}
