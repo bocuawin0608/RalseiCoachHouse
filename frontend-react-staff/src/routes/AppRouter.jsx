@@ -15,6 +15,7 @@ import { voucherRoutes } from '../features/vouchers';
 import { cargoRoutes } from '../features/cargo';
 import { tripRoutes } from '../features/trip';
 import { passengerTicketRoutes } from '../features/passenger-tickets';
+import { staffTripInfoRoutes } from '../features/staff-trip-info';
 
 const AppRouter = () => {
     return (
@@ -49,6 +50,7 @@ const AppRouter = () => {
                 <Route element={<RoleGuard allowedRoles={['TICKET_STAFF']} />}>
                     <Route element={<DesktopLayout />}>
                         {passengerTicketRoutes}
+                        {staffTripInfoRoutes}
                     </Route>
                 </Route>
 

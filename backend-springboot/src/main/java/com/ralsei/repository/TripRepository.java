@@ -16,6 +16,7 @@ import org.springframework.data.repository.query.Param;
 
 import com.ralsei.dto.projection.trip.TripDetailProjection;
 import com.ralsei.dto.projection.trip.TripFilterProjection;
+import com.ralsei.dto.projection.trip.StaffTripInfoProjection;
 import com.ralsei.dto.projection.trip.TripSummaryProjection;
 import com.ralsei.dto.projection.trip.TripStopProjection;
 import com.ralsei.dto.projection.trip.TripResourceProjection;
@@ -311,6 +312,123 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             @Param("currentTime") LocalDateTime currentTime,
             @Param("routeId") Integer routeId,
             @Param("period") String period,
+            Pageable pageable);
+
+    /**
+     * Finds upcoming trips for the ticket-staff "view trip info" screen.
+     *
+     * <p>The screen is operational, so results are scoped to the selected day
+     * using an inclusive start and exclusive next-day boundary. Past days are
+     * blocked by the service, but every trip inside the selected day remains
+     * visible, including trips whose departure time already passed. City is
+     * derived from the route name because the current schema does not store a
+     * trip-level city. Keep this query separate from customer trip search; it
+     * exposes staff-only fields such as coach license plate and crew names.</p>
+     */
+    @Query(value = """
+            SELECT
+                t.tripId AS tripId,
+                city_info.departureCity AS departureCity,
+                ct.coachTypeName AS coachTypeName,
+                r.routeName AS routeName,
+                ct.seatLayout AS seatLayoutName,
+                t.[status] AS status,
+                t.departureTime AS departureTime,
+                DATEADD(MINUTE, 432, t.departureTime) AS arrivalTime,
+                N'7 giờ 12 phút' AS duration,
+                ctp.seatPrice AS seatPrice,
+                COALESCE(seat_counts.availableSeats, 0) AS availableSeats,
+                COALESCE(seat_counts.totalSeats, 0) AS totalSeats,
+                c.licensePlate AS licensePlate,
+                driver.staffName AS driverName,
+                attendant.staffName AS attendantName
+            FROM trip t
+            JOIN route r ON t.routeId = r.routeId
+            JOIN coach c ON t.coachId = c.coachId
+            JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId
+            JOIN coach_type_price ctp ON ct.coachTypeId = ctp.coachTypeId
+                AND t.departureTime BETWEEN ctp.startEffectiveDate AND ctp.endEffectiveDate
+            LEFT JOIN staff driver ON driver.staffId = t.driverId
+            LEFT JOIN staff attendant ON attendant.staffId = t.attendantId
+            CROSS APPLY (
+                SELECT CASE
+                    WHEN CHARINDEX(N'→', r.routeName) > 0
+                        THEN LTRIM(RTRIM(SUBSTRING(r.routeName, 1, CHARINDEX(N'→', r.routeName) - 1)))
+                    WHEN CHARINDEX(N' - ', r.routeName) > 0
+                        THEN LTRIM(RTRIM(SUBSTRING(r.routeName, 1, CHARINDEX(N' - ', r.routeName) - 1)))
+                    ELSE LTRIM(RTRIM(r.routeName))
+                END AS departureCity
+            ) city_info
+            LEFT JOIN (
+                SELECT
+                    ts.tripId,
+                    CAST(SUM(CASE WHEN UPPER(LTRIM(RTRIM(ts.[status]))) = 'AVAILABLE' THEN 1 ELSE 0 END) AS INT) AS availableSeats,
+                    CAST(COUNT(ts.tripSeatId) AS INT) AS totalSeats
+                FROM trip_seat ts
+                JOIN seat s ON s.seatId = ts.seatId
+                WHERE s.isActive = 1
+                GROUP BY ts.tripId
+            ) seat_counts ON seat_counts.tripId = t.tripId
+            WHERE t.departureTime >= :dayStart
+              AND t.departureTime < :nextDayStart
+              AND (:city IS NULL OR city_info.departureCity = :city)
+              AND (:timeFromMinute IS NULL OR DATEDIFF(MINUTE, CAST(t.departureTime AS DATE), t.departureTime) >= :timeFromMinute)
+              AND (:timeToMinute IS NULL OR DATEDIFF(MINUTE, CAST(t.departureTime AS DATE), t.departureTime) <= :timeToMinute)
+              AND (:coachTypeKeyword IS NULL OR LOWER(ct.coachTypeName) LIKE LOWER(:coachTypeKeyword))
+              AND (:checkPrices = 0 OR (
+                  (:priceLow = 1 AND ctp.seatPrice < 300000) OR
+                  (:priceMiddle = 1 AND ctp.seatPrice >= 300000 AND ctp.seatPrice <= 500000) OR
+                  (:priceHigh = 1 AND ctp.seatPrice > 500000)
+              ))
+              AND (:checkStatuses = 0 OR t.[status] IN (:statuses))
+              AND (:driverName IS NULL OR LOWER(driver.staffName) LIKE LOWER(CONCAT('%', :driverName, '%')))
+            ORDER BY city_info.departureCity ASC, t.departureTime ASC
+            """, countQuery = """
+            SELECT COUNT(t.tripId)
+            FROM trip t
+            JOIN route r ON t.routeId = r.routeId
+            JOIN coach c ON t.coachId = c.coachId
+            JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId
+            JOIN coach_type_price ctp ON ct.coachTypeId = ctp.coachTypeId
+                AND t.departureTime BETWEEN ctp.startEffectiveDate AND ctp.endEffectiveDate
+            LEFT JOIN staff driver ON driver.staffId = t.driverId
+            CROSS APPLY (
+                SELECT CASE
+                    WHEN CHARINDEX(N'→', r.routeName) > 0
+                        THEN LTRIM(RTRIM(SUBSTRING(r.routeName, 1, CHARINDEX(N'→', r.routeName) - 1)))
+                    WHEN CHARINDEX(N' - ', r.routeName) > 0
+                        THEN LTRIM(RTRIM(SUBSTRING(r.routeName, 1, CHARINDEX(N' - ', r.routeName) - 1)))
+                    ELSE LTRIM(RTRIM(r.routeName))
+                END AS departureCity
+            ) city_info
+            WHERE t.departureTime >= :dayStart
+              AND t.departureTime < :nextDayStart
+              AND (:city IS NULL OR city_info.departureCity = :city)
+              AND (:timeFromMinute IS NULL OR DATEDIFF(MINUTE, CAST(t.departureTime AS DATE), t.departureTime) >= :timeFromMinute)
+              AND (:timeToMinute IS NULL OR DATEDIFF(MINUTE, CAST(t.departureTime AS DATE), t.departureTime) <= :timeToMinute)
+              AND (:coachTypeKeyword IS NULL OR LOWER(ct.coachTypeName) LIKE LOWER(:coachTypeKeyword))
+              AND (:checkPrices = 0 OR (
+                  (:priceLow = 1 AND ctp.seatPrice < 300000) OR
+                  (:priceMiddle = 1 AND ctp.seatPrice >= 300000 AND ctp.seatPrice <= 500000) OR
+                  (:priceHigh = 1 AND ctp.seatPrice > 500000)
+              ))
+              AND (:checkStatuses = 0 OR t.[status] IN (:statuses))
+              AND (:driverName IS NULL OR LOWER(driver.staffName) LIKE LOWER(CONCAT('%', :driverName, '%')))
+            """, nativeQuery = true)
+    Page<StaffTripInfoProjection> findStaffTripInfos(
+            @Param("dayStart") LocalDateTime dayStart,
+            @Param("nextDayStart") LocalDateTime nextDayStart,
+            @Param("city") String city,
+            @Param("timeFromMinute") Integer timeFromMinute,
+            @Param("timeToMinute") Integer timeToMinute,
+            @Param("coachTypeKeyword") String coachTypeKeyword,
+            @Param("checkPrices") int checkPrices,
+            @Param("priceLow") int priceLow,
+            @Param("priceMiddle") int priceMiddle,
+            @Param("priceHigh") int priceHigh,
+            @Param("checkStatuses") int checkStatuses,
+            @Param("statuses") List<String> statuses,
+            @Param("driverName") String driverName,
             Pageable pageable);
 
     /**
