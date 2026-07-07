@@ -1,14 +1,19 @@
 package com.ralsei.service.passengerticket.impl;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ralsei.dto.notification.PassengerTicketCancellationEmailPayload;
+import com.ralsei.dto.notification.PassengerTicketEmailPayload;
 import com.ralsei.dto.projection.staffpassengerticket.StaffPassengerTicketRowProjection;
 import com.ralsei.dto.request.staffpassengerticket.StaffPassengerTicketCancelRequest;
 import com.ralsei.dto.response.staffpassengerticket.StaffPassengerTicketDetailResponse;
@@ -27,12 +32,16 @@ import com.ralsei.repository.RefundRepository;
 import com.ralsei.repository.StaffRepository;
 import com.ralsei.repository.TripRepository;
 import com.ralsei.repository.TripSeatRepository;
+import com.ralsei.service.notification.PassengerTicketEmailAssembler;
+import com.ralsei.service.notification.TicketEmailService;
 import com.ralsei.service.passengerticket.PassengerTicketStaffPolicy;
 import com.ralsei.service.passengerticket.StaffPassengerTicketCancelService;
 import com.ralsei.service.passengerticket.StaffPassengerTicketQueryService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class StaffPassengerTicketCancelServiceImpl implements StaffPassengerTicketCancelService {
@@ -47,6 +56,8 @@ public class StaffPassengerTicketCancelServiceImpl implements StaffPassengerTick
     private final PassengerTicketStaffPolicy policy;
     private final StaffPassengerTicketQueryService queryService;
     private final ObjectMapper objectMapper;
+    private final PassengerTicketEmailAssembler passengerTicketEmailAssembler;
+    private final TicketEmailService ticketEmailService;
 
     @Override
     @Transactional
@@ -131,7 +142,40 @@ public class StaffPassengerTicketCancelServiceImpl implements StaffPassengerTick
         refund.setCreatedBy(accountId);
         refundRepository.save(refund);
 
+        PassengerTicketEmailPayload emailTicket =
+            passengerTicketEmailAssembler.assemble(first.getPassengerTicketId());
+        PassengerTicketCancellationEmailPayload emailPayload = new PassengerTicketCancellationEmailPayload(
+            emailTicket,
+            LocalDateTime.now(),
+            refundAmount,
+            refund.getStatus(),
+            "Nhân viên hủy vé - hoàn " + refundTierLabel
+        );
+        sendTicketCancellationEmailAfterCommit(emailPayload, first.getPassengerTicketId());
+
         return queryService.getDetail(normalizedTicketCode);
+    }
+
+    /**
+     * Defers cancellation email delivery until the staff cancellation
+     * transaction commits. Failed SMTP delivery is logged without reverting the
+     * already-valid cancellation and refund record.
+     */
+    private void sendTicketCancellationEmailAfterCommit(
+        PassengerTicketCancellationEmailPayload payload,
+        Integer passengerTicketId
+    ) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                try {
+                    ticketEmailService.sendTicketCancellation(payload);
+                } catch (Exception exception) {
+                    log.error("Failed to send staff ticket cancellation email for passengerTicketId={}",
+                        passengerTicketId, exception);
+                }
+            }
+        });
     }
 
     private String buildRefundReason(StaffPassengerTicketCancelRequest request, String refundTierLabel) {
