@@ -132,7 +132,7 @@ export default function Sidebar() {
                                     </NavLink>
                                     <NavLink to="/management/coach-stops" className={navLinkClass}>
                                         <BsGeoAlt size={16} />
-                                        <span style={{ fontSize: '0.9rem' }}>Điểm dừng</span>
+                                        <span style={{ fontSize: '0.9rem' }}>Văn phòng</span>
                                     </NavLink>
                                 </div>
                             </Collapse>

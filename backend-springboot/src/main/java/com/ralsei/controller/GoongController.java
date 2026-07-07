@@ -4,6 +4,7 @@ import com.ralsei.dto.request.goong.DistanceTimeRequest;
 import com.ralsei.dto.request.goong.CalculateRouteDistancesRequest;
 import com.ralsei.dto.response.goong.DistanceTimeResponse;
 import com.ralsei.dto.response.goong.CalculateRouteDistancesResponse;
+import com.ralsei.dto.response.goong.GeocodeResponse;
 import com.ralsei.service.GoongService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,11 @@ public class GoongController {
     @GetMapping("/place/autocomplete")
     public ResponseEntity<Object> autocomplete(@RequestParam String input) {
         return ResponseEntity.ok(goongService.autocomplete(input));
+    }
+
+    @GetMapping("/geocode")
+    public ResponseEntity<GeocodeResponse> geocode(@RequestParam String address) {
+        return ResponseEntity.ok(goongService.geocode(address));
     }
 
     @GetMapping("/place/distance-time")

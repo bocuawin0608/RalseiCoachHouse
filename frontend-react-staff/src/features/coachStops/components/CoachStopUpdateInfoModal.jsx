@@ -160,7 +160,7 @@ export default function CoachStopUpdateInfoModal({ isOpen, data, onClose, onSucc
                     )}
 
                     <Form.Group>
-                        <Form.Label className="fw-semibold text-secondary mb-1">Tên điểm dừng <span className="text-danger">*</span></Form.Label>
+                        <Form.Label className="fw-semibold text-secondary mb-1">Tên văn phòng <span className="text-danger">*</span></Form.Label>
                         <Form.Control
                             type="text"
                             name="stopPointName"

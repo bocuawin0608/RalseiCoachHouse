@@ -4,8 +4,7 @@ import {
     useCoachStops,
     CoachStopTable,
     CoachStopFilter,
-    CoachStopUpdateInfoModal,
-    CoachStopViewDetailModal
+    CoachStopUpdateInfoModal
 } from '../../../features/coachStops';
 import Pagination from '../../../components/common/Pagination';
 import { Alert, Button, Card, Container } from 'react-bootstrap';
@@ -26,12 +25,12 @@ export default function CoachStopPage() {
         <Container fluid className="py-4" style={{ maxWidth: '1200px' }}>
 
             <div className="d-flex justify-content-between align-items-center mb-4">
-                <h2 className="m-0 fw-bold text-dark">Quản lý điểm dừng</h2>
+                <h2 className="m-0 fw-bold text-dark">Quản lý văn phòng</h2>
                 <Button
                     className="fw-medium shadow-sm custom-btn-general"
                     onClick={() => navigate('/management/coach-stops/create')}
                 >
-                    + Thêm điểm dừng mới
+                    + Thêm văn phòng mới
                 </Button>
             </div>
 
@@ -53,7 +52,6 @@ export default function CoachStopPage() {
                     <CoachStopTable
                         data={coachStops}
                         loading={loading}
-                        onViewDetail={(row) => setModalState({ type: 'VIEW_DETAIL', data: row })}
                         onEditInfo={(row) => setModalState({ type: 'EDIT_INFO', data: row })}
                     />
 
@@ -70,11 +68,7 @@ export default function CoachStopPage() {
                 onSuccess={refetch}
             />
 
-            <CoachStopViewDetailModal
-                isOpen={modalState.type === 'VIEW_DETAIL'}
-                data={modalState.data}
-                onClose={closeModal}
-            />
+
 
         </Container>
     );
