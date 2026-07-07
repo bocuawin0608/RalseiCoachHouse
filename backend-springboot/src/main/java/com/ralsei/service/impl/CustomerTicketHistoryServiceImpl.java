@@ -9,7 +9,11 @@ import java.math.BigDecimal;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import com.ralsei.dto.notification.PassengerTicketCancellationEmailPayload;
+import com.ralsei.dto.notification.PassengerTicketEmailPayload;
 import com.ralsei.dto.projection.customer.CustomerTicketHistoryProjection;
 import com.ralsei.dto.response.customer.CustomerTicketHistoryResponse;
 import com.ralsei.dto.response.customer.CustomerTicketHistoryResponse.CustomerTicketSeatResponse;
@@ -28,20 +32,25 @@ import com.ralsei.repository.PaymentRepository;
 import com.ralsei.repository.RefundRepository;
 import com.ralsei.repository.TripSeatRepository;
 import com.ralsei.service.CustomerTicketHistoryService;
+import com.ralsei.service.notification.PassengerTicketEmailAssembler;
+import com.ralsei.service.notification.TicketEmailService;
 import com.ralsei.util.QRCreateUitility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Reads customer-owned booking rows and converts their flat seat data into API responses.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CustomerTicketHistoryServiceImpl implements CustomerTicketHistoryService {
 
     private static final long CANCELLATION_CUTOFF_HOURS = 5;
+    private static final String CUSTOMER_CANCELLATION_REASON = "Khách hàng hủy vé trước giờ xuất bến";
 
     private final PassengerTicketDetailRepository ticketDetailRepository;
     private final PassengerTicketRepository ticketRepository;
@@ -50,6 +59,8 @@ public class CustomerTicketHistoryServiceImpl implements CustomerTicketHistorySe
     private final TripSeatRepository tripSeatRepository;
     private final QRCreateUitility qrCreateUitility;
     private final ObjectMapper objectMapper;
+    private final PassengerTicketEmailAssembler passengerTicketEmailAssembler;
+    private final TicketEmailService ticketEmailService;
 
     /** {@inheritDoc} */
     @Override
@@ -136,11 +147,22 @@ public class CustomerTicketHistoryServiceImpl implements CustomerTicketHistorySe
         Refund refund = refundRepository.save(Refund.builder()
             .paymentId(payment.getPaymentId())
             .amount(refundAmount)
-            .reason("Khách hàng hủy vé trước giờ xuất bến")
+            .reason(CUSTOMER_CANCELLATION_REASON)
             .refundMethod("BANK_TRANSFER")
             .status("PENDING")
             .callbackData(serializeBankDestination(request))
             .build());
+
+        PassengerTicketEmailPayload emailTicket =
+            passengerTicketEmailAssembler.assemble(ownedTicket.passengerTicketId());
+        PassengerTicketCancellationEmailPayload emailPayload = new PassengerTicketCancellationEmailPayload(
+            emailTicket,
+            LocalDateTime.now(),
+            refundAmount,
+            refund.getStatus(),
+            CUSTOMER_CANCELLATION_REASON
+        );
+        sendTicketCancellationEmailAfterCommit(emailPayload, ownedTicket.passengerTicketId());
 
         return new CustomerTicketCancellationResponse(
             ownedTicket.ticketCode(),
@@ -156,6 +178,28 @@ public class CustomerTicketHistoryServiceImpl implements CustomerTicketHistorySe
             .stream()
             .findFirst()
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vé trong tài khoản của bạn."));
+    }
+
+    /**
+     * Sends cancellation communication only after the database transaction is
+     * committed so the customer never receives an email for a rolled-back
+     * cancellation.
+     */
+    private void sendTicketCancellationEmailAfterCommit(
+        PassengerTicketCancellationEmailPayload payload,
+        Integer passengerTicketId
+    ) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                try {
+                    ticketEmailService.sendTicketCancellation(payload);
+                } catch (Exception exception) {
+                    log.error("Failed to send customer ticket cancellation email for passengerTicketId={}",
+                        passengerTicketId, exception);
+                }
+            }
+        });
     }
 
     /** Serializes bank details into the refund audit payload without changing the DDL. */
