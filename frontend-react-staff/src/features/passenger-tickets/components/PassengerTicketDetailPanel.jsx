@@ -11,6 +11,7 @@ export default function PassengerTicketDetailPanel({
     ticket,
     onShowQr,
     onEditPassenger,
+    onChangeSeat,
     onCancelFull,
     activeQrDetailId = null,
     qrLoading = false,
@@ -18,6 +19,7 @@ export default function PassengerTicketDetailPanel({
     if (!ticket) return null;
 
     const canChangePassengerInfo = ticket.allowedActions?.includes('CHANGE_PASSENGER_INFO');
+    const canChangeSeat = ticket.allowedActions?.includes('CHANGE_SEAT');
     const canCancelFull = ticket.allowedActions?.includes('CANCEL_FULL');
 
     const policyHint = ticket.hoursUntilDeparture != null && ticket.hoursUntilDeparture >= 0
@@ -122,6 +124,7 @@ export default function PassengerTicketDetailPanel({
                             {ticket.seats.map((seat) => {
                                 const canShowQr = QR_ELIGIBLE_STATUSES.has(seat.status);
                                 const canEditPassenger = canChangePassengerInfo && seat.status === 'CONFIRMED';
+                                const canEditSeat = canChangeSeat && seat.status === 'CONFIRMED';
                                 const isActive = activeQrDetailId === seat.ticketDetailId;
 
                                 return (
@@ -150,15 +153,27 @@ export default function PassengerTicketDetailPanel({
                                             ) : '—'}
                                         </td>
                                         <td>
-                                            {canEditPassenger ? (
-                                                <Button
-                                                    variant="outline-secondary"
-                                                    size="sm"
-                                                    onClick={() => onEditPassenger?.(seat)}
-                                                >
-                                                    Sửa thông tin
-                                                </Button>
-                                            ) : '—'}
+                                            <div className="d-flex flex-wrap gap-1">
+                                                {canEditPassenger && (
+                                                    <Button
+                                                        variant="outline-secondary"
+                                                        size="sm"
+                                                        onClick={() => onEditPassenger?.(seat)}
+                                                    >
+                                                        Sửa thông tin
+                                                    </Button>
+                                                )}
+                                                {canEditSeat && (
+                                                    <Button
+                                                        variant="outline-primary"
+                                                        size="sm"
+                                                        onClick={() => onChangeSeat?.(seat)}
+                                                    >
+                                                        Đổi ghế
+                                                    </Button>
+                                                )}
+                                                {!canEditPassenger && !canEditSeat && '—'}
+                                            </div>
                                         </td>
                                     </tr>
                                 );

@@ -222,6 +222,7 @@ public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicke
         List<SeatItem> seats = rows.stream()
             .map(row -> new SeatItem(
                 row.getTicketDetailId(),
+                row.getTripSeatId(),
                 row.getSeatCode(),
                 row.getDetailStatus(),
                 row.getSeatPrice(),

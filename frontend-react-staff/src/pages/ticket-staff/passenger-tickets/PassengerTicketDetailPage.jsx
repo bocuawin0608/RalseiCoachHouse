@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
     CancelFullTicketModal,
     ChangePassengerInfoModal,
+    ChangeSeatModal,
     PassengerTicketDetailPanel,
     PassengerTicketSeatQrModal,
     usePassengerTicketDetail,
@@ -16,12 +17,14 @@ export default function PassengerTicketDetailPage() {
     const navigate = useNavigate();
     const { data, loading, error, applyDetail } = usePassengerTicketDetail(ticketCode);
     const { qrPreview, showQr, closeQr } = usePassengerTicketSeatQr(ticketCode);
-    const [editSeat, setEditSeat] = useState(null);
+    const [editPassengerSeat, setEditPassengerSeat] = useState(null);
+    const [changeSeatTarget, setChangeSeatTarget] = useState(null);
     const [cancelOpen, setCancelOpen] = useState(false);
 
     const handleBack = () => {
         closeQr();
-        setEditSeat(null);
+        setEditPassengerSeat(null);
+        setChangeSeatTarget(null);
         setCancelOpen(false);
 
         // Browser history already holds the search URL with filters from before detail.
@@ -33,11 +36,7 @@ export default function PassengerTicketDetailPage() {
         navigate('/staff/passenger-tickets/search');
     };
 
-    const handlePassengerInfoUpdated = (updatedTicket) => {
-        applyDetail(updatedTicket);
-    };
-
-    const handleCancelSuccess = (updatedTicket) => {
+    const handleDetailUpdated = (updatedTicket) => {
         applyDetail(updatedTicket);
     };
 
@@ -70,7 +69,8 @@ export default function PassengerTicketDetailPage() {
                 <PassengerTicketDetailPanel
                     ticket={data}
                     onShowQr={showQr}
-                    onEditPassenger={setEditSeat}
+                    onEditPassenger={setEditPassengerSeat}
+                    onChangeSeat={setChangeSeatTarget}
                     onCancelFull={() => setCancelOpen(true)}
                     activeQrDetailId={qrPreview?.ticketDetailId}
                     qrLoading={Boolean(qrPreview?.loading)}
@@ -80,18 +80,26 @@ export default function PassengerTicketDetailPage() {
             <PassengerTicketSeatQrModal preview={qrPreview} onClose={closeQr} />
 
             <ChangePassengerInfoModal
-                isOpen={Boolean(editSeat)}
+                isOpen={Boolean(editPassengerSeat)}
                 ticketCode={ticketCode}
-                seat={editSeat}
-                onClose={() => setEditSeat(null)}
-                onSuccess={handlePassengerInfoUpdated}
+                seat={editPassengerSeat}
+                onClose={() => setEditPassengerSeat(null)}
+                onSuccess={handleDetailUpdated}
+            />
+
+            <ChangeSeatModal
+                isOpen={Boolean(changeSeatTarget)}
+                ticket={data}
+                seat={changeSeatTarget}
+                onClose={() => setChangeSeatTarget(null)}
+                onSuccess={handleDetailUpdated}
             />
 
             <CancelFullTicketModal
                 isOpen={cancelOpen}
                 ticket={data}
                 onClose={() => setCancelOpen(false)}
-                onSuccess={handleCancelSuccess}
+                onSuccess={handleDetailUpdated}
             />
         </Container>
     );

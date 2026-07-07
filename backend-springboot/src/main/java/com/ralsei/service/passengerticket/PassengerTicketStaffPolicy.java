@@ -95,6 +95,24 @@ public class PassengerTicketStaffPolicy {
         }
     }
 
+    public void assertChangeSeatAllowed(
+        String ticketStatus,
+        String detailStatus,
+        String paymentStatus,
+        LocalDateTime departureTime,
+        String tripStatus,
+        int currentTripSeatId,
+        int newTripSeatId
+    ) {
+        assertPassengerInfoChangeAllowed(
+            ticketStatus, detailStatus, paymentStatus, departureTime, tripStatus
+        );
+
+        if (currentTripSeatId == newTripSeatId) {
+            throw new BusinessRuleException("Ghế mới phải khác ghế hiện tại.");
+        }
+    }
+
     public void assertPassengerInfoChangeAllowed(
         String ticketStatus,
         String detailStatus,
