@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { BsArrowLeft } from 'react-icons/bs';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
+    CancelFullTicketModal,
     ChangePassengerInfoModal,
     PassengerTicketDetailPanel,
     PassengerTicketSeatQrModal,
@@ -16,10 +17,12 @@ export default function PassengerTicketDetailPage() {
     const { data, loading, error, applyDetail } = usePassengerTicketDetail(ticketCode);
     const { qrPreview, showQr, closeQr } = usePassengerTicketSeatQr(ticketCode);
     const [editSeat, setEditSeat] = useState(null);
+    const [cancelOpen, setCancelOpen] = useState(false);
 
     const handleBack = () => {
         closeQr();
         setEditSeat(null);
+        setCancelOpen(false);
 
         // Browser history already holds the search URL with filters from before detail.
         if (window.history.length > 1) {
@@ -31,6 +34,10 @@ export default function PassengerTicketDetailPage() {
     };
 
     const handlePassengerInfoUpdated = (updatedTicket) => {
+        applyDetail(updatedTicket);
+    };
+
+    const handleCancelSuccess = (updatedTicket) => {
         applyDetail(updatedTicket);
     };
 
@@ -64,6 +71,7 @@ export default function PassengerTicketDetailPage() {
                     ticket={data}
                     onShowQr={showQr}
                     onEditPassenger={setEditSeat}
+                    onCancelFull={() => setCancelOpen(true)}
                     activeQrDetailId={qrPreview?.ticketDetailId}
                     qrLoading={Boolean(qrPreview?.loading)}
                 />
@@ -77,6 +85,13 @@ export default function PassengerTicketDetailPage() {
                 seat={editSeat}
                 onClose={() => setEditSeat(null)}
                 onSuccess={handlePassengerInfoUpdated}
+            />
+
+            <CancelFullTicketModal
+                isOpen={cancelOpen}
+                ticket={data}
+                onClose={() => setCancelOpen(false)}
+                onSuccess={handleCancelSuccess}
             />
         </Container>
     );
