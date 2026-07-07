@@ -25,6 +25,7 @@ import com.ralsei.repository.PassengerTicketDetailRepository;
 import com.ralsei.repository.PassengerTicketRepository;
 import com.ralsei.repository.PaymentRepository;
 import com.ralsei.repository.RefundRepository;
+import com.ralsei.repository.TripRepository;
 import com.ralsei.service.passengerticket.PassengerTicketStaffPolicy;
 import com.ralsei.service.passengerticket.StaffPassengerTicketQueryService;
 import com.ralsei.util.QRCreateUitility;
@@ -39,6 +40,7 @@ public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicke
     private final PassengerTicketDetailRepository ticketDetailRepository;
     private final PaymentRepository paymentRepository;
     private final RefundRepository refundRepository;
+    private final TripRepository tripRepository;
     private final PassengerTicketStaffPolicy policy;
     private final QRCreateUitility qrCreateUitility;
 
@@ -213,10 +215,14 @@ public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicke
     ) {
         StaffPassengerTicketRowProjection first = rows.get(0);
         long hoursLeft = policy.hoursUntilDeparture(first.getDepartureTime());
+        String tripStatus = tripRepository.findById(first.getTripId())
+            .map(trip -> trip.getStatus())
+            .orElse(null);
 
         List<SeatItem> seats = rows.stream()
             .map(row -> new SeatItem(
                 row.getTicketDetailId(),
+                row.getTripSeatId(),
                 row.getSeatCode(),
                 row.getDetailStatus(),
                 row.getSeatPrice(),
@@ -251,7 +257,7 @@ public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicke
             refunds,
             seats,
             policy.resolveAllowedActions(
-                first.getTicketStatus(), rows, first.getDepartureTime(), first.getPaymentStatus()
+                first.getTicketStatus(), rows, first.getDepartureTime(), first.getPaymentStatus(), tripStatus
             ),
             hoursLeft,
             policy.resolveRefundTierLabel(hoursLeft)
