@@ -1,3 +1,7 @@
+/**
+ * Service interface for trip staff passenger operations.
+ * Defines check-in workflows (QR and manual) and dashboard retrieval.
+ */
 package com.ralsei.service.tripstaff;
 
 import java.time.LocalDate;
@@ -17,4 +21,8 @@ public interface TripStaffPassengerService {
     CheckInResponse checkInByQr(String authorizationHeader, Integer tripId, QrCheckInRequest request);
 
     CheckInResponse checkInManual(String authorizationHeader, Integer tripId, Integer ticketDetailId);
+
+    void startTrip(String authorizationHeader, Integer tripId);
+
+    void endTrip(String authorizationHeader, Integer tripId);
 }

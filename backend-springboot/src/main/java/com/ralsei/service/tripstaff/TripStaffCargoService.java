@@ -1,3 +1,7 @@
+/**
+ * Service interface for trip staff cargo operations.
+ * Manages the cargo lifecycle: load, unload, and mark as delivered.
+ */
 package com.ralsei.service.tripstaff;
 
 import com.ralsei.dto.response.tripstaff.TripStaffCargoResponse;

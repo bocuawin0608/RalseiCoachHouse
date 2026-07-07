@@ -1,3 +1,7 @@
+/**
+ * Response containing the cargo list for a trip.
+ * Nested records represent individual cargo items and their detail lines.
+ */
 package com.ralsei.dto.response.tripstaff;
 
 import java.math.BigDecimal;

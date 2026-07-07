@@ -1,3 +1,7 @@
+/**
+ * Projection for a trip assigned to the current staff member.
+ * Includes route info, vehicle, and check-in progress summaries.
+ */
 package com.ralsei.dto.projection.tripstaff;
 
 import java.time.LocalDateTime;

@@ -1,3 +1,8 @@
+/**
+ * Repository for trip staff operations.
+ * Provides queries for assigned trips, passenger boarding lists,
+ * and staff assignment verification.
+ */
 package com.ralsei.repository;
 
 import java.util.List;

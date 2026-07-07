@@ -1,3 +1,7 @@
+/**
+ * REST controller for trip staff operations including passenger check-in
+ * and cargo management for assigned trips.
+ */
 package com.ralsei.controller;
 
 import java.time.LocalDate;
@@ -90,6 +94,22 @@ public class TripStaffController {
             @PathVariable @Min(value = 1, message = "ID chuyến phải lớn hơn 0.") Integer tripId,
             @PathVariable @Min(value = 1, message = "ID đơn hàng phải lớn hơn 0.") Integer cargoTicketId) {
         tripStaffCargoService.unloadCargo(authorizationHeader, tripId, cargoTicketId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{tripId}/start")
+    public ResponseEntity<Void> startTrip(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable @Min(value = 1, message = "ID chuyến phải lớn hơn 0.") Integer tripId) {
+        tripStaffPassengerService.startTrip(authorizationHeader, tripId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{tripId}/end")
+    public ResponseEntity<Void> endTrip(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable @Min(value = 1, message = "ID chuyến phải lớn hơn 0.") Integer tripId) {
+        tripStaffPassengerService.endTrip(authorizationHeader, tripId);
         return ResponseEntity.ok().build();
     }
 

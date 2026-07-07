@@ -1,3 +1,7 @@
+/**
+ * Business validation rules for trip staff check-in operations.
+ * Enforces staff assignment, check-in time windows, ticket status, and seat eligibility.
+ */
 package com.ralsei.service.tripstaff;
 
 import java.time.LocalDateTime;

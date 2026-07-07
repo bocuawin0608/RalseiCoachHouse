@@ -1,3 +1,7 @@
+/**
+ * Implementation of cargo lifecycle operations for trip staff.
+ * Supports loading, unloading, and marking cargo as delivered.
+ */
 package com.ralsei.service.tripstaff.impl;
 
 import java.util.List;

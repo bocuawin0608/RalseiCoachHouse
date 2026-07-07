@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Alert, Button, Form, Spinner } from 'react-bootstrap';
-import { BsQrCodeScan } from 'react-icons/bs';
+import { BsPlayFill, BsStopFill, BsQrCodeScan } from 'react-icons/bs';
 import CargoTabPlaceholder from '../../features/tripStaff/components/CargoTabPlaceholder';
 import CheckInResultModal from '../../features/tripStaff/components/CheckInResultModal';
 import PassengerCard from '../../features/tripStaff/components/PassengerCard';
@@ -21,6 +21,31 @@ export default function TripDashboardPage() {
     const [showSeatMap, setShowSeatMap] = useState(false);
     const [checkingId, setCheckingId] = useState(null);
     const [modal, setModal] = useState({ show: false, variant: 'success', message: '', result: null });
+    const [tripActionLoading, setTripActionLoading] = useState(false);
+
+    const handleStartTrip = useCallback(async () => {
+        setTripActionLoading(true);
+        try {
+            await tripStaffApi.startTrip(tripId);
+            refetch();
+        } catch (err) {
+            setModal({ show: true, variant: 'error', message: err.response?.data?.message || 'Không thể bắt đầu chuyến', result: null });
+        } finally {
+            setTripActionLoading(false);
+        }
+    }, [tripId, refetch]);
+
+    const handleEndTrip = useCallback(async () => {
+        setTripActionLoading(true);
+        try {
+            await tripStaffApi.endTrip(tripId);
+            refetch();
+        } catch (err) {
+            setModal({ show: true, variant: 'error', message: err.response?.data?.message || 'Không thể kết thúc chuyến', result: null });
+        } finally {
+            setTripActionLoading(false);
+        }
+    }, [tripId, refetch]);
 
     const passengers = useMemo(() => {
         const list = dashboard?.passengers || [];
@@ -79,6 +104,18 @@ export default function TripDashboardPage() {
                 <p className="mb-0 fw-semibold" style={{ color: 'var(--ralsei-primary)' }}>
                     Đã lên xe: {summary.checkedInCount}/{summary.totalPassengers}
                 </p>
+                <div className="d-flex gap-2 mt-2">
+                    {summary.tripStatus === 'SCHEDULED' && (
+                        <Button size="sm" variant="success" onClick={handleStartTrip} disabled={tripActionLoading}>
+                            <BsPlayFill className="me-1" />Bắt đầu chuyến
+                        </Button>
+                    )}
+                    {summary.tripStatus === 'IN_PROGRESS' && (
+                        <Button size="sm" variant="danger" onClick={handleEndTrip} disabled={tripActionLoading}>
+                            <BsStopFill className="me-1" />Kết thúc chuyến
+                        </Button>
+                    )}
+                </div>
             </div>
 
             <TripDashboardTabs activeTab={activeTab} onChange={setActiveTab} />
