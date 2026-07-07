@@ -22,4 +22,11 @@ export const staffPassengerTicketApi = {
             payload
         );
     },
+
+    cancelFull(ticketCode, payload) {
+        return axiosClient.post(
+            `/v1/staff/passenger-tickets/${encodeURIComponent(ticketCode)}/cancel`,
+            payload
+        );
+    },
 };

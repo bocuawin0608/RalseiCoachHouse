@@ -25,6 +25,14 @@ export function formatCurrency(value) {
     return `${Number(value).toLocaleString('vi-VN')} đ`;
 }
 
+export function calculateStaffRefundPreview(paymentAmount, refundTierLabel) {
+    const amount = Number(paymentAmount);
+    if (!amount || Number.isNaN(amount)) return null;
+    if (refundTierLabel === '100%') return amount;
+    if (refundTierLabel === '50%') return Math.round(amount * 0.5);
+    return null;
+}
+
 export function hasVisibleSearchFilter(filters) {
     return Boolean(
         filters.phone?.trim()
