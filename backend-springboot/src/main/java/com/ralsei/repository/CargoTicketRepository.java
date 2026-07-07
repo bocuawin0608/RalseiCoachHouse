@@ -39,7 +39,7 @@ public interface CargoTicketRepository extends JpaRepository<CargoTicket, Intege
         JOIN coach_stop csDropoff ON csDropoff.stopPointId = ct.dropoffStopId
         LEFT JOIN trip t ON t.tripId = ct.tripId
         LEFT JOIN route r ON r.routeId = t.routeId
-        WHERE ct.customerId = :customerId OR ct.receiverPhone = :receiverPhone
+        WHERE (ct.customerId = :customerId OR ct.receiverPhone = :receiverPhone)
         AND (:status IS NULL OR
             (:status = 'ONGOING' AND ct.status IN ('RECEIVED', 'LOADED', 'ARRIVED'))
             OR (:status = 'COMPLETED' AND ct.status = 'DELIVERED')
