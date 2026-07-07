@@ -40,7 +40,6 @@ export default function TripStaffSeatMapModal({ show, onHide, seats }) {
                     <span><TripStaffSeatIcon status={null} /> Trống</span>
                     <span><TripStaffSeatIcon status="CONFIRMED" /> Chưa lên xe</span>
                     <span><TripStaffSeatIcon status="CHECKED_IN" /> Đã lên xe</span>
-                    <span><TripStaffSeatIcon noShow /> Vắng mặt</span>
                 </div>
                 {parsed.floors.length === 0 ? (
                     <p className="text-muted text-center">Không có dữ liệu ghế</p>

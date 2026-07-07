@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Alert, Badge, Button, Spinner } from 'react-bootstrap';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert, Badge, Button, Form, Spinner } from 'react-bootstrap';
 import { tripStaffApi } from '../api/tripStaffApi';
 import { formatCurrency } from '../../../utils/formatters';
 
@@ -23,11 +23,22 @@ const STATUS_LABEL = {
     ABANDONED: 'Bỏ hoang',
 };
 
+const CARGO_STATUS_OPTIONS = [
+    { value: '', label: 'Tất cả trạng thái' },
+    { value: 'RECEIVED', label: 'Mới nhận' },
+    { value: 'LOADED', label: 'Đã lên xe' },
+    { value: 'ARRIVED', label: 'Đã dỡ xuống' },
+    { value: 'DELIVERED', label: 'Đã giao' },
+    { value: 'CANCELLED', label: 'Đã hủy' },
+];
+
 export default function CargoTabPlaceholder({ tripId }) {
     const [cargoData, setCargoData] = useState({ cargoItems: [] });
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(null);
     const [error, setError] = useState(null);
+    const [search, setSearch] = useState('');
+    const [statusFilter, setStatusFilter] = useState('');
 
     const fetchCargo = useCallback(async () => {
         if (!tripId) return;
@@ -63,10 +74,46 @@ export default function CargoTabPlaceholder({ tripId }) {
         }
     };
 
-    const items = cargoData.cargoItems || [];
+    const items = useMemo(() => {
+        const raw = cargoData.cargoItems || [];
+        const keyword = search.trim().toLowerCase();
+        let filtered = raw;
+        if (keyword) {
+            filtered = filtered.filter(
+                (c) =>
+                    c.ticketCode?.toLowerCase().includes(keyword) ||
+                    c.senderName?.toLowerCase().includes(keyword) ||
+                    c.receiverName?.toLowerCase().includes(keyword) ||
+                    c.senderPhone?.includes(keyword) ||
+                    c.receiverPhone?.includes(keyword)
+            );
+        }
+        if (statusFilter) {
+            filtered = filtered.filter((c) => c.status === statusFilter);
+        }
+        return filtered;
+    }, [cargoData, search, statusFilter]);
 
     return (
         <div>
+            <Form.Control
+                type="search"
+                placeholder="Tìm mã đơn, tên người gửi/nhận, SĐT..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="mb-2"
+            />
+
+            <Form.Select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="mb-3"
+            >
+                {CARGO_STATUS_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+            </Form.Select>
+
             {error && <Alert variant="danger" dismissible onClose={() => setError(null)}>{error}</Alert>}
 
             {loading ? (

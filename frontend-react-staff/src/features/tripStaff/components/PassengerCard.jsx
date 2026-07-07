@@ -1,4 +1,4 @@
-import { Badge, Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Badge, Button } from 'react-bootstrap';
 import { BsPersonHeart } from 'react-icons/bs';
 import './TripStaff.css';
 
@@ -7,21 +7,17 @@ const STATUS_BADGE = {
     CHECKED_IN: 'success',
 };
 
-export default function PassengerCard({ passenger, onCheckIn, onNoShow, checkingIn, noShowing, noShow }) {
-    const canCheckIn = passenger.status === 'CONFIRMED' && !noShow;
+export default function PassengerCard({ passenger, onCheckIn, checkingIn }) {
+    const canCheckIn = passenger.status === 'CONFIRMED';
 
     return (
-        <div className={`passenger-card ${noShow ? 'passenger-card-no-show' : ''}`}>
+        <div className="passenger-card">
             <div className="d-flex justify-content-between align-items-start gap-2 mb-2">
                 <div>
                     <div className="fw-bold">{passenger.fullName}</div>
                     <div className="text-muted" style={{ fontSize: '14px' }}>{passenger.phone}</div>
                 </div>
-                {noShow ? (
-                    <Badge bg="danger">Vắng mặt</Badge>
-                ) : (
-                    <Badge bg={STATUS_BADGE[passenger.status] || 'secondary'}>{passenger.status}</Badge>
-                )}
+                <Badge bg={STATUS_BADGE[passenger.status] || 'secondary'}>{passenger.status}</Badge>
             </div>
             <div className="text-muted mb-1" style={{ fontSize: '13px' }}>
                 Ghế {passenger.seatCodeSnapshot}
@@ -46,23 +42,6 @@ export default function PassengerCard({ passenger, onCheckIn, onNoShow, checking
                 >
                     {checkingIn ? 'Đang xử lý...' : 'Check-in'}
                 </Button>
-                {canCheckIn && (
-                    <Button
-                        size="sm"
-                        variant="outline-danger"
-                        disabled={noShowing}
-                        onClick={() => onNoShow(passenger.ticketDetailId)}
-                    >
-                        {noShowing ? '...' : 'Vắng mặt'}
-                    </Button>
-                )}
-                <OverlayTrigger overlay={<Tooltip>In nhãn hành lý (demo)</Tooltip>}>
-                    <span>
-                        <Button size="sm" variant="outline-secondary" disabled>
-                            In nhãn
-                        </Button>
-                    </span>
-                </OverlayTrigger>
             </div>
         </div>
     );

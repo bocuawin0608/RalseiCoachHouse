@@ -168,6 +168,7 @@ public class TripStaffPassengerServiceImpl implements TripStaffPassengerService 
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tuyến đường của chuyến"));
 
         checkInPolicy.assertStaffAssigned(trip, staffId);
+        checkInPolicy.assertTripNotCompleted(trip);
         checkInPolicy.assertWithinCheckInWindow(trip, route, LocalDateTime.now());
 
         return new TripContext(tripId, trip, route);
