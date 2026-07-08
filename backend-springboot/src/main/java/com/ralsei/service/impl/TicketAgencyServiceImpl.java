@@ -73,6 +73,10 @@ public class TicketAgencyServiceImpl implements TicketAgencyService {
         coachStopRepo.findById(request.stopPointId())
             .orElseThrow(() -> new ResourceNotFoundException("Điểm dừng không tồn tại!"));
 
+        if (ticketAgencyRepo.existsByTicketAgencyNameIgnoreCase(request.ticketAgencyName().trim())) {
+            throw new BusinessRuleException("Tên đại lý bán vé đã tồn tại trong hệ thống!");
+        }
+
         TicketAgency ta = TicketAgency.builder()
             .ticketAgencyName(request.ticketAgencyName().trim())
             .stopPointId(request.stopPointId())
@@ -90,7 +94,13 @@ public class TicketAgencyServiceImpl implements TicketAgencyService {
         coachStopRepo.findById(request.stopPointId())
             .orElseThrow(() -> new ResourceNotFoundException("Điểm dừng không tồn tại!"));
 
-        ta.setTicketAgencyName(request.ticketAgencyName().trim());
+        String newName = request.ticketAgencyName().trim();
+        if (!ta.getTicketAgencyName().equalsIgnoreCase(newName)
+            && ticketAgencyRepo.existsByTicketAgencyNameIgnoreCase(newName)) {
+            throw new BusinessRuleException("Tên đại lý bán vé đã tồn tại trong hệ thống!");
+        }
+
+        ta.setTicketAgencyName(newName);
         ta.setStopPointId(request.stopPointId());
         if (request.isActive() != null) {
             ta.setActive(request.isActive());

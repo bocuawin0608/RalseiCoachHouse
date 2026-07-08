@@ -37,6 +37,25 @@ export default function StaffUpdateModal({ isOpen, data, onClose, onSuccess, tic
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (form.hireDate && new Date(form.hireDate) < new Date('1900-01-01')) {
+            setErrorMsg('Ngày vào làm không hợp lệ.');
+            return;
+        }
+        const cccd = form.cccd.trim();
+        if (cccd && !/^[0-9]{9,12}$/.test(cccd)) {
+            setErrorMsg('CCCD không hợp lệ (9-12 chữ số).');
+            return;
+        }
+        if (form.dob) {
+            const birth = new Date(form.dob);
+            const cutoff = new Date();
+            cutoff.setFullYear(cutoff.getFullYear() - 16);
+            if (birth > cutoff) {
+                setErrorMsg('Nhân viên phải từ đủ 16 tuổi trở lên.');
+                return;
+            }
+        }
+
         setIsSubmitting(true);
         setErrorMsg('');
         try {
