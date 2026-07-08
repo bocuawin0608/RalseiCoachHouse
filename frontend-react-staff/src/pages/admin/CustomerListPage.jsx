@@ -10,14 +10,6 @@ export default function CustomerListPage() {
     const [modalState, setModalState] = useState({ type: null, data: null });
     const closeModal = () => setModalState({ type: null, data: null });
 
-    const handleConfirmDelete = (c) => {
-        if (window.confirm(`Bạn có chắc chắn muốn xóa khách hàng "${c.customerName}"?`)) {
-            customerApi.deleteCustomer(c.customerId)
-                .then(() => refetch())
-                .catch(err => alert(err.response?.data?.message || 'Xóa khách hàng thất bại.'));
-        }
-    };
-
     const handleToggleActive = (c) => {
         const action = c.active !== false ? 'vô hiệu hóa' : 'kích hoạt';
         if (window.confirm(`Bạn có chắc chắn muốn ${action} khách hàng "${c.customerName}"?`)) {
@@ -47,7 +39,6 @@ export default function CustomerListPage() {
                         onViewDetail={(c) => setModalState({ type: 'detail', data: c })}
                         onEdit={(c) => setModalState({ type: 'edit', data: c })}
                         onToggleActive={handleToggleActive}
-                        onDelete={handleConfirmDelete}
                     />
                 </Card.Body>
                 {!loading && customers.length > 0 && (

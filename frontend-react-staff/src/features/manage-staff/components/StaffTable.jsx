@@ -1,7 +1,7 @@
 import { Table, Badge, ButtonGroup, Button, Spinner } from 'react-bootstrap';
-import { BsEye, BsPencilFill, BsToggleOn, BsToggleOff, BsTrash, BsExclamationTriangleFill } from 'react-icons/bs';
+import { BsEye, BsPencilFill, BsToggleOn, BsToggleOff, BsExclamationTriangleFill } from 'react-icons/bs';
 
-export default function StaffTable({ staffList, loading, error, onViewDetail, onEdit, onToggleActive, onDelete }) {
+export default function StaffTable({ staffList, loading, error, onViewDetail, onEdit, onToggleActive }) {
     if (loading) return (
         <div className="text-center py-5"><Spinner animation="border" variant="primary" /><p className="mt-2 text-muted">Đang tải dữ liệu...</p></div>
     );
@@ -51,7 +51,6 @@ export default function StaffTable({ staffList, loading, error, onViewDetail, on
                                             title={isActive ? 'Vô hiệu hóa' : 'Kích hoạt'} onClick={() => onToggleActive(s)}>
                                             {isActive ? <BsToggleOff /> : <BsToggleOn />}
                                         </Button>
-                                        <Button variant="outline-danger" title="Xóa" onClick={() => onDelete(s)}><BsTrash /></Button>
                                     </ButtonGroup>
                                 </td>
                             </tr>

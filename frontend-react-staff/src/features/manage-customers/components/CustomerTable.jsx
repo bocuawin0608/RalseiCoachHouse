@@ -1,7 +1,7 @@
 import { Table, Badge, ButtonGroup, Button, Spinner } from 'react-bootstrap';
-import { BsEye, BsPencilFill, BsToggleOn, BsToggleOff, BsTrash, BsExclamationTriangleFill } from 'react-icons/bs';
+import { BsEye, BsPencilFill, BsToggleOn, BsToggleOff, BsExclamationTriangleFill } from 'react-icons/bs';
 
-export default function CustomerTable({ customers, loading, error, onViewDetail, onEdit, onToggleActive, onDelete }) {
+export default function CustomerTable({ customers, loading, error, onViewDetail, onEdit, onToggleActive }) {
     if (loading) {
         return (
             <div className="text-center py-5">
@@ -70,9 +70,7 @@ export default function CustomerTable({ customers, loading, error, onViewDetail,
                                         >
                                             {isActive ? <BsToggleOff /> : <BsToggleOn />}
                                         </Button>
-                                        <Button variant="outline-danger" title="Xóa" onClick={() => onDelete(c)}>
-                                            <BsTrash />
-                                        </Button>
+
                                     </ButtonGroup>
                                 </td>
                             </tr>
