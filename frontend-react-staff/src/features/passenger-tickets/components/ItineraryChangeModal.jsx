@@ -25,12 +25,14 @@ function toDateInputValue(date) {
 
 export default function ItineraryChangeModal({
     isOpen,
+    mode = 'same-trip',
     ticket,
     onClose,
     onSuccess,
 }) {
+    const isTransferMode = mode === 'transfer';
+    const keepCurrentTrip = !isTransferMode;
     const holdTokenRef = useRef('');
-    const [keepCurrentTrip, setKeepCurrentTrip] = useState(true);
     const [departureDate, setDepartureDate] = useState('');
     const [selectedRouteId, setSelectedRouteId] = useState('');
     const [candidates, setCandidates] = useState([]);
@@ -54,11 +56,9 @@ export default function ItineraryChangeModal({
         [ticket]
     );
 
-    const majorChangeUsed = Boolean(ticket?.majorChangeType);
-
     const layout = useMemo(() => buildSeatLayout(seatList), [seatList]);
 
-    const { routes: routeOptions, loading: loadingRoutes } = useRouteDropdown(isOpen && !keepCurrentTrip);
+    const { routes: routeOptions, loading: loadingRoutes } = useRouteDropdown(isOpen && isTransferMode);
 
     const { pickupOptions, dropoffOptions, pickupCity, dropoffCity } = useMemo(
         () => buildItineraryStopOptions(stops, pickupStopId, dropoffStopId),
@@ -201,19 +201,24 @@ export default function ItineraryChangeModal({
         if (!isOpen || !ticket) return;
 
         holdTokenRef.current = createHoldToken();
-        setKeepCurrentTrip(true);
         setDepartureDate(ticket.departureTime ? toDateInputValue(new Date(ticket.departureTime)) : toDateInputValue(new Date()));
         setSelectedRouteId(ticket.routeId ? String(ticket.routeId) : '');
         setCandidates([]);
         setSelectedTripId(null);
         setPickupStopId('');
         setDropoffStopId('');
+        setStops([]);
         setSeatList([]);
         setSelectedTripSeatIds([]);
         setPreview(null);
         setError(null);
+
+        if (isTransferMode) {
+            return;
+        }
+
         loadStops(ticket.tripId, ticket.pickupStopId, ticket.dropoffStopId);
-    }, [isOpen, ticket?.ticketCode, ticket?.tripId, ticket?.departureTime, ticket?.pickupStopId, ticket?.dropoffStopId, loadStops]);
+    }, [isOpen, isTransferMode, ticket?.ticketCode, ticket?.tripId, ticket?.departureTime, ticket?.pickupStopId, ticket?.dropoffStopId, ticket?.routeId, loadStops]);
 
     useEffect(() => {
         if (!isOpen || keepCurrentTrip || !canSearchTransferTrips) {
@@ -247,30 +252,6 @@ export default function ItineraryChangeModal({
         }
         runPreview();
     }, [isOpen, pickupStopId, dropoffStopId, selectedTripSeatIds, keepCurrentTrip, selectedTripId, runPreview]);
-
-    const handleKeepTripChange = async (nextKeepCurrentTrip) => {
-        if (majorChangeUsed && !nextKeepCurrentTrip) return;
-        if (nextKeepCurrentTrip === keepCurrentTrip) return;
-
-        if (!nextKeepCurrentTrip && selectedTripSeatIds.length) {
-            await releaseLockedSeats(selectedTripId, selectedTripSeatIds);
-        }
-
-        setKeepCurrentTrip(nextKeepCurrentTrip);
-        setSelectedTripId(null);
-        setSelectedTripSeatIds([]);
-        setCandidates([]);
-        setPreview(null);
-        setPickupStopId('');
-        setDropoffStopId('');
-
-        if (nextKeepCurrentTrip) {
-            loadStops(ticket.tripId, ticket.pickupStopId, ticket.dropoffStopId);
-            setSeatList([]);
-        } else {
-            setSelectedRouteId(ticket.routeId ? String(ticket.routeId) : '');
-        }
-    };
 
     const handleRouteChange = (nextRouteId) => {
         setSelectedRouteId(nextRouteId);
@@ -375,13 +356,16 @@ export default function ItineraryChangeModal({
     return (
         <Modal show={isOpen} onHide={handleClose} size="lg" centered backdrop="static">
             <Modal.Header closeButton>
-                <Modal.Title className="fs-5 fw-bold text-primary">Đổi hành trình</Modal.Title>
+                <Modal.Title className="fs-5 fw-bold text-primary">
+                    {isTransferMode ? 'Đổi chuyến' : 'Đổi hành trình'}
+                </Modal.Title>
             </Modal.Header>
 
             <Modal.Body className="px-4">
                 <Alert variant="info" className="py-2 px-3 border-0 small">
-                    Chỉ đổi được sang lựa chọn có giá ≤ giá vé hiện tại. Không hoàn tiền chênh lệch.
-                    Mã QR lên xe không đổi.
+                    {isTransferMode
+                        ? 'Chọn chuyến mới có giá ≤ giá vé hiện tại. Thao tác này dùng quyền đổi chuyến/hủy một lần.'
+                        : 'Chỉ đổi điểm đón/trả trên chuyến hiện tại. Không hoàn tiền chênh lệch. Mã QR lên xe không đổi.'}
                 </Alert>
 
                 <div className="mb-3 p-3 bg-light border rounded small">
@@ -390,23 +374,7 @@ export default function ItineraryChangeModal({
                     <div className="text-muted">{ticket.pickupStopName} → {ticket.dropoffStopName}</div>
                 </div>
 
-                {majorChangeUsed && (
-                    <Alert variant="warning" className="py-2 px-3 border-0 small">
-                        Vé đã sử dụng quyền đổi chuyến hoặc hủy vé. Chỉ có thể đổi điểm đón/trả trên chuyến hiện tại.
-                    </Alert>
-                )}
-
-                <Form.Check
-                    type="switch"
-                    id="keep-current-trip"
-                    className="mb-3"
-                    label="Giữ nguyên chuyến hiện tại"
-                    checked={keepCurrentTrip}
-                    disabled={majorChangeUsed}
-                    onChange={(event) => handleKeepTripChange(event.target.checked)}
-                />
-
-                {!keepCurrentTrip && (
+                {isTransferMode && (
                     <>
                         <Row className="g-3 mb-3">
                             <Col md={6}>
@@ -607,7 +575,7 @@ export default function ItineraryChangeModal({
                     onClick={handleSubmit}
                     disabled={!canSubmit || submitting || locking || previewing}
                 >
-                    {submitting ? 'Đang lưu...' : 'Xác nhận đổi hành trình'}
+                    {submitting ? 'Đang lưu...' : (isTransferMode ? 'Xác nhận đổi chuyến' : 'Xác nhận đổi hành trình')}
                 </Button>
             </Modal.Footer>
         </Modal>

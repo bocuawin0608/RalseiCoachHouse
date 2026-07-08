@@ -14,7 +14,9 @@ export default function PassengerTicketDetailPanel({
     onEditPassenger,
     onChangeSeat,
     onChangeItinerary,
+    onTransferTrip,
     onCancelTicket,
+    suppressCancel = false,
     activeQrDetailId = null,
     qrLoading = false,
 }) {
@@ -22,8 +24,10 @@ export default function PassengerTicketDetailPanel({
 
     const canChangePassengerInfo = ticket.allowedActions?.includes('CHANGE_PASSENGER_INFO');
     const canChangeSeat = ticket.allowedActions?.includes('CHANGE_SEAT');
-    const canChangeItinerary = ticket.allowedActions?.includes('TRANSFER_TRIP');
-    const canCancelTicket = ticket.allowedActions?.includes('CANCEL_FULL');
+    const canChangeItinerary = ticket.allowedActions?.includes('CHANGE_ITINERARY');
+    const majorChangeUsed = Boolean(ticket.majorChangeType);
+    const canTransferTrip = ticket.allowedActions?.includes('TRANSFER_TRIP') && !majorChangeUsed;
+    const canCancelTicket = ticket.allowedActions?.includes('CANCEL_FULL') && !suppressCancel && !majorChangeUsed;
 
     const refundPolicyHint = ticket.refundPolicyDepartureTime
         ? ` (theo chuyến lúc đặt: ${formatDateTime(ticket.refundPolicyDepartureTime)})`
@@ -96,13 +100,22 @@ export default function PassengerTicketDetailPanel({
 
                     <PassengerTicketActionsToolbar
                         canChangeItinerary={canChangeItinerary}
+                        canTransferTrip={canTransferTrip}
                         canCancelTicket={canCancelTicket}
                         cancelDisabledTooltip={
-                            ticket.majorChangeType
+                            suppressCancel
+                                ? 'Không thể hủy vé khi đang thực hiện đổi chuyến'
+                                : majorChangeUsed || ticket.majorChangeType
+                                    ? 'Vé đã sử dụng quyền đổi chuyến hoặc hủy vé'
+                                    : 'Không thể hủy vé này'
+                        }
+                        transferDisabledTooltip={
+                            majorChangeUsed || ticket.majorChangeType
                                 ? 'Vé đã sử dụng quyền đổi chuyến hoặc hủy vé'
-                                : 'Không thể hủy vé này'
+                                : 'Không thể đổi chuyến cho vé này'
                         }
                         onChangeItinerary={onChangeItinerary}
+                        onTransferTrip={onTransferTrip}
                         onCancelTicket={onCancelTicket}
                     />
                 </Card.Body>
