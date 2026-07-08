@@ -494,6 +494,10 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
     }
 
     private PassengerTicket saveMasterTicket(Integer tripId, BookingConfirmRequest request, CoreCalculationResult coreResult, Integer customerId, String voucherCodeSnapshot) {
+        LocalDateTime refundPolicyDepartureTime = tripRepo.findById(tripId)
+            .map(trip -> trip.getDepartureTime())
+            .orElseThrow(() -> new BusinessRuleException("Không tìm thấy chuyến xe."));
+
         return ticketRepo.save(PassengerTicket.builder()
             .customerId(customerId)
             .tripId(tripId)
@@ -505,6 +509,7 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
             .pickupStopName(coreResult.pickupStop().getStopPointName())
             .dropoffStopName(coreResult.dropoffStop().getStopPointName())
             .voucherCodeSnapshot(voucherCodeSnapshot)
+            .refundPolicyDepartureTime(refundPolicyDepartureTime)
             .status(PassengerTicketStatus.PENDING)
             .build());
     }

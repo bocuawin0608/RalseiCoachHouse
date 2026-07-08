@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.ralsei.model.PassengerTicket;
+import com.ralsei.model.enums.PassengerTicketMajorChangeType;
 import com.ralsei.model.enums.PassengerTicketStatus;
 
 public interface PassengerTicketRepository extends JpaRepository<PassengerTicket, Integer> {
@@ -40,6 +41,16 @@ public interface PassengerTicketRepository extends JpaRepository<PassengerTicket
     int updateStatusIfCurrent(@Param("passengerTicketId") Integer passengerTicketId,
                               @Param("expectedStatus") PassengerTicketStatus expectedStatus,
                               @Param("newStatus") PassengerTicketStatus newStatus);
+
+    @Modifying
+    @Query("""
+        UPDATE PassengerTicket pt
+        SET pt.majorChangeType = :majorChangeType
+        WHERE pt.passengerTicketId = :passengerTicketId
+        AND pt.majorChangeType IS NULL
+    """)
+    int markMajorChangeIfUnused(@Param("passengerTicketId") Integer passengerTicketId,
+                                @Param("majorChangeType") PassengerTicketMajorChangeType majorChangeType);
 
     @Query("""
         SELECT COUNT(pt) > 0
