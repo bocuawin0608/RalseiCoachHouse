@@ -729,3 +729,43 @@ JOIN coach_stop pickup ON pickup.stopPointId = ct.pickupStopId
 JOIN coach_stop dropoff ON dropoff.stopPointId = ct.dropoffStopId
 WHERE customer.accountId = @cargoHistoryAccountId
 ORDER BY ct.createdAt DESC, ctd.cargoTicketDetailId;
+
+
+-- Detect impossible schedule continuity after auto-generation.
+-- A resource cannot run the same route twice in a row because the first trip
+-- ends at the opposite city; it must return on the opposite route first.
+WITH resource_trips AS (
+    SELECT 'DRIVER' AS resourceType, t.driverId AS resourceId, t.tripId,
+           t.routeId, r.routeName, t.departureTime
+    FROM trip t
+    JOIN route r ON r.routeId = t.routeId
+    WHERE t.driverId IS NOT NULL
+      AND t.[status] NOT IN ('CANCELED', 'CANCELLED')
+    UNION ALL
+    SELECT 'ATTENDANT' AS resourceType, t.attendantId AS resourceId, t.tripId,
+           t.routeId, r.routeName, t.departureTime
+    FROM trip t
+    JOIN route r ON r.routeId = t.routeId
+    WHERE t.attendantId IS NOT NULL
+      AND t.[status] NOT IN ('CANCELED', 'CANCELLED')
+    UNION ALL
+    SELECT 'COACH' AS resourceType, t.coachId AS resourceId, t.tripId,
+           t.routeId, r.routeName, t.departureTime
+    FROM trip t
+    JOIN route r ON r.routeId = t.routeId
+    WHERE t.coachId IS NOT NULL
+      AND t.[status] NOT IN ('CANCELED', 'CANCELLED')
+),
+ordered_trips AS (
+    SELECT *,
+           LAG(tripId) OVER (PARTITION BY resourceType, resourceId ORDER BY departureTime) AS previousTripId,
+           LAG(routeId) OVER (PARTITION BY resourceType, resourceId ORDER BY departureTime) AS previousRouteId,
+           LAG(routeName) OVER (PARTITION BY resourceType, resourceId ORDER BY departureTime) AS previousRouteName,
+           LAG(departureTime) OVER (PARTITION BY resourceType, resourceId ORDER BY departureTime) AS previousDepartureTime
+    FROM resource_trips
+)
+SELECT resourceType, resourceId, previousTripId, previousRouteName, previousDepartureTime,
+       tripId, routeName, departureTime
+FROM ordered_trips
+WHERE previousRouteId = routeId
+ORDER BY resourceType, resourceId, departureTime;

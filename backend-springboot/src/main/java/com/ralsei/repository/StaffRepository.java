@@ -30,6 +30,12 @@ public interface StaffRepository extends JpaRepository<Staff, Integer> {
 
     java.util.Optional<Staff> findByAccountId(Integer accountId);
 
+    /**
+     * Prevents two active staff profiles from sharing the same email during
+     * internal staff self-service profile updates.
+     */
+    boolean existsByEmailIgnoreCaseAndStaffIdNot(String email, Integer staffId);
+
     @Query(value = """
                 SELECT s.staffName AS staffName
                 FROM staff s

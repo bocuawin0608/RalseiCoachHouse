@@ -31,6 +31,7 @@ public interface StaffPassengerTicketRowProjection {
     String getPhone();
     String getEmail();
     String getSeatCode();
+    Integer getTripSeatId();
     BigDecimal getSeatPrice();
     String getDetailStatus();
     String getChildFullname();

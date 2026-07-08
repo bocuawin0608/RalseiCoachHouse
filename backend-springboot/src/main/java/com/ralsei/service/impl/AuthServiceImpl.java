@@ -1,5 +1,6 @@
 package com.ralsei.service.impl;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -18,22 +19,27 @@ import com.ralsei.dto.projection.AccountProjection;
 import com.ralsei.dto.request.auth.CustomerLoginRequest;
 import com.ralsei.dto.request.auth.CustomerRegisterRequest;
 import com.ralsei.dto.request.auth.RefreshTokenRequest;
+import com.ralsei.dto.request.auth.StaffForgotPasswordRequest;
 import com.ralsei.dto.request.auth.StaffLoginRequest;
 import com.ralsei.dto.response.auth.AuthResponse;
+import com.ralsei.dto.response.auth.StaffForgotPasswordResponse;
 import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.model.Account;
 import com.ralsei.model.AccountRole;
 import com.ralsei.model.Customer;
 import com.ralsei.model.RefreshToken;
 import com.ralsei.model.Role;
+import com.ralsei.model.Staff;
 import com.ralsei.repository.AccountRepository;
 import com.ralsei.repository.AccountRoleRepository;
 import com.ralsei.repository.CustomerRepository;
 import com.ralsei.repository.RefreshTokenRepository;
 import com.ralsei.repository.RoleRepository;
+import com.ralsei.repository.StaffRepository;
 import com.ralsei.service.AuthService;
 import com.ralsei.service.FirebaseTokenVerifier;
 import com.ralsei.service.JwtService;
+import com.ralsei.util.EmailUtility;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -44,12 +50,21 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
+    private static final SecureRandom PASSWORD_RANDOM = new SecureRandom();
+    private static final char[] TEMP_PASSWORD_CHARS =
+            "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789".toCharArray();
+    private static final String STAFF_FORGOT_PASSWORD_MESSAGE =
+            "Nếu thông tin khớp với tài khoản nhân viên, mật khẩu tạm thời sẽ được gửi đến email đã đăng ký.";
+    private static final List<String> STAFF_ROLES = List.of("ADMIN", "MANAGER", "TICKET_STAFF", "TRIP_STAFF");
+
     private final AccountRepository accountRepository;
     private final AccountRoleRepository accountRoleRepository;
     private final CustomerRepository customerRepository;
+    private final StaffRepository staffRepository;
     private final RoleRepository roleRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final FirebaseTokenVerifier firebaseTokenVerifier;
+    private final EmailUtility emailUtility;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private final JwtService jwtService;
@@ -166,6 +181,133 @@ public class AuthServiceImpl implements AuthService {
         });
 
         return buildResponse(account);
+    }
+
+    /**
+     * Resets a local staff account password when username and staff email match.
+     * Unknown or mismatched accounts return the same accepted response to avoid
+     * leaking staff account existence from the public login page.
+     */
+    @Override
+    @Transactional
+    public StaffForgotPasswordResponse staffForgotPassword(StaffForgotPasswordRequest request) {
+        AccountProjection projection = accountRepository.findByUsernameWithRoles(request.username().trim())
+                .orElse(null);
+        if (!canResetStaffPassword(projection, request.email())) {
+            return forgotPasswordAcceptedResponse();
+        }
+
+        Account account = accountRepository.findById(projection.getAccountId())
+                .orElse(null);
+        if (account == null || !"local".equalsIgnoreCase(account.getAuthProvider())) {
+            return forgotPasswordAcceptedResponse();
+        }
+
+        Staff staff = staffRepository.findByAccountId(account.getAccountId()).orElse(null);
+        if (staff == null || !staff.isActive() || !emailMatches(staff.getEmail(), request.email())) {
+            return forgotPasswordAcceptedResponse();
+        }
+
+        String temporaryPassword = generateTemporaryPassword();
+        try {
+            emailUtility.sendHtml(
+                    staff.getEmail(),
+                    "Mật khẩu tạm thời tài khoản nhân viên",
+                    buildStaffForgotPasswordEmail(staff.getStaffName(), account.getUsername(), temporaryPassword),
+                    Map.of()
+            );
+        } catch (RuntimeException exception) {
+            log.warn("Could not deliver staff forgot-password email for accountId={}", account.getAccountId(), exception);
+            return forgotPasswordAcceptedResponse();
+        }
+        account.setPasswordHash(passwordEncoder.encode(temporaryPassword));
+        accountRepository.save(account);
+        refreshTokenRepository.revokeAllByAccount(account);
+
+        return forgotPasswordAcceptedResponse();
+    }
+
+    /**
+     * Validates the projection-level staff reset rules before loading entities.
+     */
+    private boolean canResetStaffPassword(AccountProjection projection, String email) {
+        if (projection == null || Boolean.FALSE.equals(projection.getIsActive())) {
+            return false;
+        }
+        if (!"local".equalsIgnoreCase(projection.getAuthProvider())) {
+            return false;
+        }
+        if (email == null || email.isBlank()) {
+            return false;
+        }
+        List<String> roles = projection.getRoleNames() == null || projection.getRoleNames().isBlank()
+                ? List.of()
+                : Arrays.stream(projection.getRoleNames().split(","))
+                    .map(String::trim)
+                    .filter(role -> !role.isBlank())
+                    .toList();
+        return roles.stream().anyMatch(STAFF_ROLES::contains);
+    }
+
+    /**
+     * Compares emails after trimming without changing the stored profile value.
+     */
+    private boolean emailMatches(String storedEmail, String requestedEmail) {
+        return storedEmail != null
+                && requestedEmail != null
+                && storedEmail.trim().equalsIgnoreCase(requestedEmail.trim());
+    }
+
+    /**
+     * Builds a short temporary password that still satisfies the staff password
+     * rule requiring letters and digits.
+     */
+    private String generateTemporaryPassword() {
+        StringBuilder password = new StringBuilder("S7");
+        for (int index = 0; index < 10; index++) {
+            password.append(TEMP_PASSWORD_CHARS[PASSWORD_RANDOM.nextInt(TEMP_PASSWORD_CHARS.length)]);
+        }
+        return password.toString();
+    }
+
+    /**
+     * Renders a minimal staff reset email without exposing reset tokens in URLs.
+     */
+    private String buildStaffForgotPasswordEmail(String staffName, String username, String temporaryPassword) {
+        String safeName = escapeHtml(staffName == null || staffName.isBlank() ? "nhân viên" : staffName);
+        String safeUsername = escapeHtml(username);
+        String safePassword = escapeHtml(temporaryPassword);
+        return """
+                <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a;">
+                  <p>Xin chào <strong>%s</strong>,</p>
+                  <p>Hệ thống đã cấp mật khẩu tạm thời cho tài khoản nhân viên <strong>%s</strong>.</p>
+                  <p style="font-size:18px;font-weight:700;background:#f1f5f9;padding:12px;border-radius:6px;">%s</p>
+                  <p>Vui lòng đăng nhập và đổi mật khẩu ngay trong trang hồ sơ.</p>
+                  <p style="color:#64748b;font-size:13px;">Nếu bạn không yêu cầu thao tác này, hãy báo quản lý hoặc quản trị hệ thống ngay.</p>
+                </div>
+                """.formatted(safeName, safeUsername, safePassword);
+    }
+
+    /**
+     * Escapes the small amount of profile text interpolated into reset emails.
+     */
+    private String escapeHtml(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
+    }
+
+    /**
+     * Returns the generic forgot-password response shared by all outcomes.
+     */
+    private StaffForgotPasswordResponse forgotPasswordAcceptedResponse() {
+        return new StaffForgotPasswordResponse(true, STAFF_FORGOT_PASSWORD_MESSAGE);
     }
 
     private FirebaseToken verifyFirebaseToken(String idToken) {
