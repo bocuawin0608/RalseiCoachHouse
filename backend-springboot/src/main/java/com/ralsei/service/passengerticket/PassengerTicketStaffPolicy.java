@@ -280,8 +280,11 @@ public class PassengerTicketStaffPolicy {
             if (hasConfirmedSeat) {
                 actions.add("CHANGE_PASSENGER_INFO");
                 actions.add("CHANGE_SEAT");
+                actions.add("CHANGE_ITINERARY");
             }
-            if(majorChangeAvailable) actions.add("TRANSFER_TRIP");
+            if (majorChangeAvailable) {
+                actions.add("TRANSFER_TRIP");
+            }
         }
 
         if (majorChangeAvailable && cancellableWindow && !hasCheckedInSeat) {

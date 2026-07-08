@@ -16,11 +16,12 @@ import {
 export default function PassengerTicketDetailPage() {
     const { ticketCode } = useParams();
     const navigate = useNavigate();
-    const { data, loading, error, applyDetail } = usePassengerTicketDetail(ticketCode);
+    const { data, loading, error, applyDetail, refetch } = usePassengerTicketDetail(ticketCode);
     const { qrPreview, showQr, closeQr } = usePassengerTicketSeatQr(ticketCode);
     const [editPassengerSeat, setEditPassengerSeat] = useState(null);
     const [changeSeatTarget, setChangeSeatTarget] = useState(null);
     const [itineraryChangeOpen, setItineraryChangeOpen] = useState(false);
+    const [itineraryModalMode, setItineraryModalMode] = useState('same-trip');
     const [cancelOpen, setCancelOpen] = useState(false);
 
     const handleBack = () => {
@@ -28,6 +29,7 @@ export default function PassengerTicketDetailPage() {
         setEditPassengerSeat(null);
         setChangeSeatTarget(null);
         setItineraryChangeOpen(false);
+        setItineraryModalMode('same-trip');
         setCancelOpen(false);
 
         // Browser history already holds the search URL with filters from before detail.
@@ -41,6 +43,11 @@ export default function PassengerTicketDetailPage() {
 
     const handleDetailUpdated = (updatedTicket) => {
         applyDetail(updatedTicket);
+    };
+
+    const handleItinerarySuccess = async (updatedTicket) => {
+        applyDetail(updatedTicket);
+        await refetch();
     };
 
     return (
@@ -74,8 +81,16 @@ export default function PassengerTicketDetailPage() {
                     onShowQr={showQr}
                     onEditPassenger={setEditPassengerSeat}
                     onChangeSeat={setChangeSeatTarget}
-                    onChangeItinerary={() => setItineraryChangeOpen(true)}
+                    onChangeItinerary={() => {
+                        setItineraryModalMode('same-trip');
+                        setItineraryChangeOpen(true);
+                    }}
+                    onTransferTrip={() => {
+                        setItineraryModalMode('transfer');
+                        setItineraryChangeOpen(true);
+                    }}
                     onCancelTicket={() => setCancelOpen(true)}
+                    suppressCancel={itineraryChangeOpen && itineraryModalMode === 'transfer'}
                     activeQrDetailId={qrPreview?.ticketDetailId}
                     qrLoading={Boolean(qrPreview?.loading)}
                 />
@@ -101,9 +116,13 @@ export default function PassengerTicketDetailPage() {
 
             <ItineraryChangeModal
                 isOpen={itineraryChangeOpen}
+                mode={itineraryModalMode}
                 ticket={data}
-                onClose={() => setItineraryChangeOpen(false)}
-                onSuccess={handleDetailUpdated}
+                onClose={() => {
+                    setItineraryChangeOpen(false);
+                    setItineraryModalMode('same-trip');
+                }}
+                onSuccess={handleItinerarySuccess}
             />
 
             <CancelFullTicketModal

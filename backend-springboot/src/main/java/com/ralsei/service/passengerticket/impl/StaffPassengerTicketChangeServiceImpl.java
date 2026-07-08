@@ -487,6 +487,7 @@ public class StaffPassengerTicketChangeServiceImpl implements StaffPassengerTick
         if (marked != 1) {
             throw new BusinessRuleException("Vé đã sử dụng quyền đổi chuyến hoặc hủy vé.");
         }
+        ticket.setMajorChangeType(PassengerTicketMajorChangeType.TRANSFER_TRIP);
 
         seatHoldService.releaseSeats(requestedSeatIds, holdToken);
     }
