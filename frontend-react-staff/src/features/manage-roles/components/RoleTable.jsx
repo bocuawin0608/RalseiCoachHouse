@@ -1,7 +1,7 @@
-import { Table, Badge, ButtonGroup, Button, Spinner } from 'react-bootstrap';
-import { BsEye, BsPencilFill, BsToggleOn, BsToggleOff, BsTrash, BsExclamationTriangleFill } from 'react-icons/bs';
+import { Table, Badge, Spinner } from 'react-bootstrap';
+import { BsExclamationTriangleFill } from 'react-icons/bs';
 
-export default function RoleTable({ roles, loading, error, onViewDetail, onEdit, onToggleActive, onDelete }) {
+export default function RoleTable({ roles, loading, error }) {
     if (loading) {
         return (
             <div className="text-center py-5">
@@ -37,7 +37,6 @@ export default function RoleTable({ roles, loading, error, onViewDetail, onEdit,
                         <th>Tên vai trò</th>
                         <th>Trạng thái</th>
                         <th className="text-center">Số TK đang dùng</th>
-                        <th className="text-center">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -54,26 +53,6 @@ export default function RoleTable({ roles, loading, error, onViewDetail, onEdit,
                                 </td>
                                 <td className="text-center">
                                     <Badge bg="light" text="dark">{role.assignedCount ?? 0}</Badge>
-                                </td>
-                                <td>
-                                    <ButtonGroup size="sm" className="d-flex justify-content-center">
-                                        <Button variant="outline-primary" title="Xem chi tiết" onClick={() => onViewDetail(role)}>
-                                            <BsEye />
-                                        </Button>
-                                        <Button variant="outline-secondary" title="Sửa" onClick={() => onEdit(role)}>
-                                            <BsPencilFill />
-                                        </Button>
-                                        <Button
-                                            variant={isActive ? 'outline-danger' : 'outline-success'}
-                                            title={isActive ? 'Vô hiệu hóa' : 'Kích hoạt'}
-                                            onClick={() => onToggleActive(role)}
-                                        >
-                                            {isActive ? <BsToggleOff /> : <BsToggleOn />}
-                                        </Button>
-                                        <Button variant="outline-danger" title="Xóa" onClick={() => onDelete(role)}>
-                                            <BsTrash />
-                                        </Button>
-                                    </ButtonGroup>
                                 </td>
                             </tr>
                         );
