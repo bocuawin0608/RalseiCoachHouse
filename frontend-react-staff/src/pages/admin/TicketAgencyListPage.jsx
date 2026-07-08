@@ -9,14 +9,6 @@ export default function TicketAgencyListPage() {
     const [modalState, setModalState] = useState({ type: null, data: null });
     const closeModal = () => setModalState({ type: null, data: null });
 
-    const handleDelete = (a) => {
-        if (window.confirm(`Bạn có chắc chắn muốn xóa bến xe "${a.ticketAgencyName}"?`)) {
-            ticketAgencyApi.delete(a.ticketAgencyId)
-                .then(() => refetch())
-                .catch(err => alert(err.response?.data?.message || 'Xóa thất bại.'));
-        }
-    };
-
     const handleToggle = (a) => {
         const action = a.active !== false ? 'vô hiệu hóa' : 'kích hoạt';
         if (window.confirm(`Bạn có chắc chắn muốn ${action} bến xe "${a.ticketAgencyName}"?`)) {
@@ -29,7 +21,7 @@ export default function TicketAgencyListPage() {
     return (
         <Container fluid className="py-3">
             <div className="d-flex justify-content-between align-items-center mb-3">
-                <h4 className="fw-bold m-0">Quản lý bến xe</h4>
+                <h4 className="fw-bold m-0">Đại lý bán vé</h4>
                 <Button variant="success" size="sm" onClick={() => setModalState({ type: 'create', data: null })}>
                     <BsPlusLg className="me-1" /> Thêm bến xe
                 </Button>
@@ -40,7 +32,7 @@ export default function TicketAgencyListPage() {
                     <TicketAgencyTable agencies={agencies} loading={loading} error={error}
                         onViewDetail={(a) => setModalState({ type: 'detail', data: a })}
                         onEdit={(a) => setModalState({ type: 'edit', data: a })}
-                        onToggleActive={handleToggle} onDelete={handleDelete} />
+                        onToggleActive={handleToggle} />
                 </Card.Body>
                 {!loading && agencies.length > 0 && (
                     <Card.Footer className="d-flex justify-content-center">

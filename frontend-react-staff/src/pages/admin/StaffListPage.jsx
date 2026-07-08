@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Container, Button, Card } from 'react-bootstrap';
 import { BsPlusLg, BsPersonCheck } from 'react-icons/bs';
-import { useStaff, StaffFilter, StaffTable, StaffUpdateModal, StaffDetailModal, StaffOnboardModal, staffApi } from '../../features/manage-staff';
+import { useStaff, StaffFilter, StaffTable, StaffUpdateModal, StaffDetailModal, StaffOnboardModal } from '../../features/manage-staff';
 import { ticketAgencyApi } from '../../features/manage-ticket-agencies';
 import Pagination from '../../components/common/Pagination';
 
@@ -16,14 +16,6 @@ export default function StaffListPage() {
             .then(res => setTicketAgencies(res.content || []))
             .catch(() => setTicketAgencies([]));
     }, []);
-
-    const handleDelete = (s) => {
-        if (window.confirm(`Bạn có chắc chắn muốn xóa nhân viên "${s.staffName}"?`)) {
-            staffApi.remove(s.staffId)
-                .then(() => refetch())
-                .catch(err => alert(err.response?.data?.message || 'Xóa thất bại.'));
-        }
-    };
 
     const handleToggle = (s) => {
         const action = s.active !== false ? 'vô hiệu hóa' : 'kích hoạt';
@@ -48,7 +40,7 @@ export default function StaffListPage() {
                     <StaffTable staffList={staffList} loading={loading} error={error}
                         onViewDetail={(s) => setModalState({ type: 'detail', data: s })}
                         onEdit={(s) => setModalState({ type: 'edit', data: s })}
-                        onToggleActive={handleToggle} onDelete={handleDelete} />
+                        onToggleActive={handleToggle} />
                 </Card.Body>
                 {!loading && staffList.length > 0 && (
                     <Card.Footer className="d-flex justify-content-center">

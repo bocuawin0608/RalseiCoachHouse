@@ -1,7 +1,7 @@
 import { Table, Badge, ButtonGroup, Button, Spinner } from 'react-bootstrap';
-import { BsEye, BsPencilFill, BsToggleOn, BsToggleOff, BsTrash, BsExclamationTriangleFill } from 'react-icons/bs';
+import { BsEye, BsPencilFill, BsToggleOn, BsToggleOff, BsExclamationTriangleFill } from 'react-icons/bs';
 
-export default function TicketAgencyTable({ agencies, loading, error, onViewDetail, onEdit, onToggleActive, onDelete }) {
+export default function TicketAgencyTable({ agencies, loading, error, onViewDetail, onEdit, onToggleActive }) {
     if (loading) return (
         <div className="text-center py-5"><Spinner animation="border" variant="primary" /><p className="mt-2 text-muted">Đang tải dữ liệu...</p></div>
     );
@@ -20,6 +20,7 @@ export default function TicketAgencyTable({ agencies, loading, error, onViewDeta
                         <th>ID</th>
                         <th>Tên bến xe</th>
                         <th>Điểm dừng</th>
+                        <th>Thành phố</th>
                         <th>Trạng thái</th>
                         <th className="text-center">NV đang dùng</th>
                         <th className="text-center">Thao tác</th>
@@ -33,6 +34,7 @@ export default function TicketAgencyTable({ agencies, loading, error, onViewDeta
                                 <td>{a.ticketAgencyId}</td>
                                 <td className="fw-medium">{a.ticketAgencyName}</td>
                                 <td>{a.stopPointName || <span className="text-muted">—</span>}</td>
+                                <td>{a.city || <span className="text-muted">—</span>}</td>
                                 <td><Badge bg={isActive ? 'success' : 'danger'}>{isActive ? 'Hoạt động' : 'Đã khóa'}</Badge></td>
                                 <td className="text-center"><Badge bg="light" text="dark">{a.staffCount ?? 0}</Badge></td>
                                 <td>
@@ -43,7 +45,6 @@ export default function TicketAgencyTable({ agencies, loading, error, onViewDeta
                                             title={isActive ? 'Vô hiệu hóa' : 'Kích hoạt'} onClick={() => onToggleActive(a)}>
                                             {isActive ? <BsToggleOff /> : <BsToggleOn />}
                                         </Button>
-                                        <Button variant="outline-danger" title="Xóa" onClick={() => onDelete(a)}><BsTrash /></Button>
                                     </ButtonGroup>
                                 </td>
                             </tr>
