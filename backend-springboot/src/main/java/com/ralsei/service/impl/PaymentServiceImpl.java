@@ -11,11 +11,14 @@ import java.util.regex.Pattern;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ralsei.dto.request.payment.PaymentCheckoutRequest;
 import com.ralsei.dto.request.sePay.SepayWebhookRequest;
+import com.ralsei.dto.notification.PassengerTicketEmailPayload;
 import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.model.CargoTicket;
 import com.ralsei.model.PassengerTicket;
@@ -228,13 +231,33 @@ public class PaymentServiceImpl implements PaymentService {
             }
         }
 
-        try {
-            ticketEmailService.sendTicketConfirmation(
-                    passengerTicketEmailAssembler.assemble(payment.getPassengerTicketId()));
-        } catch (Exception ex) {
-            log.warn("Ticket email on hold failed for passengerTicketId={}: {}",
-                    payment.getPassengerTicketId(), ex.getMessage());
-        }
+        PassengerTicketEmailPayload emailPayload = passengerTicketEmailAssembler
+                .assemble(payment.getPassengerTicketId());
+        sendTicketEmailAfterCommit(emailPayload, payment.getPassengerTicketId());
+    }
+
+    /**
+     * Defers customer communication until the enclosing payment transaction has
+     * committed. This prevents a rollback from leaving the customer with an
+     * email for a ticket that was never successfully confirmed.
+     *
+     * @param payload           detached ticket information safe to use after commit
+     * @param passengerTicketId identifier used only for failure diagnostics
+     */
+    private void sendTicketEmailAfterCommit(
+            PassengerTicketEmailPayload payload,
+            Integer passengerTicketId) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                try {
+                    ticketEmailService.sendTicketConfirmation(payload);
+                } catch (Exception exception) {
+                    log.error("Failed to send ticket confirmation for passengerTicketId={}",
+                            passengerTicketId, exception);
+                }
+            }
+        });
     }
 
     private void completeCargoPaymentTarget(Payment payment) {

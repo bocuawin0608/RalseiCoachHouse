@@ -4,6 +4,7 @@ import {
     formatDateTime,
     formatTicketStatus,
 } from '../utils/passengerTicketFormatters';
+import PassengerTicketActionsToolbar from './PassengerTicketActionsToolbar';
 
 const QR_ELIGIBLE_STATUSES = new Set(['CONFIRMED', 'CHECKED_IN']);
 
@@ -11,16 +12,34 @@ export default function PassengerTicketDetailPanel({
     ticket,
     onShowQr,
     onEditPassenger,
+    onChangeSeat,
+    onChangeItinerary,
+    onTransferTrip,
+    onCancelTicket,
+    suppressCancel = false,
     activeQrDetailId = null,
     qrLoading = false,
 }) {
     if (!ticket) return null;
 
     const canChangePassengerInfo = ticket.allowedActions?.includes('CHANGE_PASSENGER_INFO');
+    const canChangeSeat = ticket.allowedActions?.includes('CHANGE_SEAT');
+    const canChangeItinerary = ticket.allowedActions?.includes('CHANGE_ITINERARY');
+    const majorChangeUsed = Boolean(ticket.majorChangeType);
+    const canTransferTrip = ticket.allowedActions?.includes('TRANSFER_TRIP') && !majorChangeUsed;
+    const canCancelTicket = ticket.allowedActions?.includes('CANCEL_FULL') && !suppressCancel && !majorChangeUsed;
+
+    const refundPolicyHint = ticket.refundPolicyDepartureTime
+        ? ` (theo chuyến lúc đặt: ${formatDateTime(ticket.refundPolicyDepartureTime)})`
+        : '';
 
     const policyHint = ticket.hoursUntilDeparture != null && ticket.hoursUntilDeparture >= 0
-        ? `Còn ${ticket.hoursUntilDeparture} giờ trước giờ xe khởi hành • Được phép hoàn tiền: ${ticket.refundTierLabel}`
+        ? `Còn ${ticket.hoursUntilDeparture} giờ trước giờ xe khởi hành • Hoàn tiền: ${ticket.refundTierLabel}${refundPolicyHint}`
         : 'Chuyến đã khởi hành hoặc sắp khởi hành • Không được phép hoàn tiền';
+
+    const majorChangeHint = ticket.majorChangeType
+        ? ' • Vé đã dùng quyền đổi chuyến/hủy'
+        : '';
 
     return (
         <div>
@@ -29,7 +48,7 @@ export default function PassengerTicketDetailPanel({
                     <div className="d-flex flex-wrap justify-content-between gap-3 mb-3">
                         <div>
                             <Badge bg="primary" className="me-2 mb-2">{formatTicketStatus(ticket.status)}</Badge>
-                            <div className="text-muted small">{policyHint}</div>
+                            <div className="text-muted small">{policyHint}{majorChangeHint}</div>
                         </div>
                         <div className="text-end">
                             <div className="fw-bold fs-5">{formatCurrency(ticket.totalPrice)}</div>
@@ -78,12 +97,36 @@ export default function PassengerTicketDetailPanel({
                             <div>{formatDateTime(ticket.bookedAt)}</div>
                         </Col>
                     </Row>
+
+                    <PassengerTicketActionsToolbar
+                        canChangeItinerary={canChangeItinerary}
+                        canTransferTrip={canTransferTrip}
+                        canCancelTicket={canCancelTicket}
+                        cancelDisabledTooltip={
+                            suppressCancel
+                                ? 'Không thể hủy vé khi đang thực hiện đổi chuyến'
+                                : majorChangeUsed || ticket.majorChangeType
+                                    ? 'Vé đã sử dụng quyền đổi chuyến hoặc hủy vé'
+                                    : 'Không thể hủy vé này'
+                        }
+                        transferDisabledTooltip={
+                            majorChangeUsed || ticket.majorChangeType
+                                ? 'Vé đã sử dụng quyền đổi chuyến hoặc hủy vé'
+                                : 'Không thể đổi chuyến cho vé này'
+                        }
+                        onChangeItinerary={onChangeItinerary}
+                        onTransferTrip={onTransferTrip}
+                        onCancelTicket={onCancelTicket}
+                    />
                 </Card.Body>
             </Card>
 
             <Card className="shadow-sm border-0 mb-4">
                 <Card.Header className="bg-white fw-semibold">Danh sách ghế / hành khách</Card.Header>
                 <Card.Body className="p-0">
+                    <div className="px-3 py-2 text-muted small border-bottom">
+                        Sửa thông tin và đổi ghế áp dụng cho từng hành khách.
+                    </div>
                     <Table responsive className="mb-0 align-middle">
                         <thead className="table-light">
                             <tr>
@@ -95,13 +138,14 @@ export default function PassengerTicketDetailPanel({
                                 <th>Giá ghế</th>
                                 <th>Trạng thái</th>
                                 <th>QR</th>
-                                <th>Thao tác</th>
+                                <th>Thao tác ghế</th>
                             </tr>
                         </thead>
                         <tbody>
                             {ticket.seats.map((seat) => {
                                 const canShowQr = QR_ELIGIBLE_STATUSES.has(seat.status);
                                 const canEditPassenger = canChangePassengerInfo && seat.status === 'CONFIRMED';
+                                const canEditSeat = canChangeSeat && seat.status === 'CONFIRMED';
                                 const isActive = activeQrDetailId === seat.ticketDetailId;
 
                                 return (
@@ -130,15 +174,24 @@ export default function PassengerTicketDetailPanel({
                                             ) : '—'}
                                         </td>
                                         <td>
-                                            {canEditPassenger ? (
+                                            <div className="d-flex flex-wrap gap-1">
                                                 <Button
                                                     variant="outline-secondary"
                                                     size="sm"
                                                     onClick={() => onEditPassenger?.(seat)}
+                                                    disabled={!canEditPassenger}
                                                 >
                                                     Sửa thông tin
                                                 </Button>
-                                            ) : '—'}
+                                                <Button
+                                                    variant="outline-primary"
+                                                    size="sm"
+                                                    onClick={() => onChangeSeat?.(seat)}
+                                                    disabled={!canEditSeat}
+                                                >
+                                                    Đổi ghế
+                                                </Button>
+                                            </div>
                                         </td>
                                     </tr>
                                 );
