@@ -32,6 +32,7 @@ export default function TicketAgencyDetailModal({ isOpen, data, onClose }) {
                             </Col>
                             <Col md={6} className="mt-2"><strong>Tên:</strong> {detail.ticketAgencyName}</Col>
                             <Col md={6} className="mt-2"><strong>Điểm dừng:</strong> {detail.stopPointName || '—'}</Col>
+                            <Col md={6} className="mt-2"><strong>Thành phố:</strong> {detail.city || '—'}</Col>
                             <Col md={6} className="mt-2"><strong>NV đang dùng:</strong> <Badge bg="info">{detail.staffCount ?? 0}</Badge></Col>
                         </Row>
                         <h6 className="fw-bold text-secondary border-bottom pb-2">Thông tin hệ thống</h6>

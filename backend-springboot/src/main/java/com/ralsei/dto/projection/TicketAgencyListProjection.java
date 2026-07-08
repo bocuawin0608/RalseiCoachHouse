@@ -9,6 +9,7 @@ public interface TicketAgencyListProjection {
     String getTicketAgencyName();
     Integer getStopPointId();
     String getStopPointName();
+    String getCity();
     Boolean getIsActive();
     Long getStaffCount();
 }

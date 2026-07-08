@@ -135,6 +135,7 @@ public class TicketAgencyServiceImpl implements TicketAgencyService {
             proj.getTicketAgencyName(),
             proj.getStopPointId(),
             proj.getStopPointName(),
+            proj.getCity(),
             proj.getIsActive() != null && proj.getIsActive(),
             proj.getStaffCount() != null ? proj.getStaffCount() : 0L,
             null
@@ -142,14 +143,15 @@ public class TicketAgencyServiceImpl implements TicketAgencyService {
     }
 
     private TicketAgencyDetailResponse mapToDetailResponse(TicketAgency ta) {
-        String stopPointName = coachStopRepo.findById(ta.getStopPointId())
-            .map(CoachStop::getStopPointName)
-            .orElse(null);
+        CoachStop cs = coachStopRepo.findById(ta.getStopPointId()).orElse(null);
+        String stopPointName = cs != null ? cs.getStopPointName() : null;
+        String city = cs != null ? cs.getCity() : null;
         return new TicketAgencyDetailResponse(
             ta.getTicketAgencyId(),
             ta.getTicketAgencyName(),
             ta.getStopPointId(),
             stopPointName,
+            city,
             ta.isActive(),
             staffRepo.countByTicketAgencyId(ta.getTicketAgencyId()),
             ta.getCreatedAt(),

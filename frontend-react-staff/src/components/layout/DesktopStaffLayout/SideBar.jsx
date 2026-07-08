@@ -185,7 +185,7 @@ export default function Sidebar() {
                             </NavLink>
                             <NavLink to="/management/manage-roles" className={navLinkClass} end>
                                 <BsShieldCheck size={20} className="flex-shrink-0" />
-                                <span>Quản lý vai trò</span>
+                                <span>Xem vai trò</span>
                             </NavLink>
                             <NavLink to="/management/manage-customers" className={navLinkClass} end>
                                 <BsPersonBadge size={20} className="flex-shrink-0" />
@@ -193,7 +193,7 @@ export default function Sidebar() {
                             </NavLink>
                             <NavLink to="/management/manage-ticket-agencies" className={navLinkClass} end>
                                 <BsBuilding size={20} className="flex-shrink-0" />
-                                <span>Quản lý bến xe</span>
+                                <span>Đại lý bán vé</span>
                             </NavLink>
                             <NavLink to="/management/manage-staff" className={navLinkClass} end>
                                 <BsPersonBadge size={20} className="flex-shrink-0" />
