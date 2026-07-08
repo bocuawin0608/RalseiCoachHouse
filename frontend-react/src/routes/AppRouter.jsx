@@ -11,6 +11,7 @@ import Login from '../pages/auth/Login';
 import Register from '../pages/auth/Register';
 import BookingPaymentPage from '../pages/public/booking/BookingPaymentPage';
 import BookingTripPage from '../pages/public/booking/BookingTripPage';
+import CustomerProfilePage from '../pages/customer/CustomerProfilePage';
 // Nested routes
 import { publicTripRoutes } from '../features/trips';
 import { customerHistoryRoutes } from '../features/customerHistory';
@@ -37,7 +38,7 @@ const AppRouter = () => {
 
             <Route element={<RoleGuard allowedRoles={['CUSTOMER']} />}>
                 <Route element={<PublicLayout />}>
-                    <Route path="/profile" element={<div>Trang cá nhân của khách</div>} />
+                    <Route path="/profile" element={<CustomerProfilePage />} />
                     <Route path="/booking-history" element={<Navigate to="/history" replace />} />
                     {customerHistoryRoutes}
                     {cargoLookupRoutes}
