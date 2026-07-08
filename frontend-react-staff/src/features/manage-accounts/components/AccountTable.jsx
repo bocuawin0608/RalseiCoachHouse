@@ -1,5 +1,5 @@
 import { Table, Badge, ButtonGroup, Button, Spinner } from 'react-bootstrap';
-import { BsEye, BsPencilFill, BsShieldLock, BsKey, BsToggleOn, BsToggleOff, BsTrash, BsExclamationTriangleFill } from 'react-icons/bs';
+import { BsEye, BsPencilFill, BsShieldLock, BsKey, BsToggleOn, BsToggleOff, BsExclamationTriangleFill } from 'react-icons/bs';
 
 const ROLE_BADGE_COLORS = {
     ADMIN: 'danger',
@@ -8,7 +8,7 @@ const ROLE_BADGE_COLORS = {
     TRIP_STAFF: 'secondary',
 };
 
-export default function AccountTable({ accounts, loading, error, onViewDetail, onEdit, onAssignRoles, onResetPassword, onToggleActive, onDelete }) {
+export default function AccountTable({ accounts, loading, error, onViewDetail, onEdit, onAssignRoles, onResetPassword, onToggleActive }) {
     if (loading) {
         return (
             <div className="text-center py-5">
@@ -42,11 +42,8 @@ export default function AccountTable({ accounts, loading, error, onViewDetail, o
                     <tr>
                         <th>Username</th>
                         <th>Tên nhân viên</th>
-                        <th>Chức vụ</th>
                         <th>Vai trò</th>
-                        <th>Loại</th>
                         <th>Trạng thái</th>
-                        <th>Lần cuối</th>
                         <th className="text-center">Thao tác</th>
                     </tr>
                 </thead>
@@ -57,7 +54,6 @@ export default function AccountTable({ accounts, loading, error, onViewDetail, o
                         <tr key={acc.accountId} className={!isActive ? 'table-danger' : ''}>
                             <td className="fw-medium">{acc.username}</td>
                             <td>{acc.staffName || <span className="text-muted fst-italic">Chưa có</span>}</td>
-                            <td>{acc.staffPosition || <span className="text-muted">—</span>}</td>
                             <td>
                                 {acc.roles && acc.roles.length > 0
                                     ? acc.roles.map(role => (
@@ -68,14 +64,10 @@ export default function AccountTable({ accounts, loading, error, onViewDetail, o
                                     : <Badge bg="light" text="dark">Chưa gán</Badge>
                                 }
                             </td>
-                            <td><Badge bg="light" text="dark">{acc.authProvider}</Badge></td>
                             <td>
                                 <Badge bg={isActive ? 'success' : 'danger'}>
                                     {isActive ? 'Hoạt động' : 'Đã khóa'}
                                 </Badge>
-                            </td>
-                            <td className="small text-muted">
-                                {acc.lastLogin ? new Date(acc.lastLogin).toLocaleString('vi-VN') : '—'}
                             </td>
                             <td>
                                 <ButtonGroup size="sm" className="d-flex justify-content-center">
@@ -97,9 +89,6 @@ export default function AccountTable({ accounts, loading, error, onViewDetail, o
                                         onClick={() => onToggleActive(acc)}
                                     >
                                         {isActive ? <BsToggleOff /> : <BsToggleOn />}
-                                    </Button>
-                                    <Button variant="outline-danger" title="Xóa" onClick={() => onDelete(acc)}>
-                                        <BsTrash />
                                     </Button>
                                 </ButtonGroup>
                             </td>
