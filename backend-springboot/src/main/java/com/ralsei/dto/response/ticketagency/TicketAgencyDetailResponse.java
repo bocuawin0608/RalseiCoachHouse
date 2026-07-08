@@ -13,6 +13,7 @@ public record TicketAgencyDetailResponse(
     String ticketAgencyName,
     Integer stopPointId,
     String stopPointName,
+    String city,
     @JsonProperty("active") boolean isActive,
     Long staffCount,
     LocalDateTime createdAt,

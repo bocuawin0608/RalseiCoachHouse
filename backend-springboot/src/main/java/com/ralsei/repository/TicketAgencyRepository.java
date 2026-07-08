@@ -20,6 +20,7 @@ public interface TicketAgencyRepository extends JpaRepository<TicketAgency, Inte
             ta.ticketAgencyName AS ticketAgencyName,
             ta.stopPointId      AS stopPointId,
             cs.stopPointName    AS stopPointName,
+            cs.city             AS city,
             ta.isActive         AS isActive,
             (SELECT COUNT(*) FROM staff s WHERE s.ticketAgencyId = ta.ticketAgencyId) AS staffCount
         FROM ticket_agency ta

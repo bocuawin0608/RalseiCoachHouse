@@ -36,7 +36,16 @@ const VoucherForm = ({ initialData, isSubmitting, hasReferences, onSubmit, onBac
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => {
+      const updated = { ...prev, [name]: value };
+      if (name === 'discountType' && value === 'FIXED') {
+        updated.maxDiscountValue = prev.discountValue;
+      }
+      if (name === 'discountValue' && formData.discountType === 'FIXED') {
+        updated.maxDiscountValue = value;
+      }
+      return updated;
+    });
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
     }
@@ -155,6 +164,7 @@ const VoucherForm = ({ initialData, isSubmitting, hasReferences, onSubmit, onBac
                     name="maxDiscountValue"
                     value={formData.maxDiscountValue}
                     onChange={handleChange}
+                    readOnly={formData.discountType === 'FIXED'}
                   />
                 </Form.Group>
               </Col>
