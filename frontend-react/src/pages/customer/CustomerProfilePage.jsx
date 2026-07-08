@@ -7,7 +7,6 @@ import {
   FiLogOut,
   FiMail,
   FiPhone,
-  FiTrash2,
   FiUser,
 } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
@@ -34,7 +33,6 @@ export default function CustomerProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [modalError, setModalError] = useState('');
@@ -96,21 +94,6 @@ export default function CustomerProfilePage() {
     }
   };
 
-  /** Soft-deactivates the account, then clears local authentication state. */
-  const handleDeactivateAccount = async () => {
-    setSaving(true);
-    setModalError('');
-    try {
-      await customerAccountApi.deactivateAccount();
-      logout();
-      navigate('/');
-    } catch (requestError) {
-      setModalError(requestError.response?.data?.message || 'Không thể xóa tài khoản.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
   /** Returns a display-safe fallback for optional profile values. */
   const displayValue = (value) => value || 'Chưa thiết lập';
 
@@ -165,13 +148,6 @@ export default function CustomerProfilePage() {
               <span>Chỉnh sửa</span>
             </Button>
           </article>
-
-          <section className="customer-profile-actions">
-            <button type="button" onClick={() => { setModalError(''); setDeleteOpen(true); }}>
-              <FiTrash2 />
-              <span>Xóa tài khoản</span>
-            </button>
-          </section>
         </div>
       </section>
 
@@ -225,24 +201,6 @@ export default function CustomerProfilePage() {
             </Button>
           </Modal.Footer>
         </Form>
-      </Modal>
-
-      <Modal show={deleteOpen} onHide={() => setDeleteOpen(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Xóa tài khoản</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {modalError && <Alert variant="danger">{modalError}</Alert>}
-          <p className="mb-0">
-            Tài khoản sẽ bị vô hiệu hóa và bạn cần đăng ký lại nếu muốn sử dụng dịch vụ sau này.
-          </p>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="light" onClick={() => setDeleteOpen(false)} disabled={saving}>Hủy</Button>
-          <Button variant="danger" onClick={handleDeactivateAccount} disabled={saving}>
-            {saving ? 'Đang xử lý...' : 'Xóa tài khoản'}
-          </Button>
-        </Modal.Footer>
       </Modal>
     </div>
   );
