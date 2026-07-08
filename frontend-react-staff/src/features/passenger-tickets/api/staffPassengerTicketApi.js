@@ -38,7 +38,15 @@ export const staffPassengerTicketApi = {
         return axiosClient.post(
             `/v1/staff/passenger-tickets/trips/${tripId}/seats/lock`,
             { tripSeatIds: [tripSeatId] },
-            { headers: { 'X-Staff-Seat-Session': holdToken } }
+            { headers: { 'X-Staff-Seat-Session': holdToken, 'X-Staff-Seat-Lock-Mode': 'CHANGE_SEAT' } }
+        );
+    },
+
+    lockSeats(tripId, tripSeatIds, holdToken, lockMode = 'ITINERARY') {
+        return axiosClient.post(
+            `/v1/staff/passenger-tickets/trips/${tripId}/seats/lock`,
+            { tripSeatIds },
+            { headers: { 'X-Staff-Seat-Session': holdToken, 'X-Staff-Seat-Lock-Mode': lockMode } }
         );
     },
 
@@ -55,6 +63,36 @@ export const staffPassengerTicketApi = {
             `/v1/staff/passenger-tickets/${encodeURIComponent(ticketCode)}/details/${ticketDetailId}/seat`,
             { newTripSeatId },
             { headers: { 'X-Staff-Seat-Session': holdToken } }
+        );
+    },
+
+    getTransferCandidates(ticketCode, { departureDate, routeId, excludeCurrentTrip = true }) {
+        return axiosClient.get(
+            `/v1/staff/passenger-tickets/${encodeURIComponent(ticketCode)}/transfer-candidates`,
+            { params: { departureDate, routeId, excludeCurrentTrip } }
+        );
+    },
+
+    previewItinerary(ticketCode, { newTripId, pickupStopId, dropoffStopId, newTripSeatIds }) {
+        return axiosClient.get(
+            `/v1/staff/passenger-tickets/${encodeURIComponent(ticketCode)}/itinerary-preview`,
+            {
+                params: {
+                    newTripId,
+                    pickupStopId,
+                    dropoffStopId,
+                    newTripSeatIds,
+                },
+            }
+        );
+    },
+
+    changeItinerary(ticketCode, payload, holdToken) {
+        const headers = holdToken ? { 'X-Staff-Seat-Session': holdToken } : undefined;
+        return axiosClient.patch(
+            `/v1/staff/passenger-tickets/${encodeURIComponent(ticketCode)}/itinerary`,
+            payload,
+            headers ? { headers } : undefined
         );
     },
 };
