@@ -23,7 +23,7 @@ import lombok.RequiredArgsConstructor;
  */
 @RestController
 @RequestMapping("/api/v1/staff/me")
-@PreAuthorize("hasAnyAuthority('ADMIN','MANAGER','TICKET_STAFF','TRIP_STAFF')")
+@PreAuthorize("hasAnyRole('ADMIN','MANAGER','TICKET_STAFF','TRIP_STAFF')")
 @RequiredArgsConstructor
 public class StaffAccountController {
 
