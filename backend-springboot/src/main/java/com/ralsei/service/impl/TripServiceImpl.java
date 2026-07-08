@@ -2,6 +2,7 @@ package com.ralsei.service.impl;
 
 import com.ralsei.dto.projection.coach.CoachLicensePlateProjection;
 import com.ralsei.dto.projection.staff.StaffProjection;
+import com.ralsei.dto.projection.trip.StaffTripInfoProjection;
 import com.ralsei.dto.projection.trip.TripDetailProjection;
 import com.ralsei.dto.projection.trip.TripFilterProjection;
 import com.ralsei.dto.projection.trip.TripSummaryProjection;
@@ -28,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -225,6 +227,80 @@ public class TripServiceImpl implements TripService {
                 summaryPage.isLast());
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Price ranges are checkbox-friendly constants from the staff UI. Unknown
+     * values are ignored so one stale browser tab cannot poison the whole
+     * request. Status values are normalized to uppercase because the database
+     * stores trip states as uppercase strings.</p>
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public PagedResponse<StaffTripInfoProjection> getStaffTripInfos(
+            LocalDate date,
+            String city,
+            String timeFrom,
+            String timeTo,
+            String coachTypeKeyword,
+            List<String> priceRanges,
+            List<String> statuses,
+            String driverName,
+            int page,
+            int size) {
+        LocalDate today = LocalDate.now(BUSINESS_TIME_ZONE);
+        LocalDate departureDate = (date != null) ? date : today;
+        if (departureDate.isBefore(today)) {
+            throw new IllegalArgumentException("Không thể tra cứu chuyến xe trong quá khứ.");
+        }
+        LocalDateTime selectedDayStart = departureDate.atStartOfDay();
+        LocalDateTime dayStart = selectedDayStart;
+        LocalDateTime nextDayStart = selectedDayStart.plusDays(1);
+
+        Integer timeFromMinute = parseOptionalTimeToMinute(timeFrom);
+        Integer timeToMinute = parseOptionalTimeToMinute(timeTo);
+        if (timeFromMinute != null && timeToMinute != null && timeFromMinute > timeToMinute) {
+            throw new IllegalArgumentException("Giờ bắt đầu phải nhỏ hơn hoặc bằng giờ kết thúc.");
+        }
+
+        List<String> normalizedStatuses = normalizeUppercaseFilters(statuses);
+        int checkStatuses = normalizedStatuses.isEmpty() ? 0 : 1;
+        if (normalizedStatuses.isEmpty()) {
+            normalizedStatuses = List.of("__NO_STATUS__");
+        }
+
+        List<String> normalizedPriceRanges = normalizeUppercaseFilters(priceRanges);
+        int priceLow = normalizedPriceRanges.contains("LOW") ? 1 : 0;
+        int priceMiddle = normalizedPriceRanges.contains("MIDDLE") ? 1 : 0;
+        int priceHigh = normalizedPriceRanges.contains("HIGH") ? 1 : 0;
+        int checkPrices = (priceLow == 1 || priceMiddle == 1 || priceHigh == 1) ? 1 : 0;
+
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.max(size, 1));
+        Page<StaffTripInfoProjection> tripPage = tripRepository.findStaffTripInfos(
+                dayStart,
+                nextDayStart,
+                blankToNull(city),
+                timeFromMinute,
+                timeToMinute,
+                resolveCoachTypeKeyword(coachTypeKeyword),
+                checkPrices,
+                priceLow,
+                priceMiddle,
+                priceHigh,
+                checkStatuses,
+                normalizedStatuses,
+                blankToNull(driverName),
+                pageable);
+
+        return new PagedResponse<>(
+                tripPage.getContent(),
+                tripPage.getNumber(),
+                tripPage.getSize(),
+                tripPage.getTotalElements(),
+                tripPage.getTotalPages(),
+                tripPage.isLast());
+    }
+
     @Scheduled(cron = "0 0 2 * * ?")
     public void executeAutoGenerateSchedule() {
         try {
@@ -354,6 +430,48 @@ public class TripServiceImpl implements TripService {
      */
     private LocalDateTime currentMinute() {
         return LocalDateTime.now(BUSINESS_TIME_ZONE).truncatedTo(ChronoUnit.MINUTES);
+    }
+
+    /** Converts an optional HH:mm filter into minute-of-day for SQL comparison. */
+    private Integer parseOptionalTimeToMinute(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        LocalTime time = LocalTime.parse(value.trim());
+        return time.getHour() * 60 + time.getMinute();
+    }
+
+    /** Normalizes repeated checkbox/filter params while dropping empty values. */
+    private List<String> normalizeUppercaseFilters(List<String> values) {
+        if (values == null || values.isEmpty()) {
+            return List.of();
+        }
+        return values.stream()
+                .filter(value -> value != null && !value.isBlank())
+                .map(value -> value.trim().toUpperCase())
+                .distinct()
+                .toList();
+    }
+
+    /** Returns null for blank request strings so repository SQL stays simple. */
+    private String blankToNull(String value) {
+        return (value == null || value.isBlank()) ? null : value.trim();
+    }
+
+    /**
+     * Converts UI category values into safe LIKE patterns for coach type names.
+     * Unknown values are ignored instead of being passed directly into SQL.
+     */
+    private String resolveCoachTypeKeyword(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return switch (value.trim().toUpperCase()) {
+            case "LIMOUSINE" -> "%limousine%";
+            case "LUXURY" -> "%luxury%";
+            case "TRUYEN_THONG" -> "%truyền thống%";
+            default -> null;
+        };
     }
 
     /** Verifies all selected resources still remain free at write time. */
