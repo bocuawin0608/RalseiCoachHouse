@@ -6,6 +6,7 @@ import {
     CancelFullTicketModal,
     ChangePassengerInfoModal,
     ChangeSeatModal,
+    ItineraryChangeModal,
     PassengerTicketDetailPanel,
     PassengerTicketSeatQrModal,
     usePassengerTicketDetail,
@@ -19,12 +20,14 @@ export default function PassengerTicketDetailPage() {
     const { qrPreview, showQr, closeQr } = usePassengerTicketSeatQr(ticketCode);
     const [editPassengerSeat, setEditPassengerSeat] = useState(null);
     const [changeSeatTarget, setChangeSeatTarget] = useState(null);
+    const [itineraryChangeOpen, setItineraryChangeOpen] = useState(false);
     const [cancelOpen, setCancelOpen] = useState(false);
 
     const handleBack = () => {
         closeQr();
         setEditPassengerSeat(null);
         setChangeSeatTarget(null);
+        setItineraryChangeOpen(false);
         setCancelOpen(false);
 
         // Browser history already holds the search URL with filters from before detail.
@@ -71,7 +74,8 @@ export default function PassengerTicketDetailPage() {
                     onShowQr={showQr}
                     onEditPassenger={setEditPassengerSeat}
                     onChangeSeat={setChangeSeatTarget}
-                    onCancelFull={() => setCancelOpen(true)}
+                    onChangeItinerary={() => setItineraryChangeOpen(true)}
+                    onCancelTicket={() => setCancelOpen(true)}
                     activeQrDetailId={qrPreview?.ticketDetailId}
                     qrLoading={Boolean(qrPreview?.loading)}
                 />
@@ -92,6 +96,13 @@ export default function PassengerTicketDetailPage() {
                 ticket={data}
                 seat={changeSeatTarget}
                 onClose={() => setChangeSeatTarget(null)}
+                onSuccess={handleDetailUpdated}
+            />
+
+            <ItineraryChangeModal
+                isOpen={itineraryChangeOpen}
+                ticket={data}
+                onClose={() => setItineraryChangeOpen(false)}
                 onSuccess={handleDetailUpdated}
             />
 

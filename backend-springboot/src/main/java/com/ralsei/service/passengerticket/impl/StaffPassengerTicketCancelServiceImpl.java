@@ -1,6 +1,7 @@
 package com.ralsei.service.passengerticket.impl;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -15,6 +16,7 @@ import com.ralsei.dto.response.staffpassengerticket.StaffPassengerTicketDetailRe
 import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.exception.ResourceNotFoundException;
 import com.ralsei.model.Payment;
+import com.ralsei.model.PassengerTicket;
 import com.ralsei.model.Refund;
 import com.ralsei.model.Trip;
 import com.ralsei.model.enums.PassengerTicketDetailStatus;
@@ -67,6 +69,8 @@ public class StaffPassengerTicketCancelServiceImpl implements StaffPassengerTick
         }
 
         StaffPassengerTicketRowProjection first = rows.get(0);
+        PassengerTicket ticketEntity = ticketRepository.findById(first.getPassengerTicketId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vé."));
         Trip trip = tripRepository.findById(first.getTripId())
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyến xe."));
 
@@ -75,7 +79,8 @@ public class StaffPassengerTicketCancelServiceImpl implements StaffPassengerTick
             rows,
             first.getPaymentStatus(),
             first.getDepartureTime(),
-            trip.getStatus()
+            trip.getStatus(),
+            ticketEntity.getMajorChangeType()
         );
 
         Payment payment = paymentRepository.findByPassengerTicketId(first.getPassengerTicketId())
@@ -85,9 +90,13 @@ public class StaffPassengerTicketCancelServiceImpl implements StaffPassengerTick
             throw new BusinessRuleException("Vé đã có yêu cầu hoàn tiền đang được xử lý.");
         }
 
-        long hoursLeft = policy.hoursUntilDeparture(first.getDepartureTime());
-        BigDecimal refundAmount = policy.calculateRefundAmount(hoursLeft, payment.getAmount());
-        String refundTierLabel = policy.resolveRefundTierLabel(hoursLeft);
+        LocalDateTime refundPolicyDepartureTime = policy.resolveRefundPolicyDepartureTime(
+            ticketEntity.getRefundPolicyDepartureTime(),
+            first.getDepartureTime()
+        );
+        long refundHoursLeft = policy.hoursUntilDeparture(refundPolicyDepartureTime);
+        BigDecimal refundAmount = policy.calculateRefundAmount(refundHoursLeft, payment.getAmount());
+        String refundTierLabel = policy.resolveRefundTierLabel(refundHoursLeft);
 
         int updatedTickets = ticketRepository.updateStatusIfCurrent(
             first.getPassengerTicketId(),

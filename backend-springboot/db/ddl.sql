@@ -405,6 +405,8 @@ CREATE TABLE [passenger_ticket] (
     [pickupStopName] NVARCHAR(255) NOT NULL,  --snapshot
     [dropoffStopName] NVARCHAR(255) NOT NULL, --snapshot
     [voucherCodeSnapshot] VARCHAR(50) NULL, --snapshot
+    [refundPolicyDepartureTime] DATETIME NULL, --snapshot: mốc giờ KH để tính tier hoàn tiền
+    [majorChangeType] VARCHAR(20) NULL, -- quota: TRANSFER_TRIP | CANCEL_PARTIAL
     [status] VARCHAR(50) NOT NULL DEFAULT 'PENDING', 
     [createdAt] DATETIME DEFAULT GETDATE(),
     [createdBy] INT NULL,
@@ -419,6 +421,7 @@ CREATE TABLE [passenger_ticket] (
 
 	CONSTRAINT CK_PassengerTicket_Price CHECK ([totalPrice] >= 0),
     CONSTRAINT CK_PassengerTicket_Status CHECK ([status] IN ('PENDING', 'CONFIRMED', 'CHANGED', 'CANCELLED')),
+    CONSTRAINT CK_PassengerTicket_MajorChangeType CHECK ([majorChangeType] IS NULL OR [majorChangeType] IN ('TRANSFER_TRIP', 'CANCEL_PARTIAL')),
     CONSTRAINT CK_PassengerTicket_Route CHECK ([pickupStopId] <> [dropoffStopId])
 );
 

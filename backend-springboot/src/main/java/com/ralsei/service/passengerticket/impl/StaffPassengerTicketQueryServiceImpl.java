@@ -2,6 +2,7 @@ package com.ralsei.service.passengerticket.impl;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -19,6 +20,7 @@ import com.ralsei.dto.response.staffpassengerticket.StaffPassengerTicketDetailRe
 import com.ralsei.dto.response.staffpassengerticket.StaffPassengerTicketListItemResponse;
 import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.exception.ResourceNotFoundException;
+import com.ralsei.model.PassengerTicket;
 import com.ralsei.model.Payment;
 import com.ralsei.model.Refund;
 import com.ralsei.repository.PassengerTicketDetailRepository;
@@ -214,7 +216,14 @@ public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicke
         List<RefundItem> refunds
     ) {
         StaffPassengerTicketRowProjection first = rows.get(0);
+        PassengerTicket ticketEntity = ticketRepository.findById(first.getPassengerTicketId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vé."));
         long hoursLeft = policy.hoursUntilDeparture(first.getDepartureTime());
+        LocalDateTime refundPolicyDepartureTime = policy.resolveRefundPolicyDepartureTime(
+            ticketEntity.getRefundPolicyDepartureTime(),
+            first.getDepartureTime()
+        );
+        long refundHoursLeft = policy.hoursUntilDeparture(refundPolicyDepartureTime);
         String tripStatus = tripRepository.findById(first.getTripId())
             .map(trip -> trip.getStatus())
             .orElse(null);
@@ -246,6 +255,8 @@ public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicke
             first.getCoachTypeName(),
             first.getPickupStopName(),
             first.getDropoffStopName(),
+            ticketEntity.getPickupStopId(),
+            ticketEntity.getDropoffStopId(),
             first.getTotalPrice(),
             first.getVoucherCodeSnapshot(),
             first.getSoldByStaffName(),
@@ -257,10 +268,19 @@ public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicke
             refunds,
             seats,
             policy.resolveAllowedActions(
-                first.getTicketStatus(), rows, first.getDepartureTime(), first.getPaymentStatus(), tripStatus
+                first.getTicketStatus(),
+                rows,
+                first.getDepartureTime(),
+                first.getPaymentStatus(),
+                tripStatus,
+                ticketEntity.getMajorChangeType()
             ),
             hoursLeft,
-            policy.resolveRefundTierLabel(hoursLeft)
+            policy.resolveRefundTierLabel(refundHoursLeft),
+            ticketEntity.getMajorChangeType() != null
+                ? ticketEntity.getMajorChangeType().name()
+                : null,
+            refundPolicyDepartureTime
         );
     }
 
