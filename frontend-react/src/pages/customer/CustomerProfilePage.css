@@ -1,0 +1,231 @@
+.customer-profile-page {
+  min-height: calc(100vh - 64px);
+  padding: clamp(28px, 5vw, 56px) 16px 72px;
+  background:
+    linear-gradient(rgba(248, 250, 252, 0.82), rgba(248, 250, 252, 0.82)),
+    url('/images/RalseiWallpaper.jpg') center / cover fixed;
+}
+
+.customer-profile-shell {
+  display: grid;
+  grid-template-columns: minmax(240px, 342px) minmax(0, 760px);
+  gap: 16px;
+  justify-content: center;
+  align-items: start;
+}
+
+.customer-profile-menu,
+.customer-profile-card,
+.customer-profile-actions {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(10, 64, 48, 0.08);
+  border-radius: 8px;
+  box-shadow: var(--box-shadow-card);
+  backdrop-filter: blur(4px);
+}
+
+.customer-profile-menu {
+  padding: 14px;
+}
+
+.customer-profile-menu__item {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 40px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-main);
+  font-weight: 650;
+  text-align: left;
+  padding: 9px 10px;
+}
+
+.customer-profile-menu__item svg {
+  color: #0875c9;
+}
+
+.customer-profile-menu__item strong {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--ralsei-green);
+  color: var(--ralsei-black);
+  font-size: 0.76rem;
+}
+
+.customer-profile-menu__item:hover,
+.customer-profile-menu__item.is-active {
+  background: rgba(156, 240, 211, 0.38);
+  color: var(--ralsei-black);
+}
+
+.customer-profile-main {
+  min-width: 0;
+}
+
+.customer-profile-card {
+  padding: 18px 18px 16px;
+}
+
+.customer-profile-card__header {
+  margin-bottom: 18px;
+}
+
+.customer-profile-card__header span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(81, 201, 167, 0.26);
+  color: var(--ralsei-black);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.customer-profile-fields {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 9px;
+}
+
+.customer-profile-field {
+  display: grid;
+  grid-template-columns: minmax(120px, 150px) minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+  min-height: 22px;
+}
+
+.customer-profile-field__label {
+  color: #4b5563;
+}
+
+.customer-profile-field__value {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: #17212b;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.customer-profile-field__value.is-strong {
+  text-transform: uppercase;
+}
+
+.customer-profile-edit {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: #f5d8c5 !important;
+  color: #7a321d !important;
+  font-weight: 800 !important;
+  padding: 9px 17px !important;
+}
+
+.customer-profile-edit:hover {
+  background: #efc6ad !important;
+}
+
+.customer-profile-actions {
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.customer-profile-actions button {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  min-height: 56px;
+  border: 0;
+  border-bottom: 1px solid rgba(10, 64, 48, 0.08);
+  background: transparent;
+  color: #17212b;
+  font-weight: 650;
+  padding: 0 18px;
+}
+
+.customer-profile-actions button:last-child {
+  border-bottom: 0;
+}
+
+.customer-profile-actions button:hover {
+  background: rgba(156, 240, 211, 0.28);
+}
+
+.customer-profile-loading {
+  min-height: 420px;
+  display: grid;
+  place-items: center;
+}
+
+.customer-profile-update-modal {
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.66);
+  border-radius: 8px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.88)),
+    url('/images/RalseiWallpaper.jpg') center / cover;
+  box-shadow: 0 18px 50px rgba(10, 64, 48, 0.28);
+  backdrop-filter: blur(5px);
+}
+
+.customer-profile-update-modal .modal-header,
+.customer-profile-update-modal .modal-footer {
+  border-color: rgba(10, 64, 48, 0.12);
+}
+
+.customer-profile-update-modal .modal-title {
+  color: #28313b;
+  font-weight: 650;
+}
+
+.customer-profile-update-modal .form-label {
+  color: #374151;
+  font-weight: 500;
+}
+
+.customer-profile-update-modal .form-control {
+  min-height: 31px;
+  border-radius: 6px;
+  border-color: rgba(100, 116, 139, 0.25);
+  background-color: rgba(255, 255, 255, 0.76);
+}
+
+@media (max-width: 900px) {
+  .customer-profile-shell {
+    grid-template-columns: 1fr;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 560px) {
+  .customer-profile-page {
+    padding-inline: 10px;
+  }
+
+  .customer-profile-field {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .customer-profile-menu__item {
+    grid-template-columns: 22px minmax(0, 1fr);
+  }
+
+  .customer-profile-menu__item strong {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
