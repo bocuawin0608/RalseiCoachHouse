@@ -55,6 +55,10 @@ const VoucherForm = ({ initialData, isSubmitting, hasReferences, onSubmit, onBac
     const newErrors = {};
     if (!formData.voucherCode.trim()) {
       newErrors.voucherCode = 'Vui lòng nhập mã voucher';
+    } else if (!/^[a-zA-Z0-9]+$/.test(formData.voucherCode.trim())) {
+      newErrors.voucherCode = 'Mã voucher chỉ được chứa chữ và số';
+    } else if (formData.voucherCode.trim().length > 50) {
+      newErrors.voucherCode = 'Mã voucher không được vượt quá 50 ký tự';
     }
     if (!formData.discountValue || parseFloat(formData.discountValue) <= 0) {
       newErrors.discountValue = 'Vui lòng nhập giá trị giảm hợp lệ';

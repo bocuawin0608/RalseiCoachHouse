@@ -49,6 +49,22 @@ export default function AccountCreateModal({ isOpen, onClose, onSuccess }) {
             return;
         }
 
+        // Validate hireDate >= 1900
+        if (form.hireDate && new Date(form.hireDate) < new Date('1900-01-01')) {
+            setErrorMsg('Ngày vào làm không hợp lệ.');
+            return;
+        }
+        // Validate DOB >= 16
+        if (form.dob) {
+            const birth = new Date(form.dob);
+            const cutoff = new Date();
+            cutoff.setFullYear(cutoff.getFullYear() - 16);
+            if (birth > cutoff) {
+                setErrorMsg('Nhân viên phải từ đủ 16 tuổi trở lên.');
+                return;
+            }
+        }
+
         setIsSubmitting(true);
         try {
             const payload = {

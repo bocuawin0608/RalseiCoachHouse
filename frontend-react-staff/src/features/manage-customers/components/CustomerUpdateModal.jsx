@@ -28,6 +28,21 @@ export default function CustomerUpdateModal({ isOpen, data, onClose, onSuccess }
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const phone = form.phone.trim();
+        if (phone && !/^[0-9]{10,11}$/.test(phone.replace(/[^0-9]/g, ''))) {
+            setErrorMsg('Số điện thoại không hợp lệ (10-11 số).');
+            return;
+        }
+        if (form.dob) {
+            const birth = new Date(form.dob);
+            const cutoff = new Date();
+            cutoff.setFullYear(cutoff.getFullYear() - 16);
+            if (birth > cutoff) {
+                setErrorMsg('Khách hàng phải từ đủ 16 tuổi trở lên.');
+                return;
+            }
+        }
+
         setIsSubmitting(true);
         setErrorMsg('');
         try {
