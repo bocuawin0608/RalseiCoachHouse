@@ -3,23 +3,23 @@ package com.ralsei.repository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import java.util.Optional;
-
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.query.Procedure;
 import org.springframework.data.repository.query.Param;
 
+import com.ralsei.dto.projection.staffpassengerticket.StaffPassengerTransferCandidateProjection;
+import com.ralsei.dto.projection.trip.StaffTripInfoProjection;
 import com.ralsei.dto.projection.trip.TripDetailProjection;
 import com.ralsei.dto.projection.trip.TripFilterProjection;
-import com.ralsei.dto.projection.trip.StaffTripInfoProjection;
-import com.ralsei.dto.projection.trip.TripSummaryProjection;
-import com.ralsei.dto.projection.trip.TripStopProjection;
 import com.ralsei.dto.projection.trip.TripResourceProjection;
+import com.ralsei.dto.projection.trip.TripStopProjection;
+import com.ralsei.dto.projection.trip.TripSummaryProjection;
 import com.ralsei.model.Trip;
 
 import jakarta.transaction.Transactional;
@@ -569,4 +569,47 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             WHERE t.tripId = :tripId
             """)
     Optional<Trip> findByIdWithRouteAndCoach(@Param("tripId") Integer tripId);
+
+    @Query(value = """
+            SELECT
+                t.tripId AS tripId,
+                r.routeName AS routeName,
+                ct.coachTypeName AS coachTypeName,
+                t.departureTime AS departureTime,
+                (
+                    SELECT TOP 1 ts.price
+                    FROM trip_seat ts
+                    WHERE ts.tripId = t.tripId AND ts.price IS NOT NULL
+                ) AS seatPrice,
+                COALESCE(seat_counts.availableSeats, 0) AS availableSeats,
+                COALESCE(seat_counts.totalSeats, 0) AS totalSeats
+            FROM trip t
+            JOIN route r ON t.routeId = r.routeId
+            JOIN coach c ON t.coachId = c.coachId
+            JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId
+            LEFT JOIN (
+                SELECT
+                    ts.tripId,
+                    CAST(SUM(CASE WHEN UPPER(LTRIM(RTRIM(ts.[status]))) = 'AVAILABLE' THEN 1 ELSE 0 END) AS INT) AS availableSeats,
+                    CAST(COUNT(ts.tripSeatId) AS INT) AS totalSeats
+                FROM trip_seat ts
+                GROUP BY ts.tripId
+            ) seat_counts ON seat_counts.tripId = t.tripId
+            WHERE t.routeId = :routeId
+              AND t.departureTime >= :dayStart
+              AND t.departureTime <= :dayEnd
+              AND t.departureTime >= :minDepartureTime
+              AND t.[status] = 'SCHEDULED'
+              AND (:excludeTripId IS NULL OR t.tripId <> :excludeTripId)
+              AND COALESCE(seat_counts.availableSeats, 0) >= :minAvailableSeats
+            ORDER BY t.departureTime ASC
+            """, nativeQuery = true)
+    List<StaffPassengerTransferCandidateProjection> findStaffTransferCandidates(
+        @Param("routeId") Integer routeId,
+        @Param("dayStart") LocalDateTime dayStart,
+        @Param("dayEnd") LocalDateTime dayEnd,
+        @Param("minDepartureTime") LocalDateTime minDepartureTime,
+        @Param("excludeTripId") Integer excludeTripId,
+        @Param("minAvailableSeats") int minAvailableSeats
+    );
 }
