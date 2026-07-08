@@ -1,6 +1,8 @@
 package com.ralsei.repository;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -48,5 +50,14 @@ public interface TripSeatRepository extends JpaRepository<TripSeat, Integer> {
     """)
     int updateStatusByTripSeatIds(@Param("tripSeatIds") List<Integer> tripSeatIds,
                                   @Param("status") TripSeatStatus status);
+
+    @Query(value = """
+        SELECT TOP 1 ts.price
+        FROM trip_seat ts
+        WHERE ts.tripId = :tripId
+          AND ts.price IS NOT NULL
+        ORDER BY ts.tripSeatId ASC
+        """, nativeQuery = true)
+    Optional<BigDecimal> findFirstSeatPriceByTripId(@Param("tripId") Integer tripId);
 
 }

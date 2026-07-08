@@ -16,6 +16,8 @@ public record StaffPassengerTicketDetailResponse(
     String coachTypeName,
     String pickupStopName,
     String dropoffStopName,
+    Integer pickupStopId,
+    Integer dropoffStopId,
     BigDecimal totalPrice,
     String voucherCodeSnapshot,
     String soldByStaffName,
@@ -28,7 +30,9 @@ public record StaffPassengerTicketDetailResponse(
     List<SeatItem> seats,
     List<String> allowedActions,
     Long hoursUntilDeparture,
-    String refundTierLabel
+    String refundTierLabel,
+    String majorChangeType,
+    LocalDateTime refundPolicyDepartureTime
 ) {
     public record SeatItem(
         Integer ticketDetailId,
