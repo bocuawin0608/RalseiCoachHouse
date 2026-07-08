@@ -1,6 +1,9 @@
 import SeatIcon from '../../../components/common/SeatIcon';
 
-function resolveDisplayStatus(seat, currentTripSeatId, selectedTripSeatId) {
+function resolveDisplayStatus(seat, currentTripSeatId, selectedTripSeatId, selectedTripSeatIds) {
+    if (Array.isArray(selectedTripSeatIds) && selectedTripSeatIds.includes(seat.tripSeatId)) {
+        return 'SELECTED';
+    }
     if (seat.tripSeatId === currentTripSeatId) return 'CURRENT';
     if (seat.tripSeatId === selectedTripSeatId) return 'SELECTED';
     return seat.status;
@@ -40,8 +43,11 @@ export default function TripSeatMapGrid({
     layout,
     currentTripSeatId,
     selectedTripSeatId,
+    selectedTripSeatIds,
+    maxSelectable,
     onSeatClick,
 }) {
+    const multiSelectMode = Array.isArray(selectedTripSeatIds);
     if (!layout?.floors?.length) {
         return <div className="text-muted text-center py-3">Không có sơ đồ ghế.</div>;
     }
@@ -69,11 +75,20 @@ export default function TripSeatMapGrid({
                                 const displayStatus = resolveDisplayStatus(
                                     seat,
                                     currentTripSeatId,
-                                    selectedTripSeatId
+                                    selectedTripSeatId,
+                                    selectedTripSeatIds
                                 );
+                                const isSelected = multiSelectMode
+                                    ? selectedTripSeatIds.includes(seat.tripSeatId)
+                                    : seat.tripSeatId === selectedTripSeatId;
+                                const selectionFull = multiSelectMode
+                                    && maxSelectable != null
+                                    && selectedTripSeatIds.length >= maxSelectable
+                                    && !isSelected;
                                 const isSelectable =
-                                    seat.status === 'AVAILABLE'
-                                    || seat.tripSeatId === selectedTripSeatId;
+                                    (seat.status === 'AVAILABLE' || isSelected)
+                                    && seat.tripSeatId !== currentTripSeatId
+                                    && !selectionFull;
 
                                 return (
                                     <div
