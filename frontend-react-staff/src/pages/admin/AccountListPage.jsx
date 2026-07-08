@@ -11,14 +11,6 @@ export default function AccountListPage() {
 
     const closeModal = () => setModalState({ type: null, data: null });
 
-    const handleConfirmDelete = (acc) => {
-        if (window.confirm(`Bạn có chắc chắn muốn xóa tài khoản "${acc.username}"?`)) {
-            import('../../features/manage-accounts/api/accountApi').then(({ default: api }) => {
-                api.deleteAccount(acc.accountId).then(() => refetch()).catch(() => {});
-            });
-        }
-    };
-
     const handleToggleActive = (acc) => {
         const action = acc.active !== false ? 'vô hiệu hóa' : 'kích hoạt';
         if (window.confirm(`Bạn có chắc chắn muốn ${action} tài khoản "${acc.username}"?`)) {
@@ -50,7 +42,6 @@ export default function AccountListPage() {
                         onAssignRoles={(acc) => setModalState({ type: 'roles', data: acc })}
                         onResetPassword={(acc) => setModalState({ type: 'reset-password', data: acc })}
                         onToggleActive={handleToggleActive}
-                        onDelete={handleConfirmDelete}
                     />
                 </Card.Body>
                 {!loading && accounts.length > 0 && (

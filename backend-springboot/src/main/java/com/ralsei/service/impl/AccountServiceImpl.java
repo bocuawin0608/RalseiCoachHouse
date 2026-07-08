@@ -56,11 +56,31 @@ public class AccountServiceImpl implements AccountService {
 
         List<AccountListResponse> responses = projections.stream()
             .map(this::mapToListResponse)
+            .filter(acc -> {
+                if (filterRequest == null) return true;
+                String search = filterRequest.search();
+                if (search != null && !search.isBlank()) {
+                    String s = search.toLowerCase();
+                    boolean match = (acc.username() != null && acc.username().toLowerCase().contains(s))
+                        || (acc.staffName() != null && acc.staffName().toLowerCase().contains(s))
+                        || (acc.roles() != null && String.join(",", acc.roles()).toLowerCase().contains(s));
+                    if (!match) return false;
+                }
+                if (filterRequest.isActive() != null && acc.isActive() != filterRequest.isActive()) return false;
+                if (filterRequest.staffPosition() != null && !filterRequest.staffPosition().isBlank()
+                    && !filterRequest.staffPosition().equalsIgnoreCase(acc.staffPosition())) return false;
+                if (filterRequest.authProvider() != null && !filterRequest.authProvider().isBlank()
+                    && !filterRequest.authProvider().equalsIgnoreCase(acc.authProvider())) return false;
+                if (filterRequest.role() != null && !filterRequest.role().isBlank()) {
+                    if (acc.roles() == null || acc.roles().stream().noneMatch(r -> r.equalsIgnoreCase(filterRequest.role()))) return false;
+                }
+                return true;
+            })
             .collect(Collectors.toList());
 
         int start = (int) pageable.getOffset();
         int end = Math.min((start + pageable.getPageSize()), responses.size());
-        List<AccountListResponse> pageContent = responses.subList(start, end);
+        List<AccountListResponse> pageContent = start < end ? responses.subList(start, end) : List.of();
 
         return new PageImpl<>(pageContent, pageable, responses.size());
     }
