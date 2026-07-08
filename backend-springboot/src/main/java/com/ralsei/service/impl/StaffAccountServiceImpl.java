@@ -1,5 +1,6 @@
 package com.ralsei.service.impl;
 
+import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 
@@ -34,6 +35,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class StaffAccountServiceImpl implements StaffAccountService {
 
+    private static final int MIN_STAFF_AGE_YEARS = 20;
     private static final List<String> STAFF_ROLES = List.of("ADMIN", "MANAGER", "TICKET_STAFF", "TRIP_STAFF");
 
     private final AccountRepository accountRepository;
@@ -68,6 +70,9 @@ public class StaffAccountServiceImpl implements StaffAccountService {
         if (normalizedEmail != null
                 && staffRepository.existsByEmailIgnoreCaseAndStaffIdNot(normalizedEmail, staff.getStaffId())) {
             throw new BusinessRuleException("Email đã được nhân viên khác sử dụng.");
+        }
+        if (request.dob() != null && request.dob().isAfter(LocalDate.now().minusYears(MIN_STAFF_AGE_YEARS))) {
+            throw new BusinessRuleException("Nhân viên phải từ 20 tuổi trở lên.");
         }
 
         staff.setStaffName(request.staffName().trim());

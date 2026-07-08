@@ -26,6 +26,23 @@ const EMPTY_PASSWORD_FORM = {
   confirmPassword: '',
 };
 
+const STAFF_PASSWORD_PATTERN = /^(?=.*[A-Za-z])(?=.*\d).{8,72}$/;
+const MIN_STAFF_AGE_YEARS = 20;
+
+/** Formats a Date as a local yyyy-MM-dd value for date-input boundaries. */
+const toDateInputValue = (date) => {
+  const value = new Date(date);
+  value.setMinutes(value.getMinutes() - value.getTimezoneOffset());
+  return value.toISOString().slice(0, 10);
+};
+
+/** Returns the latest DOB allowed by the staff 20+ business rule. */
+const maxStaffDobInputValue = () => {
+  const today = new Date();
+  today.setFullYear(today.getFullYear() - MIN_STAFF_AGE_YEARS);
+  return toDateInputValue(today);
+};
+
 const ROLE_LABELS = {
   ADMIN: 'Quản trị hệ thống',
   MANAGER: 'Quản lý',
@@ -114,6 +131,12 @@ export default function StaffProfilePage() {
     event.preventDefault();
     setSaving(true);
     setModalError('');
+    const maxStaffDob = maxStaffDobInputValue();
+    if (editForm.dob && editForm.dob > maxStaffDob) {
+      setModalError('Nhân viên phải từ 20 tuổi trở lên.');
+      setSaving(false);
+      return;
+    }
     try {
       const updatedProfile = await staffAccountApi.updateProfile({
         staffName: editForm.staffName.trim(),
@@ -124,7 +147,14 @@ export default function StaffProfilePage() {
       setEditOpen(false);
       setMessage('Cập nhật thông tin nhân viên thành công.');
     } catch (requestError) {
-      setModalError(requestError.response?.data?.message || 'Không thể cập nhật thông tin.');
+      const fieldErrors = requestError.response?.data?.fieldErrors;
+      setModalError(
+        fieldErrors?.dob
+          || fieldErrors?.staffName
+          || fieldErrors?.email
+          || requestError.response?.data?.message
+          || 'Không thể cập nhật thông tin.'
+      );
     } finally {
       setSaving(false);
     }
@@ -135,6 +165,11 @@ export default function StaffProfilePage() {
     event.preventDefault();
     setSaving(true);
     setModalError('');
+    if (!STAFF_PASSWORD_PATTERN.test(passwordForm.newPassword)) {
+      setModalError('Mật khẩu mới phải từ 8 đến 72 ký tự và có ít nhất một chữ cái, một chữ số.');
+      setSaving(false);
+      return;
+    }
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       setModalError('Mật khẩu xác nhận không khớp.');
       setSaving(false);
@@ -150,7 +185,13 @@ export default function StaffProfilePage() {
       logout();
       navigate('/staff/login');
     } catch (requestError) {
-      setModalError(requestError.response?.data?.message || 'Không thể đổi mật khẩu.');
+      const fieldErrors = requestError.response?.data?.fieldErrors;
+      setModalError(
+        fieldErrors?.newPassword
+          || fieldErrors?.currentPassword
+          || requestError.response?.data?.message
+          || 'Không thể đổi mật khẩu.'
+      );
     } finally {
       setSaving(false);
     }
@@ -255,7 +296,9 @@ export default function StaffProfilePage() {
                 value={editForm.dob}
                 onChange={handleEditChange}
                 disabled={saving}
+                max={maxStaffDobInputValue()}
               />
+              <Form.Text>Nhân viên phải từ 20 tuổi trở lên.</Form.Text>
             </Form.Group>
           </Modal.Body>
           <Modal.Footer>
@@ -300,7 +343,10 @@ export default function StaffProfilePage() {
                 disabled={saving}
                 required
                 minLength={8}
+                maxLength={72}
+                pattern="^(?=.*[A-Za-z])(?=.*\d).{8,72}$"
               />
+              <Form.Text>Mật khẩu mới cần 8-72 ký tự, có chữ và số.</Form.Text>
             </Form.Group>
             <Form.Group>
               <Form.Label>Xác nhận mật khẩu mới</Form.Label>

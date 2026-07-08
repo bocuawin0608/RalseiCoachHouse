@@ -17,7 +17,7 @@ import jakarta.validation.constraints.Size;
  *
  * @param staffName staff member display name used in internal workflows
  * @param email optional staff contact email
- * @param dob optional date of birth
+ * @param dob optional date of birth; staff must still satisfy the 20+ age rule
  */
 public record StaffProfileUpdateRequest(
     @NotBlank(message = "Họ và tên không được để trống.")
