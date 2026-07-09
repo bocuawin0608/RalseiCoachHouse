@@ -36,7 +36,7 @@ export default function TripStaffSeatMapModal({ show, onHide, seats }) {
                 <Modal.Title>Sơ đồ ghế</Modal.Title>
             </Modal.Header>
             <Modal.Body>
-                <div className="d-flex gap-3 mb-3 flex-wrap" style={{ fontSize: '13px' }}>
+                <div className="d-flex gap-3 mb-3 flex-wrap justify-content-center" style={{ fontSize: '13px' }}>
                     <span><TripStaffSeatIcon status={null} /> Trống</span>
                     <span><TripStaffSeatIcon status="CONFIRMED" /> Chưa lên xe</span>
                     <span><TripStaffSeatIcon status="CHECKED_IN" /> Đã lên xe</span>
