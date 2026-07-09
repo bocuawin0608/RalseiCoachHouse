@@ -31,7 +31,7 @@ public class Customer extends BaseEntity {
     @Column(name = "customerId")
     private int customerId;
 
-    @Column(name = "accountId")
+    @Column(name = "accountId", unique = true)
     private Integer accountId;
 
     @Column(name = "customerName", nullable = false)
