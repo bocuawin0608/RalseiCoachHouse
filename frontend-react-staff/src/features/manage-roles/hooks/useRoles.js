@@ -41,6 +41,12 @@ const useRoles = () => {
         fetchRoles();
     }, [fetchRoles]);
 
+    useEffect(() => {
+        const onFocus = () => fetchRoles();
+        window.addEventListener('focus', onFocus);
+        return () => window.removeEventListener('focus', onFocus);
+    }, [fetchRoles]);
+
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
         setFilters(prev => ({ ...prev, [name]: value }));

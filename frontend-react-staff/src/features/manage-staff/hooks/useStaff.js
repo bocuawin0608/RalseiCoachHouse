@@ -41,6 +41,12 @@ const useStaff = () => {
 
     useEffect(() => { fetch(); }, [fetch]);
 
+    useEffect(() => {
+        const onFocus = () => fetch();
+        window.addEventListener('focus', onFocus);
+        return () => window.removeEventListener('focus', onFocus);
+    }, [fetch]);
+
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
         setFilters(prev => ({ ...prev, [name]: value }));
