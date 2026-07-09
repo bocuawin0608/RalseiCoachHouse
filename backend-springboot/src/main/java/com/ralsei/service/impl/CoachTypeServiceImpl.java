@@ -3,6 +3,7 @@ package com.ralsei.service.impl;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -69,7 +70,8 @@ public class CoachTypeServiceImpl implements CoachTypeService {
             throw new IllegalArgumentException("Số ghế tối thiểu không thể lớn hơn Số ghế tối đa!");
         }
 
-        Page<CoachTypeProjection> projections = coachTypeRepo.searchCoachTypes(filterRequest, LocalDateTime.now(),
+        CoachTypeFilterRequest sanitized = sanitizeFilter(filterRequest);
+        Page<CoachTypeProjection> projections = coachTypeRepo.searchCoachTypes(sanitized, LocalDateTime.now(),
                 pageable);
 
         return projections.map(type -> new CoachTypeResponse(
@@ -84,14 +86,15 @@ public class CoachTypeServiceImpl implements CoachTypeService {
     @Transactional
     @Override
     public Integer createCoachType(CoachTypeCreateRequest request) {
-        if (coachTypeRepo.existsByCoachTypeNameIgnoreCase(request.coachTypeName())) {
+        String name = request.coachTypeName().trim();
+        if (coachTypeRepo.existsByCoachTypeNameIgnoreCase(name)) {
             throw new IllegalArgumentException("Tên loại xe đã tồn tại trong hệ thống!");
         }
 
         ProcessedSeatLayout verifiedSeatLayout = validateSeatLayout(request.seatLayout());
 
         CoachType newCoachType = CoachType.builder()
-                .coachTypeName(request.coachTypeName())
+                .coachTypeName(name)
                 .totalSeat(verifiedSeatLayout.totalSeat())
                 .seatLayout(verifiedSeatLayout.seatLayout())
                 .isActive(true)
@@ -256,12 +259,13 @@ public class CoachTypeServiceImpl implements CoachTypeService {
     @Override
     public void updateCoachTypeInfo(Integer id, CoachTypeUpdateInfoRequest updateRequest) {
         CoachType coachType = findCoachTypeOrThrow(id);
+        String name = updateRequest.coachTypeName().trim();
 
-        if (!coachType.getCoachTypeName().equalsIgnoreCase(updateRequest.coachTypeName())) {
-            if (coachTypeRepo.existsByCoachTypeNameIgnoreCase(updateRequest.coachTypeName())) {
+        if (!coachType.getCoachTypeName().equalsIgnoreCase(name)) {
+            if (coachTypeRepo.existsByCoachTypeNameIgnoreCase(name)) {
                 throw new IllegalArgumentException("Tên loại xe đã tồn tại trong hệ thống!");
             }
-            coachType.setCoachTypeName(updateRequest.coachTypeName());
+            coachType.setCoachTypeName(name);
         }
 
         if (!updateRequest.isActive() && coachType.isActive()) {
@@ -307,6 +311,17 @@ public class CoachTypeServiceImpl implements CoachTypeService {
     @Override
     public List<CoachTypeDropdownDTO> findActiveCoachTypesForDropdown() {
         return coachTypeRepo.findActiveCoachTypesForDropdown();
+    }
+
+    private CoachTypeFilterRequest sanitizeFilter(CoachTypeFilterRequest filter) {
+        String name = filter.coachTypeName() == null ? null : filter.coachTypeName().trim();
+        if (name != null && name.isEmpty()) {
+            name = null;
+        }
+        if (Objects.equals(name, filter.coachTypeName())) {
+            return filter;
+        }
+        return new CoachTypeFilterRequest(name, filter.minPrice(), filter.maxPrice(), filter.minSeats(), filter.maxSeats(), filter.isActive());
     }
 
     private CoachType findCoachTypeOrThrow(Integer id) {

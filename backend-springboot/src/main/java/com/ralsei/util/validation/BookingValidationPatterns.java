@@ -11,5 +11,8 @@ public final class BookingValidationPatterns {
     public static final String EMAIL =
             "^[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}$";
 
+    /** RFC 5321 maximum total length for an email address. */
+    public static final int EMAIL_MAX_LENGTH = 254;
+
     private BookingValidationPatterns() {}
 }
