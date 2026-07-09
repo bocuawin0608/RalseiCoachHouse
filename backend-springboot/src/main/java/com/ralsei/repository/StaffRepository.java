@@ -13,6 +13,7 @@ import com.ralsei.model.Staff;
 public interface StaffRepository extends JpaRepository<Staff, Integer> {
     java.util.Optional<Staff> findByAccountId(Integer accountId);
 
+    boolean existsByEmailIgnoreCaseAndStaffIdNot(String email, Integer staffId);
     @Query(value = """
                 SELECT s.staffName AS staffName
                 FROM staff s

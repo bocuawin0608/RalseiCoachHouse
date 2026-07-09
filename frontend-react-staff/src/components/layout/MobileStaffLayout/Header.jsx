@@ -51,21 +51,34 @@ export default function Header() {
                 {isOnList ? 'Chuyến của tôi' : 'Điều khiển chuyến'}
             </div>
 
-            <button
-                type="button"
-                onClick={() => { logout(); navigate('/staff/login'); }}
-                style={{
-                    background: 'transparent',
-                    border: 'none',
-                    color: '#fff',
-                    fontSize: '14px',
-                    padding: '6px 8px',
-                    minWidth: '72px',
-                    textAlign: 'right',
-                }}
-            >
-                {user?.username ? user.username.split('@')[0] : 'Logout'}
-            </button>
+            <div style={{ display: 'flex', gap: '4px', minWidth: '72px', justifyContent: 'flex-end' }}>
+                <button
+                    type="button"
+                    onClick={() => navigate('/staff/profile')}
+                    style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#fff',
+                        fontSize: '14px',
+                        padding: '6px 8px',
+                    }}
+                >
+                    Hồ sơ
+                </button>
+                <button
+                    type="button"
+                    onClick={() => { logout(); navigate('/staff/login'); }}
+                    style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#fff',
+                        fontSize: '14px',
+                        padding: '6px 8px',
+                    }}
+                >
+                    {user?.username ? user.username.split('@')[0] : 'Logout'}
+                </button>
+            </div>
         </header>
     );
 }

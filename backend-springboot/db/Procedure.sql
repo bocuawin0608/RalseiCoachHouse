@@ -15,6 +15,8 @@ BEGIN
     
     -- Thời gian giãn cách tối thiểu (phút) để một Xe/Nhân sự có thể chạy chuyến tiếp theo
     -- Chạy 600 phút (10 tiếng) + Nghỉ ngơi/Dọn dẹp 120 phút (2 tiếng) = 720 phút (12 tiếng)
+    -- Lưu ý: giãn cách thời gian chưa đủ. Tài nguyên đi tuyến 1 phải về bằng tuyến 2
+    -- trước khi được xếp tuyến 1 lần nữa, và ngược lại, để không "dịch chuyển tức thời".
     DECLARE @BufferMinutes INT = 720; 
 
     PRINT N'=== KHỞI CHẠY THUẬT TOÁN ĐIỀU PHỐI ĐỘI XE ĐỘNG ===';
@@ -53,6 +55,22 @@ BEGIN
                     AND t.departureTime BETWEEN DATEADD(MINUTE, -@BufferMinutes, @DepartureTime) 
                                             AND DATEADD(MINUTE, @BufferMinutes, @DepartureTime)
               )
+              AND (
+                  NOT EXISTS (
+                      SELECT 1 FROM [trip] lastTrip
+                      WHERE lastTrip.coachId = c.coachId
+                        AND lastTrip.departureTime < @DepartureTime
+                        AND lastTrip.[status] NOT IN ('CANCELED', 'CANCELLED')
+                  )
+                  OR (
+                      SELECT TOP 1 lastTrip.routeId
+                      FROM [trip] lastTrip
+                      WHERE lastTrip.coachId = c.coachId
+                        AND lastTrip.departureTime < @DepartureTime
+                        AND lastTrip.[status] NOT IN ('CANCELED', 'CANCELLED')
+                      ORDER BY lastTrip.departureTime DESC
+                  ) = 2
+              )
             ORDER BY NEWID(); -- Phân bổ ngẫu nhiên đều đội xe, tránh chạy cố định một xe
 
             -- Thuật toán tìm Tài xế rảnh tại thời điểm đó
@@ -65,6 +83,22 @@ BEGIN
                     AND t.departureTime BETWEEN DATEADD(MINUTE, -@BufferMinutes, @DepartureTime) 
                                             AND DATEADD(MINUTE, @BufferMinutes, @DepartureTime)
               )
+              AND (
+                  NOT EXISTS (
+                      SELECT 1 FROM [trip] lastTrip
+                      WHERE lastTrip.driverId = staffId
+                        AND lastTrip.departureTime < @DepartureTime
+                        AND lastTrip.[status] NOT IN ('CANCELED', 'CANCELLED')
+                  )
+                  OR (
+                      SELECT TOP 1 lastTrip.routeId
+                      FROM [trip] lastTrip
+                      WHERE lastTrip.driverId = staffId
+                        AND lastTrip.departureTime < @DepartureTime
+                        AND lastTrip.[status] NOT IN ('CANCELED', 'CANCELLED')
+                      ORDER BY lastTrip.departureTime DESC
+                  ) = 2
+              )
             ORDER BY NEWID();
 
             -- Thuật toán tìm Phụ xe rảnh tại thời điểm đó
@@ -76,6 +110,22 @@ BEGIN
                   WHERE t.attendantId = staffId 
                     AND t.departureTime BETWEEN DATEADD(MINUTE, -@BufferMinutes, @DepartureTime) 
                                             AND DATEADD(MINUTE, @BufferMinutes, @DepartureTime)
+              )
+              AND (
+                  NOT EXISTS (
+                      SELECT 1 FROM [trip] lastTrip
+                      WHERE lastTrip.attendantId = staffId
+                        AND lastTrip.departureTime < @DepartureTime
+                        AND lastTrip.[status] NOT IN ('CANCELED', 'CANCELLED')
+                  )
+                  OR (
+                      SELECT TOP 1 lastTrip.routeId
+                      FROM [trip] lastTrip
+                      WHERE lastTrip.attendantId = staffId
+                        AND lastTrip.departureTime < @DepartureTime
+                        AND lastTrip.[status] NOT IN ('CANCELED', 'CANCELLED')
+                      ORDER BY lastTrip.departureTime DESC
+                  ) = 2
               )
             ORDER BY NEWID();
 
@@ -133,6 +183,22 @@ BEGIN
                     AND t.departureTime BETWEEN DATEADD(MINUTE, -@BufferMinutes, @DepartureTime) 
                                             AND DATEADD(MINUTE, @BufferMinutes, @DepartureTime)
               )
+              AND (
+                  NOT EXISTS (
+                      SELECT 1 FROM [trip] lastTrip
+                      WHERE lastTrip.coachId = c.coachId
+                        AND lastTrip.departureTime < @DepartureTime
+                        AND lastTrip.[status] NOT IN ('CANCELED', 'CANCELLED')
+                  )
+                  OR (
+                      SELECT TOP 1 lastTrip.routeId
+                      FROM [trip] lastTrip
+                      WHERE lastTrip.coachId = c.coachId
+                        AND lastTrip.departureTime < @DepartureTime
+                        AND lastTrip.[status] NOT IN ('CANCELED', 'CANCELLED')
+                      ORDER BY lastTrip.departureTime DESC
+                  ) = 1
+              )
             ORDER BY NEWID();
 
             -- Tìm Tài xế rảnh chiều về
@@ -145,6 +211,22 @@ BEGIN
                     AND t.departureTime BETWEEN DATEADD(MINUTE, -@BufferMinutes, @DepartureTime) 
                                             AND DATEADD(MINUTE, @BufferMinutes, @DepartureTime)
               )
+              AND (
+                  NOT EXISTS (
+                      SELECT 1 FROM [trip] lastTrip
+                      WHERE lastTrip.driverId = staffId
+                        AND lastTrip.departureTime < @DepartureTime
+                        AND lastTrip.[status] NOT IN ('CANCELED', 'CANCELLED')
+                  )
+                  OR (
+                      SELECT TOP 1 lastTrip.routeId
+                      FROM [trip] lastTrip
+                      WHERE lastTrip.driverId = staffId
+                        AND lastTrip.departureTime < @DepartureTime
+                        AND lastTrip.[status] NOT IN ('CANCELED', 'CANCELLED')
+                      ORDER BY lastTrip.departureTime DESC
+                  ) = 1
+              )
             ORDER BY NEWID();
 
             -- Tìm Phụ xe rảnh chiều về
@@ -156,6 +238,22 @@ BEGIN
                   WHERE t.attendantId = staffId 
                     AND t.departureTime BETWEEN DATEADD(MINUTE, -@BufferMinutes, @DepartureTime) 
                                             AND DATEADD(MINUTE, @BufferMinutes, @DepartureTime)
+              )
+              AND (
+                  NOT EXISTS (
+                      SELECT 1 FROM [trip] lastTrip
+                      WHERE lastTrip.attendantId = staffId
+                        AND lastTrip.departureTime < @DepartureTime
+                        AND lastTrip.[status] NOT IN ('CANCELED', 'CANCELLED')
+                  )
+                  OR (
+                      SELECT TOP 1 lastTrip.routeId
+                      FROM [trip] lastTrip
+                      WHERE lastTrip.attendantId = staffId
+                        AND lastTrip.departureTime < @DepartureTime
+                        AND lastTrip.[status] NOT IN ('CANCELED', 'CANCELLED')
+                      ORDER BY lastTrip.departureTime DESC
+                  ) = 1
               )
             ORDER BY NEWID();
 
