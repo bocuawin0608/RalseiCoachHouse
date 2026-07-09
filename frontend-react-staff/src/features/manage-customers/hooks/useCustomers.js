@@ -39,9 +39,6 @@ const useCustomers = () => {
 
     useEffect(() => {
         fetchCustomers();
-    }, [fetchCustomers]);
-
-    useEffect(() => {
         const onFocus = () => fetchCustomers();
         window.addEventListener('focus', onFocus);
         return () => window.removeEventListener('focus', onFocus);

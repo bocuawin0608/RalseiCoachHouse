@@ -48,9 +48,6 @@ const useAccounts = () => {
 
     useEffect(() => {
         fetchAccounts();
-    }, [fetchAccounts]);
-
-    useEffect(() => {
         const onFocus = () => fetchAccounts();
         window.addEventListener('focus', onFocus);
         return () => window.removeEventListener('focus', onFocus);
