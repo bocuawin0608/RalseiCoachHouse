@@ -21,12 +21,15 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ralsei.dto.request.passengerbooking.SeatLockRequest;
 import com.ralsei.dto.request.staffpassengerticket.StaffPassengerChangePassengerRequest;
 import com.ralsei.dto.request.staffpassengerticket.StaffPassengerChangeSeatRequest;
+import com.ralsei.dto.request.staffpassengerticket.StaffPassengerItineraryChangeRequest;
 import com.ralsei.dto.request.staffpassengerticket.StaffPassengerTicketCancelRequest;
 import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.dto.response.passengerbooking.SeatLockResponse;
 import com.ralsei.dto.response.passengerbooking.TripSeatResponse;
+import com.ralsei.dto.response.staffpassengerticket.StaffPassengerItineraryPreviewResponse;
 import com.ralsei.dto.response.staffpassengerticket.StaffPassengerTicketDetailResponse;
 import com.ralsei.dto.response.staffpassengerticket.StaffPassengerTicketListItemResponse;
+import com.ralsei.dto.response.staffpassengerticket.StaffPassengerTransferCandidateResponse;
 import com.ralsei.service.JwtService;
 import com.ralsei.service.passengerticket.StaffPassengerTicketCancelService;
 import com.ralsei.service.passengerticket.StaffPassengerTicketChangeService;
@@ -125,9 +128,10 @@ public class StaffPassengerTicketController {
     public ResponseEntity<SeatLockResponse> lockSeats(
         @PathVariable @Min(1) Integer tripId,
         @Valid @RequestBody SeatLockRequest request,
-        @RequestHeader("X-Staff-Seat-Session") @NotBlank String holdToken
+        @RequestHeader("X-Staff-Seat-Session") @NotBlank String holdToken,
+        @RequestHeader(value = "X-Staff-Seat-Lock-Mode", defaultValue = "CHANGE_SEAT") String lockMode
     ) {
-        return ResponseEntity.ok(changeService.lockSeats(tripId, request, holdToken));
+        return ResponseEntity.ok(changeService.lockSeats(tripId, request, holdToken, lockMode));
     }
 
     @PostMapping("/trips/{tripId}/seats/release")
@@ -152,6 +156,46 @@ public class StaffPassengerTicketController {
             jwtService.extractAccountId(authorizationHeader),
             ticketCode,
             ticketDetailId,
+            request,
+            holdToken
+        ));
+    }
+
+    @GetMapping("/{ticketCode:[A-Za-z0-9_-]+}/transfer-candidates")
+    public ResponseEntity<List<StaffPassengerTransferCandidateResponse>> getTransferCandidates(
+        @PathVariable @Pattern(regexp = "[A-Za-z0-9_-]{3,64}") String ticketCode,
+        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate departureDate,
+        @RequestParam @Min(1) Integer routeId,
+        @RequestParam(defaultValue = "true") boolean excludeCurrentTrip
+    ) {
+        return ResponseEntity.ok(changeService.getTransferCandidates(
+            ticketCode, departureDate, routeId, excludeCurrentTrip
+        ));
+    }
+
+    @GetMapping("/{ticketCode:[A-Za-z0-9_-]+}/itinerary-preview")
+    public ResponseEntity<StaffPassengerItineraryPreviewResponse> previewItineraryChange(
+        @PathVariable @Pattern(regexp = "[A-Za-z0-9_-]{3,64}") String ticketCode,
+        @RequestParam(required = false) Integer newTripId,
+        @RequestParam @Min(1) Integer pickupStopId,
+        @RequestParam @Min(1) Integer dropoffStopId,
+        @RequestParam(required = false) List<@Min(1) Integer> newTripSeatIds
+    ) {
+        return ResponseEntity.ok(changeService.previewItineraryChange(
+            ticketCode, newTripId, pickupStopId, dropoffStopId, newTripSeatIds
+        ));
+    }
+
+    @PatchMapping("/{ticketCode:[A-Za-z0-9_-]+}/itinerary")
+    public ResponseEntity<StaffPassengerTicketDetailResponse> changeItinerary(
+        @RequestHeader("Authorization") String authorizationHeader,
+        @RequestHeader(value = "X-Staff-Seat-Session", required = false) String holdToken,
+        @PathVariable @Pattern(regexp = "[A-Za-z0-9_-]{3,64}") String ticketCode,
+        @Valid @RequestBody StaffPassengerItineraryChangeRequest request
+    ) {
+        return ResponseEntity.ok(changeService.changeItinerary(
+            jwtService.extractAccountId(authorizationHeader),
+            ticketCode,
             request,
             holdToken
         ));

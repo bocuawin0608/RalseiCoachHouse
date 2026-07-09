@@ -8,6 +8,7 @@ import GuestGuard from './GuestGuard';
 import RoleGuard from './RoleGuard';
 // Pages
 import StaffLogin from '../pages/auth/StaffLogin';
+import StaffProfilePage from '../pages/staff/StaffProfilePage';
 // Nested routes
 import { routeRoutes } from '../features/routes';
 import { coachRoutes } from '../features/coaches';
@@ -20,6 +21,7 @@ import { customerRoutes } from '../features/manage-customers';
 import { ticketAgencyRoutes } from '../features/manage-ticket-agencies';
 import { staffRoutes } from '../features/manage-staff';
 import { passengerTicketRoutes } from '../features/passenger-tickets';
+import { staffTripInfoRoutes } from '../features/staff-trip-info';
 
 const AppRouter = () => {
     return (
@@ -35,6 +37,7 @@ const AppRouter = () => {
             <Route element={<RoleGuard allowedRoles={['MANAGER', 'ADMIN']} />}>
                 <Route path="/management" element={<DesktopLayout />}>
                     <Route path="dashboard" element={<div>Bảng điều khiển quản trị</div>} />
+                    <Route path="profile" element={<StaffProfilePage />} />
                     {coachRoutes}
                     {routeRoutes}
                     {cargoRoutes}
@@ -55,9 +58,16 @@ const AppRouter = () => {
             </Route>
 
             <Route path="/staff">
+                <Route element={<RoleGuard allowedRoles={['ADMIN', 'MANAGER', 'TICKET_STAFF', 'TRIP_STAFF']} />}>
+                    <Route element={<DesktopLayout />}>
+                        <Route path="profile" element={<StaffProfilePage />} />
+                    </Route>
+                </Route>
+
                 <Route element={<RoleGuard allowedRoles={['TICKET_STAFF']} />}>
                     <Route element={<DesktopLayout />}>
                         {passengerTicketRoutes}
+                        {staffTripInfoRoutes}
                     </Route>
                 </Route>
 
