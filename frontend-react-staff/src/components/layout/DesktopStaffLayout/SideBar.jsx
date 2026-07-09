@@ -4,7 +4,7 @@ import { Collapse } from 'react-bootstrap';
 import {
     BsList, BsGrid1X2, BsBusFront, BsSignpostSplit,
     BsChevronDown, BsChevronRight, BsTags, BsGeoAlt,
-    BsBoxSeam, BsCashCoin, BsGift, BsTicketPerforated, BsInfoCircle
+    BsBoxSeam, BsGift, BsTicketPerforated, BsInfoCircle
 } from 'react-icons/bs';
 import { useAuth } from '../../../features/auth';
 
@@ -151,10 +151,6 @@ export default function Sidebar() {
                                     <NavLink to="/management/cargo-types" className={navLinkClass}>
                                         <BsBoxSeam size={16} />
                                         <span style={{ fontSize: '0.9rem' }}>Loại hàng</span>
-                                    </NavLink>
-                                    <NavLink to="/management/freight-rates" className={navLinkClass}>
-                                        <BsCashCoin size={16} />
-                                        <span style={{ fontSize: '0.9rem' }}>Giá cước</span>
                                     </NavLink>
                                 </div>
                             </Collapse>

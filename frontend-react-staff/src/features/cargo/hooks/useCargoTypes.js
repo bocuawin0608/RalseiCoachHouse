@@ -2,6 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import { cargoTypeApi } from "../api/cargoTypeApi";
 import { useDebounce } from "../../../hooks/useDebounce";
 
+/**
+ * Loads cargo types with their surcharge unit and price for the manager table.
+ */
 export function useCargoTypes() {
     const [cargoTypes, setCargoTypes] = useState([]);
     const [loading, setLoading] = useState(false);
