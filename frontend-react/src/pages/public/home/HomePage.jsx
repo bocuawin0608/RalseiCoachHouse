@@ -234,7 +234,10 @@ const LocationCombobox = ({ id, label, value, options, iconTone, onChange }) => 
                     onFocus={() => setOpen(true)}
                     onBlur={() => window.setTimeout(() => setOpen(false), 120)}
                     onChange={(event) => {
-                        onChange(normalizeLocationName(event.target.value));
+                        // Keep the raw value while typing. Canonical normalization
+                        // trims whitespace, which would otherwise remove a newly
+                        // entered space before the user can type the next word.
+                        onChange(event.target.value);
                         setOpen(true);
                     }}
                     placeholder={`Chọn ${label.toLowerCase()}`}
@@ -316,7 +319,7 @@ const HomePage = () => {
     const locationOptions = useMemo(() => extractLocationsFromRoutes(routes), [routes]);
     const departureOptions = locationOptions;
     const destinationOptions = useMemo(
-        () => locationOptions.filter((location) => location !== departure),
+        () => locationOptions.filter((location) => location !== normalizeLocationName(departure)),
         [departure, locationOptions]
     );
 
@@ -325,8 +328,8 @@ const HomePage = () => {
      */
     const handleDepartureChange = (nextDeparture) => {
         const normalizedDeparture = normalizeLocationName(nextDeparture);
-        setDeparture(normalizedDeparture);
-        if (normalizedDeparture && normalizedDeparture === destination) {
+        setDeparture(nextDeparture);
+        if (normalizedDeparture && normalizedDeparture === normalizeLocationName(destination)) {
             setDestination('');
         }
     };
@@ -336,11 +339,11 @@ const HomePage = () => {
      */
     const handleDestinationChange = (nextDestination) => {
         const normalizedDestination = normalizeLocationName(nextDestination);
-        if (normalizedDestination === departure) {
+        if (normalizedDestination && normalizedDestination === normalizeLocationName(departure)) {
             setDestination('');
             return;
         }
-        setDestination(normalizedDestination);
+        setDestination(nextDestination);
     };
 
     /**
