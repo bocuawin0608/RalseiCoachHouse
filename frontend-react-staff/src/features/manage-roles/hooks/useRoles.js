@@ -39,9 +39,6 @@ const useRoles = () => {
 
     useEffect(() => {
         fetchRoles();
-    }, [fetchRoles]);
-
-    useEffect(() => {
         const onFocus = () => fetchRoles();
         window.addEventListener('focus', onFocus);
         return () => window.removeEventListener('focus', onFocus);

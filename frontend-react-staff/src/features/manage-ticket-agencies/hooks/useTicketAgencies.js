@@ -37,9 +37,8 @@ const useTicketAgencies = () => {
         }
     }, [debouncedSearch, filters.isActive, pageInfo.page, pageInfo.size]);
 
-    useEffect(() => { fetch(); }, [fetch]);
-
     useEffect(() => {
+        fetch();
         const onFocus = () => fetch();
         window.addEventListener('focus', onFocus);
         return () => window.removeEventListener('focus', onFocus);
