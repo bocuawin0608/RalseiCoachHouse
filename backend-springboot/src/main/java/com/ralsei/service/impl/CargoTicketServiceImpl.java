@@ -10,6 +10,7 @@ import com.ralsei.dto.request.cargoticket.CargoTicketRequest;
 import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.dto.response.cargoticket.CargoTicketResponse;
 import com.ralsei.dto.response.cargoticket.CargoTicketFormOptionsResponse;
+import com.ralsei.dto.response.cargoticket.CustomerContactResponse;
 import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.exception.ResourceNotFoundException;
 import com.ralsei.model.CargoTicket;
@@ -98,6 +99,20 @@ public class CargoTicketServiceImpl implements CargoTicketService {
 
         ticket.setStatus("CANCELLED");
         cargoTicketRepository.save(ticket);
+    }
+
+    @Override
+    public List<CustomerContactResponse> searchContacts(String phone) {
+        if (phone == null || phone.trim().isEmpty()) {
+            return List.of();
+        }
+        List<Object[]> results = cargoTicketRepository.findContactsByPhoneNative(phone.trim());
+        return results.stream()
+                .map(obj -> CustomerContactResponse.builder()
+                        .phone(obj[0] != null ? obj[0].toString() : null)
+                        .name(obj[1] != null ? obj[1].toString() : null)
+                        .build())
+                .toList();
     }
 
     private void validateReferences(CargoTicketRequest request) {
