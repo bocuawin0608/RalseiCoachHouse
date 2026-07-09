@@ -195,7 +195,7 @@ CREATE TABLE [account_role] (
 
 CREATE TABLE [customer] (
     [customerId] INT IDENTITY(1,1) PRIMARY KEY,
-    [accountId] INT NULL UNIQUE, -- Nullable cho khách vãng lai
+    [accountId] INT NULL, -- Nullable cho khách vãng lai (unique constraint removed - multiple customers can exist without accounts)
     [customerName] NVARCHAR(100) NOT NULL,
     [phone] VARCHAR(20) NULL,
     [email] VARCHAR(100) NULL,
