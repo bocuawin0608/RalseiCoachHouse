@@ -31,7 +31,19 @@ export default function StaffUpdateModal({ isOpen, data, onClose, onSuccess, tic
                         isActive: detail.active !== false,
                     });
                 })
-                .catch(() => {})
+                .catch(() => {
+                    setForm({
+                        staffName: data.staffName || '',
+                        phone: data.phone || '',
+                        email: data.email || '',
+                        dob: data.dob || '',
+                        cccd: data.cccd || '',
+                        staffPosition: data.staffPosition || '',
+                        hireDate: data.hireDate || '',
+                        ticketAgencyId: data.ticketAgencyId ?? '',
+                        isActive: data.active !== false,
+                    });
+                })
                 .finally(() => setLoading(false));
             setErrorMsg('');
         }
