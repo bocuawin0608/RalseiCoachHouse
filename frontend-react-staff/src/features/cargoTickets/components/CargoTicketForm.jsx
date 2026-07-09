@@ -3,6 +3,7 @@ import { BsCheckCircle, BsExclamationTriangleFill } from 'react-icons/bs';
 import { useMemo, useState, useEffect } from 'react';
 import { useCargoTicketFormOptions } from '../hooks/useCargoTicketFormOptions';
 import { useAuth } from '../../auth/context/AuthContext';
+import PhoneAutocomplete from './PhoneAutocomplete';
 
 const EMPTY_FORM = {
     tripId: '', customerId: '', senderName: '', senderPhone: '',
@@ -71,8 +72,8 @@ export default function CargoTicketForm({ initialData, onSubmit, submitLabel = '
             {(error || optionsError) && <Alert variant="danger" className="d-flex align-items-center gap-2"><BsExclamationTriangleFill />{error || optionsError}</Alert>}
 
             <Row className="g-4 mb-4">
-                <Col lg={6}><PartyCard title="Người gửi" prefix="sender" data={formData} onChange={handleChange} /></Col>
-                <Col lg={6}><PartyCard title="Người nhận" prefix="receiver" data={formData} onChange={handleChange} /></Col>
+                <Col lg={6}><PartyCard title="Người gửi" prefix="sender" data={formData} onChange={handleChange} setFormData={setFormData} /></Col>
+                <Col lg={6}><PartyCard title="Người nhận" prefix="receiver" data={formData} onChange={handleChange} setFormData={setFormData} /></Col>
             </Row>
 
             <Card className="shadow-sm border-0 mb-4">
@@ -114,12 +115,14 @@ export default function CargoTicketForm({ initialData, onSubmit, submitLabel = '
     );
 }
 
-function PartyCard({ title, prefix, data, onChange }) {
+function PartyCard({ title, prefix, data, onChange, setFormData }) {
     return <Card className="shadow-sm border-0 h-100"><Card.Header className="bg-white py-3"><h5 className="fw-bold mb-0">{title}</h5></Card.Header><Card.Body className="p-4 d-flex flex-column gap-3">
-        <Field label="Số điện thoại" name={`${prefix}Phone`} value={data[`${prefix}Phone`]} onChange={onChange} required maxLength={20} />
+        <PhoneAutocomplete label="Số điện thoại" prefix={prefix} data={data} onChange={onChange} setFormData={setFormData} />
         <Field label="Họ tên" name={`${prefix}Name`} value={data[`${prefix}Name`]} onChange={onChange} required maxLength={100} />
     </Card.Body></Card>;
 }
+
+
 
 function Field({ label, ...props }) {
     return <Form.Group><Form.Label className="fw-semibold">{label}{props.required ? ' *' : ''}</Form.Label><Form.Control {...props} /></Form.Group>;

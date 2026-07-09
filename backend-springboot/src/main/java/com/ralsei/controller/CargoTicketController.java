@@ -17,7 +17,10 @@ import com.ralsei.dto.request.cargoticket.CargoTicketRequest;
 import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.dto.response.cargoticket.CargoTicketResponse;
 import com.ralsei.dto.response.cargoticket.CargoTicketFormOptionsResponse;
+import com.ralsei.dto.response.cargoticket.CustomerContactResponse;
 import com.ralsei.service.CargoTicketService;
+
+import java.util.List;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -37,6 +40,12 @@ public class CargoTicketController {
             @RequestParam(required = false) @Min(1) Integer pickupStopId,
             @RequestParam(required = false) @Min(1) Integer dropoffStopId) {
         return ResponseEntity.ok(cargoTicketService.getFormOptions(pickupStopId, dropoffStopId));
+    }
+
+    @GetMapping("/contacts/search")
+    public ResponseEntity<List<CustomerContactResponse>> searchContacts(
+            @RequestParam String phone) {
+        return ResponseEntity.ok(cargoTicketService.searchContacts(phone));
     }
 
     @GetMapping
