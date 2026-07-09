@@ -32,6 +32,8 @@ export const useCoaches = (initialCoachTypeId = '') => {
         try {
             const response = await coachApi.filterCoaches({
                 ...debouncedFilters,
+                licensePlate: debouncedFilters.licensePlate?.trim() || '',
+                routeName: debouncedFilters.routeName?.trim() || '',
                 page: pageInfo.page,
                 size: pageInfo.size
             });

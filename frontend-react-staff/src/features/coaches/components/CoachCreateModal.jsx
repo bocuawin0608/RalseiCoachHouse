@@ -5,6 +5,11 @@ import { coachApi } from "../api/coachApi";
 import { useCoachTypeDropdown } from "../../../hooks/useCoachTypeDropdown";
 import { useRouteDropdown } from "../../../hooks/useRouteDropdown";
 
+import {
+    COACH_VALIDATION,
+    validateAndFormatLicensePlate,
+} from "../../../utils/coachValidation";
+
 const INITIAL_FORM = {
     coachTypeId: '',
     routeId: '',
@@ -18,6 +23,7 @@ export default function CoachCreateModal({isOpen, onClose, onSuccess}) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState(null);
 
+    const [fieldErrors, setFieldErrors] = useState({});
     const { coachTypes, loadingCoachTypes } = useCoachTypeDropdown(isOpen);
     const { routes, loadingRoutes } = useRouteDropdown(isOpen);
 
@@ -28,6 +34,7 @@ export default function CoachCreateModal({isOpen, onClose, onSuccess}) {
             if (isOpen) {
                 setFormData(INITIAL_FORM);
                 setError(null);
+                setFieldErrors({});
             }
         }
         load();
@@ -39,20 +46,65 @@ export default function CoachCreateModal({isOpen, onClose, onSuccess}) {
             [e.target.name]: e.target.value
         }));
         setError(null);
+        setFieldErrors(prev => ({ ...prev, [e.target.name]: null }));
     }
+
+    const handleLicensePlateBlur = (e) => {
+        const result = validateAndFormatLicensePlate(e.target.value);
+        if (result.valid) {
+            setFormData(prev => ({ ...prev, licensePlate: result.data }));
+        }
+    };
+
+    const validateForm = () => {
+        const nextErrors = {};
+        const plateResult = validateAndFormatLicensePlate(formData.licensePlate);
+        if (!plateResult.valid) {
+            nextErrors.licensePlate = COACH_VALIDATION.LICENSE_PLATE_MESSAGE;
+        }
+
+        if (!formData.manufacturer.trim()) {
+            nextErrors.manufacturer = 'Hãng xe không được để trống.';
+        }
+
+        const year = Number(formData.year);
+        if (!formData.year || Number.isNaN(year)) {
+            nextErrors.year = 'Năm sản xuất không được để trống.';
+        } else if (year < COACH_VALIDATION.YEAR_MIN || year > COACH_VALIDATION.getYearMax()) {
+            nextErrors.year = `Năm sản xuất phải từ ${COACH_VALIDATION.YEAR_MIN} đến ${COACH_VALIDATION.getYearMax()}.`;
+        }
+
+        if (!formData.coachTypeId) {
+            nextErrors.coachTypeId = 'Vui lòng chọn loại xe.';
+        }
+
+        setFieldErrors(nextErrors);
+
+        return { isValid: Object.keys(nextErrors).length === 0, plateResult };
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const { isValid, plateResult } = validateForm();
+        if (!isValid) return;
+
         setIsSubmitting(true);
         setError(null);
 
         try {
-            await coachApi.createCoach(formData);
+            await coachApi.createCoach({
+                coachTypeId: Number(formData.coachTypeId),
+                routeId: formData.routeId ? Number(formData.routeId) : null,
+                licensePlate: plateResult.data,
+                manufacturer: formData.manufacturer.trim(),
+                year: Number(formData.year),
+            });
+
             onSuccess();
             onClose();
+
         } catch (error) {
             console.log(error.response);
-            console.log(formData);
             setError(error.response?.data?.message || "Có lỗi xảy ra khi thêm mới xe.");
         } finally {
             setIsSubmitting(false);
@@ -81,9 +133,14 @@ export default function CoachCreateModal({isOpen, onClose, onSuccess}) {
                             value={formData.licensePlate}
                             name="licensePlate"
                             onChange={handleInputChange}
+                            onBlur={handleLicensePlateBlur}
                             required maxLength={20}
+                            isInvalid={!!fieldErrors.licensePlate}
                             className="py-2"
                         />
+                        <Form.Control.Feedback type="invalid">
+                            {fieldErrors.licensePlate}
+                        </Form.Control.Feedback>
                     </Form.Group>
 
                     <div className="d-flex gap-3">
@@ -98,8 +155,12 @@ export default function CoachCreateModal({isOpen, onClose, onSuccess}) {
                                 name="manufacturer"
                                 onChange={handleInputChange}
                                 required maxLength={100}
+                                isInvalid={!!fieldErrors.manufacturer}
                                 className="py-2"
                             />
+                            <Form.Control.Feedback type="invalid">
+                                {fieldErrors.manufacturer}
+                            </Form.Control.Feedback>
                         </Form.Group>
 
                         <Form.Group className="mb-4">
@@ -112,9 +173,14 @@ export default function CoachCreateModal({isOpen, onClose, onSuccess}) {
                                 name="year"
                                 onChange={handleInputChange}
                                 required
-                                min='2000' max={new Date().getFullYear()}
+                                min={COACH_VALIDATION.YEAR_MIN}
+                                max={COACH_VALIDATION.getYearMax()}
+                                isInvalid={!!fieldErrors.year}
                                 className="py-2"
                             />
+                            <Form.Control.Feedback type="invalid">
+                                {fieldErrors.year}
+                            </Form.Control.Feedback>
                         </Form.Group>
                     </div>
                     
@@ -129,6 +195,7 @@ export default function CoachCreateModal({isOpen, onClose, onSuccess}) {
                                 onChange={handleInputChange}
                                 required
                                 disabled={isDropdownLoading}
+                                isInvalid={!!fieldErrors.coachTypeId}
                                 className="py-2"
                             >
                                 <option value="">-- Chọn loại xe --</option>
@@ -136,6 +203,9 @@ export default function CoachCreateModal({isOpen, onClose, onSuccess}) {
                                     <option key={ct.coachTypeId} value={ct.coachTypeId}>{ct.coachTypeName}</option>
                                 ))}
                             </Form.Select>
+                            <Form.Control.Feedback type="invalid">
+                                {fieldErrors.coachTypeId}
+                            </Form.Control.Feedback>
                         </Form.Group>
                         <Form.Group className="mb-4 flex-fill">
                             <Form.Label className="fw-semibold text-secondary">

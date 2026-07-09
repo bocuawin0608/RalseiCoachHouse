@@ -63,7 +63,10 @@ export function usePhoneVerification() {
     }, []);
 
     const checkPhoneOnBlur = useCallback(async (phone, passengerIndex, setValue, getValues) => {
-        const trimmed = phone?.trim();
+        const trimmed = phone?.trim() ?? '';
+        if (trimmed !== phone) {
+            setValue(`passengers.${passengerIndex}.phone`, trimmed, { shouldValidate: true });
+        }
         if (!trimmed || !BOOKING_VALIDATION.PHONE_REGEX.test(trimmed)) {
             return;
         }
@@ -111,6 +114,9 @@ export function usePhoneVerification() {
         setOtpPhone(trimmed);
     }, []);
 
+    const countPhoneUsage = (passengers, phone, excludeIndex) =>
+        passengers.filter((p, i) => i !== excludeIndex && p.phone?.trim() === phone).length;
+
     return {
         verifiedPhones,
         phoneCheckLoading,
@@ -124,5 +130,6 @@ export function usePhoneVerification() {
         closeOtpModal,
         checkPhoneOnBlur,
         openOtpForPhone,
+        countPhoneUsage
     };
 }
