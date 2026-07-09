@@ -31,3 +31,8 @@ TestResults.xml
 
 docs/
 tracker/
+
+# Seed / test SQL files (local test data, not part of core schema)
+backend-springboot/db/seed_*.sql
+backend-springboot/db/test_*.sql
+
