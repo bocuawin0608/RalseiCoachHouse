@@ -30,6 +30,7 @@ import com.ralsei.service.TripService;
 import java.util.List;
 import java.util.Map;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 /***
  * 
@@ -43,7 +44,7 @@ public class TripController {
 
     @GetMapping(value = "/trips/home", params = "!advanced") // NIKO: Bổ sung thêm /trips vào đây
     public ResponseEntity<PagedResponse<TripDetailProjection>> searchTrips(
-            @ModelAttribute TripSearchRequest request) {
+            @Valid @ModelAttribute TripSearchRequest request) {
 
         LocalDateTime start = request.getDate().atStartOfDay();
         LocalDateTime end = request.getDate().atTime(23, 59, 59, 999_000_000);
@@ -59,7 +60,7 @@ public class TripController {
 
     @GetMapping(value = "/trips/home", params = "advanced=true")
     public ResponseEntity<PagedResponse<TripFilterProjection>> filterTrips(
-            @ModelAttribute TripFilterRequest request) {
+            @Valid @ModelAttribute TripFilterRequest request) {
 
         LocalDateTime start = request.getDate().atStartOfDay();
         LocalDateTime end = request.getDate().atTime(23, 59, 59, 999_000_000);

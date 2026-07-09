@@ -22,6 +22,9 @@ rad.json
 #Test results file
 TestResults.xml
 
+# Local Playwright test workspace
+/test/
+
 .opencode/
 
 .txt
