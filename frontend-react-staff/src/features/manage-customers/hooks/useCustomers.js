@@ -41,6 +41,12 @@ const useCustomers = () => {
         fetchCustomers();
     }, [fetchCustomers]);
 
+    useEffect(() => {
+        const onFocus = () => fetchCustomers();
+        window.addEventListener('focus', onFocus);
+        return () => window.removeEventListener('focus', onFocus);
+    }, [fetchCustomers]);
+
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
         setFilters(prev => ({ ...prev, [name]: value }));

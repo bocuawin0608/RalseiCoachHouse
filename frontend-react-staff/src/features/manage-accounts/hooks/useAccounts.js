@@ -50,6 +50,12 @@ const useAccounts = () => {
         fetchAccounts();
     }, [fetchAccounts]);
 
+    useEffect(() => {
+        const onFocus = () => fetchAccounts();
+        window.addEventListener('focus', onFocus);
+        return () => window.removeEventListener('focus', onFocus);
+    }, [fetchAccounts]);
+
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
         setFilters(prev => ({ ...prev, [name]: value }));
