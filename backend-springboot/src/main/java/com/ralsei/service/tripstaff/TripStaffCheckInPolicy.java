@@ -20,7 +20,6 @@ import com.ralsei.model.enums.PassengerTicketStatus;
 @Component
 public class TripStaffCheckInPolicy {
 
-    private static final int OPEN_BEFORE_MINUTES = 30;
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
     public void assertStaffAssigned(Trip trip, int staffId) {
@@ -31,13 +30,8 @@ public class TripStaffCheckInPolicy {
 
     public void assertWithinCheckInWindow(Trip trip, Route route, LocalDateTime now) {
         LocalDateTime departureTime = trip.getDepartureTime();
-        LocalDateTime checkInOpen = departureTime.minusMinutes(OPEN_BEFORE_MINUTES);
         LocalDateTime checkInClose = departureTime.plusMinutes(route.getTotalMinutes());
 
-        if (now.isBefore(checkInOpen)) {
-            throw new BusinessRuleException(
-                    "Chưa đến giờ check-in (mở lúc " + checkInOpen.format(TIME_FORMAT) + ")");
-        }
         if (now.isAfter(checkInClose)) {
             throw new BusinessRuleException("Đã hết thời gian check-in cho chuyến này");
         }
