@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Container, Button, Card } from 'react-bootstrap';
 import { BsPlusLg, BsPersonCheck } from 'react-icons/bs';
-import { useStaff, StaffFilter, StaffTable, StaffUpdateModal, StaffDetailModal, StaffOnboardModal } from '../../features/manage-staff';
+import { useStaff, StaffFilter, StaffTable, StaffUpdateModal, StaffDetailModal, StaffOnboardModal, staffApi } from '../../features/manage-staff';
 import { ticketAgencyApi } from '../../features/manage-ticket-agencies';
 import Pagination from '../../components/common/Pagination';
 
