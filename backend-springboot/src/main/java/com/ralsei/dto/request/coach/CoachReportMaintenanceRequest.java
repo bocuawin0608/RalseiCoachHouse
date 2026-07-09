@@ -2,6 +2,7 @@ package com.ralsei.dto.request.coach;
 
 import java.time.LocalDateTime;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -11,4 +12,9 @@ public record CoachReportMaintenanceRequest(
     String reason,
 
     LocalDateTime expectedEndAt
-) {}
+) {
+    @AssertTrue(message = "Thời gian dự kiến hoàn thành phải ở tương lai.")
+    public boolean isExpectedEndAtValid() {
+        return expectedEndAt == null || expectedEndAt.isAfter(LocalDateTime.now());
+    }
+}

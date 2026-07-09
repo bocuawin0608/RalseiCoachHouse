@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BsArrowLeft, BsCheckCircle, BsExclamationTriangleFill } from 'react-icons/bs';
 import { coachTypeApi, SeatMapBuilder } from '../../../features/coaches';
-import { Alert, Button, Card, Col, Container, Form, InputGroup, Row } from 'react-bootstrap';
+import { Button, Card, Col, Container, Form, InputGroup, Row, Toast, ToastContainer } from 'react-bootstrap';
 import { formatCurrency } from '../../../utils/formatters';
 
 export default function CoachTypeCreatePage() {
@@ -18,7 +18,7 @@ export default function CoachTypeCreatePage() {
 
     const [floorData, setFloorData] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [errorMsg, setErrorMsg] = useState('');
+    const [error, setError] = useState(null);
 
     useEffect(() => {
         const load = () => setFloorData(prevData => {
@@ -83,15 +83,21 @@ export default function CoachTypeCreatePage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setErrorMsg('');
+        setError(null);
+
+        const trimmedName = formData.coachTypeName.trim();
+        if (!trimmedName) {
+            setError({ message: 'Tên loại xe không được để trống.' });
+            return;
+        }
 
         if (!formData.rows || !formData.cols || !formData.totalFloors) {
-            setErrorMsg('Vui lòng nhập đầy đủ số tầng, số hàng và số cột!');
+            setError({ message: 'Vui lòng nhập đầy đủ số tầng, số hàng và số cột!' });
             return;
         }
 
         if (currentTotalSeats === 0) {
-            setErrorMsg('Vui lòng giữ lại ít nhất 1 vị trí ghế ngồi trên sơ đồ!');
+            setError({ message: 'Vui lòng giữ lại ít nhất 1 vị trí ghế ngồi trên sơ đồ!' });
             return;
         }
 
@@ -106,17 +112,20 @@ export default function CoachTypeCreatePage() {
             };
 
             const payload = {
-                coachTypeName: formData.coachTypeName,
+                coachTypeName: trimmedName,
                 seatPrice: formData.seatPrice,
                 seatLayout: JSON.stringify(layoutPayload)
             };
 
             await coachTypeApi.createCoachType(payload);
-            
             navigate('/management/coach-types');
-        } catch (error) {
-            console.error("Lỗi tạo loại xe:", error);
-            setErrorMsg(error.response?.data?.message || 'Có lỗi xảy ra khi lưu vào hệ thống.');
+        } catch (err) {
+            console.error("Lỗi tạo loại xe:", err);
+            const data = err.response?.data;
+            setError({
+                message: data?.message || 'Có lỗi xảy ra khi lưu vào hệ thống.',
+                fieldErrors: data?.fieldErrors || null,
+            });
         } finally {
             setIsSubmitting(false);
         }
@@ -134,13 +143,6 @@ export default function CoachTypeCreatePage() {
             </Button>
 
             <h2 className="mb-4 text-dark fw-bold">Thêm mới loại xe & Sơ đồ cấu hình</h2>
-
-            {errorMsg && (
-                <Alert variant="danger" className="shadow-sm border-0 d-flex align-items-center gap-2">
-                    <BsExclamationTriangleFill />
-                    <span>{errorMsg}</span>
-                </Alert>
-            )}
 
             <Form onSubmit={handleSubmit}>
                 <Row className="g-4">
@@ -283,6 +285,27 @@ export default function CoachTypeCreatePage() {
                 </Row>
             </Form>
 
+            <ToastContainer position="top-end" className="p-3" style={{ position: 'fixed', zIndex: 9999 }}>
+                <Toast show={!!error} onClose={() => setError(null)} delay={9000} autohide bg="danger" text="white">
+                    <Toast.Header closeButton className="bg-danger text-white border-0">
+                        <strong className="me-auto d-inline-flex align-items-center gap-2">
+                            <BsExclamationTriangleFill /><span>Có lỗi xảy ra</span>
+                        </strong>
+                    </Toast.Header>
+                    <Toast.Body className="bg-white text-dark rounded-bottom">
+                        <p className={`fw-semibold mb-2 ${error?.fieldErrors ? 'text-danger' : 'mb-0'}`}>
+                            {error?.message}
+                        </p>
+                        {error?.fieldErrors && (
+                            <ul className="mb-0 ps-3 text-danger" style={{ fontSize: '0.85rem' }}>
+                                {[...new Set(Object.values(error.fieldErrors))].map((msg, i) => (
+                                    <li key={i}>{msg}</li>
+                                ))}
+                            </ul>
+                        )}
+                    </Toast.Body>
+                </Toast>
+            </ToastContainer>
         </Container>
     );
 }
