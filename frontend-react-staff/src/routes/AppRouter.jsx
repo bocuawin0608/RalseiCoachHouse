@@ -15,6 +15,7 @@ import { coachRoutes } from '../features/coaches';
 import { voucherRoutes } from '../features/vouchers';
 import { cargoRoutes } from '../features/cargo';
 import { tripRoutes } from '../features/trip';
+import { tripStaffRoutes } from '../features/tripStaff';
 import { passengerTicketRoutes } from '../features/passenger-tickets';
 import { staffTripInfoRoutes } from '../features/staff-trip-info';
 
@@ -64,8 +65,7 @@ const AppRouter = () => {
 
                 <Route element={<RoleGuard allowedRoles={['TRIP_STAFF']} />}>
                     <Route element={<MobileLayout />}> 
-                        <Route path="trip/scan" element={<div>Quét vé</div>} />
-                        <Route path="trip/status" element={<div>Cập nhật trạng thái xe</div>} />
+                        {tripStaffRoutes}
                     </Route>
                 </Route>
             </Route>
