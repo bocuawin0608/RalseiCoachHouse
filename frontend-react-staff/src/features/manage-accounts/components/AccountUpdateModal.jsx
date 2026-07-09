@@ -32,7 +32,19 @@ export default function AccountUpdateModal({ isOpen, data, onClose, onSuccess })
                         isActive: detail.active !== false,
                     });
                 })
-                .catch(() => {})
+                .catch(() => {
+                    setForm({
+                        staffName: data.staffName || '',
+                        phone: data.phone || '',
+                        email: data.email || '',
+                        cccd: '',
+                        dob: '',
+                        staffPosition: data.staffPosition || 'TICKET_STAFF',
+                        ticketAgencyId: data.ticketAgencyId || '',
+                        hireDate: '',
+                        isActive: data.active !== false,
+                    });
+                })
                 .finally(() => setLoading(false));
             setErrorMsg('');
         }
