@@ -42,6 +42,7 @@ public class CoachStopServiceImpl implements CoachStopService {
                 .isActive(true)
                 .build();
         CoachStop saved = coachStopRepository.save(Objects.requireNonNull(coachStop));
+
         return mapToResponse(saved);
     }
 
@@ -66,6 +67,7 @@ public class CoachStopServiceImpl implements CoachStopService {
         coachStop.setCity(request.getCity().trim());
 
         CoachStop updated = coachStopRepository.save(coachStop);
+
         return mapToResponse(updated);
     }
 
@@ -106,6 +108,7 @@ public class CoachStopServiceImpl implements CoachStopService {
         // Soft delete the coach stop
         coachStop.setActive(false);
         coachStopRepository.save(coachStop);
+
     }
 
     @Override
@@ -117,6 +120,7 @@ public class CoachStopServiceImpl implements CoachStopService {
         // Restore the coachStop itself
         coachStop.setActive(true);
         coachStopRepository.save(coachStop);
+
     }
 
     private CoachStopResponse mapToResponse(CoachStop coachStop) {
