@@ -1,10 +1,18 @@
+import { useState, useEffect } from 'react';
 import { Form, Row, Col, Button } from 'react-bootstrap';
 import { BsSearch, BsArrowCounterclockwise } from 'react-icons/bs';
+import accountApi from '../api/accountApi';
 
 const STAFF_POSITIONS = ['DRIVER', 'ATTENDANT', 'TICKET_STAFF', 'MANAGER'];
 const AUTH_PROVIDERS = ['local', 'firebase', 'google', 'facebook'];
 
 export default function AccountFilter({ filters, onFilterChange, onReset }) {
+    const [roles, setRoles] = useState([]);
+
+    useEffect(() => {
+        accountApi.getAllRoles().then(res => setRoles(res || [])).catch(() => {});
+    }, []);
+
     return (
         <div className="card mb-3">
             <div className="card-body">
@@ -24,6 +32,15 @@ export default function AccountFilter({ filters, onFilterChange, onReset }) {
                         </div>
                     </Col>
                     <Col md={2}>
+                        <Form.Label className="fw-semibold small">Vai trò</Form.Label>
+                        <Form.Select name="role" value={filters.role} onChange={onFilterChange} size="sm">
+                            <option value="">Tất cả</option>
+                            {roles.map(r => (
+                                <option key={r.roleId} value={r.roleName}>{r.roleName}</option>
+                            ))}
+                        </Form.Select>
+                    </Col>
+                    <Col md={2}>
                         <Form.Label className="fw-semibold small">Trạng thái</Form.Label>
                         <Form.Select name="isActive" value={filters.isActive} onChange={onFilterChange} size="sm">
                             <option value="">Tất cả</option>
@@ -37,15 +54,6 @@ export default function AccountFilter({ filters, onFilterChange, onReset }) {
                             <option value="">Tất cả</option>
                             {STAFF_POSITIONS.map(pos => (
                                 <option key={pos} value={pos}>{pos}</option>
-                            ))}
-                        </Form.Select>
-                    </Col>
-                    <Col md={2}>
-                        <Form.Label className="fw-semibold small">Loại tài khoản</Form.Label>
-                        <Form.Select name="authProvider" value={filters.authProvider} onChange={onFilterChange} size="sm">
-                            <option value="">Tất cả</option>
-                            {AUTH_PROVIDERS.map(ap => (
-                                <option key={ap} value={ap}>{ap}</option>
                             ))}
                         </Form.Select>
                     </Col>
