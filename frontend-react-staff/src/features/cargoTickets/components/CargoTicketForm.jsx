@@ -8,8 +8,7 @@ const EMPTY_FORM = {
     tripId: '', customerId: '', senderName: '', senderPhone: '',
     receiverName: '', receiverPhone: '',
     totalPrice: '', description: '', feePayer: 'SENDER', codAmount: 0,
-    pickupStopId: '', dropoffStopId: '', status: 'RECEIVED', soldBy: '',
-    loadedBy: '', unloadedBy: '', deliveredBy: ''
+    pickupStopId: '', dropoffStopId: '', status: 'RECEIVED', soldBy: ''
 };
 
 export default function CargoTicketForm({ initialData, onSubmit, submitLabel = 'Lưu vé hàng hóa' }) {
@@ -17,7 +16,7 @@ export default function CargoTicketForm({ initialData, onSubmit, submitLabel = '
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const { user } = useAuth();
-    const { trips, customers, stops, sellers, handlers, drivers, loading: optionsLoading, error: optionsError } = useCargoTicketFormOptions(
+    const { trips, customers, stops, sellers, loading: optionsLoading, error: optionsError } = useCargoTicketFormOptions(
         formData.pickupStopId,
         formData.dropoffStopId
     );
@@ -99,13 +98,10 @@ export default function CargoTicketForm({ initialData, onSubmit, submitLabel = '
                 <Card.Header className="bg-white py-3"><h5 className="fw-bold mb-0">Thanh toán và xử lý</h5></Card.Header>
                 <Card.Body className="p-4">
                     <Row className="g-3">
-                        <Col md={4}><Field label="Tổng tiền (VNĐ)" name="totalPrice" type="number" value={formData.totalPrice} onChange={handleChange} required min="0" /></Col>
-                        <Col md={4}><Field label="Tiền thu hộ COD (VNĐ)" name="codAmount" type="number" value={formData.codAmount} onChange={handleChange} required min="0" /></Col>
-                        <Col md={4}><Form.Group><Form.Label className="fw-semibold">Người trả phí *</Form.Label><Form.Select name="feePayer" value={formData.feePayer} onChange={handleChange}><option value="SENDER">Người gửi</option><option value="RECEIVER">Người nhận</option></Form.Select></Form.Group></Col>
-                        <Col md={6}><Dropdown label="Nhân viên bán" name="soldBy" value={formData.soldBy} onChange={handleChange} loading={optionsLoading} options={sellers} optionValue="staffId" renderOption={(item) => item.staffName} required disabled style={{ backgroundImage: 'none' }} /></Col>
-                        <Col md={6}><Dropdown label="Nhân viên xếp hàng" name="loadedBy" value={formData.loadedBy ?? ''} onChange={handleChange} loading={optionsLoading} emptyLabel="Chưa phân công" options={handlers} optionValue="staffId" renderOption={(item) => item.staffName} /></Col>
-                        <Col md={6}><Dropdown label="Nhân viên dỡ hàng" name="unloadedBy" value={formData.unloadedBy ?? ''} onChange={handleChange} loading={optionsLoading} emptyLabel="Chưa phân công" options={handlers} optionValue="staffId" renderOption={(item) => item.staffName} /></Col>
-                        <Col md={6}><Dropdown label="Nhân viên giao hàng" name="deliveredBy" value={formData.deliveredBy ?? ''} onChange={handleChange} loading={optionsLoading} emptyLabel="Chưa phân công" options={drivers} optionValue="staffId" renderOption={(item) => item.staffName} /></Col>
+                        <Col md={3}><Field label="Tổng tiền (VNĐ)" name="totalPrice" type="number" value={formData.totalPrice} onChange={handleChange} required min="0" /></Col>
+                        <Col md={3}><Field label="Tiền thu hộ COD (VNĐ)" name="codAmount" type="number" value={formData.codAmount} onChange={handleChange} required min="0" /></Col>
+                        <Col md={3}><Form.Group><Form.Label className="fw-semibold">Người trả phí *</Form.Label><Form.Select name="feePayer" value={formData.feePayer} onChange={handleChange}><option value="SENDER">Người gửi</option><option value="RECEIVER">Người nhận</option></Form.Select></Form.Group></Col>
+                        <Col md={3}><Dropdown label="Nhân viên bán" name="soldBy" value={formData.soldBy} onChange={handleChange} loading={optionsLoading} options={sellers} optionValue="staffId" renderOption={(item) => item.staffName} required disabled style={{ backgroundImage: 'none' }} /></Col>
                         <Col xs={12}><Form.Group><Form.Label className="fw-semibold">Mô tả hàng hóa</Form.Label><Form.Control as="textarea" rows={3} name="description" value={formData.description || ''} onChange={handleChange} /></Form.Group></Col>
                     </Row>
                 </Card.Body>
@@ -197,9 +193,6 @@ function buildCargoTicketRequest(form) {
         pickupStopId: Number(form.pickupStopId),
         dropoffStopId: Number(form.dropoffStopId),
         status: form.status,
-        soldBy: Number(form.soldBy),
-        loadedBy: optionalId(form.loadedBy),
-        unloadedBy: optionalId(form.unloadedBy),
-        deliveredBy: optionalId(form.deliveredBy)
+        soldBy: Number(form.soldBy)
     };
 }
