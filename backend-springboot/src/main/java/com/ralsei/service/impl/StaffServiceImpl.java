@@ -110,6 +110,13 @@ public class StaffServiceImpl implements StaffService {
             .orElseThrow(() -> new ResourceNotFoundException("Nhân viên không tồn tại!"));
         staff.setActive(!staff.isActive());
         staffRepo.save(staff);
+
+        if (staff.getAccountId() != null) {
+            accountRepo.findById(staff.getAccountId()).ifPresent(account -> {
+                account.setActive(staff.isActive());
+                accountRepo.save(account);
+            });
+        }
     }
 
     @Override
