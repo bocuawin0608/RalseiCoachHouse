@@ -32,10 +32,11 @@ const useAccounts = () => {
             };
             const data = await accountApi.filterAccounts(params);
             setAccounts(data.content || []);
+            const p = data.page || data;
             setPageInfo(prev => ({
                 ...prev,
-                totalElements: data.totalElements || 0,
-                totalPages: data.totalPages || 0,
+                totalElements: p.totalElements || 0,
+                totalPages: p.totalPages || 0,
             }));
         } catch (err) {
             setError(err.response?.data?.message || 'Có lỗi xảy ra khi tải danh sách tài khoản.');

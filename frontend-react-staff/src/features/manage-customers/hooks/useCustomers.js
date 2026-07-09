@@ -23,10 +23,11 @@ const useCustomers = () => {
             };
             const data = await customerApi.filterCustomers(params);
             setCustomers(data.content || []);
+            const pg = data.page || data;
             setPageInfo(prev => ({
                 ...prev,
-                totalElements: data.totalElements || 0,
-                totalPages: data.totalPages || 0,
+                totalElements: pg.totalElements || 0,
+                totalPages: pg.totalPages || 0,
             }));
         } catch (err) {
             setError(err.response?.data?.message || 'Có lỗi xảy ra khi tải danh sách khách hàng.');
