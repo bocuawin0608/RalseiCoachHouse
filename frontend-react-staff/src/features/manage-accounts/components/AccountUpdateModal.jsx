@@ -12,20 +12,28 @@ export default function AccountUpdateModal({ isOpen, data, onClose, onSuccess })
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (isOpen && data) {
-            setForm({
-                staffName: data.staffName || '',
-                phone: data.phone || '',
-                email: data.email || '',
-                cccd: data.cccd || '',
-                dob: data.dob ? data.dob.substring(0, 10) : '',
-                staffPosition: data.staffPosition || 'TICKET_STAFF',
-                ticketAgencyId: data.ticketAgencyId || '',
-                hireDate: data.hireDate ? data.hireDate.substring(0, 10) : '',
-                isActive: data.active !== false,
-            });
+            setLoading(true);
+            accountApi.getAccountDetail(data.accountId)
+                .then(detail => {
+                    const s = detail.staff || {};
+                    setForm({
+                        staffName: s.staffName || data.staffName || '',
+                        phone: s.phone || data.phone || '',
+                        email: s.email || data.email || '',
+                        cccd: s.cccd || '',
+                        dob: s.dob ? s.dob.substring(0, 10) : '',
+                        staffPosition: s.staffPosition || data.staffPosition || 'TICKET_STAFF',
+                        ticketAgencyId: s.ticketAgencyId ?? data.ticketAgencyId ?? '',
+                        hireDate: s.hireDate ? s.hireDate.substring(0, 10) : '',
+                        isActive: detail.active !== false,
+                    });
+                })
+                .catch(() => {})
+                .finally(() => setLoading(false));
             setErrorMsg('');
         }
     }, [isOpen, data]);
