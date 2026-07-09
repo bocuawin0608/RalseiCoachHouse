@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 public record PassengerDTO(
     @NotNull(message = "Mã ghế không được để trống!")
@@ -23,11 +24,12 @@ public record PassengerDTO(
     @NotBlank(message = "Vui lòng nhập số điện thoại!")
     @Pattern(
         regexp = BookingValidationPatterns.PHONE,
-        message = "Số điện thoại không hợp lệ. Vui lòng nhập 10–11 chữ số, bắt đầu bằng 0!"
+        message = "Số điện thoại không hợp lệ. Vui lòng nhập 10 chữ số, bắt đầu bằng 0!"
     )
     String phone,
 
     @NotBlank(message = "Vui lòng nhập email!")
+    @Size(max = BookingValidationPatterns.EMAIL_MAX_LENGTH, message = "Email không được vượt quá 254 ký tự.")
     @Pattern(
         regexp = BookingValidationPatterns.EMAIL,
         message = "Email không hợp lệ!"
@@ -37,5 +39,6 @@ public record PassengerDTO(
     @Valid
     AccompaniedChildDTO accompaniedChild,
 
+    @Size(max = 2048, message = "Token xác thực không hợp lệ.")
     String firebaseIdToken
 ) {}

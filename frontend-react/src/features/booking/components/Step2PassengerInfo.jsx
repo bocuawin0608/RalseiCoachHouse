@@ -336,18 +336,13 @@ export default function Step2PassengerInfo({ tripId }) {
                                                     <Form.Label className="fw-medium text-muted mb-1" style={{ fontSize: '0.85rem' }}>Năm sinh <span className="text-danger">*</span></Form.Label>
                                                     <Form.Control 
                                                         {...register(`passengers.${index}.childBirthYear`, {
-                                                            ...bookingValidationRules.childBirthYear,
                                                             validate: (value, formValues) => {
                                                                 if (!formValues.passengers?.[index]?.hasChild) return true;
                                                                 if (!value) return bookingValidationRules.childBirthYear.required;
                                                                 const year = Number(value);
                                                                 if (Number.isNaN(year)) return 'Năm sinh không hợp lệ!';
-                                                                if (year < bookingValidationRules.childBirthYear.min.value) {
-                                                                    return bookingValidationRules.childBirthYear.min.message;
-                                                                }
-                                                                if (year > bookingValidationRules.childBirthYear.max.value) {
-                                                                    return bookingValidationRules.childBirthYear.max.message;
-                                                                }
+                                                                const curr = new Date().getFullYear();
+                                                                if (year < curr - 6 || year > curr) return 'Trẻ em đi kèm phải từ 0 đến 6 tuổi.';
                                                                 return true;
                                                             },
                                                         })}

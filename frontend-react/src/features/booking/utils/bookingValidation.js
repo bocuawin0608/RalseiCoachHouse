@@ -4,8 +4,10 @@ export const BOOKING_VALIDATION = {
     EMAIL_REGEX: /^[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}$/
 };
 
+export const EMAIL_MAX_LENGTH = 254; // RFC 5321
+
 export const getChildBirthYearMax = () => new Date().getFullYear();
-export const getChildBirthYearMin = () => new Date().getFullYear() - 12;
+export const getChildBirthYearMin = () => new Date().getFullYear() - 6;
 
 export const bookingValidationRules = {
     fullname: {
@@ -24,6 +26,10 @@ export const bookingValidationRules = {
     },
     email: {
         required: 'Vui lòng nhập email',
+        maxLength: {
+            value: EMAIL_MAX_LENGTH,
+            message: 'Email không được vượt quá 254 ký tự.',
+        },
         pattern: {
             value: BOOKING_VALIDATION.EMAIL_REGEX,
             message: 'Email không hợp lệ!',
@@ -38,13 +44,10 @@ export const bookingValidationRules = {
     },
     childBirthYear: {
         required: 'Nhập năm sinh',
-        min: {
-            value: getChildBirthYearMin(),
-            message: 'Năm sinh của trẻ phải >= (năm hiện tại - 12)!',
-        },
-        max: {
-            value: getChildBirthYearMax(),
-            message: 'Năm sinh không được > năm hiện tại!',
+        validate: (val) => {
+            const y = Number(val);
+            const curr = new Date().getFullYear();
+            return (y >= curr - 6 && y <= curr) || 'Trẻ em đi kèm phải từ 0 đến 6 tuổi.';
         },
     },
 };
