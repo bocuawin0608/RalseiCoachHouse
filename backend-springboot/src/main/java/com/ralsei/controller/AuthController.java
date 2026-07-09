@@ -10,8 +10,10 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ralsei.dto.request.auth.CustomerLoginRequest;
 import com.ralsei.dto.request.auth.CustomerRegisterRequest;
 import com.ralsei.dto.request.auth.RefreshTokenRequest;
+import com.ralsei.dto.request.auth.StaffForgotPasswordRequest;
 import com.ralsei.dto.request.auth.StaffLoginRequest;
 import com.ralsei.dto.response.auth.AuthResponse;
+import com.ralsei.dto.response.auth.StaffForgotPasswordResponse;
 import com.ralsei.service.AuthService;
 
 import jakarta.validation.Valid;
@@ -42,6 +44,16 @@ public class AuthController {
         @Valid @RequestBody StaffLoginRequest request
     ) {
         return ResponseEntity.ok(authService.staffLogin(request));
+    }
+
+    /**
+     * Accepts a staff forgot-password request from the public staff login page.
+     */
+    @PostMapping("/staff/forgot-password")
+    public ResponseEntity<StaffForgotPasswordResponse> staffForgotPassword(
+        @Valid @RequestBody StaffForgotPasswordRequest request
+    ) {
+        return ResponseEntity.ok(authService.staffForgotPassword(request));
     }
 
     @PostMapping("/refresh-token")

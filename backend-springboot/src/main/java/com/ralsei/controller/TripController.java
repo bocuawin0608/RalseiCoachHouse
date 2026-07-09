@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ralsei.dto.projection.trip.TripDetailProjection;
 import com.ralsei.dto.projection.trip.TripFilterProjection;
+import com.ralsei.dto.projection.trip.StaffTripInfoProjection;
 import com.ralsei.dto.projection.trip.TripSummaryProjection;
 import com.ralsei.dto.projection.trip.TripStopProjection;
 import com.ralsei.dto.request.trip.TripCreateRequest;
@@ -130,6 +131,31 @@ public class TripController {
             @RequestParam(defaultValue = "10") int size) {
 
         PagedResponse<TripSummaryProjection> response = tripService.getAllTripSummaries(date, routeId, period, page, size);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Returns upcoming trips for ticket staff's "view trip info" flow.
+     *
+     * <p>This endpoint intentionally exposes operational fields that belong only
+     * inside the staff portal: coach plate, driver, attendant, trip status, fare,
+     * and seat counts. Filters are optional and map to the visible controls on
+     * the trip-info screen.</p>
+     */
+    @GetMapping("/staff/trips/info")
+    public ResponseEntity<PagedResponse<StaffTripInfoProjection>> getStaffTripInfos(
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) String timeFrom,
+            @RequestParam(required = false) String timeTo,
+            @RequestParam(required = false) String coachTypeKeyword,
+            @RequestParam(required = false) List<String> priceRanges,
+            @RequestParam(required = false) List<String> statuses,
+            @RequestParam(required = false) String driverName,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        PagedResponse<StaffTripInfoProjection> response = tripService.getStaffTripInfos(
+                date, city, timeFrom, timeTo, coachTypeKeyword, priceRanges, statuses, driverName, page, size);
         return ResponseEntity.ok(response);
     }
     /** Returns coaches free for the requested route and departure window. */

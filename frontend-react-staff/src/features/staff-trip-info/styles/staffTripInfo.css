@@ -1,0 +1,204 @@
+.staff-trip-info-page {
+    max-width: 1500px;
+    padding: 1.5rem;
+}
+
+.staff-trip-info-header {
+    align-items: flex-start;
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.staff-trip-info-header h2 {
+    color: #1f2a24;
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 0 0.25rem;
+}
+
+.staff-trip-info-header p {
+    color: #5f6b65;
+    margin: 0;
+}
+
+.staff-trip-info-date-summary {
+    align-items: center;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(26, 46, 38, 0.14);
+    border-radius: 8px;
+    display: flex;
+    flex-shrink: 0;
+    gap: 0;
+    overflow: hidden;
+}
+
+.staff-trip-info-date-summary div {
+    min-width: 128px;
+    padding: 0.65rem 0.9rem;
+}
+
+.staff-trip-info-date-summary div + div {
+    border-left: 1px solid rgba(26, 46, 38, 0.14);
+}
+
+.staff-trip-info-date-summary span {
+    color: #63716b;
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin-bottom: 0.15rem;
+}
+
+.staff-trip-info-date-summary strong {
+    color: #1f2a24;
+    display: block;
+    font-size: 1rem;
+    white-space: nowrap;
+}
+
+.staff-trip-info-filter-card,
+.staff-trip-info-table-card {
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid rgba(26, 46, 38, 0.12);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(31, 42, 36, 0.08);
+    margin-bottom: 1rem;
+}
+
+.staff-trip-info-filter-card label,
+.staff-trip-info-filter-card legend {
+    color: #35443d;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.staff-trip-info-search-control {
+    position: relative;
+}
+
+.staff-trip-info-search-control svg {
+    color: #61716a;
+    left: 0.85rem;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+}
+
+.staff-trip-info-search-control input {
+    padding-left: 2.25rem;
+}
+
+.staff-trip-info-checkbox-grid {
+    align-items: end;
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(320px, 1fr) minmax(460px, 1.35fr) auto;
+    margin-top: 1rem;
+}
+
+.staff-trip-info-checkbox-grid fieldset {
+    border: 1px solid rgba(26, 46, 38, 0.14);
+    border-radius: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+    margin: 0;
+    min-height: 68px;
+    padding: 0.85rem 1rem;
+}
+
+.staff-trip-info-checkbox-grid .form-check {
+    margin: 0;
+    min-width: max-content;
+}
+
+.staff-trip-info-checkbox-grid .form-check-label {
+    white-space: nowrap;
+}
+
+.staff-trip-info-checkbox-grid legend {
+    float: none;
+    margin-bottom: 0.25rem;
+    width: 100%;
+}
+
+.staff-trip-info-filter-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.staff-trip-info-alert {
+    border-radius: 8px;
+}
+
+.staff-trip-info-table-card .card-body {
+    padding: 0;
+}
+
+.staff-trip-info-table th {
+    background: #edf4f0;
+    color: #25362e;
+    font-size: 0.9rem;
+    font-weight: 700;
+    padding: 0.9rem;
+    white-space: nowrap;
+}
+
+.staff-trip-info-table td {
+    color: #25362e;
+    font-size: 0.92rem;
+    padding: 0.85rem 0.9rem;
+    vertical-align: middle;
+}
+
+.staff-trip-info-route {
+    min-width: 170px;
+}
+
+.staff-trip-info-plate {
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.staff-trip-info-loading,
+.staff-trip-info-empty {
+    color: #65736d;
+    padding: 2rem;
+    text-align: center;
+}
+
+.staff-trip-info-pagination {
+    border-top: 1px solid rgba(26, 46, 38, 0.12);
+    display: flex;
+    justify-content: center;
+    padding: 1rem;
+}
+
+@media (max-width: 992px) {
+    .staff-trip-info-header {
+        flex-direction: column;
+    }
+
+    .staff-trip-info-date-summary {
+        width: 100%;
+    }
+
+    .staff-trip-info-date-summary div {
+        flex: 1;
+    }
+
+    .staff-trip-info-checkbox-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .staff-trip-info-checkbox-grid .form-check-label {
+        white-space: normal;
+    }
+
+    .staff-trip-info-filter-actions {
+        justify-content: flex-start;
+    }
+}

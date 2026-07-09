@@ -1,7 +1,9 @@
 package com.ralsei.model;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
+import com.ralsei.model.enums.PassengerTicketMajorChangeType;
 import com.ralsei.model.enums.PassengerTicketStatus;
 
 import jakarta.persistence.Column;
@@ -63,6 +65,13 @@ public class PassengerTicket extends BaseEntity {
 
     @Column(name = "voucherCodeSnapshot")
     private String voucherCodeSnapshot;
+
+    @Column(name = "refundPolicyDepartureTime")
+    private LocalDateTime refundPolicyDepartureTime;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "majorChangeType")
+    private PassengerTicketMajorChangeType majorChangeType;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)

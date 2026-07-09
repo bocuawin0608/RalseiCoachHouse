@@ -1,0 +1,41 @@
+.staff-forgot-password-link {
+  display: inline-flex;
+  justify-content: center;
+  width: 100%;
+  margin-top: 14px;
+  border: 0;
+  background: transparent;
+  color: var(--ralsei-primary);
+  font-weight: 700;
+}
+
+.staff-forgot-password-link:hover:not(:disabled) {
+  color: #062c21;
+  text-decoration: underline;
+}
+
+.staff-forgot-password-link:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.staff-forgot-modal {
+  border: 0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.staff-forgot-modal .modal-title {
+  color: var(--color-text-main);
+  font-weight: 750;
+}
+
+.staff-forgot-modal .form-label {
+  color: var(--color-text-main);
+  font-weight: 600;
+}
+
+.staff-forgot-modal .form-control {
+  min-height: 40px;
+  border-radius: 6px;
+}
