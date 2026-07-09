@@ -6,9 +6,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
 import java.util.Objects;
 
 import com.ralsei.dto.request.cargotype.CargoTypeRequest;
+import com.ralsei.dto.request.cargotype.CargoTypeManagementRequest;
+import com.ralsei.dto.projection.cargotype.CargoTypeManagementProjection;
 import com.ralsei.dto.response.cargotype.CargoTypeResponse;
 import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.exception.ResourceNotFoundException;
@@ -25,18 +30,22 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CargoTypeServiceImpl implements CargoTypeService {
 
+    private static final LocalDateTime DEFAULT_SURCHARGE_END_DATE = LocalDateTime.of(2099, 12, 31, 23, 59, 59);
+
     private final CargoTypeRepository cargoTypeRepository;
     private final CargoTypePriceRepository cargoTypePriceRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public PagedResponse<CargoTypeResponse> getAllCargoTypes(String search, Boolean isActive, int page, int size) {
         Pageable sortedPageable = PageRequest.of(page, size, Sort.by("cargoTypeId").descending());
         
         String processedSearch = (search != null && !search.trim().isEmpty()) ? search.trim() : null;
-        Page<CargoType> pageResult = cargoTypeRepository.filterCargoTypes(processedSearch, isActive, sortedPageable);
+        Page<CargoTypeManagementProjection> pageResult = cargoTypeRepository.filterCargoTypeManagementRows(
+                processedSearch, isActive, sortedPageable);
         
         return new PagedResponse<>(
-                pageResult.map(this::mapToResponse).getContent(),
+                pageResult.map(this::mapManagementProjectionToResponse).getContent(),
                 pageResult.getNumber(),
                 pageResult.getSize(),
                 pageResult.getTotalElements(),
@@ -46,12 +55,15 @@ public class CargoTypeServiceImpl implements CargoTypeService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public CargoTypeResponse getCargoTypeById(int id) {
         CargoType cargoType = findCargoTypeOrThrow(id);
-        return mapToResponse(cargoType);
+        CargoTypePrice surcharge = cargoTypePriceRepository.findLatestByCargoTypeId(id).orElse(null);
+        return mapToResponse(cargoType, surcharge);
     }
 
     @Override
+    @Transactional
     public CargoTypeResponse createCargoType(CargoTypeRequest request) {
         if (cargoTypeRepository.existsByCargoTypeNameIgnoreCase(request.getCargoTypeName().trim())) {
             throw new IllegalArgumentException("Loại hàng hóa đã tồn tại.");
@@ -63,10 +75,31 @@ public class CargoTypeServiceImpl implements CargoTypeService {
                 .build());
 
         CargoType saved = cargoTypeRepository.save(cargoType);
-        return mapToResponse(saved);
+        return mapToResponse(saved, null);
     }
 
     @Override
+    @Transactional
+    public CargoTypeResponse createCargoTypeManagement(CargoTypeManagementRequest request) {
+        validateManagementRequest(request);
+
+        if (cargoTypeRepository.existsByCargoTypeNameIgnoreCase(request.getCargoTypeName().trim())) {
+            throw new IllegalArgumentException("Loại hàng hóa đã tồn tại.");
+        }
+
+        CargoType cargoType = CargoType.builder()
+                .cargoTypeName(request.getCargoTypeName().trim())
+                .isActive(true)
+                .build();
+
+        CargoType savedCargoType = cargoTypeRepository.save(cargoType);
+        CargoTypePrice savedSurcharge = cargoTypePriceRepository.save(buildSurcharge(savedCargoType.getCargoTypeId(), request));
+
+        return mapToResponse(savedCargoType, savedSurcharge);
+    }
+
+    @Override
+    @Transactional
     public CargoTypeResponse updateCargoType(int id, @NonNull CargoTypeRequest request) {
         CargoType cargoType = findCargoTypeOrThrow(id);
 
@@ -79,10 +112,43 @@ public class CargoTypeServiceImpl implements CargoTypeService {
         cargoType.setCargoTypeName(request.getCargoTypeName().trim());
 
         CargoType saved = cargoTypeRepository.save(cargoType);
-        return mapToResponse(saved);
+        CargoTypePrice surcharge = cargoTypePriceRepository.findLatestByCargoTypeId(id).orElse(null);
+        return mapToResponse(saved, surcharge);
     }
 
     @Override
+    @Transactional
+    public CargoTypeResponse updateCargoTypeManagement(int id, @NonNull CargoTypeManagementRequest request) {
+        validateManagementRequest(request);
+
+        CargoType cargoType = findCargoTypeOrThrow(id);
+        String normalizedName = request.getCargoTypeName().trim();
+
+        if (!cargoType.getCargoTypeName().equalsIgnoreCase(normalizedName)
+                && cargoTypeRepository.existsByCargoTypeNameIgnoreCase(normalizedName)) {
+            throw new IllegalArgumentException("Loại hàng hóa đã tồn tại.");
+        }
+
+        cargoType.setCargoTypeName(normalizedName);
+        CargoType savedCargoType = cargoTypeRepository.save(cargoType);
+
+        CargoTypePrice surcharge = cargoTypePriceRepository.findLatestByCargoTypeId(id)
+                .orElseGet(() -> buildSurcharge(id, request));
+        surcharge.setUnit(request.getUnit().trim());
+        surcharge.setPricePerUnit(request.getPricePerUnit());
+        if (surcharge.getStartEffectiveDate() == null) {
+            surcharge.setStartEffectiveDate(LocalDateTime.now());
+        }
+        if (surcharge.getEndEffectiveDate() == null) {
+            surcharge.setEndEffectiveDate(DEFAULT_SURCHARGE_END_DATE);
+        }
+
+        CargoTypePrice savedSurcharge = cargoTypePriceRepository.save(surcharge);
+        return mapToResponse(savedCargoType, savedSurcharge);
+    }
+
+    @Override
+    @Transactional
     public void softDeleteCargoType(int id) {
         CargoType cargoType = findCargoTypeOrThrow(id);
         cargoType.setActive(false);
@@ -99,6 +165,7 @@ public class CargoTypeServiceImpl implements CargoTypeService {
     }
 
     @Override
+    @Transactional
     public void restoreCargoType(int id) {
         CargoType cargoType = findCargoTypeOrThrow(id);
         cargoType.setActive(true);
@@ -110,11 +177,54 @@ public class CargoTypeServiceImpl implements CargoTypeService {
                 () -> new ResourceNotFoundException("Không tìm thấy loại hàng hóa có ID là: " + id));
     }
 
-    private CargoTypeResponse mapToResponse(CargoType cargoType) {
+    /**
+     * Ensures the combined staff form never saves incomplete surcharge data.
+     */
+    private void validateManagementRequest(CargoTypeManagementRequest request) {
+        if (request.getCargoTypeName() == null || request.getCargoTypeName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Tên loại hàng là bắt buộc.");
+        }
+        if (request.getUnit() == null || request.getUnit().trim().isEmpty()) {
+            throw new IllegalArgumentException("Đơn vị tính là bắt buộc.");
+        }
+        BigDecimal price = request.getPricePerUnit();
+        if (price == null || price.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Đơn giá không được âm.");
+        }
+    }
+
+    /**
+     * Builds the default open-ended surcharge row for cargo type management.
+     */
+    private CargoTypePrice buildSurcharge(int cargoTypeId, CargoTypeManagementRequest request) {
+        return CargoTypePrice.builder()
+                .cargoTypeId(cargoTypeId)
+                .unit(request.getUnit().trim())
+                .pricePerUnit(request.getPricePerUnit())
+                .startEffectiveDate(LocalDateTime.now())
+                .endEffectiveDate(DEFAULT_SURCHARGE_END_DATE)
+                .build();
+    }
+
+    private CargoTypeResponse mapToResponse(CargoType cargoType, CargoTypePrice surcharge) {
         return CargoTypeResponse.builder()
                 .cargoTypeId(cargoType.getCargoTypeId())
                 .cargoTypeName(cargoType.getCargoTypeName())
                 .isActive(cargoType.isActive())
+                .cargoTypePriceId(surcharge == null ? null : surcharge.getCargoTypePriceId())
+                .unit(surcharge == null ? null : surcharge.getUnit())
+                .pricePerUnit(surcharge == null ? null : surcharge.getPricePerUnit())
+                .build();
+    }
+
+    private CargoTypeResponse mapManagementProjectionToResponse(CargoTypeManagementProjection projection) {
+        return CargoTypeResponse.builder()
+                .cargoTypeId(projection.getCargoTypeId())
+                .cargoTypeName(projection.getCargoTypeName())
+                .isActive(projection.getActive())
+                .cargoTypePriceId(projection.getCargoTypePriceId())
+                .unit(projection.getUnit())
+                .pricePerUnit(projection.getPricePerUnit())
                 .build();
     }
 }
