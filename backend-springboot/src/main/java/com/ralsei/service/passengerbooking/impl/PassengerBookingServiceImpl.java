@@ -33,8 +33,8 @@ import com.ralsei.dto.response.passengerbooking.TripSeatResponse;
 import com.ralsei.dto.response.passengerbooking.VoucherDTO;
 import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.exception.ResourceNotFoundException;
-import com.ralsei.model.Account;
 import com.ralsei.model.AccompaniedChild;
+import com.ralsei.model.Account;
 import com.ralsei.model.CoachStop;
 import com.ralsei.model.Customer;
 import com.ralsei.model.PassengerTicket;
@@ -66,8 +66,8 @@ import com.ralsei.service.passengerbooking.PassengerPhoneVerificationService;
 import com.ralsei.service.passengerbooking.PaymentSseService;
 import com.ralsei.service.passengerbooking.SeatHoldService;
 import com.ralsei.service.ticketgenerator.TicketCodeGenerator;
-import com.ralsei.util.PiiMaskingUtility;
 import com.ralsei.util.PhoneNumberUtility;
+import com.ralsei.util.PiiMaskingUtility;
 import com.ralsei.util.validation.BookingValidationPatterns;
 
 import lombok.RequiredArgsConstructor;
@@ -461,9 +461,9 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
                 .passengerTicketId(ticketId)
                 .tripSeatId(p.tripSeatId())
                 .seatCodeSnapshot(coreResult.tripSeatMap().get(p.tripSeatId()).getSeat().getSeatCode())
-                .fullName(p.fullname())
-                .phone(p.phone())
-                .email(p.email())
+                .fullName(p.fullname().trim())
+                .phone(p.phone().trim())
+                .email(p.email().trim())
                 .price(pricePerSeat)
                 .status(PassengerTicketDetailStatus.PENDING.name())
                 .expiredAt(expiredAt)
@@ -481,7 +481,7 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
                     .ifPresent(sd -> {
                         childrenToSave.add(AccompaniedChild.builder()
                             .ticketDetailId(sd.getTicketDetailId())
-                            .fullname(dto.accompaniedChild().fullname())
+                            .fullname(dto.accompaniedChild().fullname().trim())
                             .birthYear(dto.accompaniedChild().birthYear())
                             .build());
                     });
