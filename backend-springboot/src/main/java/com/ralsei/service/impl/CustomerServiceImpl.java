@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,21 +18,27 @@ import com.ralsei.dto.response.customer.CustomerDetailResponse;
 import com.ralsei.dto.response.customer.CustomerListResponse;
 import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.exception.ResourceNotFoundException;
+import com.ralsei.model.Account;
+import com.ralsei.model.AccountRole;
 import com.ralsei.model.Customer;
+import com.ralsei.model.Role;
+import com.ralsei.repository.AccountRepository;
+import com.ralsei.repository.AccountRoleRepository;
 import com.ralsei.repository.CustomerRepository;
+import com.ralsei.repository.RoleRepository;
 import com.ralsei.service.CustomerService;
 
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-/**
- * Implementation of {@link com.ralsei.service.CustomerService}.
- */
-
 public class CustomerServiceImpl implements CustomerService {
 
     private final CustomerRepository customerRepo;
+    private final AccountRepository accountRepo;
+    private final AccountRoleRepository accountRoleRepo;
+    private final RoleRepository roleRepo;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional(readOnly = true)
@@ -69,7 +76,29 @@ public class CustomerServiceImpl implements CustomerService {
             throw new BusinessRuleException("Số điện thoại này đã tồn tại trong hệ thống!");
         }
 
+        // Auto-create an account so accountId is never null (DB unique constraint)
+        String username = request.phone() != null ? request.phone().trim() : "kh_" + System.currentTimeMillis();
+        if (accountRepo.existsByUsername(username)) {
+            username = username + "_" + System.currentTimeMillis();
+        }
+        Account account = Account.builder()
+            .username(username)
+            .passwordHash(passwordEncoder.encode("123456"))
+            .authProvider("local")
+            .isActive(true)
+            .build();
+        account = accountRepo.save(account);
+
+        Role customerRole = roleRepo.findByRoleName("CUSTOMER")
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy role CUSTOMER trong hệ thống!"));
+        AccountRole ar = AccountRole.builder()
+            .accountId(account.getAccountId())
+            .roleId(customerRole.getRoleId())
+            .build();
+        accountRoleRepo.save(ar);
+
         Customer customer = Customer.builder()
+            .accountId(account.getAccountId())
             .customerName(request.customerName().trim())
             .phone(request.phone() != null ? request.phone().trim() : null)
             .email(request.email() != null ? request.email().trim() : null)
@@ -109,6 +138,13 @@ public class CustomerServiceImpl implements CustomerService {
             .orElseThrow(() -> new ResourceNotFoundException("Khách hàng không tồn tại!"));
         customer.setActive(!customer.isActive());
         customerRepo.save(customer);
+
+        if (customer.getAccountId() != null) {
+            accountRepo.findById(customer.getAccountId()).ifPresent(acc -> {
+                acc.setActive(customer.isActive());
+                accountRepo.save(acc);
+            });
+        }
     }
 
     @Override
