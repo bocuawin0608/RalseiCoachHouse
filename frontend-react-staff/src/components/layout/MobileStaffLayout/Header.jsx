@@ -52,7 +52,7 @@ export default function Header() {
             </div>
 
             <div style={{ display: 'flex', gap: '4px', minWidth: '72px', justifyContent: 'flex-end' }}>
-                <button
+                {/* <button
                     type="button"
                     onClick={() => navigate('/staff/profile')}
                     style={{
@@ -64,7 +64,7 @@ export default function Header() {
                     }}
                 >
                     Hồ sơ
-                </button>
+                </button> */}
                 <button
                     type="button"
                     onClick={() => { logout(); navigate('/staff/login'); }}
@@ -76,7 +76,8 @@ export default function Header() {
                         padding: '6px 8px',
                     }}
                 >
-                    {user?.username ? user.username.split('@')[0] : 'Logout'}
+                    {/* {user?.username ? user.username.split('@')[0] : 'Logout'} */}
+                    Đăng xuất
                 </button>
             </div>
         </header>
