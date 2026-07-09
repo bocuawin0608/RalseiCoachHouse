@@ -4,11 +4,7 @@ import { Collapse } from 'react-bootstrap';
 import {
     BsList, BsGrid1X2, BsBusFront, BsSignpostSplit,
     BsChevronDown, BsChevronRight, BsTags, BsGeoAlt,
-<<<<<<< HEAD
-    BsBoxSeam, BsCashCoin, BsGift, BsPeopleFill, BsShieldCheck, BsPersonBadge, BsBuilding, BsTicketPerforated
-=======
-    BsBoxSeam, BsCashCoin, BsGift, BsTicketPerforated, BsInfoCircle
->>>>>>> origin/main
+    BsBoxSeam, BsCashCoin, BsGift, BsPeopleFill, BsShieldCheck, BsPersonBadge, BsBuilding, BsTicketPerforated, BsInfoCircle
 } from 'react-icons/bs';
 import { useAuth } from '../../../features/auth';
 
