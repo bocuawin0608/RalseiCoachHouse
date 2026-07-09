@@ -31,9 +31,18 @@ export default function CoachTypePage() {
             />
 
             {error && (
-                <Alert variant="danger" className="shadow-sm border-0 d-flex align-items-center gap-2">
-                    <BsExclamationTriangleFill />
-                    <span>{error}</span>
+                <Alert variant="danger" className="shadow-sm border-0 mb-3">
+                    <div className="d-flex align-items-center gap-2 fw-semibold">
+                        <BsExclamationTriangleFill />
+                        <span>{error.message}</span>
+                    </div>
+                    {error.fieldErrors && (
+                        <ul className="mb-0 ps-4 mt-2" style={{ fontSize: '0.85rem' }}>
+                            {[...new Set(Object.values(error.fieldErrors))].map((msg, i) => (
+                                <li key={i}>{msg}</li>
+                            ))}
+                        </ul>
+                    )}
                 </Alert>
             )}
 
