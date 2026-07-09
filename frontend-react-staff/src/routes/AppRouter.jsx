@@ -50,8 +50,9 @@ const AppRouter = () => {
             </Route>
 
             <Route path="/staff">
-                <Route element={<RoleGuard allowedRoles={['ADMIN', 'MANAGER', 'TICKET_STAFF', 'TRIP_STAFF']} />}>
-                    <Route element={<DesktopLayout />}>
+                <Route element={<RoleGuard allowedRoles={['TRIP_STAFF']} />}>
+                    <Route element={<MobileLayout />}> 
+                        {tripStaffRoutes}
                         <Route path="profile" element={<StaffProfilePage />} />
                     </Route>
                 </Route>
@@ -63,9 +64,9 @@ const AppRouter = () => {
                     </Route>
                 </Route>
 
-                <Route element={<RoleGuard allowedRoles={['TRIP_STAFF']} />}>
-                    <Route element={<MobileLayout />}> 
-                        {tripStaffRoutes}
+                <Route element={<RoleGuard allowedRoles={['ADMIN', 'MANAGER', 'TICKET_STAFF']} />}>
+                    <Route element={<DesktopLayout />}>
+                        <Route path="profile" element={<StaffProfilePage />} />
                     </Route>
                 </Route>
             </Route>
