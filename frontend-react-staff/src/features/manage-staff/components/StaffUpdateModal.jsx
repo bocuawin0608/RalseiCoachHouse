@@ -12,20 +12,27 @@ export default function StaffUpdateModal({ isOpen, data, onClose, onSuccess, tic
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (isOpen && data) {
-            setForm({
-                staffName: data.staffName || '',
-                phone: data.phone || '',
-                email: data.email || '',
-                dob: data.dob || '',
-                cccd: data.cccd || '',
-                staffPosition: data.staffPosition || '',
-                hireDate: data.hireDate || '',
-                ticketAgencyId: data.ticketAgencyId ?? '',
-                isActive: data.active !== false,
-            });
+            setLoading(true);
+            staffApi.getDetail(data.staffId)
+                .then(detail => {
+                    setForm({
+                        staffName: detail.staffName || '',
+                        phone: detail.phone || '',
+                        email: detail.email || '',
+                        dob: detail.dob || '',
+                        cccd: detail.cccd || '',
+                        staffPosition: detail.staffPosition || '',
+                        hireDate: detail.hireDate || '',
+                        ticketAgencyId: detail.ticketAgencyId ?? '',
+                        isActive: detail.active !== false,
+                    });
+                })
+                .catch(() => {})
+                .finally(() => setLoading(false));
             setErrorMsg('');
         }
     }, [isOpen, data]);
