@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Alert, Badge, Button, Card, Col, Container, Form, InputGroup, Nav, Row, Spinner, Tab, Table, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Alert, Badge, Button, Card, Col, Container, Form, InputGroup, Nav, Row, Spinner, Tab, Table, OverlayTrigger, Tooltip, Toast, ToastContainer } from 'react-bootstrap';
 import { BsArrowLeft, BsCheckCircle, BsExclamationTriangleFill, BsPencilFill } from 'react-icons/bs';
 import { coachTypeApi, formatPriceEndDate, PRICE_STATUS_LABELS } from '../../../features/coaches/api/coachTypeApi';
 import SeatMapBuilder from '../../../features/coaches/components/SeatMapBuilder';
@@ -62,7 +62,7 @@ export default function CoachTypeDetailPage() {
                 setFloorData(layout.floors ?? []);
             }
         } catch (err) {
-            setError(err.response?.data?.message || 'Có lỗi khi tải dữ liệu loại xe.');
+            setError({ message: err.response?.data?.message || 'Có lỗi khi tải dữ liệu loại xe.' });
         } finally {
             setLoading(false);
         }
@@ -78,10 +78,15 @@ export default function CoachTypeDetailPage() {
     }, [layoutMeta, floorData]);
 
     const handleSaveInfo = async () => {
+        const trimmedName = name.trim();
+        if (!trimmedName) {
+            setError({ message: 'Tên loại xe không được để trống.' });
+            return;
+        }
         setSavingInfo(true);
         setError(null);
         try {
-            await coachTypeApi.updateCoachTypeInfo(id, { coachTypeName: name, isActive });
+            await coachTypeApi.updateCoachTypeInfo(id, { coachTypeName: trimmedName, isActive });
             setEditInfo(false);
             await fetchAll();
         } catch (err) {
@@ -91,7 +96,10 @@ export default function CoachTypeDetailPage() {
                 setDeactivationOpen(true);
                 setIsActive(true);
             } else {
-                setError(data?.message || 'Có lỗi khi cập nhật thông tin.');
+                setError({
+                    message: data?.message || 'Có lỗi khi cập nhật thông tin.',
+                    fieldErrors: data?.fieldErrors || null,
+                });
             }
         } finally {
             setSavingInfo(false);
@@ -108,7 +116,7 @@ export default function CoachTypeDetailPage() {
                     return;
                 }
             } catch (err) {
-                setError(err.response?.data?.message || 'Không thể kiểm tra điều kiện tắt loại xe.');
+                setError({ message: err.response?.data?.message || 'Không thể kiểm tra điều kiện tắt loại xe.' });
                 return;
             }
         }
@@ -125,11 +133,12 @@ export default function CoachTypeDetailPage() {
                 startEffectiveDate: priceForm.startEffectiveDate,
             };
             if (priceForm.endEffectiveDate) {
-                payload.endEffectiveDate = priceForm.endEffectiveDate;
-                if (priceForm.startEffectiveDate === priceForm.endEffectiveDate) {
-                    setError("Thời gian bắt đầu và kết thúc không được giống y hệt nhau!");
+                if (priceForm.endEffectiveDate <= priceForm.startEffectiveDate) {
+                    setError({ message: 'Ngày kết thúc hiệu lực phải sau ngày bắt đầu!' });
+                    setSavingPrice(false);
                     return;
                 }
+                payload.endEffectiveDate = priceForm.endEffectiveDate;
             }
             await coachTypeApi.addPrice(id, payload);
             setPriceForm({ seatPrice: '', startEffectiveDate: '', endEffectiveDate: '' });
@@ -138,7 +147,11 @@ export default function CoachTypeDetailPage() {
             const detailRes = await coachTypeApi.getCoachTypeDetail(id);
             setDetail(detailRes);
         } catch (err) {
-            setError(err.response?.data?.message || 'Có lỗi khi thêm mức giá.');
+            const data = err.response?.data;
+            setError({
+                message: data?.message || 'Có lỗi khi thêm mức giá.',
+                fieldErrors: data?.fieldErrors || null,
+            });
         } finally {
             setSavingPrice(false);
         }
@@ -196,11 +209,11 @@ export default function CoachTypeDetailPage() {
         setError(null);
 
         if (!layoutMeta.rows || !layoutMeta.cols || !layoutMeta.totalFloors) {
-            setError('Vui lòng nhập đầy đủ số tầng, số hàng và số cột!');
+            setError({ message: 'Vui lòng nhập đầy đủ số tầng, số hàng và số cột!' });
             return;
         }
         if (currentEditSeatCount === 0) {
-            setError('Vui lòng giữ lại ít nhất 1 vị trí ghế ngồi trên sơ đồ!');
+            setError({ message: 'Vui lòng giữ lại ít nhất 1 vị trí ghế ngồi trên sơ đồ!' });
             return;
         }
         setSavingSeatMap(true);
@@ -218,7 +231,11 @@ export default function CoachTypeDetailPage() {
             setEditSeatMap(false);
             await fetchAll();
         } catch (err) {
-            setError(err.response?.data?.message || 'Có lỗi khi cập nhật sơ đồ ghế.');
+            const data = err.response?.data;
+            setError({
+                message: data?.message || 'Có lỗi khi cập nhật sơ đồ ghế.',
+                fieldErrors: data?.fieldErrors || null,
+            });
         } finally {
             setSavingSeatMap(false);
         }
@@ -257,13 +274,6 @@ export default function CoachTypeDetailPage() {
                     <span className="text-secondary">Mã loại xe #{detail.coachTypeId}</span>
                 </div>
             </div>
-
-            {error && (
-                <Alert variant="danger" className="d-flex align-items-center gap-2" dismissible onClose={() => setError(null)}>
-                    <BsExclamationTriangleFill />
-                    <span>{error}</span>
-                </Alert>
-            )}
 
             <Tab.Container activeKey={activeTab} onSelect={(k) => setActiveTab(k || 'info')}>
                 <Nav variant="tabs" className="mb-3">
@@ -570,6 +580,28 @@ export default function CoachTypeDetailPage() {
                 checkData={deactivationData}
                 onClose={() => setDeactivationOpen(false)}
             />
+
+            <ToastContainer position="top-end" className="p-3" style={{ position: 'fixed', zIndex: 9999 }}>
+                <Toast show={!!error} onClose={() => setError(null)} delay={9000} autohide bg="danger" text="white">
+                    <Toast.Header closeButton className="bg-danger text-white border-0">
+                        <strong className="me-auto d-inline-flex align-items-center gap-2">
+                            <BsExclamationTriangleFill /><span>Có lỗi xảy ra</span>
+                        </strong>
+                    </Toast.Header>
+                    <Toast.Body className="bg-white text-dark rounded-bottom">
+                        <p className={`fw-semibold mb-2 ${error?.fieldErrors ? 'text-danger' : 'mb-0'}`}>
+                            {error?.message}
+                        </p>
+                        {error?.fieldErrors && (
+                            <ul className="mb-0 ps-3 text-danger" style={{ fontSize: '0.85rem' }}>
+                                {[...new Set(Object.values(error.fieldErrors))].map((msg, i) => (
+                                    <li key={i}>{msg}</li>
+                                ))}
+                            </ul>
+                        )}
+                    </Toast.Body>
+                </Toast>
+            </ToastContainer>
         </Container>
     );
 }

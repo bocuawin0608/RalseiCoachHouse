@@ -20,10 +20,11 @@ export function useCoachTypes() {
         setLoading(true);
         setError(null);
         try {
-            const response = await coachTypeApi.filterCoachTypes({ 
-                ...debouncedFilters, 
-                page: pageInfo.page, 
-                size: pageInfo.size 
+            const response = await coachTypeApi.filterCoachTypes({
+                ...debouncedFilters,
+                coachTypeName: debouncedFilters.coachTypeName?.trim() || undefined,
+                page: pageInfo.page,
+                size: pageInfo.size,
             });
             
             setCoachTypes(response.content);
@@ -32,8 +33,12 @@ export function useCoachTypes() {
                 totalElements: response.page.totalElements, 
                 totalPages: response.page.totalPages
             }));
-        } catch (error) {
-            setError(error.response?.data?.message || "Có lỗi xảy ra khi lấy dữ liệu.");
+        } catch (err) {
+            const data = err.response?.data;
+            setError({
+                message: data?.message || "Có lỗi xảy ra khi lấy dữ liệu.",
+                fieldErrors: data?.fieldErrors || null,
+            });
             setCoachTypes([]);
         } finally {
             setLoading(false);
