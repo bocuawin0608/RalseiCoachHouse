@@ -2,9 +2,11 @@ package com.ralsei.service.impl;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -42,6 +44,8 @@ import com.ralsei.repository.RouteRepository;
 import com.ralsei.repository.SeatRepository;
 import com.ralsei.repository.TripRepository;
 import com.ralsei.service.CoachService;
+import com.ralsei.util.LicensePlateUtility;
+import com.ralsei.util.SeatCodeUtility;
 
 import lombok.RequiredArgsConstructor;
 
@@ -60,7 +64,7 @@ public class CoachServiceImpl implements CoachService {
     @Transactional(readOnly = true)
     @Override
     public Page<CoachResponse> filterCoaches(CoachFilterRequest filterRequest, Pageable pageable) {
-        return coachRepo.searchCoaches(filterRequest, pageable);
+        return coachRepo.searchCoaches(sanitizeFilter(filterRequest), pageable);
     }
 
     @Transactional
@@ -72,15 +76,18 @@ public class CoachServiceImpl implements CoachService {
         Route route = request.routeId() == null ? null : routeRepo.findByRouteIdAndIsActiveTrue(request.routeId())
             .orElseThrow(() -> new ResourceNotFoundException("Tuyến đường không tồn tại hoặc không hợp lệ!"));
 
-        if(coachRepo.existsByLicensePlateIgnoreCase(request.licensePlate())) {
+        String licensePlate = LicensePlateUtility.normalize(request.licensePlate());
+        String manufacturer = request.manufacturer().trim();
+
+        if(coachRepo.existsByLicensePlateIgnoreCase(licensePlate)) {
             throw new IllegalArgumentException("Biển số xe này đã tồn tại trong hệ thống!");
         }
 
         Coach newCoach = Coach.builder()
             .coachType(coachType)
             .route(route)
-            .licensePlate(request.licensePlate())
-            .manufacturer(request.manufacturer())
+            .licensePlate(licensePlate)
+            .manufacturer(manufacturer)
             .year(request.year())
             .status(CoachStatus.ACTIVE)
             .seats(new ArrayList<>())
@@ -171,14 +178,17 @@ public class CoachServiceImpl implements CoachService {
             coachToUpdate.setRoute(newRoute);
         }
 
-        if(!coachToUpdate.getLicensePlate().equalsIgnoreCase(request.licensePlate())) {
-            if(coachRepo.existsByLicensePlateIgnoreCase(request.licensePlate())) {
+        String licensePlate = LicensePlateUtility.normalize(request.licensePlate());
+        String manufacturer = request.manufacturer().trim();
+
+        if(!coachToUpdate.getLicensePlate().equalsIgnoreCase(licensePlate)) {
+            if(coachRepo.existsByLicensePlateIgnoreCase(licensePlate)) {
                 throw new BusinessRuleException("Biển số xe này đã tồn tại trong hệ thống!");
             }
-            coachToUpdate.setLicensePlate(request.licensePlate());
+            coachToUpdate.setLicensePlate(licensePlate);
         }
 
-        coachToUpdate.setManufacturer(request.manufacturer());
+        coachToUpdate.setManufacturer(manufacturer);
         coachToUpdate.setYear(request.year());
 
         return true;
@@ -215,7 +225,7 @@ public class CoachServiceImpl implements CoachService {
             throw new BusinessRuleException("Chỉ xe đang hoạt động mới có thể báo bảo trì!");
         }
         assertNoUpcomingTrips(id);
-        changeStatus(coach, CoachStatus.MAINTENANCE, request.reason(), request.expectedEndAt());
+        changeStatus(coach, CoachStatus.MAINTENANCE, request.reason().trim(), request.expectedEndAt());
     }
 
     @Transactional
@@ -226,7 +236,7 @@ public class CoachServiceImpl implements CoachService {
             throw new BusinessRuleException("Chỉ xe đang bảo trì mới có thể đưa vào hoạt động!");
         }
         String reason = request.reason() != null && !request.reason().isBlank()
-                ? request.reason()
+                ? request.reason().trim()
                 : "Xe hoàn tất bảo trì, đưa vào hoạt động trở lại";
         changeStatus(coach, CoachStatus.ACTIVE, reason, null);
     }
@@ -239,7 +249,7 @@ public class CoachServiceImpl implements CoachService {
             throw new BusinessRuleException("Xe đã ngừng hoạt động!");
         }
         assertNoUpcomingTrips(id);
-        changeStatus(coach, CoachStatus.RETIRED, request.reason(), null);
+        changeStatus(coach, CoachStatus.RETIRED, request.reason().trim(), null);
     }
 
     @Transactional(readOnly = true)
@@ -257,14 +267,46 @@ public class CoachServiceImpl implements CoachService {
         Map<Integer, Seat> seatMap = coach.getSeats().stream()
                 .collect(Collectors.toMap(Seat::getSeatId, Function.identity()));
 
+        Set<String> seenSeatCodes = new HashSet<>();
         for (CoachUpdateSeatsRequest.SeatToggle toggle : request.seats()) {
             Seat seat = seatMap.get(toggle.seatId());
             if (seat == null) {
                 throw new IllegalArgumentException("Ghế ID " + toggle.seatId() + " không thuộc xe này!");
             }
+
+            String seatCode = SeatCodeUtility.normalize(toggle.seatCode());
+            if (!seenSeatCodes.add(seatCode)) {
+                throw new IllegalArgumentException("Mã ghế trùng lặp trong cùng xe: " + seatCode);
+            }
+
             seat.setActive(toggle.isActive());
-            seat.setSeatCode(toggle.seatCode());
+            seat.setSeatCode(seatCode);
         }
+    }
+
+    private CoachFilterRequest sanitizeFilter(CoachFilterRequest filter) {
+        String licensePlate = trimToNull(filter.licensePlate());
+        String routeName = trimToNull(filter.routeName());
+
+        if (Objects.equals(licensePlate, filter.licensePlate())
+                && Objects.equals(routeName, filter.routeName())) {
+            return filter;
+        }
+
+        return new CoachFilterRequest(
+            licensePlate,
+            filter.statuses(),
+            filter.coachTypeId(),
+            routeName
+        );
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private void changeStatus(Coach coach, CoachStatus toStatus, String reason, LocalDateTime expectedEndAt) {

@@ -57,9 +57,9 @@ export default function Step1SeatSelection({ tripId }) {
             await bookingApi.lockSeats(tripId, { tripSeatIds: selectedSeats.map(seatObj => seatObj.tripSeatId) }, holdToken);
             dispatch(setStep(2));
         } catch (err) {
-            setError(err.response?.data?.message || "Ghế đã được đặt hoặc lỗi hệ thống. Vui lòng tải lại trang!");
             await fetchInitialData();
             dispatch(setSelectedSeats([]));
+            setError(err.response?.data?.message || "Ghế đã được đặt hoặc lỗi hệ thống. Vui lòng tải lại trang!");
         } finally {
             setIsLocking(false);
         }

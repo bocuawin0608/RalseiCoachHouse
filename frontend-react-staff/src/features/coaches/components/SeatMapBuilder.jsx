@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import SeatIcon from '../../../components/common/SeatIcon';
+import { COACH_VALIDATION, normalizeSeatCodeInput } from '../../../utils/coachValidation';
 
 /**
  * Component dùng chung cho cả Create, Edit và View bên SeatLayout của CoachType + Edit và View bên Seat của Coach
@@ -50,7 +51,10 @@ export default function SeatMapBuilder({ mode = 'CREATE', rows, cols, initialMat
         const currentCell = newMatrix[rowIndex][colIndex];
 
         if (objectMode && currentCell) {
-            newMatrix[rowIndex][colIndex] = { ...currentCell, seatCode: newCode };
+            newMatrix[rowIndex][colIndex] = {
+                ...currentCell,
+                seatCode: normalizeSeatCodeInput(newCode),
+            };
             setMatrix(newMatrix);
             if (onChange) onChange(newMatrix);
         }
@@ -156,7 +160,7 @@ export default function SeatMapBuilder({ mode = 'CREATE', rows, cols, initialMat
                                             marginTop: '2px',
                                             padding: '0'
                                         }}
-                                        maxLength={10}
+                                        maxLength={COACH_VALIDATION.SEAT_CODE_MAX_LENGTH}
                                     />
                                 ) : (
                                     seatCode && (
