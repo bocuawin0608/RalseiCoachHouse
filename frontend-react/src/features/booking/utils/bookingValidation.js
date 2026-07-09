@@ -4,11 +4,23 @@ export const BOOKING_VALIDATION = {
     EMAIL_REGEX: /^[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}$/
 };
 
+export const EMAIL_MAX_LENGTH = 254; // RFC 5321
+
+export const trimInput = (value) => (typeof value === 'string' ? value.trim() : value);
+
 export const getChildBirthYearMax = () => new Date().getFullYear();
-export const getChildBirthYearMin = () => new Date().getFullYear() - 12;
+export const getChildBirthYearMin = () => new Date().getFullYear() - 6;
+
+export const validateChildBirthYearValue = (val) => {
+    const y = Number(val);
+    if (Number.isNaN(y)) return 'Năm sinh không hợp lệ!';
+    const curr = new Date().getFullYear();
+    return (y >= curr - 6 && y <= curr) || 'Trẻ em đi kèm phải từ 0 đến 6 tuổi.';
+};
 
 export const bookingValidationRules = {
     fullname: {
+        setValueAs: trimInput,
         required: 'Vui lòng nhập họ tên',
         pattern: {
             value: BOOKING_VALIDATION.FULL_NAME_REGEX,
@@ -16,6 +28,7 @@ export const bookingValidationRules = {
         },
     },
     phone: {
+        setValueAs: trimInput,
         required: 'Vui lòng nhập số điện thoại',
         pattern: {
             value: BOOKING_VALIDATION.PHONE_REGEX,
@@ -23,13 +36,19 @@ export const bookingValidationRules = {
         },
     },
     email: {
+        setValueAs: trimInput,
         required: 'Vui lòng nhập email',
+        maxLength: {
+            value: EMAIL_MAX_LENGTH,
+            message: 'Email không được vượt quá 254 ký tự.',
+        },
         pattern: {
             value: BOOKING_VALIDATION.EMAIL_REGEX,
             message: 'Email không hợp lệ!',
         },
     },
     childName: {
+        setValueAs: trimInput,
         required: 'Vui lòng nhập tên bé',
         pattern: {
             value: BOOKING_VALIDATION.FULL_NAME_REGEX,
@@ -38,13 +57,6 @@ export const bookingValidationRules = {
     },
     childBirthYear: {
         required: 'Nhập năm sinh',
-        min: {
-            value: getChildBirthYearMin(),
-            message: 'Năm sinh của trẻ phải >= (năm hiện tại - 12)!',
-        },
-        max: {
-            value: getChildBirthYearMax(),
-            message: 'Năm sinh không được > năm hiện tại!',
-        },
+        validate: validateChildBirthYearValue,
     },
 };
