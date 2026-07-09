@@ -2,6 +2,7 @@ package com.ralsei.service;
 
 import com.ralsei.dto.projection.coach.CoachLicensePlateProjection;
 import com.ralsei.dto.projection.staff.StaffProjection;
+import com.ralsei.dto.projection.trip.StaffTripInfoProjection;
 import com.ralsei.dto.projection.trip.TripDetailProjection;
 import com.ralsei.dto.projection.trip.TripFilterProjection;
 import com.ralsei.dto.projection.trip.TripSummaryProjection;
@@ -50,6 +51,33 @@ public interface TripService {
 
         /** Returns staff trip summaries using user-facing date, route and period filters. */
         PagedResponse<TripSummaryProjection> getAllTripSummaries(LocalDate date, Integer routeId, String period, int page, int size);
+
+        /**
+         * Returns upcoming trip information for ticket staff.
+         *
+         * @param date selected departure date; defaults to today when omitted
+         * @param city departure city parsed from route name, optional
+         * @param timeFrom lower departure time in HH:mm format, optional
+         * @param timeTo upper departure time in HH:mm format, optional
+         * @param coachTypeKeyword coach type category keyword: LIMOUSINE, LUXURY, or TRUYEN_THONG
+         * @param priceRanges checkbox values: LOW, MIDDLE, HIGH
+         * @param statuses checked trip statuses, optional
+         * @param driverName partial driver name search, optional
+         * @param page zero-based page index
+         * @param size rows per page
+         * @return paged operational trip rows visible to ticket staff
+         */
+        PagedResponse<StaffTripInfoProjection> getStaffTripInfos(
+                        LocalDate date,
+                        String city,
+                        String timeFrom,
+                        String timeTo,
+                        String coachTypeKeyword,
+                        List<String> priceRanges,
+                        List<String> statuses,
+                        String driverName,
+                        int page,
+                        int size);
 
         /** Returns coaches that can serve the requested trip window. */
         List<TripResourceProjection> getAvailableCoaches(Integer routeId, LocalDateTime departureTime, Integer excludeTripId);

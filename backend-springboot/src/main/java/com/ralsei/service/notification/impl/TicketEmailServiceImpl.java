@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import com.ralsei.dto.notification.PassengerTicketCancellationEmailPayload;
 import com.ralsei.dto.notification.PassengerSeatEmailItem;
 import com.ralsei.dto.notification.PassengerTicketEmailPayload;
 import com.ralsei.service.notification.TicketEmailService;
@@ -90,6 +91,45 @@ public class TicketEmailServiceImpl implements TicketEmailService {
         log.info("Sent passenger ticket confirmation for ticketCode={}", payload.ticketCode());
     }
 
+    /**
+     * Creates one readable cancellation email for the primary passenger. The
+     * email intentionally omits boarding QR codes because cancelled boarding
+     * tokens must not be presented as usable travel documents.
+     *
+     * @param payload complete cancelled-ticket and refund data
+     */
+    @Override
+    public void sendTicketCancellation(PassengerTicketCancellationEmailPayload payload) {
+        validateCancellationPayload(payload);
+        PassengerTicketEmailPayload ticket = payload.ticket();
+
+        Context context = new Context(VIETNAMESE_LOCALE);
+        context.setVariable("ticket", ticket);
+        context.setVariable("cancellation", payload);
+        context.setVariable("seatNumbers", ticket.seats().stream()
+            .map(PassengerSeatEmailItem::seatCode)
+            .toList());
+        context.setVariable("coachNumber", extractLastFourDigits(ticket.coachLicensePlate()));
+        context.setVariable("departureTime", formatDateTime(ticket.departureTime()));
+        context.setVariable("arrivalTime", formatDateTime(ticket.arrivalTime()));
+        context.setVariable("pickupTime", formatDateTime(ticket.pickupPresentBy()));
+        context.setVariable("paidAt", formatDateTime(ticket.paidAt()));
+        context.setVariable("cancelledAt", formatDateTime(payload.cancelledAt()));
+        context.setVariable("formattedTotal", NumberFormat.getCurrencyInstance(VIETNAMESE_LOCALE)
+            .format(ticket.totalPrice()));
+        context.setVariable("formattedRefund", NumberFormat.getCurrencyInstance(VIETNAMESE_LOCALE)
+            .format(payload.refundAmount()));
+
+        String htmlBody = templateEngine.process("email/passenger-ticket-cancellation", context);
+        emailUtility.sendHtml(
+            ticket.primaryEmail(),
+            "Thông báo hủy vé " + ticket.ticketCode() + " - Nhà xe Tuấn MV",
+            htmlBody,
+            Map.of()
+        );
+        log.info("Sent passenger ticket cancellation for ticketCode={}", ticket.ticketCode());
+    }
+
     /** Ensures template-required fields are present before contacting SMTP. */
     private void validatePayload(PassengerTicketEmailPayload payload) {
         if (payload == null) {
@@ -103,6 +143,20 @@ public class TicketEmailServiceImpl implements TicketEmailService {
         }
         if (payload.totalPrice() == null || payload.seats() == null || payload.seats().isEmpty()) {
             throw new IllegalArgumentException("Vé không có đầy đủ thông tin giá hoặc ghế.");
+        }
+    }
+
+    /** Ensures cancellation template-required fields are present before SMTP. */
+    private void validateCancellationPayload(PassengerTicketCancellationEmailPayload payload) {
+        if (payload == null || payload.ticket() == null) {
+            throw new IllegalArgumentException("Dữ liệu email hủy vé không được để trống.");
+        }
+        validatePayload(payload.ticket());
+        if (payload.refundAmount() == null) {
+            throw new IllegalArgumentException("Email hủy vé phải có số tiền hoàn.");
+        }
+        if (payload.refundStatus() == null || payload.refundStatus().isBlank()) {
+            throw new IllegalArgumentException("Email hủy vé phải có trạng thái hoàn tiền.");
         }
     }
 

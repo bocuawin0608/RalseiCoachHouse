@@ -2,10 +2,13 @@ package com.ralsei.dto.request.coach;
 
 import java.util.List;
 
+import com.ralsei.util.validation.CoachValidationPatterns;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
@@ -16,11 +19,14 @@ public record CoachUpdateSeatsRequest(
 ) {
     public record SeatToggle(
         @NotNull @Positive Integer seatId,
-        
         @NotNull Boolean isActive,
 
         @NotBlank(message = "Mã ghế không được để trống")
-        @Size(min = 1, max = 10, message = "Mã ghế phải có độ dài từ 1 đến 10 ký tự")
+        @Size(max = 4, message = "Mã ghế không được vượt quá 4 ký tự")
+        @Pattern(
+            regexp = CoachValidationPatterns.SEAT_CODE,
+            message = CoachValidationPatterns.SEAT_CODE_MESSAGE
+        )
         String seatCode
     ) {}
 }
