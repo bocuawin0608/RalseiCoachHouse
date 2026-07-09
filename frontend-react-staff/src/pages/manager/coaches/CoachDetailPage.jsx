@@ -7,7 +7,14 @@ import { coachApi } from '../../../features/coaches/api/coachApi';
 import SeatMapBuilder from '../../../features/coaches/components/SeatMapBuilder';
 import { useCoachTypeDropdown } from '../../../hooks/useCoachTypeDropdown';
 import { useRouteDropdown } from '../../../hooks/useRouteDropdown';
-import { validateAndFormatLicensePlate } from '../../../utils/formatters';
+import {
+    COACH_VALIDATION,
+    validateAndFormatLicensePlate,
+    getMinDateTime,
+    isFutureDateTimeLocal,
+    isValidSeatCode,
+    normalizeSeatCodeInput,
+} from '../../../utils/coachValidation';
 
 const STATUS_LABELS = {
     ACTIVE: { text: 'Đang hoạt động', bg: 'success' },
@@ -118,8 +125,15 @@ export default function CoachDetailPage() {
         setSavingInfo(true);
         setError(null);
         try {
+            const plateResult = validateAndFormatLicensePlate(data.licensePlate);
+            if (!plateResult.valid) {
+                setError({ message: COACH_VALIDATION.LICENSE_PLATE_MESSAGE });
+                return;
+            }
+
             const payload = {
-                ...data,
+                licensePlate: plateResult.data,
+                manufacturer: data.manufacturer.trim(),
                 routeId: data.routeId === '' ? null : Number(data.routeId),
                 coachTypeId: Number(data.coachTypeId),
                 year: Number(data.year),
@@ -147,11 +161,21 @@ export default function CoachDetailPage() {
         setError(null);
         try {
             const seats = [];
+            const seenCodes = new Set();
+
             seatMatrix.forEach((floor) => {
                 floor.forEach((row) => {
                     row.forEach((cell) => {
                         if (cell) {
-                            seats.push({ seatId: cell.seatId, isActive: cell.isActive, seatCode: cell.seatCode });
+                            const seatCode = normalizeSeatCodeInput(cell.seatCode);
+                            if (!isValidSeatCode(seatCode)) {
+                                throw new Error(COACH_VALIDATION.SEAT_CODE_MESSAGE);
+                            }
+                            if (seenCodes.has(seatCode)) {
+                                throw new Error(`Mã ghế trùng lặp trong cùng xe: ${seatCode}`);
+                            }
+                            seenCodes.add(seatCode);
+                            seats.push({ seatId: cell.seatId, isActive: cell.isActive, seatCode });
                         }
                     });
                 });
@@ -160,6 +184,10 @@ export default function CoachDetailPage() {
             setEditSeats(false);
             await fetchDetail();
         } catch (err) {
+            if (err.message && !err.response) {
+                setError({ message: err.message });
+                return;
+            }
             const backendError = err.response?.data;
             
             if (backendError) {
@@ -204,18 +232,22 @@ export default function CoachDetailPage() {
         setError(null);
         try {
             if (actionModal === 'maintenance') {
+                if (actionForm.expectedEndAt && !isFutureDateTimeLocal(actionForm.expectedEndAt)) {
+                    setError({ message: 'Thời gian dự kiến hoàn thành phải ở tương lai.' });
+                    return;
+                }
                 await coachApi.reportMaintenance(id, {
-                    reason: actionForm.reason,
+                    reason: actionForm.reason.trim(),
                     expectedEndAt: actionForm.expectedEndAt || null,
                 });
             } else if (actionModal === 'reactivate') {
-                await coachApi.reactivate(id, { reason: actionForm.reason || null });
+                await coachApi.reactivate(id, { reason: actionForm.reason.trim() || null });
             } else if (actionModal === 'retire') {
                 if(!window.confirm("Xe ngừng hoạt động không thể phục hồi trạng thái. Bạn có chắc chắn muốn ngừng hoạt động xe?")) {
                     closeAction();
                     return;
                 }
-                await coachApi.retire(id, { reason: actionForm.reason });
+                await coachApi.retire(id, { reason: actionForm.reason.trim() });
             }
             closeAction();
             await fetchDetail();
@@ -340,7 +372,7 @@ export default function CoachDetailPage() {
                                             required: 'Biển số xe không được để trống.',
                                             validate: (value) => {
                                                 const result = validateAndFormatLicensePlate(value);
-                                                return result.valid || "Biển số xe không đúng định dạng chuẩn (Ví dụ: 73B600.45 hoặc 29A1234).";
+                                                return result.valid || COACH_VALIDATION.LICENSE_PLATE_MESSAGE;
                                             },
                                             onBlur: (e) => {
                                                 const result = validateAndFormatLicensePlate(e.target.value);
@@ -359,7 +391,8 @@ export default function CoachDetailPage() {
                                     <Form.Control 
                                         isInvalid={!!errors.manufacturer}
                                         {...register('manufacturer', { 
-                                            required: 'Hãng xe không được để trống.' 
+                                            required: 'Hãng xe không được để trống.',
+                                            validate: (value) => value.trim().length > 0 || 'Hãng xe không được để trống.',
                                         })} 
                                     />
                                     <Form.Control.Feedback type="invalid">
@@ -373,8 +406,8 @@ export default function CoachDetailPage() {
                                         isInvalid={!!errors.year}
                                         {...register('year', {
                                             required: 'Năm sản xuất không được để trống.',
-                                            min: { value: 2000, message: 'Năm sản xuất phải lớn hơn hoặc bằng 2000.' },
-                                            max: { value: new Date().getFullYear(), message: 'Năm sản xuất không được lớn hơn năm hiện tại.' }
+                                            min: { value: COACH_VALIDATION.YEAR_MIN, message: 'Năm sản xuất phải lớn hơn hoặc bằng 2000.' },
+                                            max: { value: COACH_VALIDATION.getYearMax(), message: 'Năm sản xuất không được lớn hơn năm hiện tại.' }
                                         })}
                                     />
                                     <Form.Control.Feedback type="invalid">
@@ -557,6 +590,7 @@ export default function CoachDetailPage() {
                                 <Form.Label className="fw-semibold">Dự kiến hoàn thành (tùy chọn)</Form.Label>
                                 <Form.Control
                                     type="datetime-local"
+                                    min={getMinDateTime()}
                                     value={actionForm.expectedEndAt}
                                     onChange={(e) => setActionForm((p) => ({ ...p, expectedEndAt: e.target.value }))}
                                     disabled={actionCheck && !actionCheck.allowed}
