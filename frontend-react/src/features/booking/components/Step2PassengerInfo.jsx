@@ -13,7 +13,7 @@ import { formatCurrency, formatDateTime } from '../../../utils/formatters';
 import { bookingApi } from '../api/bookingApi';
 import { transformFormToPassengerPayload } from '../utils/passengerPayload';
 import { mapConfirmResponse, savePaymentSession } from '../utils/paymentSession';
-import { bookingValidationRules } from '../utils/bookingValidation';
+import { bookingValidationRules, validateChildBirthYearValue } from '../utils/bookingValidation';
 import { buildTripShellLabels, computePickupPresentBy, formatPickupPresentByLabel } from '../utils/tripInfo';
 import TripSummaryPanel from './TripSummaryPanel';
 import PhoneOtpModal from './PhoneOtpModal';
@@ -108,11 +108,11 @@ export default function Step2PassengerInfo({ tripId }) {
         }
 
         const profile = initData.customerProfile;
-        setValue('passengers.0.fullname', profile.fullname || '');
-        setValue('passengers.0.phone', profile.phone || '');
-        setValue('passengers.0.email', profile.email || '');
-        if (profile.phone) {
-            markKnownPhone(profile.phone);
+        setValue('passengers.0.fullname', profile.fullname?.trim() || '');
+        setValue('passengers.0.phone', profile.phone?.trim() || '');
+        setValue('passengers.0.email', profile.email?.trim() || '');
+        if (profile.phone?.trim()) {
+            markKnownPhone(profile.phone.trim());
         }
     }, [initData?.customerProfile, fields.length, setValue, markKnownPhone]);
 
@@ -184,6 +184,7 @@ export default function Step2PassengerInfo({ tripId }) {
             navigate(`/booking/payment/${response.transactionId}`);
         } catch (err) {
             setSubmitError(err.response?.data?.message || 'Không thể xác nhận đặt vé. Vui lòng thử lại!');
+            window.scrollTo(0, 0);
         } finally {
             setSubmitting(false);
         }
@@ -256,10 +257,14 @@ export default function Step2PassengerInfo({ tripId }) {
                                                     checkPhoneOnBlur(event.target.value, index, setValue, getValues);
                                                 }}
                                                 onChange={(event) => {
-                                                    const previousPhone = watch(`passengers.${index}.phone`);
+                                                    const prevTrimmed = watch(`passengers.${index}.phone`)?.trim();
                                                     phoneRegister.onChange(event);
-                                                    if (previousPhone?.trim()) {
-                                                        clearPhoneVerification(previousPhone.trim());
+                                                    if (prevTrimmed) {
+                                                        const othersUsing = getValues('passengers')
+                                                            .filter((p, i) => i !== index && p.phone?.trim() === prevTrimmed);
+                                                        if (othersUsing.length === 0) {
+                                                            clearPhoneVerification(prevTrimmed);
+                                                        }
                                                     }
                                                 }}
                                                 isInvalid={!!errors.passengers?.[index]?.phone}
@@ -319,10 +324,11 @@ export default function Step2PassengerInfo({ tripId }) {
                                                     <Form.Label className="fw-medium text-muted mb-1" style={{ fontSize: '0.85rem' }}>Họ tên bé <span className="text-danger">*</span></Form.Label>
                                                     <Form.Control 
                                                         {...register(`passengers.${index}.childName`, {
+                                                            ...bookingValidationRules.childName,
                                                             validate: (value, formValues) => {
                                                                 if (!formValues.passengers?.[index]?.hasChild) return true;
-                                                                if (!value?.trim()) return bookingValidationRules.childName.required;
-                                                                return bookingValidationRules.childName.pattern.value.test(value.trim())
+                                                                if (!value) return bookingValidationRules.childName.required;
+                                                                return bookingValidationRules.childName.pattern.value.test(value)
                                                                     ? true
                                                                     : bookingValidationRules.childName.pattern.message;
                                                             },
@@ -338,12 +344,8 @@ export default function Step2PassengerInfo({ tripId }) {
                                                         {...register(`passengers.${index}.childBirthYear`, {
                                                             validate: (value, formValues) => {
                                                                 if (!formValues.passengers?.[index]?.hasChild) return true;
-                                                                if (!value) return bookingValidationRules.childBirthYear.required;
-                                                                const year = Number(value);
-                                                                if (Number.isNaN(year)) return 'Năm sinh không hợp lệ!';
-                                                                const curr = new Date().getFullYear();
-                                                                if (year < curr - 6 || year > curr) return 'Trẻ em đi kèm phải từ 0 đến 6 tuổi.';
-                                                                return true;
+                                                                if (!value && value !== 0) return bookingValidationRules.childBirthYear.required;
+                                                                return validateChildBirthYearValue(value);
                                                             },
                                                         })}
                                                         isInvalid={!!errors.passengers?.[index]?.childBirthYear}
