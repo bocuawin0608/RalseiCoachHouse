@@ -26,9 +26,11 @@ import com.ralsei.exception.ResourceNotFoundException;
 import com.ralsei.model.Account;
 import com.ralsei.model.AccountRole;
 import com.ralsei.model.Role;
+import com.ralsei.model.Customer;
 import com.ralsei.model.Staff;
 import com.ralsei.repository.AccountRepository;
 import com.ralsei.repository.AccountRoleRepository;
+import com.ralsei.repository.CustomerRepository;
 import com.ralsei.repository.RoleRepository;
 import com.ralsei.repository.StaffRepository;
 import com.ralsei.service.AccountService;
@@ -47,6 +49,7 @@ public class AccountServiceImpl implements AccountService {
     private final AccountRoleRepository accountRoleRepo;
     private final RoleRepository roleRepo;
     private final StaffRepository staffRepo;
+    private final CustomerRepository customerRepo;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -248,6 +251,11 @@ public class AccountServiceImpl implements AccountService {
             staff.setActive(account.isActive());
             staffRepo.save(staff);
         }
+
+        customerRepo.findByAccountId(accountId).ifPresent(customer -> {
+            customer.setActive(account.isActive());
+            customerRepo.save(customer);
+        });
     }
 
     @Override
@@ -278,7 +286,7 @@ public class AccountServiceImpl implements AccountService {
 
     private AccountListResponse mapToListResponse(AccountListProjection proj) {
         List<String> roleNames = proj.getRoleNames() != null && !proj.getRoleNames().isBlank()
-            ? Arrays.asList(proj.getRoleNames().split(","))
+            ? Arrays.stream(proj.getRoleNames().split(",")).map(String::trim).collect(Collectors.toList())
             : List.of();
 
         return new AccountListResponse(
