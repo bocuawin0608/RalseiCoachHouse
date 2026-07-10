@@ -16,7 +16,7 @@ import com.ralsei.model.CargoTicketDetail;
  * the public read model.
  */
 public interface CargoTicketDetailRepository extends JpaRepository<CargoTicketDetail, Integer> {
-    List<CargoTicketDetail> findByCargoTicketId(int cargoTicketId);
+    List<CargoTicketDetail> findByCargoTicket_CargoTicketId(int cargoTicketId);
 
     /**
      * Finds orders owned by the authenticated customer account. Pickup and drop-off
