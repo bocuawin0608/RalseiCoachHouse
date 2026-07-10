@@ -2,13 +2,25 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BsArrowLeft, BsCheckCircle, BsExclamationTriangleFill } from 'react-icons/bs';
 import { cargoTypeApi } from '../../../features/cargo';
-import { Alert, Button, Card, Col, Container, Form, Row } from 'react-bootstrap';
+import { Alert, Button, Card, Col, Container, Form, InputGroup, Row } from 'react-bootstrap';
+import { formatCurrency } from '../../../utils/formatters';
+import {
+    MAX_CARGO_SURCHARGE_PRICE,
+    normalizeCargoPriceInput,
+    validateCargoSurchargePrice
+} from '../../../features/cargo/utils/cargoPriceValidation';
+import '../../../features/cargo/styles/CargoTypeManagement.css';
 
+/**
+ * Creates a cargo type and its surcharge fields in one operation.
+ */
 export default function CargoTypeCreatePage() {
     const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
-        cargoTypeName: ''
+        cargoTypeName: '',
+        unit: '',
+        pricePerUnit: ''
     });
 
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -19,7 +31,7 @@ export default function CargoTypeCreatePage() {
 
         setFormData(prev => ({
             ...prev,
-            [name]: value
+            [name]: name === 'pricePerUnit' ? normalizeCargoPriceInput(value) : value
         }));
     };
 
@@ -27,8 +39,14 @@ export default function CargoTypeCreatePage() {
         e.preventDefault();
         setErrorMsg('');
 
-        if (!formData.cargoTypeName) {
-            setErrorMsg('Vui lòng nhập tên loại hàng!');
+        if (!formData.cargoTypeName || !formData.unit || formData.pricePerUnit === '') {
+            setErrorMsg('Vui lòng nhập đầy đủ tên loại hàng, đơn vị và đơn giá!');
+            return;
+        }
+
+        const priceError = validateCargoSurchargePrice(formData.pricePerUnit);
+        if (priceError) {
+            setErrorMsg(priceError);
             return;
         }
 
@@ -36,7 +54,9 @@ export default function CargoTypeCreatePage() {
 
         try {
             const payload = {
-                cargoTypeName: formData.cargoTypeName
+                cargoTypeName: formData.cargoTypeName,
+                unit: formData.unit,
+                pricePerUnit: formData.pricePerUnit
             };
 
             await cargoTypeApi.createCargoType(payload);
@@ -51,7 +71,7 @@ export default function CargoTypeCreatePage() {
     };
 
     return (
-        <Container fluid className="py-4" style={{ maxWidth: '1200px' }}>
+        <Container fluid className="py-4 cargo-type-management-create-page">
 
             <Button
                 variant="link"
@@ -92,6 +112,45 @@ export default function CargoTypeCreatePage() {
                                         onChange={handleInputChange}
                                         className="py-2"
                                     />
+                                </Form.Group>
+
+                                <Form.Group>
+                                    <Form.Label className="fw-semibold text-secondary mb-1">Đơn vị <span className="text-danger">*</span></Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        name="unit"
+                                        required
+                                        maxLength={50}
+                                        placeholder="Ví dụ: kg, m3, kiện..."
+                                        value={formData.unit}
+                                        onChange={handleInputChange}
+                                        className="py-2"
+                                    />
+                                </Form.Group>
+
+                                <Form.Group>
+                                    <Form.Label className="fw-semibold text-secondary mb-1">Đơn giá <span className="text-danger">*</span></Form.Label>
+                                    <InputGroup>
+                                        <Form.Control
+                                            type="number"
+                                            name="pricePerUnit"
+                                            required
+                                            min="0"
+                                            max={MAX_CARGO_SURCHARGE_PRICE}
+                                            step="1"
+                                            placeholder="Ví dụ: 50000"
+                                            value={formData.pricePerUnit}
+                                            onChange={handleInputChange}
+                                            className="py-2"
+                                        />
+                                        <InputGroup.Text className="bg-light fw-medium text-secondary">VNĐ</InputGroup.Text>
+                                    </InputGroup>
+
+                                    {formData.pricePerUnit !== '' && !Number.isNaN(formData.pricePerUnit) && (
+                                        <Form.Text className="text-success fw-medium mt-2 d-block">
+                                            Giá trị: {formatCurrency(formData.pricePerUnit)}
+                                        </Form.Text>
+                                    )}
                                 </Form.Group>
 
                                 <Button

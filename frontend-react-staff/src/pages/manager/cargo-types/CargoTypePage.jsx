@@ -9,7 +9,11 @@ import {
 import Pagination from '../../../components/common/Pagination';
 import { Alert, Button, Card, Container } from 'react-bootstrap';
 import { BsExclamationTriangleFill } from 'react-icons/bs';
+import '../../../features/cargo/styles/CargoTypeManagement.css';
 
+/**
+ * Manager screen for cargo type surcharge configuration.
+ */
 export default function CargoTypePage() {
     const navigate = useNavigate();
 
@@ -22,7 +26,7 @@ export default function CargoTypePage() {
     const closeModal = () => setModalState({ type: null, data: null });
 
     return (
-        <Container fluid className="py-4" style={{ maxWidth: '1200px' }}>
+        <Container fluid className="py-4 cargo-type-management-page">
 
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <h2 className="m-0 fw-bold text-dark">Quản lý các loại hàng</h2>
@@ -47,7 +51,7 @@ export default function CargoTypePage() {
                 </Alert>
             )}
 
-            <Card className="shadow-sm border-0">
+            <Card className="cargo-type-management-card">
                 <Card.Body className="p-0">
                     <CargoTypeTable
                         data={cargoTypes}

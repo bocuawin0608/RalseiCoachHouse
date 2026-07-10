@@ -12,8 +12,8 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
-import com.ralsei.dto.notification.PassengerTicketCancellationEmailPayload;
 import com.ralsei.dto.notification.PassengerSeatEmailItem;
+import com.ralsei.dto.notification.PassengerTicketCancellationEmailPayload;
 import com.ralsei.dto.notification.PassengerTicketEmailPayload;
 import com.ralsei.service.notification.TicketEmailService;
 import com.ralsei.util.EmailUtility;
@@ -84,7 +84,7 @@ public class TicketEmailServiceImpl implements TicketEmailService {
         String htmlBody = templateEngine.process("email/passenger-ticket-confirmation", context);
         emailUtility.sendHtml(
             payload.primaryEmail(),
-            "Xác nhận vé " + payload.ticketCode() + " - Nhà xe Tuấn MV",
+            "Xác nhận vé " + payload.ticketCode() + " - Nhà xe Ralsei",
             htmlBody,
             inlineImages
         );
@@ -123,7 +123,7 @@ public class TicketEmailServiceImpl implements TicketEmailService {
         String htmlBody = templateEngine.process("email/passenger-ticket-cancellation", context);
         emailUtility.sendHtml(
             ticket.primaryEmail(),
-            "Thông báo hủy vé " + ticket.ticketCode() + " - Nhà xe Tuấn MV",
+            "Thông báo hủy vé " + ticket.ticketCode() + " - Nhà xe Ralsei",
             htmlBody,
             Map.of()
         );

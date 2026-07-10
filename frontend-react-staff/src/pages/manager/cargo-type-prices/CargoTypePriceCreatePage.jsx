@@ -134,6 +134,7 @@ export default function CargoTypePriceCreatePage() {
                                             name="pricePerUnit"
                                             required
                                             min="0" max={100000000}
+                                            step="1"
                                             placeholder="Ví dụ: 50000"
                                             value={formData.pricePerUnit}
                                             onChange={handleInputChange}
