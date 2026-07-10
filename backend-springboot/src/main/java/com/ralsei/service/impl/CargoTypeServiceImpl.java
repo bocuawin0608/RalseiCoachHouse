@@ -31,6 +31,7 @@ import lombok.RequiredArgsConstructor;
 public class CargoTypeServiceImpl implements CargoTypeService {
 
     private static final LocalDateTime DEFAULT_SURCHARGE_END_DATE = LocalDateTime.of(2099, 12, 31, 23, 59, 59);
+    private static final BigDecimal MAX_SURCHARGE_PRICE = new BigDecimal("9999999999999.99");
 
     private final CargoTypeRepository cargoTypeRepository;
     private final CargoTypePriceRepository cargoTypePriceRepository;
@@ -190,6 +191,9 @@ public class CargoTypeServiceImpl implements CargoTypeService {
         BigDecimal price = request.getPricePerUnit();
         if (price == null || price.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("Đơn giá không được âm.");
+        }
+        if (price.compareTo(MAX_SURCHARGE_PRICE) > 0) {
+            throw new IllegalArgumentException("Đơn giá không được vượt quá 9.999.999.999.999,99.");
         }
     }
 

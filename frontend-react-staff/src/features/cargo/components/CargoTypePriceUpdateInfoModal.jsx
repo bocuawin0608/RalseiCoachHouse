@@ -116,7 +116,7 @@ export default function CargoTypePriceUpdateInfoModal({ isOpen, data, cargoTypes
                             name="pricePerUnit"
                             value={formData.pricePerUnit} 
                             onChange={handleInputChange} 
-                            required min="0" step="1000"
+                            required min="0" step="1"
                             placeholder="VD: 50000"
                             className="py-2"
                         />
