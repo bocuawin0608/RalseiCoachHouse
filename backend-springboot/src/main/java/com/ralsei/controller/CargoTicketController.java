@@ -78,4 +78,10 @@ public class CargoTicketController {
         cargoTicketService.disable(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/{id:\\d+}/complete-payment")
+    public ResponseEntity<Void> completePayment(@PathVariable @Min(1) int id) {
+        cargoTicketService.completePayment(id);
+        return ResponseEntity.noContent().build();
+    }
 }

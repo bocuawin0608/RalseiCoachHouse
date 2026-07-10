@@ -14,6 +14,7 @@ import com.ralsei.dto.response.cargoticket.CustomerContactResponse;
 import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.exception.ResourceNotFoundException;
 import com.ralsei.model.CargoTicket;
+import com.ralsei.model.Payment;
 import com.ralsei.repository.CargoTicketRepository;
 import com.ralsei.repository.CoachStopRepository;
 import com.ralsei.repository.CustomerRepository;
@@ -21,8 +22,11 @@ import com.ralsei.repository.PaymentRepository;
 import com.ralsei.repository.StaffRepository;
 import com.ralsei.repository.TripRepository;
 import com.ralsei.service.CargoTicketService;
+import com.ralsei.service.TransactionIdGenerator;
+import com.ralsei.model.Staff;
 
 import lombok.RequiredArgsConstructor;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -39,6 +43,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
     private final CoachStopRepository coachStopRepository;
     private final StaffRepository staffRepository;
     private final PaymentRepository paymentRepository;
+    private final TransactionIdGenerator transactionIdGenerator;
 
     @Override
     public PagedResponse<CargoTicketResponse> getAllCargoTickets(int page, int size) {
@@ -78,7 +83,19 @@ public class CargoTicketServiceImpl implements CargoTicketService {
 
         CargoTicket ticket = new CargoTicket();
         copyRequest(request, ticket, ticketCode);
-        return mapToResponse(cargoTicketRepository.save(ticket));
+        CargoTicket savedTicket = cargoTicketRepository.save(ticket);
+
+        Payment payment = Payment.builder()
+                .cargoTicket(savedTicket)
+                .amount(savedTicket.getTotalPrice())
+                .paymentMethod(request.getPaymentMethod())
+                .transactionId(transactionIdGenerator.generateUniqueTransactionId())
+                .status("PENDING")
+                .refundAmount(BigDecimal.ZERO)
+                .build();
+        paymentRepository.save(payment);
+
+        return mapToResponse(savedTicket);
     }
 
     @Override
@@ -115,6 +132,25 @@ public class CargoTicketServiceImpl implements CargoTicketService {
                 .toList();
     }
 
+    @Override
+    @Transactional
+    public void completePayment(int cargoTicketId) {
+        Payment payment = paymentRepository.findByCargoTicket_CargoTicketId(cargoTicketId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Không tìm thấy thanh toán cho vé hàng hóa ID: " + cargoTicketId));
+
+        if (!"CASH".equals(payment.getPaymentMethod())) {
+            throw new BusinessRuleException("Chỉ có thể hoàn thành thanh toán tiền mặt.");
+        }
+        if (!"PENDING".equals(payment.getStatus())) {
+            throw new BusinessRuleException("Thanh toán đã được xử lý.");
+        }
+
+        payment.setStatus("COMPLETED");
+        payment.setPaymentTime(java.time.LocalDateTime.now());
+        paymentRepository.save(payment);
+    }
+
     private void validateReferences(CargoTicketRequest request) {
         if (request.getPickupStopId() == request.getDropoffStopId()) {
             throw new BusinessRuleException("Điểm nhận và điểm trả hàng phải khác nhau.");
@@ -148,21 +184,22 @@ public class CargoTicketServiceImpl implements CargoTicketService {
         }
     }
 
-    private void requireStaff(Integer id) {
-        if (id != null && !staffRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Không tìm thấy nhân viên có ID là: " + id);
+    private void requireStaff(Staff staff) {
+        if (staff != null && !staffRepository.existsById(staff.getStaffId())) {
+            throw new ResourceNotFoundException("Không tìm thấy nhân viên có ID là: " + staff.getStaffId());
         }
     }
 
-    private void requireStaffPosition(Integer id, String position, String fieldName) {
-        if (id != null && !staffRepository.existsByStaffIdAndIsActiveTrueAndStaffPosition(id, position)) {
+    private void requireStaffPosition(Staff staff, String position, String fieldName) {
+        if (staff != null
+                && !staffRepository.existsByStaffIdAndIsActiveTrueAndStaffPosition(staff.getStaffId(), position)) {
             throw new BusinessRuleException(fieldName + " không đúng chức vụ yêu cầu.");
         }
     }
 
-    private void requireHandlerPosition(Integer id, String fieldName) {
-        if (id != null && !staffRepository.existsByStaffIdAndIsActiveTrueAndStaffPositionIn(
-                id, List.of("ATTENDANT", "TICKET_STAFF"))) {
+    private void requireHandlerPosition(Staff staff, String fieldName) {
+        if (staff != null && !staffRepository.existsByStaffIdAndIsActiveTrueAndStaffPositionIn(
+                staff.getStaffId(), List.of("ATTENDANT", "TICKET_STAFF"))) {
             throw new BusinessRuleException(fieldName + " phải là phụ xe hoặc nhân viên bán vé.");
         }
     }
@@ -196,14 +233,18 @@ public class CargoTicketServiceImpl implements CargoTicketService {
         ticket.setPickupStopId(request.getPickupStopId());
         ticket.setDropoffStopId(request.getDropoffStopId());
         ticket.setStatus(request.getStatus());
-        ticket.setSoldBy(staffRepository.findById(request.getSoldBy()).orElse(null));
+        ticket.setSoldBy(staffRepository.findById(request.getSoldBy().getStaffId()).orElse(null));
         ticket.setLoadedBy(
-                request.getLoadedBy() != null ? staffRepository.findById(request.getLoadedBy()).orElse(null) : null);
+                request.getLoadedBy() != null
+                        ? staffRepository.findById(request.getLoadedBy().getStaffId()).orElse(null)
+                        : null);
         ticket.setUnloadedBy(
-                request.getUnloadedBy() != null ? staffRepository.findById(request.getUnloadedBy()).orElse(null)
+                request.getUnloadedBy() != null
+                        ? staffRepository.findById(request.getUnloadedBy().getStaffId()).orElse(null)
                         : null);
         ticket.setDeliveredBy(
-                request.getDeliveredBy() != null ? staffRepository.findById(request.getDeliveredBy()).orElse(null)
+                request.getDeliveredBy() != null
+                        ? staffRepository.findById(request.getDeliveredBy().getStaffId()).orElse(null)
                         : null);
     }
 
@@ -220,6 +261,8 @@ public class CargoTicketServiceImpl implements CargoTicketService {
         String dropoffStopName = coachStopRepository.findById(ticket.getDropoffStopId())
                 .map(stop -> stop.getStopPointName()).orElse(null);
 
+        Payment payment = paymentRepository.findByCargoTicket_CargoTicketId(ticket.getCargoTicketId()).orElse(null);
+
         return CargoTicketResponse.builder()
                 .cargoTicketId(ticket.getCargoTicketId())
                 .tripId(ticket.getTripId())
@@ -227,6 +270,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
                 .senderName(ticket.getSenderName())
                 .senderPhone(ticket.getSenderPhone())
                 .receiverName(ticket.getReceiverName())
+                .receiverPhone(ticket.getReceiverPhone())
                 .ticketCode(ticket.getTicketCode())
                 .totalPrice(ticket.getTotalPrice())
                 .description(ticket.getDescription())
@@ -237,12 +281,24 @@ public class CargoTicketServiceImpl implements CargoTicketService {
                 .dropoffStopId(ticket.getDropoffStopId())
                 .dropoffStopName(dropoffStopName)
                 .status(ticket.getStatus())
-                .soldBy(ticket.getSoldBy() != null ? ticket.getSoldBy().getStaffId() : 0)
-                .loadedBy(ticket.getLoadedBy() != null ? ticket.getLoadedBy().getStaffId() : null)
-                .unloadedBy(ticket.getUnloadedBy() != null ? ticket.getUnloadedBy().getStaffId() : null)
-                .deliveredBy(ticket.getDeliveredBy() != null ? ticket.getDeliveredBy().getStaffId() : null)
+                .soldBy(ticket.getSoldBy())
+                .loadedBy(ticket.getLoadedBy())
+                .unloadedBy(ticket.getUnloadedBy())
+                .deliveredBy(ticket.getDeliveredBy())
+                .payment(payment)
+                .qrUrl(buildQrUrl(payment, ticket.getTotalPrice()))
                 .createdAt(ticket.getCreatedAt())
                 .updatedAt(ticket.getUpdatedAt())
                 .build();
+    }
+
+    private String buildQrUrl(Payment payment, java.math.BigDecimal totalPrice) {
+        if (payment == null || !"BANK_TRANSFER".equals(payment.getPaymentMethod())
+                || !"PENDING".equals(payment.getStatus())) {
+            return null;
+        }
+        long amount = totalPrice.longValue();
+        return "https://vietqr.app/img?bank=Vietcombank&acc=SBSEPAYHCNTZK98PS6F&template=compact&amount=" + amount
+                + "&des=" + payment.getTransactionId();
     }
 }

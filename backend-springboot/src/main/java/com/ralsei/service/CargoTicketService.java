@@ -22,4 +22,6 @@ public interface CargoTicketService {
     void disable(int id);
 
     List<CustomerContactResponse> searchContacts(String phone);
+
+    void completePayment(int cargoTicketId);
 }

@@ -24,6 +24,15 @@ export default function CargoTicketPage() {
         }
     };
 
+    const handleCompletePayment = async (ticket) => {
+        try {
+            await cargoTicketApi.completePayment(ticket.cargoTicketId);
+            await refetch();
+        } catch (err) {
+            window.alert(err.response?.data?.message || 'Hoàn thành thanh toán thất bại.');
+        }
+    };
+
     return (
         <Container fluid className="py-4" style={{ maxWidth: '1400px' }}>
             <div className="d-flex justify-content-between align-items-center mb-4">
@@ -38,7 +47,7 @@ export default function CargoTicketPage() {
 
             <Card className="shadow-sm border-0">
                 <Card.Body className="p-0">
-                    <CargoTicketTable data={tickets} loading={loading} onEdit={setSelectedTicket} onDisable={handleDisable} />
+                    <CargoTicketTable data={tickets} loading={loading} onEdit={setSelectedTicket} onDisable={handleDisable} onCompletePayment={handleCompletePayment} />
                     <div className="d-flex justify-content-center py-3 border-top"><Pagination pageInfo={pageInfo} onPageChange={setPageInfo} /></div>
                 </Card.Body>
             </Card>

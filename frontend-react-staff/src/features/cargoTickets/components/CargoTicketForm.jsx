@@ -9,11 +9,16 @@ const EMPTY_FORM = {
     tripId: '', customerId: '', senderName: '', senderPhone: '',
     receiverName: '', receiverPhone: '',
     totalPrice: '', description: '', feePayer: 'SENDER', codAmount: 0,
-    pickupStopId: '', dropoffStopId: '', status: 'RECEIVED', soldBy: ''
+    pickupStopId: '', dropoffStopId: '', status: 'RECEIVED', soldBy: '',
+    paymentMethod: 'CASH'
 };
 
 export default function CargoTicketForm({ initialData, onSubmit, submitLabel = 'Lưu vé hàng hóa' }) {
-    const [formData, setFormData] = useState(() => ({ ...EMPTY_FORM, ...initialData }));
+    const [formData, setFormData] = useState(() => ({
+        ...EMPTY_FORM,
+        ...initialData,
+        soldBy: initialData?.soldBy?.staffId ?? initialData?.soldBy ?? EMPTY_FORM.soldBy
+    }));
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const { user } = useAuth();
@@ -102,6 +107,7 @@ export default function CargoTicketForm({ initialData, onSubmit, submitLabel = '
                         <Col md={3}><Field label="Tổng tiền (VNĐ)" name="totalPrice" type="number" value={formData.totalPrice} onChange={handleChange} required min="0" /></Col>
                         <Col md={3}><Field label="Tiền thu hộ COD (VNĐ)" name="codAmount" type="number" value={formData.codAmount} onChange={handleChange} required min="0" /></Col>
                         <Col md={3}><Form.Group><Form.Label className="fw-semibold">Người trả phí *</Form.Label><Form.Select name="feePayer" value={formData.feePayer} onChange={handleChange}><option value="SENDER">Người gửi</option><option value="RECEIVER">Người nhận</option></Form.Select></Form.Group></Col>
+                        <Col md={3}><Form.Group><Form.Label className="fw-semibold">Phương thức thanh toán *</Form.Label><Form.Select name="paymentMethod" value={formData.paymentMethod} onChange={handleChange} required><option value="CASH">Tiền mặt</option><option value="BANK_TRANSFER">Chuyển khoản</option></Form.Select></Form.Group></Col>
                         <Col md={3}><Dropdown label="Nhân viên bán" name="soldBy" value={formData.soldBy} onChange={handleChange} loading={optionsLoading} options={sellers} optionValue="staffId" renderOption={(item) => item.staffName} required disabled style={{ backgroundImage: 'none' }} /></Col>
                         <Col xs={12}><Form.Group><Form.Label className="fw-semibold">Mô tả hàng hóa</Form.Label><Form.Control as="textarea" rows={3} name="description" value={formData.description || ''} onChange={handleChange} /></Form.Group></Col>
                     </Row>
@@ -161,14 +167,13 @@ function filterTripsForSelectedStops(trips, stops, pickupStopId, dropoffStopId) 
     const hasPickup = stops.some((stop) => String(stop.stopPointId) === String(pickupStopId));
     const hasDropoff = stops.some((stop) => String(stop.stopPointId) === String(dropoffStopId));
     if (!hasPickup || !hasDropoff) return [];
-    const now = new Date();
 
     return trips.filter((trip) => {
-        if (String(trip.pickupStopId) !== String(pickupStopId)
-            || String(trip.dropoffStopId) !== String(dropoffStopId)) return false;
-        const pickupTime = new Date(trip.pickupTime || trip.departureTime);
-        return !Number.isNaN(pickupTime.getTime())
-            && pickupTime >= now;
+        // Backend already filters by time and stops. 
+        // We only check this to prevent showing stale trips from a previous selection while loading.
+        if (trip.pickupStopId !== undefined && String(trip.pickupStopId) !== String(pickupStopId)) return false;
+        if (trip.dropoffStopId !== undefined && String(trip.dropoffStopId) !== String(dropoffStopId)) return false;
+        return true;
     });
 }
 
@@ -196,6 +201,7 @@ function buildCargoTicketRequest(form) {
         pickupStopId: Number(form.pickupStopId),
         dropoffStopId: Number(form.dropoffStopId),
         status: form.status,
-        soldBy: Number(form.soldBy)
+        soldBy: form.soldBy ? { staffId: Number(form.soldBy) } : null,
+        paymentMethod: form.paymentMethod
     };
 }

@@ -8,7 +8,7 @@ export default function CargoTicketCreatePage() {
     const navigate = useNavigate();
     const handleSubmit = async (payload) => {
         await cargoTicketApi.createCargoTicket(payload);
-        navigate('/staff/ticket/cargo-tickets');
+        navigate('/staff/cargo-tickets');
     };
 
     return (
