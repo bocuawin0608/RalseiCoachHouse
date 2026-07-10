@@ -7,6 +7,7 @@ import {
     EMPTY_FILTERS,
     hasSearchTrigger,
     parseFiltersFromSearchParams,
+    validatePassengerTicketSearchFilters,
 } from '../utils/passengerTicketFormatters';
 
 export function usePassengerTicketSearch() {
@@ -30,6 +31,15 @@ export function usePassengerTicketSearch() {
             setError(null);
             setData([]);
             setHasSearched(false);
+            setPageInfo((prev) => ({ ...prev, page: 0, totalElements: 0, totalPages: 0 }));
+            return;
+        }
+
+        const validationError = validatePassengerTicketSearchFilters(nextFilters, tripId);
+        if (validationError) {
+            setError(validationError);
+            setData([]);
+            setHasSearched(true);
             setPageInfo((prev) => ({ ...prev, page: 0, totalElements: 0, totalPages: 0 }));
             return;
         }
@@ -93,6 +103,12 @@ export function usePassengerTicketSearch() {
     };
 
     const handleSearch = () => {
+        const validationError = validatePassengerTicketSearchFilters(filters, hiddenTripId);
+        if (validationError) {
+            setError(validationError);
+            return;
+        }
+
         const params = buildListQueryParams(filters, {
             tripId: hiddenTripId,
             page: 0,

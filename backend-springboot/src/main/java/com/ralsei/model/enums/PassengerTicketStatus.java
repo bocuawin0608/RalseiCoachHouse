@@ -15,4 +15,22 @@ public enum PassengerTicketStatus {
         this.message = message;
     }
 
+    /**
+     * Parses a ticket status filter from search input.
+     *
+     * @param value raw status text, may be {@code null}
+     * @return matching enum constant, or {@code null} when input is blank
+     * @throws IllegalArgumentException when the value is not a supported status
+     */
+    public static PassengerTicketStatus parseSearchValue(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return PassengerTicketStatus.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Trạng thái vé không hợp lệ.");
+        }
+    }
+
 }
