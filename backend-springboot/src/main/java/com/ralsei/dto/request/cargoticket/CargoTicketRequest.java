@@ -8,6 +8,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+
+import com.ralsei.model.Staff;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -67,15 +70,14 @@ public class CargoTicketRequest {
     @Pattern(regexp = "RECEIVED|LOADED|ARRIVED|DELIVERED|CANCELLED|REJECTED|ABANDONED", message = "Cargo ticket status is invalid")
     private String status;
 
-    @Min(value = 1, message = "Seller ID must be greater than 0")
-    private int soldBy;
+    @NotNull(message = "Seller is required")
+    private Staff soldBy;
 
-    @Min(value = 1, message = "Loader ID must be greater than 0")
-    private Integer loadedBy;
+    private Staff loadedBy;
+    private Staff unloadedBy;
+    private Staff deliveredBy;
 
-    @Min(value = 1, message = "Unloader ID must be greater than 0")
-    private Integer unloadedBy;
-
-    @Min(value = 1, message = "Deliverer ID must be greater than 0")
-    private Integer deliveredBy;
+    @NotBlank(message = "Payment method is required")
+    @Pattern(regexp = "CASH|BANK_TRANSFER", message = "Payment method must be CASH or BANK_TRANSFER")
+    private String paymentMethod;
 }

@@ -3,6 +3,10 @@ package com.ralsei.dto.response.cargoticket;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import com.ralsei.model.Staff;
+import com.ralsei.model.Payment;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -30,10 +34,16 @@ public class CargoTicketResponse {
     private int dropoffStopId;
     private String dropoffStopName;
     private String status;
-    private int soldBy;
-    private Integer loadedBy;
-    private Integer unloadedBy;
-    private Integer deliveredBy;
+    private Staff soldBy;
+    private Staff loadedBy;
+    private Staff unloadedBy;
+    private Staff deliveredBy;
+
+    @JsonIgnoreProperties({"cargoTicket"})
+    private Payment payment;
+
+    private String qrUrl;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
