@@ -159,10 +159,6 @@ export default function Sidebar() {
                                         <BsBoxSeam size={16} />
                                         <span style={{ fontSize: '0.9rem' }}>Loại hàng</span>
                                     </NavLink>
-                                    <NavLink to="/management/freight-rates" className={navLinkClass}>
-                                        <BsCashCoin size={16} />
-                                        <span style={{ fontSize: '0.9rem' }}>Giá cước</span>
-                                    </NavLink>
                                 </div>
                             </Collapse>
                         </div>

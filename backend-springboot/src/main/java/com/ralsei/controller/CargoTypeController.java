@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ralsei.dto.request.cargotype.CargoTypeRequest;
+import com.ralsei.dto.request.cargotype.CargoTypeManagementRequest;
 import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.dto.response.cargotype.CargoTypeResponse;
 import com.ralsei.service.CargoTypeService;
@@ -31,6 +31,9 @@ public class CargoTypeController {
 
     private final CargoTypeService cargoTypeService;
 
+    /**
+     * Displays cargo type rows with their surcharge unit and price in one result.
+     */
     @GetMapping()
     public ResponseEntity<PagedResponse<CargoTypeResponse>> getCargoTypes(
             @RequestParam(required = false) String search,
@@ -46,17 +49,23 @@ public class CargoTypeController {
         return ResponseEntity.ok(cargoTypeService.getCargoTypeById(id));
     }
 
+    /**
+     * Creates the staff-managed cargo type and its surcharge row together.
+     */
     @PostMapping()
-    public ResponseEntity<CargoTypeResponse> createCargoType(@Valid @RequestBody CargoTypeRequest request) {
-        CargoTypeResponse response = cargoTypeService.createCargoType(request);
+    public ResponseEntity<CargoTypeResponse> createCargoType(@Valid @RequestBody CargoTypeManagementRequest request) {
+        CargoTypeResponse response = cargoTypeService.createCargoTypeManagement(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    /**
+     * Updates every field shown on the staff cargo type management screen.
+     */
     @PutMapping("/{id}")
     public ResponseEntity<CargoTypeResponse> updateCargoType(
             @PathVariable @Min(value = 1, message = "ID của Loại hàng hóa phải lớn hơn 0.") int id,
-            @Valid @RequestBody @NonNull CargoTypeRequest request) {
-        CargoTypeResponse response = cargoTypeService.updateCargoType(id, request);
+            @Valid @RequestBody @NonNull CargoTypeManagementRequest request) {
+        CargoTypeResponse response = cargoTypeService.updateCargoTypeManagement(id, request);
         return ResponseEntity.ok(response);
     }
 

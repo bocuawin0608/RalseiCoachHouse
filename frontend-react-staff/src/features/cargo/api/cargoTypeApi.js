@@ -1,5 +1,10 @@
 import axiosClient from "../../../api/axiosClient";
 
+/**
+ * API wrapper for the combined cargo type management screen.
+ * Unit and price are submitted with the cargo type because they are edited as
+ * one staff-facing surcharge record.
+ */
 export const cargoTypeApi = {
     filterCargoTypes: async (params) => {
         const response = await axiosClient.get('/v1/manager/cargo-types', { params });

@@ -99,7 +99,7 @@ export default function StaffLogin() {
       } else if (roles.includes('TICKET_STAFF')) {
         navigate('/staff/passenger-tickets/search');
       } else if (roles.includes('TRIP_STAFF')) {
-        navigate('/staff/trip/scan');
+        navigate('/staff');
       }
 
     } catch (err) {

@@ -2,11 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import { cargoTypeApi } from "../api/cargoTypeApi";
 import { useDebounce } from "../../../hooks/useDebounce";
 
+/**
+ * Loads cargo types with their surcharge unit and price for the manager table.
+ */
 export function useCargoTypes() {
     const [cargoTypes, setCargoTypes] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [filters, setFilters] = useState({ search: '', isActive: '' });
+    const [filters, setFilters] = useState({ search: '', isActive: 'true' });
     const [pageInfo, setPageInfo] = useState({
         page: 0,
         size: 10,
@@ -50,7 +53,7 @@ export function useCargoTypes() {
     };
 
     const handleReset = () => {
-        setFilters({ search: '', isActive: '' });
+        setFilters({ search: '', isActive: 'true' });
         setError(null);
         setPageInfo(prev => ({ ...prev, page: 0 }));
     };
