@@ -40,6 +40,7 @@ import com.ralsei.service.AuthService;
 import com.ralsei.service.FirebaseTokenVerifier;
 import com.ralsei.service.JwtService;
 import com.ralsei.util.EmailUtility;
+import com.ralsei.util.validation.BookingValidationPatterns;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -191,7 +192,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public StaffForgotPasswordResponse staffForgotPassword(StaffForgotPasswordRequest request) {
-        AccountProjection projection = accountRepository.findByUsernameWithRoles(request.username().trim())
+        AccountProjection projection = accountRepository.findByUsernameWithRoles(request.username())
                 .orElse(null);
         if (!canResetStaffPassword(projection, request.email())) {
             return forgotPasswordAcceptedResponse();
@@ -402,7 +403,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if ("firebase".equals(authProvider) && providedUsername != null
-                && providedUsername.matches("^0[0-9]{9,10}$")) {
+                && providedUsername.matches(BookingValidationPatterns.PHONE)) {
             return providedUsername;
         }
 

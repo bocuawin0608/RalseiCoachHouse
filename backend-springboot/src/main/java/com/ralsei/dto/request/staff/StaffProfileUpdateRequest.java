@@ -2,9 +2,9 @@ package com.ralsei.dto.request.staff;
 
 import java.time.LocalDate;
 
+import com.ralsei.util.StringNormalize;
 import com.ralsei.util.validation.BookingValidationPatterns;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Pattern;
@@ -28,10 +28,18 @@ public record StaffProfileUpdateRequest(
     )
     String staffName,
 
-    @Email(message = "Email không hợp lệ.")
-    @Size(max = 100, message = "Email không được vượt quá 100 ký tự.")
+    @Size(max = BookingValidationPatterns.EMAIL_MAX_LENGTH, message = "Email không được vượt quá 254 ký tự.")
+    @Pattern(
+        regexp = BookingValidationPatterns.EMAIL,
+        message = "Email không hợp lệ."
+    )
     String email,
 
     @Past(message = "Ngày sinh phải là ngày trong quá khứ.")
     LocalDate dob
-) {}
+) {
+    public StaffProfileUpdateRequest {
+        staffName = StringNormalize.trimToEmpty(staffName);
+        email = StringNormalize.trimToNull(email);
+    }
+}
