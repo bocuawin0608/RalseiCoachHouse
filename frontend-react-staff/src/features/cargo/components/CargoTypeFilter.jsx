@@ -26,7 +26,6 @@ export default function CargoTypeFilter({ filters, onFilterChange, onReset }) {
                         onChange={onFilterChange}
                         className="cargo-type-management-filter__status"
                     >
-                        <option value="">Tất cả trạng thái</option>
                         <option value="true">Đang hoạt động</option>
                         <option value="false">Ngừng hoạt động</option>
                     </Form.Select>

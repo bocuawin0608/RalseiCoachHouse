@@ -4,6 +4,11 @@ import { BsArrowLeft, BsCheckCircle, BsExclamationTriangleFill } from 'react-ico
 import { cargoTypeApi } from '../../../features/cargo';
 import { Alert, Button, Card, Col, Container, Form, InputGroup, Row } from 'react-bootstrap';
 import { formatCurrency } from '../../../utils/formatters';
+import {
+    MAX_CARGO_SURCHARGE_PRICE,
+    normalizeCargoPriceInput,
+    validateCargoSurchargePrice
+} from '../../../features/cargo/utils/cargoPriceValidation';
 import '../../../features/cargo/styles/CargoTypeManagement.css';
 
 /**
@@ -26,7 +31,7 @@ export default function CargoTypeCreatePage() {
 
         setFormData(prev => ({
             ...prev,
-            [name]: name === 'pricePerUnit' ? (value ? Number(value) : '') : value
+            [name]: name === 'pricePerUnit' ? normalizeCargoPriceInput(value) : value
         }));
     };
 
@@ -36,6 +41,12 @@ export default function CargoTypeCreatePage() {
 
         if (!formData.cargoTypeName || !formData.unit || formData.pricePerUnit === '') {
             setErrorMsg('Vui lòng nhập đầy đủ tên loại hàng, đơn vị và đơn giá!');
+            return;
+        }
+
+        const priceError = validateCargoSurchargePrice(formData.pricePerUnit);
+        if (priceError) {
+            setErrorMsg(priceError);
             return;
         }
 
@@ -125,8 +136,8 @@ export default function CargoTypeCreatePage() {
                                             name="pricePerUnit"
                                             required
                                             min="0"
-                                            max={100000000}
-                                            step="1000"
+                                            max={MAX_CARGO_SURCHARGE_PRICE}
+                                            step="1"
                                             placeholder="Ví dụ: 50000"
                                             value={formData.pricePerUnit}
                                             onChange={handleInputChange}

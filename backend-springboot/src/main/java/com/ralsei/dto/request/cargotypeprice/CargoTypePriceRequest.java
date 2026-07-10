@@ -3,7 +3,9 @@ package com.ralsei.dto.request.cargotypeprice;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -28,6 +30,8 @@ public class CargoTypePriceRequest {
 
     @NotNull(message = "Price per unit is required")
     @DecimalMin(value = "0.0", inclusive = true, message = "Price per unit must be greater than or equal to 0")
+    @DecimalMax(value = "9999999999999.99", message = "Price per unit must not exceed 9,999,999,999,999.99")
+    @Digits(integer = 13, fraction = 2, message = "Price per unit supports up to 13 integer digits and 2 decimal digits")
     private BigDecimal pricePerUnit;
 
     @NotNull(message = "Start effective date is required")

@@ -2,6 +2,11 @@ import { Alert, Button, Form, Modal } from 'react-bootstrap'
 import { useState, useEffect } from 'react';
 import { cargoTypeApi } from '../api/cargoTypeApi';
 import { BsExclamationTriangleFill } from 'react-icons/bs';
+import {
+    MAX_CARGO_SURCHARGE_PRICE,
+    normalizeCargoPriceInput,
+    validateCargoSurchargePrice
+} from '../utils/cargoPriceValidation';
 import '../styles/CargoTypeManagement.css';
 
 /**
@@ -44,7 +49,7 @@ export default function CargoTypeUpdateInfoModal({ isOpen, data, onClose, onSucc
 
         setFormData(prev => ({
             ...prev,
-            [name]: value
+            [name]: name === 'pricePerUnit' ? normalizeCargoPriceInput(value) : value
         }));
         setError(null);
     };
@@ -60,10 +65,16 @@ export default function CargoTypeUpdateInfoModal({ isOpen, data, onClose, onSucc
         setIsSubmitting(true);
         setError(null);
         try {
+            const priceError = validateCargoSurchargePrice(formData.pricePerUnit);
+            if (priceError) {
+                setError(priceError);
+                return;
+            }
+
             await cargoTypeApi.updateCargoTypeInfo(data.cargoTypeId, {
                 cargoTypeName: formData.cargoTypeName,
                 unit: formData.unit,
-                pricePerUnit: Number(formData.pricePerUnit)
+                pricePerUnit: formData.pricePerUnit
             });
             
             if (data.active !== isActive) {
@@ -134,7 +145,8 @@ export default function CargoTypeUpdateInfoModal({ isOpen, data, onClose, onSucc
                             onChange={handleInputChange}
                             required
                             min="0"
-                            step="1000"
+                            max={MAX_CARGO_SURCHARGE_PRICE}
+                            step="1"
                             className="py-2"
                         />
                     </Form.Group>
