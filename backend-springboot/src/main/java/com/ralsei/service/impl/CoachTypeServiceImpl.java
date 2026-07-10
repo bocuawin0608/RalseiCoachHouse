@@ -201,31 +201,29 @@ public class CoachTypeServiceImpl implements CoachTypeService {
     public void addCoachTypePrice(Integer id, CoachTypePriceCreateRequest request) {
         CoachType coachType = findCoachTypeOrThrow(id);
         LocalDateTime start = request.startEffectiveDate();
-        LocalDateTime end = request.endEffectiveDate() != null ? request.endEffectiveDate() : INFINITE_END;
-        
+        LocalDateTime end = INFINITE_END;
+
         LocalDateTime now = LocalDateTime.now();
         if (start.isBefore(now.minusMinutes(5))) {
             throw new IllegalArgumentException("Ngày bắt đầu không được nằm trong quá khứ!");
-        }
-        if (start.isEqual(end)) {
-            throw new IllegalArgumentException("Ngày kết thúc không được trùng với ngày bắt đầu!");
-        }
-        if (end.isBefore(start)) {
-            throw new IllegalArgumentException("Ngày kết thúc hiệu lực phải lớn hơn hoặc bằng ngày bắt đầu!");
         }
 
         List<CoachTypePrice> existingPrices = coachTypePriceRepo
                 .findByCoachType_CoachTypeIdOrderByStartEffectiveDateDesc(id);
 
         for (CoachTypePrice existing : existingPrices) {
-            if (!intervalsOverlap(existing.getStartEffectiveDate(), existing.getEndEffectiveDate(), start, end)) {
-                continue;
-            }
-            if (isEffectiveAt(existing, now) && start.isAfter(existing.getStartEffectiveDate())) {
+            LocalDateTime existingStart = existing.getStartEffectiveDate();
+            LocalDateTime existingEnd = existing.getEndEffectiveDate();
+
+            if (existingStart.isBefore(start) && existingEnd.isAfter(start)) {
                 existing.setEndEffectiveDate(start);
                 coachTypePriceRepo.save(existing);
-            } else if (intervalsOverlap(existing.getStartEffectiveDate(), existing.getEndEffectiveDate(), start, end)) {
-                throw new IllegalArgumentException("Khoảng thời gian giá bị trùng với một trong các mốc giá hiện có/sắp có!");
+                continue;
+            }
+
+            if (!existingStart.isBefore(start)) {
+                throw new IllegalArgumentException(
+                        "Đã có mốc giá bắt đầu từ thời điểm này trở đi. Hãy chọn ngày bắt đầu sau mốc giá sắp tới.");
             }
         }
 
@@ -331,11 +329,6 @@ public class CoachTypeServiceImpl implements CoachTypeService {
 
     private boolean isEffectiveAt(CoachTypePrice price, LocalDateTime at) {
         return !price.getStartEffectiveDate().isAfter(at) && price.getEndEffectiveDate().isAfter(at);
-    }
-
-    private boolean intervalsOverlap(LocalDateTime start1, LocalDateTime end1, LocalDateTime start2,
-            LocalDateTime end2) {
-        return !start1.isAfter(end2) && !start2.isAfter(end1);
     }
 
     private CoachTypePriceStatus computePriceStatus(CoachTypePrice price, LocalDateTime now) {

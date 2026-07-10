@@ -28,7 +28,6 @@ export default function CoachTypeDetailPage() {
     const [priceForm, setPriceForm] = useState({
         seatPrice: '',
         startEffectiveDate: '',
-        endEffectiveDate: '',
     });
     const [savingPrice, setSavingPrice] = useState(false);
 
@@ -132,16 +131,8 @@ export default function CoachTypeDetailPage() {
                 seatPrice: Number(priceForm.seatPrice),
                 startEffectiveDate: priceForm.startEffectiveDate,
             };
-            if (priceForm.endEffectiveDate) {
-                if (priceForm.endEffectiveDate <= priceForm.startEffectiveDate) {
-                    setError({ message: 'Ngày kết thúc hiệu lực phải sau ngày bắt đầu!' });
-                    setSavingPrice(false);
-                    return;
-                }
-                payload.endEffectiveDate = priceForm.endEffectiveDate;
-            }
             await coachTypeApi.addPrice(id, payload);
-            setPriceForm({ seatPrice: '', startEffectiveDate: '', endEffectiveDate: '' });
+            setPriceForm({ seatPrice: '', startEffectiveDate: '' });
             const pricesRes = await coachTypeApi.getPriceTimeline(id);
             setPrices(pricesRes);
             const detailRes = await coachTypeApi.getCoachTypeDetail(id);
@@ -367,9 +358,14 @@ export default function CoachTypeDetailPage() {
                         <Card className="shadow-sm border-0 mb-4">
                             <Card.Body className="p-4">
                                 <h5 className="fw-bold mb-3">Thêm mức giá mới</h5>
+                                <Alert variant="light" className="border small mb-3 py-2">
+                                    Mỗi mức giá áp dụng từ ngày bắt đầu cho đến khi có mức giá kế tiếp.
+                                    Muốn đổi giá theo từng giai đoạn? Thêm lần lượt 2 mốc với ngày bắt đầu khác nhau
+                                    (ví dụ: giá A từ 01/01, giá B từ 01/03 — khi đó giá A chỉ còn hiệu lực đến 01/03).
+                                </Alert>
                                 <Form onSubmit={handleAddPrice}>
                                     <Row className="g-3 align-items-start">
-                                        <Col md={4}>
+                                        <Col md={6}>
                                             <Form.Label className="small fw-semibold">Giá vé (VNĐ)</Form.Label>
                                             <InputGroup>
                                                 <Form.Control
@@ -383,7 +379,7 @@ export default function CoachTypeDetailPage() {
                                                 <InputGroup.Text>VNĐ</InputGroup.Text>
                                             </InputGroup>
                                         </Col>
-                                        <Col md={4}>
+                                        <Col md={6}>
                                             <Form.Label className="small fw-semibold">Áp dụng từ</Form.Label>
                                             <Form.Control
                                                 type="datetime-local"
@@ -392,16 +388,9 @@ export default function CoachTypeDetailPage() {
                                                 value={priceForm.startEffectiveDate}
                                                 onChange={(e) => setPriceForm((p) => ({ ...p, startEffectiveDate: e.target.value }))}
                                             />
-                                        </Col>
-                                        <Col md={4}>
-                                            <Form.Label className="small fw-semibold">Áp dụng đến (tùy chọn)</Form.Label>
-                                            <Form.Control
-                                                type="datetime-local"
-                                                min={getMinDateTime()}
-                                                value={priceForm.endEffectiveDate}
-                                                onChange={(e) => setPriceForm((p) => ({ ...p, endEffectiveDate: e.target.value }))}
-                                            />
-                                            <Form.Text className="text-muted">Để trống = không giới hạn.</Form.Text>
+                                            <Form.Text className="text-muted">
+                                                Ngày kết thúc được hệ thống gán tự động khi có mốc giá sau.
+                                            </Form.Text>
                                         </Col>
                                         <Col md={12}>
                                             <Button type="submit" disabled={savingPrice} className="custom-btn-general">
