@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -18,11 +19,11 @@ import com.ralsei.dto.response.staffpassengerticket.StaffPassengerTicketDetailRe
 import com.ralsei.dto.response.staffpassengerticket.StaffPassengerTicketDetailResponse.RefundItem;
 import com.ralsei.dto.response.staffpassengerticket.StaffPassengerTicketDetailResponse.SeatItem;
 import com.ralsei.dto.response.staffpassengerticket.StaffPassengerTicketListItemResponse;
-import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.exception.ResourceNotFoundException;
 import com.ralsei.model.PassengerTicket;
 import com.ralsei.model.Payment;
 import com.ralsei.model.Refund;
+import com.ralsei.model.enums.PassengerTicketStatus;
 import com.ralsei.repository.PassengerTicketDetailRepository;
 import com.ralsei.repository.PassengerTicketRepository;
 import com.ralsei.repository.PaymentRepository;
@@ -30,6 +31,7 @@ import com.ralsei.repository.RefundRepository;
 import com.ralsei.repository.TripRepository;
 import com.ralsei.service.passengerticket.PassengerTicketStaffPolicy;
 import com.ralsei.service.passengerticket.StaffPassengerTicketQueryService;
+import com.ralsei.util.PhoneNumberUtility;
 import com.ralsei.util.QRCreateUitility;
 
 import lombok.RequiredArgsConstructor;
@@ -37,6 +39,9 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicketQueryService {
+
+    private static final Pattern TICKET_CODE_PATTERN = Pattern.compile("[A-Za-z0-9_-]{3,64}");
+    private static final Pattern PHONE_SEARCH_PATTERN = Pattern.compile("^[0-9]{3,11}$");
 
     private final PassengerTicketRepository ticketRepository;
     private final PassengerTicketDetailRepository ticketDetailRepository;
@@ -148,10 +153,32 @@ public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicke
         Integer tripId,
         LocalDate departureDate
     ) {
+        String normalizedPhone = trimToNull(phone);
+        if (normalizedPhone != null) {
+            normalizedPhone = PhoneNumberUtility.normalizeToLocalFormat(normalizedPhone);
+            if (!PHONE_SEARCH_PATTERN.matcher(normalizedPhone).matches()) {
+                throw new IllegalArgumentException("Số điện thoại không hợp lệ.");
+            }
+        }
+
+        String normalizedTicketCode = trimToNull(ticketCode);
+        if (normalizedTicketCode != null && !TICKET_CODE_PATTERN.matcher(normalizedTicketCode).matches()) {
+            throw new IllegalArgumentException("Mã vé không hợp lệ.");
+        }
+
+        PassengerTicketStatus parsedStatus = PassengerTicketStatus.parseSearchValue(trimToNull(status));
+
+        if (routeId != null && routeId <= 0) {
+            throw new IllegalArgumentException("Mã tuyến không hợp lệ.");
+        }
+        if (tripId != null && tripId <= 0) {
+            throw new IllegalArgumentException("Mã chuyến không hợp lệ.");
+        }
+
         return new SearchParams(
-            trimToNull(phone),
-            trimToNull(ticketCode),
-            trimToNull(status),
+            normalizedPhone,
+            normalizedTicketCode,
+            parsedStatus != null ? parsedStatus.name() : null,
             routeId != null && routeId > 0 ? routeId : null,
             tripId != null && tripId > 0 ? tripId : null,
             departureDate
@@ -165,7 +192,7 @@ public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicke
             || params.tripId() != null;
 
         if (!hasCoreFilter) {
-            throw new BusinessRuleException(
+            throw new IllegalArgumentException(
                 "Vui lòng nhập SĐT, mã vé, chọn ngày khởi hành hoặc lọc theo chuyến xe."
             );
         }

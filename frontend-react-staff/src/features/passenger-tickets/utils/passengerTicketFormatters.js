@@ -92,9 +92,65 @@ export function buildSearchParams(filters, hiddenTripId, pageInfo) {
     if (phone) params.phone = phone;
     if (ticketCode) params.ticketCode = ticketCode;
     if (filters.status) params.status = filters.status;
-    if (filters.routeId) params.routeId = Number(filters.routeId);
+    const routeId = Number(filters.routeId);
+    if (filters.routeId && Number.isInteger(routeId) && routeId > 0) {
+        params.routeId = routeId;
+    }
     if (filters.departureDate) params.departureDate = filters.departureDate;
-    if (hiddenTripId) params.tripId = Number(hiddenTripId);
+    const tripId = Number(hiddenTripId);
+    if (hiddenTripId && Number.isInteger(tripId) && tripId > 0) {
+        params.tripId = tripId;
+    }
 
     return params;
+}
+
+const TICKET_CODE_PATTERN = /^[A-Za-z0-9_-]{3,64}$/;
+
+function normalizePhoneForSearch(rawPhone) {
+    if (!rawPhone) return '';
+    const trimmed = rawPhone.trim();
+    if (trimmed.startsWith('+84')) {
+        return `0${trimmed.slice(3)}`;
+    }
+    if (trimmed.startsWith('84') && trimmed.length === 11) {
+        return `0${trimmed.slice(2)}`;
+    }
+    return trimmed;
+}
+
+/**
+ * Validates passenger ticket search filters before calling the API.
+ * Returns a user-facing error message, or null when valid.
+ */
+export function validatePassengerTicketSearchFilters(filters, hiddenTripId) {
+    const phone = filters.phone?.trim();
+    if (phone) {
+        const normalizedPhone = normalizePhoneForSearch(phone);
+        if (!/^[0-9]{3,11}$/.test(normalizedPhone)) {
+            return 'Số điện thoại phải gồm từ 3 đến 11 chữ số.';
+        }
+    }
+
+    const ticketCode = filters.ticketCode?.trim();
+    if (ticketCode && !TICKET_CODE_PATTERN.test(ticketCode)) {
+        return 'Mã vé phải gồm từ 3 đến 64 ký tự chữ, số, gạch dưới hoặc gạch ngang.';
+    }
+
+    const allowedStatuses = ['', 'PENDING', 'CONFIRMED', 'CHANGED', 'CANCELLED'];
+    if (filters.status && !allowedStatuses.includes(filters.status)) {
+        return 'Trạng thái vé không hợp lệ.';
+    }
+
+    const routeId = Number(filters.routeId);
+    if (filters.routeId && (!Number.isInteger(routeId) || routeId <= 0)) {
+        return 'Mã tuyến không hợp lệ.';
+    }
+
+    const tripId = Number(hiddenTripId);
+    if (hiddenTripId && (!Number.isInteger(tripId) || tripId <= 0)) {
+        return 'Mã chuyến không hợp lệ.';
+    }
+
+    return null;
 }

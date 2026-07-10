@@ -18,6 +18,7 @@ import { tripRoutes } from '../features/trip';
 import { tripStaffRoutes } from '../features/tripStaff';
 import { passengerTicketRoutes } from '../features/passenger-tickets';
 import { staffTripInfoRoutes } from '../features/staff-trip-info';
+import { refundRoutes } from '../features/refunds';
 
 const AppRouter = () => {
     return (
@@ -39,6 +40,7 @@ const AppRouter = () => {
                     {cargoRoutes}
                     {voucherRoutes}
                     {tripRoutes}
+                    {refundRoutes}
                     
                     {/* route dưới thì chỉ admin vào đc, manager thì ko */}
                     <Route element={<RoleGuard allowedRoles={['ADMIN']} />}>
