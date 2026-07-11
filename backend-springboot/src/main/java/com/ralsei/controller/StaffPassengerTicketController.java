@@ -36,6 +36,7 @@ import com.ralsei.service.passengerticket.StaffPassengerTicketChangeService;
 import com.ralsei.service.passengerticket.StaffPassengerTicketQueryService;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -64,7 +65,7 @@ public class StaffPassengerTicketController {
         @RequestParam(required = false) Integer tripId,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate departureDate,
         @RequestParam(defaultValue = "0") @Min(0) int page,
-        @RequestParam(defaultValue = "20") @Min(1) int size
+        @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size
     ) {
         return ResponseEntity.ok(queryService.search(
             phone, ticketCode, status, routeId, tripId, departureDate, page, size

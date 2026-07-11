@@ -12,8 +12,9 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
-import com.ralsei.dto.notification.PassengerTicketCancellationEmailPayload;
+import com.ralsei.dto.notification.PassengerRefundCompletedEmailPayload;
 import com.ralsei.dto.notification.PassengerSeatEmailItem;
+import com.ralsei.dto.notification.PassengerTicketCancellationEmailPayload;
 import com.ralsei.dto.notification.PassengerTicketEmailPayload;
 import com.ralsei.service.notification.TicketEmailService;
 import com.ralsei.util.EmailUtility;
@@ -84,7 +85,7 @@ public class TicketEmailServiceImpl implements TicketEmailService {
         String htmlBody = templateEngine.process("email/passenger-ticket-confirmation", context);
         emailUtility.sendHtml(
             payload.primaryEmail(),
-            "Xác nhận vé " + payload.ticketCode() + " - Nhà xe Tuấn MV",
+            "Xác nhận vé " + payload.ticketCode() + " - Nhà xe Ralsei",
             htmlBody,
             inlineImages
         );
@@ -123,11 +124,49 @@ public class TicketEmailServiceImpl implements TicketEmailService {
         String htmlBody = templateEngine.process("email/passenger-ticket-cancellation", context);
         emailUtility.sendHtml(
             ticket.primaryEmail(),
-            "Thông báo hủy vé " + ticket.ticketCode() + " - Nhà xe Tuấn MV",
+            "Thông báo hủy vé " + ticket.ticketCode() + " - Nhà xe Ralsei",
             htmlBody,
             Map.of()
         );
         log.info("Sent passenger ticket cancellation for ticketCode={}", ticket.ticketCode());
+    }
+
+    /**
+     * Creates one readable refund completion email for the primary passenger after
+     * manager confirms that the refund amount was paid out.
+     *
+     * @param payload complete refund and ticket data
+     */
+    @Override
+    public void sendRefundCompleted(PassengerRefundCompletedEmailPayload payload) {
+        validateRefundCompletedPayload(payload);
+        PassengerTicketEmailPayload ticket = payload.ticket();
+
+        Context context = new Context(VIETNAMESE_LOCALE);
+        context.setVariable("ticket", ticket);
+        context.setVariable("refund", payload);
+        context.setVariable("seatNumbers", ticket.seats().stream()
+            .map(PassengerSeatEmailItem::seatCode)
+            .toList());
+        context.setVariable("coachNumber", extractLastFourDigits(ticket.coachLicensePlate()));
+        context.setVariable("departureTime", formatDateTime(ticket.departureTime()));
+        context.setVariable("arrivalTime", formatDateTime(ticket.arrivalTime()));
+        context.setVariable("pickupTime", formatDateTime(ticket.pickupPresentBy()));
+        context.setVariable("paidAt", formatDateTime(ticket.paidAt()));
+        context.setVariable("refundTime", formatDateTime(payload.refundTime()));
+        context.setVariable("formattedRefund", NumberFormat.getCurrencyInstance(VIETNAMESE_LOCALE)
+            .format(payload.refundAmount()));
+        context.setVariable("formattedTotal", NumberFormat.getCurrencyInstance(VIETNAMESE_LOCALE)
+            .format(ticket.totalPrice()));
+
+        String htmlBody = templateEngine.process("email/passenger-refund-completed", context);
+        emailUtility.sendHtml(
+            ticket.primaryEmail(),
+            "Xác nhận hoàn tiền vé " + ticket.ticketCode() + " - Nhà xe Ralsei",
+            htmlBody,
+            Map.of()
+        );
+        log.info("Sent passenger refund completion for ticketCode={}", ticket.ticketCode());
     }
 
     /** Ensures template-required fields are present before contacting SMTP. */
@@ -143,6 +182,23 @@ public class TicketEmailServiceImpl implements TicketEmailService {
         }
         if (payload.totalPrice() == null || payload.seats() == null || payload.seats().isEmpty()) {
             throw new IllegalArgumentException("Vé không có đầy đủ thông tin giá hoặc ghế.");
+        }
+    }
+
+    /** Ensures refund completion template-required fields are present before SMTP. */
+    private void validateRefundCompletedPayload(PassengerRefundCompletedEmailPayload payload) {
+        if (payload == null || payload.ticket() == null) {
+            throw new IllegalArgumentException("Dữ liệu email hoàn tiền không được để trống.");
+        }
+        validatePayload(payload.ticket());
+        if (payload.refundAmount() == null) {
+            throw new IllegalArgumentException("Email hoàn tiền phải có số tiền hoàn.");
+        }
+        if (payload.refundTime() == null) {
+            throw new IllegalArgumentException("Email hoàn tiền phải có thời gian hoàn.");
+        }
+        if (payload.refundMethod() == null || payload.refundMethod().isBlank()) {
+            throw new IllegalArgumentException("Email hoàn tiền phải có phương thức hoàn.");
         }
     }
 

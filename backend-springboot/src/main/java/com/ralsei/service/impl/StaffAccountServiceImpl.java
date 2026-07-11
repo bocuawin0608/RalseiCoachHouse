@@ -63,9 +63,7 @@ public class StaffAccountServiceImpl implements StaffAccountService {
     public StaffProfileResponse updateCurrentProfile(StaffProfileUpdateRequest request) {
         AccountProjection account = findCurrentStaffAccountProjection();
         Staff staff = findActiveStaff(account.getAccountId());
-        String normalizedEmail = request.email() == null || request.email().isBlank()
-            ? null
-            : request.email().trim();
+        String normalizedEmail = request.email();
 
         if (normalizedEmail != null
                 && staffRepository.existsByEmailIgnoreCaseAndStaffIdNot(normalizedEmail, staff.getStaffId())) {
@@ -75,7 +73,7 @@ public class StaffAccountServiceImpl implements StaffAccountService {
             throw new BusinessRuleException("Nhân viên phải từ 20 tuổi trở lên.");
         }
 
-        staff.setStaffName(request.staffName().trim());
+        staff.setStaffName(request.staffName());
         staff.setEmail(normalizedEmail);
         staff.setDob(request.dob());
         staffRepository.save(staff);
