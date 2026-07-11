@@ -37,21 +37,12 @@ docs/
 **/application-API.properties
 
 #Local docs
-./documents/changelog-cargo-tracking.md
-./documents/test-cases-cargo-tracking.md
-./documents/usecase-cargo-tracking.md
-./documents/changelog-voucher-crud.md
-./documents/changelog-local.md
-./documents/USECASE_PassengerTicket_Payment_Refund.md
-./documents/usecase-manage-customers.md
-./documents/usecase-manage-ticket-agencies.md
-./documents/usecase-onboard-staff.md
-./documents/Test_Plan_System.docx
-./documents/Test_Plan_Cargo_Tracking.docx
+/documents/*.md
+/documents/Test_Plan_System.docx
+/documents/Test_Plan_Cargo_Tracking.docx
 
 tracker/
 
 # Seed / test SQL files (local test data, not part of core schema)
-**/seed_tripstaff33.sql
 backend-springboot/db/seed_*.sql
 backend-springboot/db/test_*.sql
