@@ -38,7 +38,7 @@ export default function TicketAgencyDetailModal({ isOpen, data, onClose }) {
 
                         <h6 className="fw-bold text-secondary border-bottom pb-2">Nhân viên đang làm việc ({detail.staffCount ?? 0})</h6>
                         {detail.staffList && detail.staffList.length > 0 ? (
-                            <ListGroup variant="flush" className="mb-3">
+                            <ListGroup variant="flush" className="mb-3" style={{ maxHeight: '240px', overflowY: 'auto' }}>
                                 {detail.staffList.map(s => (
                                     <ListGroup.Item key={s.staffId} className="d-flex justify-content-between align-items-center py-1">
                                         <span>{s.staffName}</span>

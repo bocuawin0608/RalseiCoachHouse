@@ -10,6 +10,7 @@ const ticketAgencyApi = {
     toggleActive: (id) => axiosClient.patch(`${BASE}/${id}/toggle-active`),
     delete: (id) => axiosClient.delete(`${BASE}/${id}`),
     getCoachStopDropdown: () => axiosClient.get(`${BASE}/coach-stop-dropdown`),
+    getAvailableStops: () => axiosClient.get(`${BASE}/available-stops`),
 };
 
 export default ticketAgencyApi;
