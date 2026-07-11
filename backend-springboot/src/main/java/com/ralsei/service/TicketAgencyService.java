@@ -24,4 +24,5 @@ public interface TicketAgencyService {
     void toggleActive(Integer ticketAgencyId);
     void deleteTicketAgency(Integer ticketAgencyId);
     List<CoachStopDropdownDTO> getCoachStopDropdown();
+    List<CoachStopDropdownDTO> getAvailableStops();
 }

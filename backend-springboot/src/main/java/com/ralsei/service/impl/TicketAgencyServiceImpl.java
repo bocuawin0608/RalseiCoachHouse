@@ -70,18 +70,22 @@ public class TicketAgencyServiceImpl implements TicketAgencyService {
     @Override
     @Transactional
     public Integer createTicketAgency(CreateTicketAgencyRequest request) {
-        coachStopRepo.findById(request.stopPointId())
+        Integer stopId = request.stopPointId();
+        coachStopRepo.findById(stopId)
             .orElseThrow(() -> new ResourceNotFoundException("Điểm dừng không tồn tại!"));
 
+        if (ticketAgencyRepo.existsByStopPointId(stopId)) {
+            throw new BusinessRuleException("Điểm dừng này đã có đại lý! Mỗi điểm dừng chỉ được một đại lý.");
+        }
+
         String name = request.ticketAgencyName().trim();
-        Integer stopId = request.stopPointId();
         if (ticketAgencyRepo.existsByTicketAgencyNameIgnoreCaseAndStopPointId(name, stopId)) {
             throw new BusinessRuleException("Đại lý '" + name + "' đã tồn tại tại điểm dừng này!");
         }
 
         TicketAgency ta = TicketAgency.builder()
-            .ticketAgencyName(request.ticketAgencyName().trim())
-            .stopPointId(request.stopPointId())
+            .ticketAgencyName(name)
+            .stopPointId(stopId)
             .isActive(true)
             .build();
         return ticketAgencyRepo.save(ta).getTicketAgencyId();
@@ -93,18 +97,15 @@ public class TicketAgencyServiceImpl implements TicketAgencyService {
         TicketAgency ta = ticketAgencyRepo.findById(ticketAgencyId)
             .orElseThrow(() -> new ResourceNotFoundException("Bến xe không tồn tại!"));
 
-        coachStopRepo.findById(request.stopPointId())
-            .orElseThrow(() -> new ResourceNotFoundException("Điểm dừng không tồn tại!"));
-
         String newName = request.ticketAgencyName().trim();
-        Integer newStopId = request.stopPointId();
-        boolean nameChanged = !ta.getTicketAgencyName().equalsIgnoreCase(newName) || ta.getStopPointId() != (newStopId != null ? newStopId : 0);
-        if (nameChanged && ticketAgencyRepo.existsByTicketAgencyNameIgnoreCaseAndStopPointId(newName, newStopId)) {
+        Integer currentStopId = ta.getStopPointId();
+
+        if (!ta.getTicketAgencyName().equalsIgnoreCase(newName)
+            && ticketAgencyRepo.existsByTicketAgencyNameIgnoreCaseAndStopPointId(newName, currentStopId)) {
             throw new BusinessRuleException("Đại lý '" + newName + "' đã tồn tại tại điểm dừng này!");
         }
 
         ta.setTicketAgencyName(newName);
-        ta.setStopPointId(request.stopPointId());
         if (request.isActive() != null) {
             ta.setActive(request.isActive());
         }
@@ -146,6 +147,14 @@ public class TicketAgencyServiceImpl implements TicketAgencyService {
         return coachStopRepo.findAll().stream()
             .filter(CoachStop::isActive)
             .map(cs -> new CoachStopDropdownDTO(cs.getStopPointId(), cs.getStopPointName(), cs.getAddress(), cs.getCity()))
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CoachStopDropdownDTO> getAvailableStops() {
+        return coachStopRepo.findAvailableStops().stream()
+            .map(p -> new CoachStopDropdownDTO(p.getStopPointId(), p.getStopPointName(), p.getAddress(), p.getCity()))
             .collect(Collectors.toList());
     }
 

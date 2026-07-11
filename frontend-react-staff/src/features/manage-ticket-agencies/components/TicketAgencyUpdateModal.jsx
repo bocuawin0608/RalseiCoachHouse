@@ -4,8 +4,7 @@ import { BsExclamationTriangleFill } from 'react-icons/bs';
 import ticketAgencyApi from '../api/ticketAgencyApi';
 
 export default function TicketAgencyUpdateModal({ isOpen, data, onClose, onSuccess }) {
-    const [form, setForm] = useState({ ticketAgencyName: '', stopPointId: '', isActive: true });
-    const [coachStops, setCoachStops] = useState([]);
+    const [form, setForm] = useState({ ticketAgencyName: '', isActive: true });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
 
@@ -13,17 +12,11 @@ export default function TicketAgencyUpdateModal({ isOpen, data, onClose, onSucce
         if (isOpen && data) {
             setForm({
                 ticketAgencyName: data.ticketAgencyName || '',
-                stopPointId: data.stopPointId || '',
                 isActive: data.active !== false,
             });
             setErrorMsg('');
-            ticketAgencyApi.getCoachStopDropdown()
-                .then(res => setCoachStops(res || []))
-                .catch(() => setCoachStops([]));
         }
     }, [isOpen, data]);
-
-    const selectedStop = coachStops.find(cs => cs.stopPointId == form.stopPointId);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -37,7 +30,7 @@ export default function TicketAgencyUpdateModal({ isOpen, data, onClose, onSucce
         try {
             await ticketAgencyApi.update(data.ticketAgencyId, {
                 ticketAgencyName: form.ticketAgencyName.trim(),
-                stopPointId: parseInt(form.stopPointId, 10),
+                stopPointId: data.stopPointId,
                 isActive: form.isActive,
             });
             onSuccess();
@@ -67,22 +60,13 @@ export default function TicketAgencyUpdateModal({ isOpen, data, onClose, onSucce
                     )}
                     <Row className="g-2">
                         <Col md={6}>
-                            <Form.Label className="small">Tên bến xe <span className="text-danger">*</span></Form.Label>
-                            <Form.Control name="ticketAgencyName" value={form.ticketAgencyName} onChange={handleChange} required maxLength={200} size="sm" />
+                            <Form.Label className="small">Điểm dừng</Form.Label>
+                            <Form.Control type="text" value={data?.stopPointName || ''} size="sm" disabled />
+                            {data?.city && <small className="text-muted d-block mt-1">{data.stopPointName}, {data.city}</small>}
                         </Col>
                         <Col md={6}>
-                            <Form.Label className="small">Điểm dừng <span className="text-danger">*</span></Form.Label>
-                            <Form.Select name="stopPointId" value={form.stopPointId} onChange={handleChange} required size="sm">
-                                <option value="">-- Chọn điểm dừng --</option>
-                                {coachStops.map(cs => (
-                                    <option key={cs.stopPointId} value={cs.stopPointId}>{cs.stopPointName}</option>
-                                ))}
-                            </Form.Select>
-                            {selectedStop && (
-                                <small className="text-muted d-block mt-1">
-                                    {selectedStop.address}{selectedStop.city ? `, ${selectedStop.city}` : ''}
-                                </small>
-                            )}
+                            <Form.Label className="small">Tên đại lý <span className="text-danger">*</span></Form.Label>
+                            <Form.Control name="ticketAgencyName" value={form.ticketAgencyName} onChange={handleChange} required maxLength={200} size="sm" />
                         </Col>
                         <Col md={3} className="d-flex align-items-end">
                             <Form.Check type="switch" id="ta-active-switch" label="Kích hoạt"

@@ -94,4 +94,9 @@ public class TicketAgencyController {
     public ResponseEntity<List<CoachStopDropdownDTO>> getCoachStopDropdown() {
         return ResponseEntity.ok(ticketAgencyService.getCoachStopDropdown());
     }
+
+    @GetMapping("/available-stops")
+    public ResponseEntity<List<CoachStopDropdownDTO>> getAvailableStops() {
+        return ResponseEntity.ok(ticketAgencyService.getAvailableStops());
+    }
 }

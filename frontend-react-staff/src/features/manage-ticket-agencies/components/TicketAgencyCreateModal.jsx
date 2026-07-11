@@ -5,7 +5,7 @@ import ticketAgencyApi from '../api/ticketAgencyApi';
 
 export default function TicketAgencyCreateModal({ isOpen, onClose, onSuccess }) {
     const [form, setForm] = useState({ ticketAgencyName: '', stopPointId: '' });
-    const [coachStops, setCoachStops] = useState([]);
+    const [availableStops, setAvailableStops] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
 
@@ -13,17 +13,26 @@ export default function TicketAgencyCreateModal({ isOpen, onClose, onSuccess }) 
         if (isOpen) {
             setForm({ ticketAgencyName: '', stopPointId: '' });
             setErrorMsg('');
-            ticketAgencyApi.getCoachStopDropdown()
-                .then(res => setCoachStops(res || []))
-                .catch(() => setCoachStops([]));
+            ticketAgencyApi.getAvailableStops()
+                .then(res => setAvailableStops(res || []))
+                .catch(() => setAvailableStops([]));
         }
     }, [isOpen]);
 
-    const selectedStop = coachStops.find(cs => cs.stopPointId == form.stopPointId);
+    const selectedStop = availableStops.find(cs => cs.stopPointId == form.stopPointId);
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setForm(prev => ({ ...prev, [name]: value }));
+    const handleStopChange = (e) => {
+        const stopId = e.target.value;
+        const stop = availableStops.find(cs => cs.stopPointId == stopId);
+        setForm(prev => ({
+            ...prev,
+            stopPointId: stopId,
+            ticketAgencyName: stop ? stop.stopPointName : prev.ticketAgencyName,
+        }));
+    };
+
+    const handleNameChange = (e) => {
+        setForm(prev => ({ ...prev, ticketAgencyName: e.target.value }));
     };
 
     const handleSubmit = async (e) => {
@@ -65,14 +74,10 @@ export default function TicketAgencyCreateModal({ isOpen, onClose, onSuccess }) 
                     )}
                     <Row className="g-2">
                         <Col md={6}>
-                            <Form.Label className="small">Tên bến xe <span className="text-danger">*</span></Form.Label>
-                            <Form.Control name="ticketAgencyName" value={form.ticketAgencyName} onChange={handleChange} required maxLength={200} size="sm" />
-                        </Col>
-                        <Col md={6}>
                             <Form.Label className="small">Điểm dừng <span className="text-danger">*</span></Form.Label>
-                            <Form.Select name="stopPointId" value={form.stopPointId} onChange={handleChange} required size="sm">
+                            <Form.Select name="stopPointId" value={form.stopPointId} onChange={handleStopChange} required size="sm">
                                 <option value="">-- Chọn điểm dừng --</option>
-                                {coachStops.map(cs => (
+                                {availableStops.map(cs => (
                                     <option key={cs.stopPointId} value={cs.stopPointId}>{cs.stopPointName}</option>
                                 ))}
                             </Form.Select>
@@ -81,6 +86,10 @@ export default function TicketAgencyCreateModal({ isOpen, onClose, onSuccess }) 
                                     {selectedStop.address}{selectedStop.city ? `, ${selectedStop.city}` : ''}
                                 </small>
                             )}
+                        </Col>
+                        <Col md={6}>
+                            <Form.Label className="small">Tên đại lý <span className="text-danger">*</span></Form.Label>
+                            <Form.Control name="ticketAgencyName" value={form.ticketAgencyName} onChange={handleNameChange} required maxLength={200} size="sm" />
                         </Col>
                     </Row>
                 </Modal.Body>
