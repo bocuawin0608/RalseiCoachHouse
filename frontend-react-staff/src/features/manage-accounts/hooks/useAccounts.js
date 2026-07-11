@@ -10,7 +10,6 @@ const useAccounts = () => {
         search: '',
         role: '',
         isActive: '',
-        staffPosition: '',
         authProvider: '',
     });
     const [pageInfo, setPageInfo] = useState({ page: 0, size: 10, totalElements: 0, totalPages: 0 });
@@ -27,7 +26,6 @@ const useAccounts = () => {
                 search: debouncedSearch || undefined,
                 role: filters.role || undefined,
                 isActive: filters.isActive !== '' ? filters.isActive : undefined,
-                staffPosition: filters.staffPosition || undefined,
                 authProvider: filters.authProvider || undefined,
             };
             const data = await accountApi.filterAccounts(params);
@@ -44,7 +42,7 @@ const useAccounts = () => {
         } finally {
             setLoading(false);
         }
-    }, [debouncedSearch, filters.role, filters.isActive, filters.staffPosition, filters.authProvider, pageInfo.page, pageInfo.size]);
+    }, [debouncedSearch, filters.role, filters.isActive, filters.authProvider, pageInfo.page, pageInfo.size]);
 
     useEffect(() => {
         fetchAccounts();
@@ -60,7 +58,7 @@ const useAccounts = () => {
     };
 
     const handleReset = () => {
-        setFilters({ search: '', role: '', isActive: '', staffPosition: '', authProvider: '' });
+        setFilters({ search: '', role: '', isActive: '', authProvider: '' });
         setPageInfo(prev => ({ ...prev, page: 0 }));
     };
 

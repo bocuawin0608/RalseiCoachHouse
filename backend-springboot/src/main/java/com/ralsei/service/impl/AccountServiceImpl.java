@@ -1,5 +1,6 @@
 package com.ralsei.service.impl;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -66,6 +67,7 @@ public class AccountServiceImpl implements AccountService {
                     String s = search.toLowerCase();
                     boolean match = (acc.username() != null && acc.username().toLowerCase().contains(s))
                         || (acc.staffName() != null && acc.staffName().toLowerCase().contains(s))
+                        || (acc.customerName() != null && acc.customerName().toLowerCase().contains(s))
                         || (acc.roles() != null && String.join(",", acc.roles()).toLowerCase().contains(s));
                     if (!match) return false;
                 }
@@ -289,19 +291,29 @@ public class AccountServiceImpl implements AccountService {
             ? Arrays.stream(proj.getRoleNames().split(",")).map(String::trim).collect(Collectors.toList())
             : List.of();
 
+        LocalDateTime lastLogin = null;
+        if (proj.getLastLogin() != null && !proj.getLastLogin().isBlank()) {
+            try { lastLogin = LocalDateTime.parse(proj.getLastLogin().replace(" ", "T"), java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")); } catch (Exception ignored) {}
+        }
+        LocalDateTime createdAt = null;
+        if (proj.getCreatedAt() != null && !proj.getCreatedAt().isBlank()) {
+            try { createdAt = LocalDateTime.parse(proj.getCreatedAt().replace(" ", "T"), java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")); } catch (Exception ignored) {}
+        }
+
         return new AccountListResponse(
             proj.getAccountId(),
             proj.getUsername(),
             proj.getAuthProvider(),
             proj.getIsActive() != null && proj.getIsActive(),
-            null,
+            lastLogin,
             roleNames,
             proj.getStaffId(),
             proj.getStaffName(),
             proj.getStaffPosition(),
             proj.getPhone(),
             proj.getEmail(),
-            null
+            createdAt,
+            proj.getCustomerName()
         );
     }
 

@@ -1,14 +1,15 @@
 import { Table, Badge, ButtonGroup, Button, Spinner } from 'react-bootstrap';
-import { BsEye, BsPencilFill, BsShieldLock, BsKey, BsToggleOn, BsToggleOff, BsExclamationTriangleFill } from 'react-icons/bs';
+import { BsEye, BsShieldLock, BsKey, BsToggleOn, BsToggleOff, BsExclamationTriangleFill } from 'react-icons/bs';
 
 const ROLE_BADGE_COLORS = {
     ADMIN: 'danger',
     MANAGER: 'warning',
     TICKET_STAFF: 'info',
     TRIP_STAFF: 'secondary',
+    CUSTOMER: 'dark',
 };
 
-export default function AccountTable({ accounts, loading, error, onViewDetail, onEdit, onAssignRoles, onResetPassword, onToggleActive }) {
+export default function AccountTable({ accounts, loading, error, onViewDetail, onAssignRoles, onResetPassword, onToggleActive }) {
     if (loading) {
         return (
             <div className="text-center py-5">
@@ -35,25 +36,42 @@ export default function AccountTable({ accounts, loading, error, onViewDetail, o
         );
     }
 
+    const isLocal = (acc) => acc.authProvider === 'local';
+
     return (
         <div className="table-responsive">
             <Table hover className="align-middle mb-0">
                 <thead className="table-light">
                     <tr>
                         <th>Username</th>
-                        <th>Tên nhân viên</th>
+                        <th>Loại</th>
+                        <th>Liên kết tới</th>
                         <th>Vai trò</th>
+                        <th>Lần đăng nhập cuối</th>
                         <th>Trạng thái</th>
                         <th className="text-center">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
                     {accounts.map(acc => {
-                        const isActive = acc.active !== false;
+                        const active = acc.active !== false;
+                        const linkedName = acc.staffName || acc.customerName || null;
+                        const linkedType = acc.staffName ? 'staff' : acc.customerName ? 'customer' : null;
                         return (
-                        <tr key={acc.accountId} className={!isActive ? 'table-danger' : ''}>
+                        <tr key={acc.accountId} className={!active ? 'table-danger' : ''}>
                             <td className="fw-medium">{acc.username}</td>
-                            <td>{acc.staffName || <span className="text-muted fst-italic">Chưa có</span>}</td>
+                            <td>
+                                <Badge bg={isLocal(acc) ? 'secondary' : 'primary'} style={{ fontSize: '0.75rem' }}>
+                                    {isLocal(acc) ? 'Nội bộ' : 'Firebase'}
+                                </Badge>
+                            </td>
+                            <td style={{ fontSize: '0.85rem' }}>
+                                {linkedName ? (
+                                    <>{linkedName} <small className="text-muted">({linkedType})</small></>
+                                ) : (
+                                    <span className="text-muted fst-italic">Không có</span>
+                                )}
+                            </td>
                             <td>
                                 {acc.roles && acc.roles.length > 0
                                     ? acc.roles.map(role => (
@@ -64,9 +82,12 @@ export default function AccountTable({ accounts, loading, error, onViewDetail, o
                                     : <Badge bg="light" text="dark">Chưa gán</Badge>
                                 }
                             </td>
+                            <td style={{ fontSize: '0.85rem' }}>
+                                {acc.lastLogin ? new Date(acc.lastLogin).toLocaleString('vi-VN') : <span className="text-muted">—</span>}
+                            </td>
                             <td>
-                                <Badge bg={isActive ? 'success' : 'danger'}>
-                                    {isActive ? 'Hoạt động' : 'Đã khóa'}
+                                <Badge bg={active ? 'success' : 'danger'}>
+                                    {active ? 'Hoạt động' : 'Đã khóa'}
                                 </Badge>
                             </td>
                             <td>
@@ -74,21 +95,20 @@ export default function AccountTable({ accounts, loading, error, onViewDetail, o
                                     <Button variant="outline-primary" title="Xem chi tiết" onClick={() => onViewDetail(acc)}>
                                         <BsEye />
                                     </Button>
-                                    <Button variant="outline-secondary" title="Sửa thông tin" onClick={() => onEdit(acc)}>
-                                        <BsPencilFill />
-                                    </Button>
-                                    <Button variant="outline-warning" title="Phân quyền" onClick={() => onAssignRoles(acc)}>
+                                    <Button variant="outline-warning" title="Gán vai trò" onClick={() => onAssignRoles(acc)}>
                                         <BsShieldLock />
                                     </Button>
-                                    <Button variant="outline-info" title="Đặt lại mật khẩu" onClick={() => onResetPassword(acc)}>
+                                    <Button variant="outline-info" title="Đặt lại mật khẩu"
+                                        disabled={!isLocal(acc)}
+                                        onClick={() => onResetPassword(acc)}>
                                         <BsKey />
                                     </Button>
                                     <Button
-                                        variant={isActive ? 'outline-danger' : 'outline-success'}
-                                        title={isActive ? 'Vô hiệu hóa' : 'Kích hoạt'}
+                                        variant={active ? 'outline-danger' : 'outline-success'}
+                                        title={active ? 'Vô hiệu hóa' : 'Kích hoạt'}
                                         onClick={() => onToggleActive(acc)}
                                     >
-                                        {isActive ? <BsToggleOff /> : <BsToggleOn />}
+                                        {active ? <BsToggleOff /> : <BsToggleOn />}
                                     </Button>
                                 </ButtonGroup>
                             </td>

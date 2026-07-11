@@ -21,5 +21,6 @@ public record AccountListResponse(
     String staffPosition,
     String phone,
     String email,
-    LocalDateTime createdAt
+    LocalDateTime createdAt,
+    String customerName
 ) {}

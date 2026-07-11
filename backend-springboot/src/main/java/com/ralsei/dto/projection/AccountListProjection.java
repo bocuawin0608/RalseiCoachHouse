@@ -9,10 +9,13 @@ public interface AccountListProjection {
     String getUsername();
     String getAuthProvider();
     Boolean getIsActive();
+    String getLastLogin();
     String getRoleNames();
     Integer getStaffId();
     String getStaffName();
     String getStaffPosition();
     String getPhone();
     String getEmail();
+    String getCustomerName();
+    String getCreatedAt();
 }

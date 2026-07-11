@@ -47,14 +47,17 @@ public interface AccountRepository extends JpaRepository<Account, Integer> {
             s.staffPosition      AS staffPosition,
             s.phone              AS phone,
             s.email              AS email,
-            CONVERT(VARCHAR, a.createdAt, 120) AS createdAt
+            CONVERT(VARCHAR, a.createdAt, 120) AS createdAt,
+            c.customerName       AS customerName
         FROM account a
         LEFT JOIN account_role ar ON a.accountId = ar.accountId
         LEFT JOIN role r          ON ar.roleId   = r.roleId
         LEFT JOIN staff s         ON a.accountId = s.accountId
+        LEFT JOIN customer c      ON a.accountId = c.accountId
         GROUP BY a.accountId, a.username, a.authProvider, a.isActive,
                 a.lastLogin, a.createdAt,
-                s.staffId, s.staffName, s.staffPosition, s.phone, s.email
+                s.staffId, s.staffName, s.staffPosition, s.phone, s.email,
+                c.customerName
         ORDER BY a.createdAt DESC
     """, nativeQuery = true)
     List<AccountListProjection> findAllAccountList();
