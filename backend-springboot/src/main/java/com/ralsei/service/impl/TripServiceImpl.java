@@ -37,6 +37,11 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
+/**
+ * Implements customer trip discovery and staff trip-management application
+ * rules. Public filter validation is repeated here to protect non-HTTP callers
+ * before repository parameters are constructed.
+ */
 @Service
 @RequiredArgsConstructor
 public class TripServiceImpl implements TripService {
@@ -119,6 +124,14 @@ public class TripServiceImpl implements TripService {
                 tripPage.isLast());
     }
 
+    /**
+     * Applies validated public filters and converts time ranges into the fixed
+     * minute-of-day parameters used by the customer repository query.
+     *
+     * <p>These guards deliberately duplicate transport validation. Services are
+     * also called from tests and other Java code where MVC's {@code @Valid} is
+     * not present, and unsafe values must never reach SQL through those paths.</p>
+     */
     @Override
     @Transactional(readOnly = true)
     public PagedResponse<TripFilterProjection> getFilteredTripDetails(
@@ -133,6 +146,8 @@ public class TripServiceImpl implements TripService {
             int size) {
 
         List<String> normalizedTimeSlots = normalizeCustomerTimeSlots(timeSlots);
+        List<String> normalizedLayoutKeywords = normalizeCustomerCoachTypeFilters(layouts);
+        validateCustomerTripFilters(normalizedTimeSlots, normalizedLayoutKeywords, minPrice, maxPrice);
         int checkTimeSlots = normalizedTimeSlots.isEmpty() ? 0 : 1;
 
         Integer slot1StartMinute = null, slot1EndMinute = null;
@@ -141,16 +156,12 @@ public class TripServiceImpl implements TripService {
         Integer slot4StartMinute = null, slot4EndMinute = null;
 
         if (checkTimeSlots == 1) {
-            for (int i = 0; i < Math.min(normalizedTimeSlots.size(), 4); i++) {
+            for (int i = 0; i < normalizedTimeSlots.size(); i++) {
                 String slot = normalizedTimeSlots.get(i);
                 if (slot != null && slot.contains("-")) {
                     String[] parts = slot.split("-");
                     Integer startMinute = parseTimeToMinuteOfDay(parts[0].trim());
                     Integer endMinute = parseTimeToMinuteOfDay(parts[1].trim());
-                    if (startMinute == null || endMinute == null) {
-                        continue;
-                    }
-
                     switch (i) {
                         case 0 -> {
                             slot1StartMinute = startMinute;
@@ -173,7 +184,6 @@ public class TripServiceImpl implements TripService {
             }
         }
 
-        List<String> normalizedLayoutKeywords = normalizeCustomerCoachTypeFilters(layouts);
         int checkLayouts = normalizedLayoutKeywords.isEmpty() ? 0 : 1;
         String layoutKeyword1 = normalizedLayoutKeywords.size() > 0 ? normalizedLayoutKeywords.get(0) : null;
         String layoutKeyword2 = normalizedLayoutKeywords.size() > 1 ? normalizedLayoutKeywords.get(1) : null;
@@ -596,7 +606,39 @@ public class TripServiceImpl implements TripService {
                 }
             }
         }
-        return keywords.stream().limit(3).toList();
+        return keywords;
+    }
+
+    /**
+     * Enforces repository parameter limits and numeric ordering for callers
+     * that invoke the service without passing through Spring MVC validation.
+     */
+    private void validateCustomerTripFilters(
+            List<String> timeSlots,
+            List<String> layoutKeywords,
+            Double minPrice,
+            Double maxPrice) {
+        if (timeSlots.size() > 4) {
+            throw new IllegalArgumentException("At most four time slots may be requested.");
+        }
+        for (String slot : timeSlots) {
+            String[] bounds = slot.split("-", 2);
+            Integer startMinute = bounds.length == 2 ? parseTimeToMinuteOfDay(bounds[0].trim()) : null;
+            Integer endMinute = bounds.length == 2 ? parseTimeToMinuteOfDay(bounds[1].trim()) : null;
+            if (startMinute == null || endMinute == null || startMinute > endMinute) {
+                throw new IllegalArgumentException("Time slots must use a valid forward HH:mm-HH:mm range.");
+            }
+        }
+        if (layoutKeywords.size() > 3) {
+            throw new IllegalArgumentException("At most three layouts may be requested.");
+        }
+        if ((minPrice != null && (!Double.isFinite(minPrice) || minPrice < 0))
+                || (maxPrice != null && (!Double.isFinite(maxPrice) || maxPrice < 0))) {
+            throw new IllegalArgumentException("Price bounds must be finite and non-negative.");
+        }
+        if (minPrice != null && maxPrice != null && minPrice > maxPrice) {
+            throw new IllegalArgumentException("Minimum price must not exceed maximum price.");
+        }
     }
 
     /**
