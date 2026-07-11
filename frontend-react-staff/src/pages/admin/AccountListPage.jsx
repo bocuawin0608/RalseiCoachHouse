@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { Container, Button, Card } from 'react-bootstrap';
-import { BsPlusLg } from 'react-icons/bs';
-import { useAccounts, AccountFilter, AccountTable, AccountCreateModal, AccountUpdateModal, AccountDetailModal, AccountRoleModal, AccountResetPasswordModal } from '../../features/manage-accounts';
+import { Container, Card } from 'react-bootstrap';
+import { useAccounts, AccountFilter, AccountTable, AccountDetailModal, AccountRoleModal, AccountResetPasswordModal } from '../../features/manage-accounts';
 import Pagination from '../../components/common/Pagination';
 
 export default function AccountListPage() {
@@ -24,9 +23,6 @@ export default function AccountListPage() {
         <Container fluid className="py-3">
             <div className="d-flex justify-content-between align-items-center mb-3">
                 <h4 className="fw-bold m-0">Quản lý tài khoản</h4>
-                <Button variant="success" size="sm" onClick={() => setModalState({ type: 'create', data: null })}>
-                    <BsPlusLg className="me-1" /> Thêm tài khoản
-                </Button>
             </div>
 
             <AccountFilter filters={filters} onFilterChange={handleFilterChange} onReset={handleReset} />
@@ -38,7 +34,6 @@ export default function AccountListPage() {
                         loading={loading}
                         error={error}
                         onViewDetail={(acc) => setModalState({ type: 'detail', data: acc })}
-                        onEdit={(acc) => setModalState({ type: 'edit', data: acc })}
                         onAssignRoles={(acc) => setModalState({ type: 'roles', data: acc })}
                         onResetPassword={(acc) => setModalState({ type: 'reset-password', data: acc })}
                         onToggleActive={handleToggleActive}
@@ -51,17 +46,6 @@ export default function AccountListPage() {
                 )}
             </Card>
 
-            <AccountCreateModal
-                isOpen={modalState.type === 'create'}
-                onClose={closeModal}
-                onSuccess={refetch}
-            />
-            <AccountUpdateModal
-                isOpen={modalState.type === 'edit'}
-                data={modalState.data}
-                onClose={closeModal}
-                onSuccess={refetch}
-            />
             <AccountDetailModal
                 isOpen={modalState.type === 'detail'}
                 data={modalState.data}

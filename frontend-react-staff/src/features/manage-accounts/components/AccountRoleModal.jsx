@@ -30,11 +30,11 @@ export default function AccountRoleModal({ isOpen, data, onClose, onSuccess }) {
 
     const handleToggle = (roleId) => {
         setSelectedRoles(prev =>
-            prev.includes(roleId) ? prev.filter(id => id !== roleId) : [...prev, roleId]
+            prev.includes(roleId) ? [] : [roleId]
         );
     };
 
-    const hasChanges = JSON.stringify([...selectedRoles].sort()) !== JSON.stringify([...currentRoles].sort());
+    const hasChanges = JSON.stringify(selectedRoles) !== JSON.stringify(currentRoles);
 
     const handleSubmit = async (e) => {
         e.preventDefault();

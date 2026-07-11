@@ -29,7 +29,7 @@ export default function AccountDetailModal({ isOpen, data, onClose }) {
                         <h6 className="fw-bold text-secondary border-bottom pb-2">Thông tin tài khoản</h6>
                         <Row className="mb-3">
                             <Col md={4}><strong>Username:</strong> {detail.username}</Col>
-                            <Col md={4}><strong>Loại:</strong> {detail.authProvider}</Col>
+                            <Col md={4}><strong>Loại:</strong> {detail.authProvider === 'local' ? 'Nội bộ' : detail.authProvider}</Col>
                             <Col md={4}>
                                 <strong>Trạng thái:</strong>{' '}
                                 <Badge bg={detail.active !== false ? 'success' : 'secondary'}>
