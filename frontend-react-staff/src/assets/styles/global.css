@@ -67,9 +67,10 @@ input, button, textarea, select {
   font-size: inherit;
 }
 
-/* Bỏ viền xanh lè mặc định khi focus vào ô input của trình duyệt */
-input:focus, textarea:focus, select:focus {
-  outline: none;
+/* Focus ring tùy chỉnh cho input (thay thế outline mặc định) */
+input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid var(--ralsei-primary-light);
+  outline-offset: 1px;
 }
 
 .custom-btn-general {

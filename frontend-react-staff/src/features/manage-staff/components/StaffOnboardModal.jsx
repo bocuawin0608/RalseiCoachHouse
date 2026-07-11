@@ -4,12 +4,19 @@ import { BsExclamationTriangleFill, BsCheckCircle } from 'react-icons/bs';
 import staffApi from '../api/staffApi';
 import accountApi from '../../manage-accounts/api/accountApi';
 
-const STAFF_POSITIONS = ['MANAGER', 'TICKET_STAFF', 'TRIP_STAFF', 'ADMIN'];
+const STAFF_ROLES = ['ADMIN', 'MANAGER', 'TICKET_STAFF', 'TRIP_STAFF'];
+
+const POSITION_BY_ROLE = {
+    ADMIN: ['MANAGER'],
+    MANAGER: ['MANAGER'],
+    TICKET_STAFF: ['TICKET_STAFF'],
+    TRIP_STAFF: ['DRIVER', 'ATTENDANT'],
+};
 
 export default function StaffOnboardModal({ isOpen, onClose, onSuccess, ticketAgencies }) {
     const [form, setForm] = useState({
         staffName: '', phone: '', email: '', cccd: '', dob: '',
-        staffPosition: 'TICKET_STAFF', hireDate: '', ticketAgencyId: '',
+        staffPosition: '', hireDate: '', ticketAgencyId: '',
     });
     const [roles, setRoles] = useState([]);
     const [selectedRoles, setSelectedRoles] = useState([]);
@@ -21,14 +28,19 @@ export default function StaffOnboardModal({ isOpen, onClose, onSuccess, ticketAg
         if (isOpen) {
             setForm({
                 staffName: '', phone: '', email: '', cccd: '', dob: '',
-                staffPosition: 'TICKET_STAFF', hireDate: '', ticketAgencyId: '',
+                staffPosition: '', hireDate: '', ticketAgencyId: '',
             });
             setSelectedRoles([]);
             setErrorMsg('');
             setResult(null);
-            accountApi.getAllRoles().then(res => setRoles(res || [])).catch(() => {});
+            accountApi.getAllRoles()
+                .then(res => setRoles((res || []).filter(r => STAFF_ROLES.includes(r.roleName))))
+                .catch(() => {});
         }
     }, [isOpen]);
+
+    const selectedRoleName = roles.find(r => selectedRoles.includes(r.roleId))?.roleName;
+    const positionOptions = selectedRoleName ? (POSITION_BY_ROLE[selectedRoleName] || []) : [];
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -37,9 +49,25 @@ export default function StaffOnboardModal({ isOpen, onClose, onSuccess, ticketAg
 
     const handleRoleToggle = (roleId) => {
         setSelectedRoles(prev =>
-            prev.includes(roleId) ? prev.filter(id => id !== roleId) : [...prev, roleId]
+            prev.includes(roleId) ? [] : [roleId]
         );
     };
+
+    const agencyRequired = selectedRoleName === 'TICKET_STAFF';
+    const agencyDisabled = selectedRoleName === 'ADMIN' || selectedRoleName === 'TRIP_STAFF';
+
+    useEffect(() => {
+        if (selectedRoleName && positionOptions.length > 0) {
+            const current = form.staffPosition;
+            if (!current || !positionOptions.includes(current)) {
+                setForm(prev => ({
+                    ...prev,
+                    staffPosition: positionOptions[0],
+                    ticketAgencyId: agencyDisabled ? '' : prev.ticketAgencyId,
+                }));
+            }
+        }
+    }, [selectedRoleName]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -71,6 +99,11 @@ export default function StaffOnboardModal({ isOpen, onClose, onSuccess, ticketAg
             }
         }
 
+        if (agencyRequired && !form.ticketAgencyId) {
+            setErrorMsg('Nhân viên bán vé phải trực thuộc một bến xe.');
+            return;
+        }
+
         setIsSubmitting(true);
         setResult(null);
         try {
@@ -82,7 +115,7 @@ export default function StaffOnboardModal({ isOpen, onClose, onSuccess, ticketAg
                 dob: form.dob || null,
                 staffPosition: form.staffPosition,
                 hireDate: form.hireDate,
-                ticketAgencyId: parseInt(form.ticketAgencyId, 10),
+                ticketAgencyId: agencyDisabled || !form.ticketAgencyId ? null : parseInt(form.ticketAgencyId, 10),
                 roleIds: selectedRoles,
             };
             const res = await staffApi.onboard(payload);
@@ -157,8 +190,9 @@ export default function StaffOnboardModal({ isOpen, onClose, onSuccess, ticketAg
                             <Col md={3}>
                                 <Form.Label className="small">Chức vụ <span className="text-danger">*</span></Form.Label>
                                 <Form.Select name="staffPosition" value={form.staffPosition} onChange={handleChange} size="sm">
-                                    {STAFF_POSITIONS.map(pos => (
-                                        <option key={pos} value={pos}>{pos}</option>
+                                    <option value="">-- Chọn chức vụ --</option>
+                                    {positionOptions.map(p => (
+                                        <option key={p} value={p}>{p}</option>
                                     ))}
                                 </Form.Select>
                             </Col>
@@ -167,9 +201,9 @@ export default function StaffOnboardModal({ isOpen, onClose, onSuccess, ticketAg
                                 <Form.Control type="date" name="hireDate" value={form.hireDate} onChange={handleChange} required size="sm" />
                             </Col>
                             <Col md={3}>
-                                <Form.Label className="small">Bến xe <span className="text-danger">*</span></Form.Label>
-                                <Form.Select name="ticketAgencyId" value={form.ticketAgencyId} onChange={handleChange} required size="sm">
-                                    <option value="">-- Chọn bến xe --</option>
+                                <Form.Label className="small">Bến xe {agencyRequired && <span className="text-danger">*</span>}</Form.Label>
+                                <Form.Select name="ticketAgencyId" value={form.ticketAgencyId} onChange={handleChange} size="sm" disabled={agencyDisabled}>
+                                    <option value="">-- Không trực thuộc --</option>
                                     {ticketAgencies.map(ta => (
                                         <option key={ta.ticketAgencyId} value={ta.ticketAgencyId}>{ta.ticketAgencyName}</option>
                                     ))}
