@@ -67,6 +67,14 @@ const VoucherForm = ({ initialData, isSubmitting, hasReferences, onSubmit, onBac
     }
     if (!formData.startEffectiveDate) {
       newErrors.startEffectiveDate = 'Vui lòng chọn ngày bắt đầu';
+    } else if (!initialData) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const start = new Date(formData.startEffectiveDate);
+      start.setHours(0, 0, 0, 0);
+      if (start < today) {
+        newErrors.startEffectiveDate = 'Ngày bắt đầu phải là hôm nay hoặc trong tương lai';
+      }
     }
     if (!formData.endEffectiveDate) {
       newErrors.endEffectiveDate = 'Vui lòng chọn ngày kết thúc';
@@ -207,6 +215,7 @@ const VoucherForm = ({ initialData, isSubmitting, hasReferences, onSubmit, onBac
                     value={formData.startEffectiveDate}
                     onChange={handleChange}
                     isInvalid={!!errors.startEffectiveDate}
+                    min={initialData ? undefined : new Date().toISOString().slice(0, 16)}
                   />
                   <Form.Control.Feedback type="invalid">{errors.startEffectiveDate}</Form.Control.Feedback>
                 </Form.Group>
