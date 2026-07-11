@@ -7,6 +7,11 @@ import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 import java.time.LocalDate;
 
+/**
+ * Base pagination, route, and travel-date parameters for public trip searches.
+ * Bean Validation annotations are evaluated by the customer controller before
+ * any service or repository work begins.
+ */
 @Data
 public class TripSearchRequest {
 
