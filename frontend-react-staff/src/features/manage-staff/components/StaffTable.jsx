@@ -1,6 +1,19 @@
 import { Table, Badge, ButtonGroup, Button, Spinner } from 'react-bootstrap';
 import { BsEye, BsPencilFill, BsToggleOn, BsToggleOff, BsExclamationTriangleFill } from 'react-icons/bs';
 
+const ROLE_BADGE_COLORS = {
+    ADMIN: 'danger',
+    MANAGER: 'warning',
+    TICKET_STAFF: 'info',
+    TRIP_STAFF: 'secondary',
+    CUSTOMER: 'dark',
+};
+
+const maskCccd = (v) => {
+    if (!v || v.length < 6) return v || '—';
+    return v.slice(0, 3) + '••••' + v.slice(-2);
+};
+
 export default function StaffTable({ staffList, loading, error, onViewDetail, onEdit, onToggleActive }) {
     if (loading) return (
         <div className="text-center py-5"><Spinner animation="border" variant="primary" /><p className="mt-2 text-muted">Đang tải dữ liệu...</p></div>
@@ -20,11 +33,11 @@ export default function StaffTable({ staffList, loading, error, onViewDetail, on
                         <th>ID</th>
                         <th>Họ tên</th>
                         <th>SĐT</th>
-                        <th>Email</th>
                         <th>CCCD</th>
                         <th>Chức vụ</th>
-                        <th>Bến xe</th>
-                        <th>Tài khoản</th>
+                        <th>Vai trò</th>
+                        <th>Bến xe / Đại lý</th>
+                        <th>Ngày vào làm</th>
                         <th>Trạng thái</th>
                         <th className="text-center">Thao tác</th>
                     </tr>
@@ -37,11 +50,16 @@ export default function StaffTable({ staffList, loading, error, onViewDetail, on
                                 <td>{s.staffId}</td>
                                 <td className="fw-medium">{s.staffName}</td>
                                 <td>{s.phone || <span className="text-muted">—</span>}</td>
-                                <td>{s.email || <span className="text-muted">—</span>}</td>
-                                <td>{s.cccd || <span className="text-muted">—</span>}</td>
+                                <td style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{maskCccd(s.cccd)}</td>
                                 <td><Badge bg="info">{s.staffPosition}</Badge></td>
+                                <td>
+                                    {s.roleName
+                                        ? <Badge bg={ROLE_BADGE_COLORS[s.roleName] || 'light'}>{s.roleName}</Badge>
+                                        : <span className="text-muted">—</span>
+                                    }
+                                </td>
                                 <td>{s.ticketAgencyName || <span className="text-muted">—</span>}</td>
-                                <td>{s.username || <span className="text-muted">—</span>}</td>
+                                <td style={{ fontSize: '0.85rem' }}>{s.hireDate ? new Date(s.hireDate + 'T00:00:00').toLocaleDateString('vi-VN') : <span className="text-muted">—</span>}</td>
                                 <td><Badge bg={isActive ? 'success' : 'danger'}>{isActive ? 'Hoạt động' : 'Đã khóa'}</Badge></td>
                                 <td>
                                     <ButtonGroup size="sm" className="d-flex justify-content-center">

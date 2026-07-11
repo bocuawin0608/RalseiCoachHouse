@@ -4,7 +4,7 @@ import { BsExclamationTriangleFill, BsCheckCircle } from 'react-icons/bs';
 import staffApi from '../api/staffApi';
 import accountApi from '../../manage-accounts/api/accountApi';
 
-const STAFF_POSITIONS = ['DRIVER', 'ATTENDANT', 'TICKET_STAFF', 'MANAGER'];
+const STAFF_POSITIONS = ['MANAGER', 'TICKET_STAFF', 'TRIP_STAFF', 'ADMIN'];
 
 export default function StaffOnboardModal({ isOpen, onClose, onSuccess, ticketAgencies }) {
     const [form, setForm] = useState({

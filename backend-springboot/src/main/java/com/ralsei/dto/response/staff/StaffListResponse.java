@@ -18,5 +18,6 @@ public record StaffListResponse(
     @JsonProperty("active") boolean isActive,
     LocalDate dob,
     LocalDate hireDate,
-    LocalDateTime createdAt
+    LocalDateTime createdAt,
+    String roleName
 ) {}

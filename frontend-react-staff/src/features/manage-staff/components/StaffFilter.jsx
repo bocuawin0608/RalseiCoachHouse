@@ -1,7 +1,7 @@
 import { Form, Row, Col, Button } from 'react-bootstrap';
 import { BsSearch, BsArrowCounterclockwise } from 'react-icons/bs';
 
-const POSITIONS = ['DRIVER', 'TICKET_STAFF', 'TRIP_STAFF', 'MANAGER', 'ADMIN'];
+const POSITIONS = ['DRIVER', 'ATTENDANT', 'TICKET_STAFF', 'MANAGER'];
 
 export default function StaffFilter({ filters, onFilterChange, onReset, ticketAgencies }) {
     return (
@@ -26,11 +26,13 @@ export default function StaffFilter({ filters, onFilterChange, onReset, ticketAg
                         </Form.Select>
                     </Col>
                     <Col md={2}>
-                        <Form.Label className="fw-semibold small">Bến xe</Form.Label>
+                        <Form.Label className="fw-semibold small">Bến xe / Đại lý</Form.Label>
                         <Form.Select name="ticketAgencyId" value={filters.ticketAgencyId} onChange={onFilterChange} size="sm">
                             <option value="">Tất cả</option>
                             {(ticketAgencies || []).map(ta => (
-                                <option key={ta.ticketAgencyId} value={ta.ticketAgencyId}>{ta.ticketAgencyName}</option>
+                                <option key={ta.ticketAgencyId} value={ta.ticketAgencyId}>
+                                    {ta.ticketAgencyName}  ({ta.stopPointName}{ta.city ? `, ${ta.city}` : ''})
+                                </option>
                             ))}
                         </Form.Select>
                     </Col>
