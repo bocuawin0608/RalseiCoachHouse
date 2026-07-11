@@ -3,8 +3,10 @@ package com.ralsei.service.impl;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,6 +17,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ralsei.dto.projection.CoachTypeProjection;
+import com.ralsei.dto.projection.coach.CoachUpcomingTripCountProjection;
 import com.ralsei.dto.request.coachtype.CoachTypeCreateRequest;
 import com.ralsei.dto.request.coachtype.CoachTypeFilterRequest;
 import com.ralsei.dto.request.coachtype.CoachTypePriceCreateRequest;
@@ -241,16 +244,26 @@ public class CoachTypeServiceImpl implements CoachTypeService {
     public CoachTypeDeactivationCheckResponse getDeactivationCheck(Integer id) {
         findCoachTypeOrThrow(id);
         List<Coach> activeCoaches = coachRepo.findByCoachType_CoachTypeIdAndStatusNot(id, CoachStatus.RETIRED);
+        if (activeCoaches.isEmpty()) {
+            return new CoachTypeDeactivationCheckResponse(true, List.of());
+        }
+
+        List<Integer> coachIds = activeCoaches.stream().map(Coach::getCoachId).toList();
+        Map<Integer, Long> upcomingByCoachId = tripRepo.countUpcomingTripsGroupedByCoachIds(coachIds).stream()
+                .collect(Collectors.toMap(
+                        CoachUpcomingTripCountProjection::getCoachId,
+                        row -> row.getUpcomingCount() == null ? 0L : row.getUpcomingCount(),
+                        Long::sum));
 
         List<CoachTypeDeactivationCheckResponse.ActiveCoachSummary> summaries = activeCoaches.stream()
                 .map(c -> new CoachTypeDeactivationCheckResponse.ActiveCoachSummary(
                         c.getCoachId(),
                         c.getLicensePlate(),
                         c.getStatus(),
-                        tripRepo.countUpcomingTripsByCoachId(c.getCoachId())))
+                        upcomingByCoachId.getOrDefault(c.getCoachId(), 0L)))
                 .toList();
 
-        return new CoachTypeDeactivationCheckResponse(summaries.isEmpty(), summaries);
+        return new CoachTypeDeactivationCheckResponse(false, summaries);
     }
 
     @Transactional

@@ -2,6 +2,7 @@ package com.ralsei.repository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,6 +14,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.query.Procedure;
 import org.springframework.data.repository.query.Param;
 
+import com.ralsei.dto.projection.coach.CoachUpcomingTripCountProjection;
 import com.ralsei.dto.projection.staffpassengerticket.StaffPassengerTransferCandidateProjection;
 import com.ralsei.dto.projection.trip.StaffTripInfoProjection;
 import com.ralsei.dto.projection.trip.TripDetailProjection;
@@ -549,6 +551,22 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
                     AND t.status NOT IN ('CANCELLED', 'COMPLETED')
             """, nativeQuery = true)
     long countUpcomingTripsByCoachId(@Param("coachId") Integer coachId);
+
+    /**
+     * Batch upcoming-trip counts for many coaches (one query, GROUP BY coachId).
+     * Coaches with zero matching trips are omitted from the result.
+     */
+    @Query(value = """
+                SELECT t.coachId AS coachId, COUNT(*) AS upcomingCount
+                FROM trip t
+                WHERE t.coachId IN (:coachIds)
+                    AND t.departureTime >= DATEADD(hour, -8, GETDATE())
+                    AND t.status NOT IN ('CANCELLED', 'COMPLETED')
+                GROUP BY t.coachId
+            """, nativeQuery = true)
+    List<CoachUpcomingTripCountProjection> countUpcomingTripsGroupedByCoachIds(
+            @Param("coachIds") Collection<Integer> coachIds);
+
 
     boolean existsByCoach_CoachId(Integer coachId);
 
