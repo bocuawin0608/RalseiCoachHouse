@@ -14,11 +14,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.query.Procedure;
 import org.springframework.data.repository.query.Param;
 
-<<<<<<< HEAD
 import com.ralsei.dto.projection.cargoticket.CargoTicketTripOptionProjection;
-=======
 import com.ralsei.dto.projection.coach.CoachUpcomingTripCountProjection;
->>>>>>> 4a6c085cbfe2e543f29c4f2542f2076680c632ef
 import com.ralsei.dto.projection.staffpassengerticket.StaffPassengerTransferCandidateProjection;
 import com.ralsei.dto.projection.trip.StaffTripInfoProjection;
 import com.ralsei.dto.projection.trip.TripDetailProjection;
@@ -627,7 +624,6 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             """, nativeQuery = true)
     List<CoachUpcomingTripCountProjection> countUpcomingTripsGroupedByCoachIds(
             @Param("coachIds") Collection<Integer> coachIds);
-
 
     boolean existsByCoach_CoachId(Integer coachId);
 
