@@ -232,9 +232,7 @@ VALUES (N'Ben Xe Mien Dong', N'292 Dinh Bo Linh, Binh Thanh', N'TP. Ho Chi Minh'
 -- Them ticket agency o Tp.HCM
 INSERT INTO [ticket_agency] (stopPointId, ticketAgencyName)
 VALUES (6, N'Dai ly Ben Xe Mien Dong'),
-       (7, N'Dai ly Ben Xe Mien Tay'),
-       (6, N'Van phong ben xe Mien Dong 2'),
-       (7, N'Dai ly Trung Chuyen Mien Tay');
+       (7, N'Dai ly Ben Xe Mien Tay');
 
 -- Mot staff da bi vo hieu hoa (test filter)
 INSERT INTO [account] (username, passwordHash, isActive) OUTPUT inserted.accountId INTO @IdOutput
