@@ -20,8 +20,10 @@ import { roleRoutes } from '../features/manage-roles';
 import { customerRoutes } from '../features/manage-customers';
 import { ticketAgencyRoutes } from '../features/manage-ticket-agencies';
 import { staffRoutes } from '../features/manage-staff';
+import { tripStaffRoutes } from '../features/tripStaff';
 import { passengerTicketRoutes } from '../features/passenger-tickets';
 import { staffTripInfoRoutes } from '../features/staff-trip-info';
+import { refundRoutes } from '../features/refunds';
 
 const AppRouter = () => {
     return (
@@ -43,6 +45,7 @@ const AppRouter = () => {
                     {cargoRoutes}
                     {voucherRoutes}
                     {tripRoutes}
+                    {refundRoutes}
                     
                     {/* route dưới thì chỉ admin vào đc, manager thì ko */}
                     <Route element={<RoleGuard allowedRoles={['ADMIN']} />}>
@@ -73,8 +76,7 @@ const AppRouter = () => {
 
                 <Route element={<RoleGuard allowedRoles={['TRIP_STAFF']} />}>
                     <Route element={<MobileLayout />}> 
-                        <Route path="trip/scan" element={<div>Quét vé</div>} />
-                        <Route path="trip/status" element={<div>Cập nhật trạng thái xe</div>} />
+                        {tripStaffRoutes}
                     </Route>
                 </Route>
             </Route>

@@ -57,16 +57,14 @@ public class CustomerAccountServiceImpl implements CustomerAccountService {
     public CustomerProfileResponse updateCurrentProfile(CustomerProfileUpdateRequest request) {
         AccountProjection account = findCurrentAccountProjection();
         Customer customer = findActiveCustomer(account.getAccountId());
-        String normalizedEmail = request.email() == null || request.email().isBlank()
-            ? null
-            : request.email().trim();
+        String normalizedEmail = request.email();
 
         if (normalizedEmail != null
                 && customerRepository.existsByEmailIgnoreCaseAndCustomerIdNot(normalizedEmail, customer.getCustomerId())) {
             throw new BusinessRuleException("Email đã được tài khoản khác sử dụng.");
         }
 
-        customer.setCustomerName(request.customerName().trim());
+        customer.setCustomerName(request.customerName());
         customer.setEmail(normalizedEmail);
         customer.setDob(request.dob());
         customerRepository.save(customer);

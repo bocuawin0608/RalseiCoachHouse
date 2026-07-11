@@ -1,27 +1,31 @@
 import { BsArrowClockwise } from 'react-icons/bs';
 import { Button, Card, Form } from 'react-bootstrap';
+import '../styles/CargoTypeManagement.css';
 
+/**
+ * Filter controls for the cargo type management table.
+ */
 export default function CargoTypeFilter({ filters, onFilterChange, onReset }) {
     return (
-        <Card className="mb-4 shadow-sm border-0">
+        <Card className="mb-4 cargo-type-management-filter">
             <Card.Body className="p-4">
-                <Form className="d-flex flex-wrap gap-3 align-items-center justify-content-center">
+                <Form className="cargo-type-management-filter__form">
 
                     <Form.Control
                         name="search"
                         placeholder="Tìm kiếm loại hàng..."
                         value={filters.search || ''}
                         onChange={onFilterChange}
-                        style={{ width: '300px' }} maxLength={100}
+                        className="cargo-type-management-filter__search"
+                        maxLength={100}
                     />
 
                     <Form.Select
                         name="isActive"
                         value={filters.isActive || ''}
                         onChange={onFilterChange}
-                        style={{ width: '200px' }}
+                        className="cargo-type-management-filter__status"
                     >
-                        <option value="">Tất cả trạng thái</option>
                         <option value="true">Đang hoạt động</option>
                         <option value="false">Ngừng hoạt động</option>
                     </Form.Select>

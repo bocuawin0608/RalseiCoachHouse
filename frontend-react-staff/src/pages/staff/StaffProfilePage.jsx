@@ -12,6 +12,14 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../features/auth';
 import { staffAccountApi } from '../../features/staffAccount/api/staffAccountApi';
+import {
+  EMAIL_MAX_LENGTH,
+  EMAIL_REGEX,
+  FULL_NAME_MAX_LENGTH,
+  FULL_NAME_REGEX,
+  PASSWORD_MAX_LENGTH,
+  trimInput,
+} from '../../utils/identityPatterns';
 import './StaffProfilePage.css';
 
 const EMPTY_EDIT_FORM = {
@@ -129,18 +137,31 @@ export default function StaffProfilePage() {
   /** Persists editable staff profile fields to the backend. */
   const handleUpdateProfile = async (event) => {
     event.preventDefault();
-    setSaving(true);
     setModalError('');
+
+    const staffName = trimInput(editForm.staffName);
+    const email = trimInput(editForm.email) || null;
     const maxStaffDob = maxStaffDobInputValue();
-    if (editForm.dob && editForm.dob > maxStaffDob) {
-      setModalError('Nhân viên phải từ 20 tuổi trở lên.');
-      setSaving(false);
+
+    if (!FULL_NAME_REGEX.test(staffName)) {
+      setModalError('Họ tên không hợp lệ. Vui lòng nhập ít nhất 2 ký tự, chỉ gồm chữ cái và khoảng trắng!');
       return;
     }
+    if (email && (!EMAIL_REGEX.test(email) || email.length > EMAIL_MAX_LENGTH)) {
+      setModalError('Email không hợp lệ! Ví dụ hợp lệ: name.hehe@example.com');
+      return;
+    }
+    if (editForm.dob && editForm.dob > maxStaffDob) {
+      setModalError('Nhân viên phải từ 20 tuổi trở lên.');
+      return;
+    }
+
+    setEditForm((current) => ({ ...current, staffName, email: email || '' }));
+    setSaving(true);
     try {
       const updatedProfile = await staffAccountApi.updateProfile({
-        staffName: editForm.staffName.trim(),
-        email: editForm.email.trim() || null,
+        staffName,
+        email,
         dob: editForm.dob || null,
       });
       setProfile(updatedProfile);
@@ -274,6 +295,7 @@ export default function StaffProfilePage() {
                 name="staffName"
                 value={editForm.staffName}
                 onChange={handleEditChange}
+                maxLength={FULL_NAME_MAX_LENGTH}
                 disabled={saving}
                 required
               />
@@ -285,6 +307,7 @@ export default function StaffProfilePage() {
                 name="email"
                 value={editForm.email}
                 onChange={handleEditChange}
+                maxLength={EMAIL_MAX_LENGTH}
                 disabled={saving}
               />
             </Form.Group>
@@ -331,6 +354,7 @@ export default function StaffProfilePage() {
                 onChange={handlePasswordChange}
                 disabled={saving}
                 required
+                maxLength={PASSWORD_MAX_LENGTH}
               />
             </Form.Group>
             <Form.Group className="mb-3">
@@ -343,7 +367,7 @@ export default function StaffProfilePage() {
                 disabled={saving}
                 required
                 minLength={8}
-                maxLength={72}
+                maxLength={PASSWORD_MAX_LENGTH}
                 pattern="^(?=.*[A-Za-z])(?=.*\d).{8,72}$"
               />
               <Form.Text>Mật khẩu mới cần 8-72 ký tự, có chữ và số.</Form.Text>
@@ -358,6 +382,7 @@ export default function StaffProfilePage() {
                 disabled={saving}
                 required
                 minLength={8}
+                maxLength={PASSWORD_MAX_LENGTH}
               />
             </Form.Group>
           </Modal.Body>

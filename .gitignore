@@ -22,6 +22,9 @@ rad.json
 #Test results file
 TestResults.xml
 
+# Local Playwright test workspace
+/test/
+
 .opencode/
 
 .txt
@@ -48,5 +51,7 @@ docs/
 
 tracker/
 
-# Seed scripts
+# Seed / test SQL files (local test data, not part of core schema)
 **/seed_tripstaff33.sql
+backend-springboot/db/seed_*.sql
+backend-springboot/db/test_*.sql

@@ -3,6 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { Form, Button, Alert, Card, Modal } from 'react-bootstrap';
 import { useAuth } from '../../features/auth';
 import { authApi } from '../../features/auth/api/authApi';
+import {
+  EMAIL_MAX_LENGTH,
+  EMAIL_REGEX,
+  PASSWORD_MAX_LENGTH,
+  USERNAME_MAX_LENGTH,
+  trimInput,
+} from '../../utils/identityPatterns';
 import './StaffLogin.css';
 
 const EMPTY_FORGOT_FORM = {
@@ -59,17 +66,26 @@ export default function StaffLogin() {
     setForgotError('');
     setForgotMessage('');
 
-    if (!forgotForm.username.trim() || !forgotForm.email.trim()) {
+    const username = trimInput(forgotForm.username);
+    const email = trimInput(forgotForm.email);
+
+    if (!username || !email) {
       setForgotError('Vui lòng nhập tên đăng nhập và email nhân viên.');
       return;
     }
+    if (username.length > USERNAME_MAX_LENGTH) {
+      setForgotError('Tên đăng nhập không được vượt quá 50 ký tự.');
+      return;
+    }
+    if (!EMAIL_REGEX.test(email) || email.length > EMAIL_MAX_LENGTH) {
+      setForgotError('Email không hợp lệ! Ví dụ hợp lệ: name.hehe@example.com');
+      return;
+    }
 
+    setForgotForm({ username, email });
     setForgotLoading(true);
     try {
-      const response = await authApi.staffForgotPassword({
-        username: forgotForm.username.trim(),
-        email: forgotForm.email.trim(),
-      });
+      const response = await authApi.staffForgotPassword({ username, email });
       setForgotMessage(response.message || 'Nếu thông tin khớp, mật khẩu tạm thời sẽ được gửi qua email.');
       setForgotForm(EMPTY_FORGOT_FORM);
     } catch (err) {
@@ -83,15 +99,27 @@ export default function StaffLogin() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
-    
-    if (!formData.username.trim() || !formData.password.trim()) {
+
+    const username = trimInput(formData.username);
+    const { password } = formData;
+
+    if (!username || !password) {
       setError('Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!');
       return;
     }
+    if (username.length > USERNAME_MAX_LENGTH) {
+      setError('Tên đăng nhập không được vượt quá 50 ký tự.');
+      return;
+    }
+    if (password.length > PASSWORD_MAX_LENGTH) {
+      setError('Mật khẩu không được vượt quá 72 ký tự.');
+      return;
+    }
 
+    setFormData((current) => ({ ...current, username }));
     setLoading(true);
     try {
-      const response = await loginStaff(formData);
+      const response = await loginStaff({ username, password });
       const roles = response.roles || [];
 
       if (roles.includes('MANAGER') || roles.includes('ADMIN')) {
@@ -99,7 +127,7 @@ export default function StaffLogin() {
       } else if (roles.includes('TICKET_STAFF')) {
         navigate('/staff/passenger-tickets/search');
       } else if (roles.includes('TRIP_STAFF')) {
-        navigate('/staff/trip/scan');
+        navigate('/staff');
       }
 
     } catch (err) {
@@ -133,6 +161,7 @@ export default function StaffLogin() {
               placeholder="Nhập tên đăng nhập"
               value={formData.username}
               onChange={handleChange}
+              maxLength={USERNAME_MAX_LENGTH}
               disabled={loading}
               autoFocus
             />
@@ -148,6 +177,7 @@ export default function StaffLogin() {
               placeholder="••••••••"
               value={formData.password}
               onChange={handleChange}
+              maxLength={PASSWORD_MAX_LENGTH}
               disabled={loading}
             />
           </Form.Group>
@@ -181,6 +211,7 @@ export default function StaffLogin() {
                 name="username"
                 value={forgotForm.username}
                 onChange={handleForgotChange}
+                maxLength={USERNAME_MAX_LENGTH}
                 disabled={forgotLoading}
                 required
               />
@@ -192,6 +223,7 @@ export default function StaffLogin() {
                 name="email"
                 value={forgotForm.email}
                 onChange={handleForgotChange}
+                maxLength={EMAIL_MAX_LENGTH}
                 disabled={forgotLoading}
                 required
               />

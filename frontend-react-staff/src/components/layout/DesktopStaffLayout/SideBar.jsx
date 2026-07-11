@@ -174,6 +174,10 @@ export default function Sidebar() {
                                 <BsBusFront size={20} className="flex-shrink-0" />
                                 <span>Quản lý chuyến xe</span>
                             </NavLink>
+                            <NavLink to="/management/refunds?status=PENDING&tab=passenger" className={navLinkClass} end>
+                                <BsCashCoin size={20} className="flex-shrink-0" />
+                                <span>Xử lý hoàn tiền</span>
+                            </NavLink>
                         </>
                     )}
 

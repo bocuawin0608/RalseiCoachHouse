@@ -3,6 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Form, Button, Alert, Card } from 'react-bootstrap';
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { auth, useAuth, authApi } from '../../features/auth';
+import {
+  PHONE_MAX_LENGTH,
+  PHONE_REGEX,
+  trimInput,
+} from '../../utils/identityPatterns';
 
 const formatPhoneForFirebase = (phone) => {
   if (phone.startsWith('0')) return '+84' + phone.slice(1);
@@ -26,8 +31,11 @@ export default function Login() {
     setError('');
     setLoading(true);
 
-    if (!phone.match(/^0[0-9]{9}$/)) {
-      setError('Số điện thoại không hợp lệ!');
+    const normalizedPhone = trimInput(phone);
+    setPhone(normalizedPhone);
+
+    if (!PHONE_REGEX.test(normalizedPhone)) {
+      setError('SĐT không hợp lệ. Vui lòng nhập 10 chữ số, bắt đầu bằng 03 hoặc 05 hoặc 07 hoặc 08 hoặc 09!');
       setLoading(false);
       return;
     }
@@ -38,7 +46,7 @@ export default function Login() {
           size: 'invisible'
         });
       }
-      const formattedPhone = formatPhoneForFirebase(phone);
+      const formattedPhone = formatPhoneForFirebase(normalizedPhone);
       const confirmResult = await signInWithPhoneNumber(auth, formattedPhone, window.recaptchaVerifier);
       
       setConfirmationResult(confirmResult);
@@ -58,7 +66,7 @@ export default function Login() {
 
     try {
       const userCredential = await confirmationResult.confirm(otp);
-      const response = await authApi.customerPhoneLogin(userCredential, phone);
+      const response = await authApi.customerPhoneLogin(userCredential, trimInput(phone));
       processAuthSuccess(response); 
       navigate('/');
     } catch (err) {
@@ -101,6 +109,7 @@ export default function Login() {
                 placeholder="Ví dụ: 0912345678"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
+                maxLength={PHONE_MAX_LENGTH}
                 required
               />
             </Form.Group>

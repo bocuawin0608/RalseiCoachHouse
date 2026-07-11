@@ -3,8 +3,10 @@ package com.ralsei.service.impl;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,6 +17,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ralsei.dto.projection.CoachTypeProjection;
+import com.ralsei.dto.projection.coach.CoachUpcomingTripCountProjection;
 import com.ralsei.dto.request.coachtype.CoachTypeCreateRequest;
 import com.ralsei.dto.request.coachtype.CoachTypeFilterRequest;
 import com.ralsei.dto.request.coachtype.CoachTypePriceCreateRequest;
@@ -201,31 +204,29 @@ public class CoachTypeServiceImpl implements CoachTypeService {
     public void addCoachTypePrice(Integer id, CoachTypePriceCreateRequest request) {
         CoachType coachType = findCoachTypeOrThrow(id);
         LocalDateTime start = request.startEffectiveDate();
-        LocalDateTime end = request.endEffectiveDate() != null ? request.endEffectiveDate() : INFINITE_END;
-        
+        LocalDateTime end = INFINITE_END;
+
         LocalDateTime now = LocalDateTime.now();
         if (start.isBefore(now.minusMinutes(5))) {
             throw new IllegalArgumentException("Ngày bắt đầu không được nằm trong quá khứ!");
-        }
-        if (start.isEqual(end)) {
-            throw new IllegalArgumentException("Ngày kết thúc không được trùng với ngày bắt đầu!");
-        }
-        if (end.isBefore(start)) {
-            throw new IllegalArgumentException("Ngày kết thúc hiệu lực phải lớn hơn hoặc bằng ngày bắt đầu!");
         }
 
         List<CoachTypePrice> existingPrices = coachTypePriceRepo
                 .findByCoachType_CoachTypeIdOrderByStartEffectiveDateDesc(id);
 
         for (CoachTypePrice existing : existingPrices) {
-            if (!intervalsOverlap(existing.getStartEffectiveDate(), existing.getEndEffectiveDate(), start, end)) {
-                continue;
-            }
-            if (isEffectiveAt(existing, now) && start.isAfter(existing.getStartEffectiveDate())) {
+            LocalDateTime existingStart = existing.getStartEffectiveDate();
+            LocalDateTime existingEnd = existing.getEndEffectiveDate();
+
+            if (existingStart.isBefore(start) && existingEnd.isAfter(start)) {
                 existing.setEndEffectiveDate(start);
                 coachTypePriceRepo.save(existing);
-            } else if (intervalsOverlap(existing.getStartEffectiveDate(), existing.getEndEffectiveDate(), start, end)) {
-                throw new IllegalArgumentException("Khoảng thời gian giá bị trùng với một trong các mốc giá hiện có/sắp có!");
+                continue;
+            }
+
+            if (!existingStart.isBefore(start)) {
+                throw new IllegalArgumentException(
+                        "Đã có mốc giá bắt đầu từ thời điểm này trở đi. Hãy chọn ngày bắt đầu sau mốc giá sắp tới.");
             }
         }
 
@@ -243,16 +244,26 @@ public class CoachTypeServiceImpl implements CoachTypeService {
     public CoachTypeDeactivationCheckResponse getDeactivationCheck(Integer id) {
         findCoachTypeOrThrow(id);
         List<Coach> activeCoaches = coachRepo.findByCoachType_CoachTypeIdAndStatusNot(id, CoachStatus.RETIRED);
+        if (activeCoaches.isEmpty()) {
+            return new CoachTypeDeactivationCheckResponse(true, List.of());
+        }
+
+        List<Integer> coachIds = activeCoaches.stream().map(Coach::getCoachId).toList();
+        Map<Integer, Long> upcomingByCoachId = tripRepo.countUpcomingTripsGroupedByCoachIds(coachIds).stream()
+                .collect(Collectors.toMap(
+                        CoachUpcomingTripCountProjection::getCoachId,
+                        row -> row.getUpcomingCount() == null ? 0L : row.getUpcomingCount(),
+                        Long::sum));
 
         List<CoachTypeDeactivationCheckResponse.ActiveCoachSummary> summaries = activeCoaches.stream()
                 .map(c -> new CoachTypeDeactivationCheckResponse.ActiveCoachSummary(
                         c.getCoachId(),
                         c.getLicensePlate(),
                         c.getStatus(),
-                        tripRepo.countUpcomingTripsByCoachId(c.getCoachId())))
+                        upcomingByCoachId.getOrDefault(c.getCoachId(), 0L)))
                 .toList();
 
-        return new CoachTypeDeactivationCheckResponse(summaries.isEmpty(), summaries);
+        return new CoachTypeDeactivationCheckResponse(false, summaries);
     }
 
     @Transactional
@@ -331,11 +342,6 @@ public class CoachTypeServiceImpl implements CoachTypeService {
 
     private boolean isEffectiveAt(CoachTypePrice price, LocalDateTime at) {
         return !price.getStartEffectiveDate().isAfter(at) && price.getEndEffectiveDate().isAfter(at);
-    }
-
-    private boolean intervalsOverlap(LocalDateTime start1, LocalDateTime end1, LocalDateTime start2,
-            LocalDateTime end2) {
-        return !start1.isAfter(end2) && !start2.isAfter(end1);
     }
 
     private CoachTypePriceStatus computePriceStatus(CoachTypePrice price, LocalDateTime now) {

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xác nhận hoàn tiền vé xe</title>
+</head>
+<body style="margin:0;background:#f3f4f6;font-family:Arial,sans-serif;color:#172033;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f3f4f6;padding:24px 12px;">
+    <tr><td align="center">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:680px;background:#ffffff;border-radius:16px;overflow:hidden;">
+            <tr><td style="background:#166534;padding:28px 32px;color:#ffffff;">
+                <div style="font-size:13px;letter-spacing:1.2px;text-transform:uppercase;">Nhà xe Ralsei</div>
+                <h1 style="margin:8px 0 4px;font-size:26px;">Hoàn tiền thành công</h1>
+                <div style="font-size:15px;opacity:.9;">Mã vé: <strong th:text="${ticket.ticketCode}">VE123456</strong></div>
+            </td></tr>
+            <tr><td style="padding:30px 32px;">
+                <p style="margin:0 0 16px;font-size:18px;">Xin chào <strong th:text="${ticket.primaryFullName}">Quý khách</strong>,</p>
+                <p style="margin:0 0 24px;line-height:1.6;color:#4b5563;">
+                    Nhà xe xác nhận đã hoàn tiền cho yêu cầu hủy vé
+                    <strong th:text="${ticket.ticketCode}">VE123456</strong>.
+                </p>
+
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#ecfdf5;border:1px solid #bbf7d0;border-radius:12px;margin-bottom:24px;">
+                    <tr><td style="padding:18px 20px;border-bottom:1px solid #bbf7d0;">
+                        <div style="font-size:12px;color:#166534;text-transform:uppercase;">Thông tin hoàn tiền</div>
+                        <div style="font-size:18px;font-weight:700;margin-top:5px;">Đã hoàn lúc <span th:text="${refundTime}">22:02 ngày 26/04/2026</span></div>
+                    </td></tr>
+                    <tr><td style="padding:18px 20px;line-height:1.7;">
+                        <strong>Số tiền đã hoàn:</strong> <span th:text="${formattedRefund}">0 ₫</span><br>
+                        <strong>Phương thức hoàn:</strong> <span th:text="${refund.refundMethod}">BANK_TRANSFER</span><br>
+                        <strong th:if="${refund.transactionId != null and !#strings.isEmpty(refund.transactionId)}">
+                            Mã giao dịch:
+                        </strong>
+                        <span th:if="${refund.transactionId != null and !#strings.isEmpty(refund.transactionId)}"
+                              th:text="${refund.transactionId}">TXN123</span>
+                    </td></tr>
+                </table>
+
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:24px;">
+                    <tr><td style="padding:18px 20px;border-bottom:1px solid #e5e7eb;">
+                        <div style="font-size:12px;color:#6b7280;text-transform:uppercase;">Thông tin chuyến đã hủy</div>
+                        <div style="font-size:18px;font-weight:700;margin-top:5px;" th:text="${ticket.routeName}">Tuyến đường</div>
+                    </td></tr>
+                    <tr><td style="padding:18px 20px;border-bottom:1px solid #e5e7eb;line-height:1.55;">
+                        <strong>Ghế:</strong> <span th:text="${#strings.listJoin(seatNumbers, ', ')}">13, 14</span><br>
+                        <strong>Điểm đón:</strong> <span th:text="${ticket.pickupStopName}">Điểm đón</span><br>
+                        <strong>Giờ xe đón:</strong> <span th:text="${pickupTime}">19:15 ngày 26/04/2026</span>
+                    </td></tr>
+                    <tr><td style="padding:18px 20px;line-height:1.55;">
+                        <strong>Điểm trả:</strong> <span th:text="${ticket.dropoffStopName}">Điểm trả</span><br>
+                        <strong>Tổng thanh toán ban đầu:</strong> <span th:text="${formattedTotal}">0 ₫</span>
+                    </td></tr>
+                </table>
+
+                <p style="margin:24px 0 0;color:#4b5563;line-height:1.6;">
+                    Nếu bạn chưa nhận được số tiền hoàn trong thời gian dự kiến, vui lòng liên hệ nhà xe kèm mã vé để được hỗ trợ.
+                </p>
+            </td></tr>
+            <tr><td style="background:#f8fafc;padding:20px 32px;color:#6b7280;font-size:12px;line-height:1.5;">
+                Đây là email tự động xác nhận hoàn tiền. Vui lòng không trả lời email này.
+            </td></tr>
+        </table>
+    </td></tr>
+</table>
+</body>
+</html>

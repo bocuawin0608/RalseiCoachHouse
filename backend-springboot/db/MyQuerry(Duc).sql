@@ -1,6 +1,6 @@
 USE vexedb
-SELECT a.username, r.roleName
-FROM account a JOIN account_role ar ON a.accountId = ar.accountId JOIN role r on ar.roleId = r.roleId
+SELECT a.username, s.email
+FROM account a JOIN account_role ar ON a.accountId = ar.accountId JOIN role r on ar.roleId = r.roleId JOIN staff s on s.accountId = a.accountId
 SELECT *
 FROM coach
 SELECT *
