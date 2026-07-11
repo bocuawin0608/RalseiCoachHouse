@@ -676,7 +676,7 @@ WHERE [coachTypeId] = 3;
 SELECT * FROM [account];
 SELECT * FROM [role];
 SELECT * FROM [voucher];
-SELECT * FROM [coach_stop];     
+SELECT * FROM [coach_stop];
 SELECT * FROM [route];
 SELECT * FROM [coach_type];
 SELECT * FROM [cargo_type];

@@ -29,7 +29,7 @@ export default function Sidebar() {
     };
 
     const navLinkClass = ({ isActive }) =>
-        `d-flex align-items-center gap-3 px-3 py-2 rounded text-decoration-none transition-all ${isActive ? 'custom-btn-general text-white fw-medium' : 'text-light opacity-75 hover-opacity-100'
+        `d-flex align-items-center gap-2 px-2 py-2 rounded text-decoration-none transition-all ${isActive ? 'custom-btn-general text-white fw-medium' : 'text-light opacity-75 hover-opacity-100'
         }`;
 
     return (
@@ -77,7 +77,7 @@ export default function Sidebar() {
                     {hasAccess(['ADMIN', 'MANAGER']) && (
                         <div>
                             <div
-                                className="d-flex align-items-center justify-content-between px-3 py-2 rounded text-light opacity-75 hover-opacity-100"
+                                className="d-flex align-items-center justify-content-between px-2 py-2 rounded text-light opacity-75 hover-opacity-100"
                                 style={{ cursor: 'pointer' }}
                                 onClick={() => handleToggleMenu('coaches')}
                             >
@@ -106,7 +106,7 @@ export default function Sidebar() {
                     {hasAccess(['ADMIN', 'MANAGER']) && (
                         <div>
                             <div
-                                className="d-flex align-items-center justify-content-between px-3 py-2 rounded text-light opacity-75 hover-opacity-100"
+                                className="d-flex align-items-center justify-content-between px-2 py-2 rounded text-light opacity-75 hover-opacity-100"
                                 style={{ cursor: 'pointer' }}
                                 onClick={() => handleToggleMenu('routes')}
                             >
@@ -135,7 +135,7 @@ export default function Sidebar() {
                     {hasAccess(['ADMIN', 'MANAGER']) && (
                         <div>
                             <div
-                                className="d-flex align-items-center justify-content-between px-3 py-2 rounded text-light opacity-75 hover-opacity-100"
+                                className="d-flex align-items-center justify-content-between px-2 py-2 rounded text-light opacity-75 hover-opacity-100"
                                 style={{ cursor: 'pointer' }}
                                 onClick={() => handleToggleMenu('cargo')}
                             >
@@ -179,25 +179,44 @@ export default function Sidebar() {
 
                     {hasAccess(['ADMIN']) && (
                         <>
-                            <NavLink to="/management/manage-accounts" className={navLinkClass} end>
-                                <BsPeopleFill size={20} className="flex-shrink-0" />
-                                <span>Quản lý tài khoản</span>
-                            </NavLink>
                             <NavLink to="/management/manage-roles" className={navLinkClass} end>
                                 <BsShieldCheck size={20} className="flex-shrink-0" />
                                 <span>Xem vai trò</span>
-                            </NavLink>
-                            <NavLink to="/management/manage-customers" className={navLinkClass} end>
-                                <BsPersonBadge size={20} className="flex-shrink-0" />
-                                <span>Quản lý khách hàng</span>
                             </NavLink>
                             <NavLink to="/management/manage-ticket-agencies" className={navLinkClass} end>
                                 <BsBuilding size={20} className="flex-shrink-0" />
                                 <span>Đại lý bán vé</span>
                             </NavLink>
-                            <NavLink to="/management/manage-staff" className={navLinkClass} end>
+                            
+                            <div>
+                                <div
+                                    className="d-flex align-items-center justify-content-between px-2 py-2 rounded text-light opacity-75 hover-opacity-100"
+                                    style={{ cursor: 'pointer' }}
+                                    onClick={() => handleToggleMenu('staffing')}
+                                >
+                                    <div className="d-flex align-items-center gap-2">
+                                        <BsPeopleFill size={20} className="flex-shrink-0" />
+                                        <span>Quản lý nhân sự</span>
+                                    </div>
+                                    {openMenu === 'staffing' ? <BsChevronDown size={14} /> : <BsChevronRight size={14} />}
+                                </div>
+
+                                <Collapse in={openMenu === 'staffing'}>
+                                    <div className="ps-4 mt-1 d-flex flex-column gap-1">
+                                        <NavLink to="/management/manage-staff" className={navLinkClass}>
+                                            <BsPersonBadge size={16} />
+                                            <span style={{ fontSize: '0.9rem' }}>Quản lý nhân viên</span>
+                                        </NavLink>
+                                        <NavLink to="/management/manage-accounts" className={navLinkClass}>
+                                            <BsPeopleFill size={16} />
+                                            <span style={{ fontSize: '0.9rem' }}>Quản lý tài khoản</span>
+                                        </NavLink>
+                                    </div>
+                                </Collapse>
+                            </div>
+                            <NavLink to="/management/manage-customers" className={navLinkClass} end>
                                 <BsPersonBadge size={20} className="flex-shrink-0" />
-                                <span>Quản lý nhân viên</span>
+                                <span>Xem khách hàng</span>
                             </NavLink>
                         </>
                     )}

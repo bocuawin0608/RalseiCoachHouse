@@ -47,3 +47,6 @@ docs/
 ./documents/Test_Plan_Cargo_Tracking.docx
 
 tracker/
+
+# Seed scripts
+**/seed_tripstaff33.sql
