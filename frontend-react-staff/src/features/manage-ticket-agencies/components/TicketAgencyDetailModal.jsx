@@ -17,7 +17,7 @@ export default function TicketAgencyDetailModal({ isOpen, data, onClose }) {
     }, [isOpen, data]);
 
     return (
-        <Modal show={isOpen} onHide={onClose} size="lg" centered>
+        <Modal show={isOpen} onHide={onClose} size="lg" centered enforceFocus restoreFocus>
             <Modal.Header closeButton><Modal.Title>Chi tiết đại lý</Modal.Title></Modal.Header>
             <Modal.Body>
                 {loading ? (

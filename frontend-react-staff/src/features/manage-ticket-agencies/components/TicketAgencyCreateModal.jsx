@@ -60,7 +60,7 @@ export default function TicketAgencyCreateModal({ isOpen, onClose, onSuccess }) 
     };
 
     return (
-        <Modal show={isOpen} onHide={onClose} centered>
+        <Modal show={isOpen} onHide={onClose} centered enforceFocus restoreFocus>
             <Modal.Header closeButton><Modal.Title>Thêm bến xe</Modal.Title></Modal.Header>
             <Form onSubmit={handleSubmit}>
                 <Modal.Body>
@@ -89,7 +89,7 @@ export default function TicketAgencyCreateModal({ isOpen, onClose, onSuccess }) 
                         </Col>
                         <Col md={6}>
                             <Form.Label className="small">Tên đại lý <span className="text-danger">*</span></Form.Label>
-                            <Form.Control name="ticketAgencyName" value={form.ticketAgencyName} onChange={handleNameChange} required maxLength={200} size="sm" />
+                            <Form.Control name="ticketAgencyName" value={form.ticketAgencyName} onChange={handleNameChange} required maxLength={200} size="sm" autoFocus />
                         </Col>
                     </Row>
                 </Modal.Body>

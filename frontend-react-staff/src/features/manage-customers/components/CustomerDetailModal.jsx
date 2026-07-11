@@ -70,6 +70,7 @@ export default function CustomerDetailModal({ isOpen, data, onClose }) {
                         </Row>
                         <h6 className="fw-bold text-secondary border-bottom pb-2">Lịch sử đặt vé</h6>
                         {detail.bookings && detail.bookings.length > 0 ? (
+                            <div style={{ maxHeight: '240px', overflowY: 'auto' }}>
                             <Table size="sm" hover>
                                 <thead>
                                     <tr>
@@ -90,6 +91,7 @@ export default function CustomerDetailModal({ isOpen, data, onClose }) {
                                     ))}
                                 </tbody>
                             </Table>
+                            </div>
                         ) : (
                             <p className="text-muted">Khách hàng chưa có vé đặt nào.</p>
                         )}
