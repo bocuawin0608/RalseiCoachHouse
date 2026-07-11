@@ -34,9 +34,12 @@ public class CargoTicket extends BaseEntity {
     @Column(name = "cargoTicketId")
     private int cargoTicketId;
 
-    // thieu mapping one to many voi trip
     @Column(name = "tripId")
     private Integer tripId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tripId", insertable = false, updatable = false)
+    private Trip trip;
 
     @Column(name = "customerId")
     private Integer customerId;

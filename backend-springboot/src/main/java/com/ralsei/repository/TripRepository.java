@@ -68,7 +68,7 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             JOIN route_stop dropoff ON dropoff.routeId = t.routeId AND pickup.stopOrder < dropoff.stopOrder
             JOIN coach_stop dropoffPoint ON dropoffPoint.stopPointId = dropoff.stopPointId
             JOIN coach_stop selectedDropoff ON selectedDropoff.stopPointId = :dropoffStopId
-            WHERE t.tripId = :tripId
+                WHERE t.tripId = :tripId
               AND pickupPoint.city = selectedPickup.city
               AND dropoffPoint.city = selectedDropoff.city
               AND DATEADD(MINUTE, pickup.minutesFromStart, t.departureTime) >= GETDATE()
@@ -669,4 +669,22 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             @Param("minDepartureTime") LocalDateTime minDepartureTime,
             @Param("excludeTripId") Integer excludeTripId,
             @Param("minAvailableSeats") int minAvailableSeats);
+
+    @Query(value = """
+            SELECT DISTINCT t.*
+            FROM trip t
+            JOIN route_stop pickup ON pickup.routeId = t.routeId
+            JOIN coach_stop pickupPoint ON pickupPoint.stopPointId = pickup.stopPointId
+            JOIN coach_stop selectedPickup ON selectedPickup.stopPointId = :pickupStopId
+            JOIN route_stop dropoff ON dropoff.routeId = t.routeId AND pickup.stopOrder < dropoff.stopOrder
+            JOIN coach_stop dropoffPoint ON dropoffPoint.stopPointId = dropoff.stopPointId
+            JOIN coach_stop selectedDropoff ON selectedDropoff.stopPointId = :dropoffStopId
+            WHERE pickupPoint.city = selectedPickup.city
+              AND dropoffPoint.city = selectedDropoff.city
+              AND DATEADD(MINUTE, pickup.minutesFromStart, t.departureTime) >= GETDATE()
+              AND t.[status] IN ('SCHEDULED', 'IN_PROGRESS')
+            """, nativeQuery = true)
+    List<Trip> findTripsByStopsInOrder(
+            @Param("pickupStopId") int pickupStopId,
+            @Param("dropoffStopId") int dropoffStopId);
 }

@@ -24,6 +24,8 @@ import com.ralsei.repository.TripRepository;
 import com.ralsei.service.CargoTicketService;
 import com.ralsei.service.TransactionIdGenerator;
 import com.ralsei.model.Staff;
+import com.ralsei.dto.request.cargoticket.TripByStopRequest;
+import com.ralsei.dto.response.cargoticket.TripByStopResponse;
 
 import lombok.RequiredArgsConstructor;
 import java.math.BigDecimal;
@@ -149,6 +151,20 @@ public class CargoTicketServiceImpl implements CargoTicketService {
         payment.setStatus("COMPLETED");
         payment.setPaymentTime(java.time.LocalDateTime.now());
         paymentRepository.save(payment);
+    }
+
+    @Override
+    public List<TripByStopResponse> getTripsByStopsInOrder(TripByStopRequest request) {
+        return tripRepository.findTripsByStopsInOrder(request.getPickupStopId(), request.getDropoffStopId())
+                .stream()
+                .map(t -> TripByStopResponse.builder()
+                        .tripId(t.getTripId())
+                        .routeId(t.getRouteId())
+                        .coachId(t.getCoachId())
+                        .departureTime(t.getDepartureTime())
+                        .status(t.getStatus())
+                        .build())
+                .toList();
     }
 
     private void validateReferences(CargoTicketRequest request) {

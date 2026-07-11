@@ -13,11 +13,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.springframework.web.bind.annotation.ModelAttribute;
+
 import com.ralsei.dto.request.cargoticket.CargoTicketRequest;
+import com.ralsei.dto.request.cargoticket.TripByStopRequest;
 import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.dto.response.cargoticket.CargoTicketResponse;
 import com.ralsei.dto.response.cargoticket.CargoTicketFormOptionsResponse;
 import com.ralsei.dto.response.cargoticket.CustomerContactResponse;
+import com.ralsei.dto.response.cargoticket.TripByStopResponse;
 import com.ralsei.service.CargoTicketService;
 
 import java.util.List;
@@ -83,5 +87,11 @@ public class CargoTicketController {
     public ResponseEntity<Void> completePayment(@PathVariable @Min(1) int id) {
         cargoTicketService.completePayment(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/trips-by-stops")
+    public ResponseEntity<List<TripByStopResponse>> getTripsByStops(
+            @Valid @ModelAttribute TripByStopRequest request) {
+        return ResponseEntity.ok(cargoTicketService.getTripsByStopsInOrder(request));
     }
 }

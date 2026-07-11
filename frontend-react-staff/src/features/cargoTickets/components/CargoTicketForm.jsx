@@ -88,7 +88,7 @@ export default function CargoTicketForm({ initialData, onSubmit, submitLabel = '
                         <Col md={4}><Dropdown label="Khách hàng" name="customerId" value={formData.customerId ?? ''} onChange={handleChange} loading={optionsLoading} emptyLabel="Khách vãng lai" options={customers} optionValue="customerId" renderOption={(item) => item.customerName} /></Col>
                         <Col md={4}><Dropdown label="Điểm nhận" name="pickupStopId" value={formData.pickupStopId} onChange={handleChange} loading={optionsLoading} options={stops} optionValue="stopPointId" renderOption={(item) => item.stopPointName} required /></Col>
                         <Col md={4}><Dropdown label="Điểm trả" name="dropoffStopId" value={formData.dropoffStopId} onChange={handleChange} loading={optionsLoading} options={stops} optionValue="stopPointId" renderOption={(item) => item.stopPointName} required /></Col>
-                        <Col md={8}><Dropdown label="Chuyến đi phù hợp" name="tripId" value={formData.tripId ?? ''} onChange={handleChange} loading={optionsLoading} emptyLabel={formData.pickupStopId && formData.dropoffStopId ? 'Không có chuyến sắp tới phù hợp' : 'Chọn điểm nhận và điểm trả trước'} options={eligibleTrips} optionValue="tripId" renderOption={tripLabel} disabled={!formData.pickupStopId || !formData.dropoffStopId} /></Col>
+                        <Col md={8}><Dropdown label="Chuyến đi phù hợp" name="tripId" value={formData.tripId ?? ''} onChange={handleChange} loading={optionsLoading} options={eligibleTrips} optionValue="tripId" renderOption={tripLabel} disabled={!formData.pickupStopId || !formData.dropoffStopId} /></Col>
                         <Col md={4}>
                             <Form.Group><Form.Label className="fw-semibold">Trạng thái *</Form.Label><Form.Select name="status" value={formData.status} onChange={handleChange} required>
                                 <option value="RECEIVED">Đã nhận hàng</option><option value="LOADED">Đã xếp hàng</option>
@@ -108,7 +108,6 @@ export default function CargoTicketForm({ initialData, onSubmit, submitLabel = '
                         <Col md={3}><Field label="Tiền thu hộ COD (VNĐ)" name="codAmount" type="number" value={formData.codAmount} onChange={handleChange} required min="0" /></Col>
                         <Col md={3}><Form.Group><Form.Label className="fw-semibold">Người trả phí *</Form.Label><Form.Select name="feePayer" value={formData.feePayer} onChange={handleChange}><option value="SENDER">Người gửi</option><option value="RECEIVER">Người nhận</option></Form.Select></Form.Group></Col>
                         <Col md={3}><Form.Group><Form.Label className="fw-semibold">Phương thức thanh toán *</Form.Label><Form.Select name="paymentMethod" value={formData.paymentMethod} onChange={handleChange} required><option value="CASH">Tiền mặt</option><option value="BANK_TRANSFER">Chuyển khoản</option></Form.Select></Form.Group></Col>
-                        <Col md={3}><Dropdown label="Nhân viên bán" name="soldBy" value={formData.soldBy} onChange={handleChange} loading={optionsLoading} options={sellers} optionValue="staffId" renderOption={(item) => item.staffName} required disabled style={{ backgroundImage: 'none' }} /></Col>
                         <Col xs={12}><Form.Group><Form.Label className="fw-semibold">Mô tả hàng hóa</Form.Label><Form.Control as="textarea" rows={3} name="description" value={formData.description || ''} onChange={handleChange} /></Form.Group></Col>
                     </Row>
                 </Card.Body>
@@ -151,8 +150,7 @@ function Dropdown({ label, options, optionValue, renderOption, loading, emptyLab
 }
 
 const tripLabel = (trip) => {
-    const pickupTime = formatDateTime(trip.pickupTime || trip.departureTime);
-    return `${trip.routeName} · Xe đến điểm nhận ${pickupTime} · ${trip.licensePlate}`;
+    return `Chuyến đi ${trip.tripId}`;
 };
 
 function formatDateTime(value) {

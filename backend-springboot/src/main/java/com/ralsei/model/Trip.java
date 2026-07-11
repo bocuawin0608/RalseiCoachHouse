@@ -59,4 +59,7 @@ public class Trip extends BaseEntity {
     @JoinColumn(name = "coachId", insertable = false, updatable = false)
     private Coach coach;
 
+    @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<CargoTicket> cargoTickets;
+
 }

@@ -5,29 +5,40 @@ export function useCargoTicketFormOptions(pickupStopId, dropoffStopId) {
     const [options, setOptions] = useState({ trips: [], customers: [], stops: [], sellers: [], handlers: [], drivers: [] });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const latestRequest = useRef(0);
+    const latestTripRequest = useRef(0);
+    const staticLoaded = useRef(false);
 
     const loadOptions = useCallback(async () => {
-        const requestNumber = ++latestRequest.current;
         setLoading(true);
         setError('');
         try {
-            const hasStops = pickupStopId && dropoffStopId && pickupStopId !== dropoffStopId;
-            const data = await cargoTicketApi.getFormOptions(hasStops ? { pickupStopId, dropoffStopId } : undefined);
-            if (requestNumber !== latestRequest.current) return;
-            setOptions({
-                trips: data.trips ?? [],
-                customers: data.customers ?? [],
-                stops: data.stops ?? [],
-                sellers: data.sellers ?? [],
-                handlers: data.handlers ?? [],
-                drivers: data.drivers ?? []
-            });
+            if (!staticLoaded.current) {
+                const data = await cargoTicketApi.getFormOptions();
+                setOptions(prev => ({
+                    ...prev,
+                    customers: data.customers ?? [],
+                    stops: data.stops ?? [],
+                    sellers: data.sellers ?? [],
+                    handlers: data.handlers ?? [],
+                    drivers: data.drivers ?? []
+                }));
+                staticLoaded.current = true;
+            }
+
+            const hasStops = pickupStopId && dropoffStopId && String(pickupStopId) !== String(dropoffStopId);
+            if (hasStops) {
+                const requestNumber = ++latestTripRequest.current;
+                const tripsData = await cargoTicketApi.getTripsByStops({ pickupStopId, dropoffStopId });
+                if (requestNumber === latestTripRequest.current) {
+                    setOptions(prev => ({ ...prev, trips: tripsData }));
+                }
+            } else {
+                setOptions(prev => ({ ...prev, trips: [] }));
+            }
         } catch (requestError) {
-            if (requestNumber !== latestRequest.current) return;
             setError(requestError.response?.data?.message || 'Không thể tải dữ liệu danh mục.');
         } finally {
-            if (requestNumber === latestRequest.current) setLoading(false);
+            setLoading(false);
         }
     }, [pickupStopId, dropoffStopId]);
 
