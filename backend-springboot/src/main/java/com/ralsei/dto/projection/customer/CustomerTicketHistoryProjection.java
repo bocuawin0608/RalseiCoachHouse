@@ -21,6 +21,8 @@ public interface CustomerTicketHistoryProjection {
     String getCoachTypeName();
     String getPaymentMethod();
     String getPaymentStatus();
+    String getTransactionId();
+    LocalDateTime getPaymentExpiresAt();
     String getFullName();
     String getPhone();
     String getEmail();
