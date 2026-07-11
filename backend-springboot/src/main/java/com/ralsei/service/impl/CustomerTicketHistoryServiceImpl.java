@@ -256,6 +256,8 @@ public class CustomerTicketHistoryServiceImpl implements CustomerTicketHistorySe
                 first.getCoachTypeName(),
                 first.getPaymentMethod(),
                 first.getPaymentStatus(),
+                first.getTransactionId(),
+                first.getPaymentExpiresAt(),
                 first.getFullName(),
                 first.getPhone(),
                 first.getEmail(),

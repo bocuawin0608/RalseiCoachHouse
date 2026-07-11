@@ -38,10 +38,21 @@ export default function CustomerHistoryPage() {
         && booking.departureTime
         && new Date(booking.departureTime).getTime() > pageOpenedAt + CANCELLATION_CUTOFF_MILLISECONDS;
 
+    /** Pending tickets can resume payment while the hold countdown is still active. */
+    const canPayNow = (booking) => booking.status === 'PENDING'
+        && Boolean(booking.transactionId)
+        && (!booking.paymentExpiresAt || new Date(booking.paymentExpiresAt).getTime() > Date.now());
+
     /** Opens the refund form without triggering navigation on the parent card. */
     const openCancellation = (event, booking) => {
         event.stopPropagation();
         setCancellationBooking(booking);
+    };
+
+    /** Continues an unpaid booking on the existing payment page. */
+    const openPayment = (event, booking) => {
+        event.stopPropagation();
+        navigate(`/booking/payment/${encodeURIComponent(booking.transactionId)}`);
     };
 
     /** Reflects the committed cancellation immediately and closes the modal. */
@@ -94,6 +105,14 @@ export default function CustomerHistoryPage() {
                                 <strong>{formatCustomerCurrency(booking.totalPrice)}</strong>
                             </footer>
                             <div className="customer-history-card__actions">
+                                {canPayNow(booking) && (
+                                    <button
+                                        type="button"
+                                        onClick={(event) => openPayment(event, booking)}
+                                    >
+                                        Thanh toán ngay
+                                    </button>
+                                )}
                                 <button
                                     type="button"
                                     disabled={!canCancel(booking)}

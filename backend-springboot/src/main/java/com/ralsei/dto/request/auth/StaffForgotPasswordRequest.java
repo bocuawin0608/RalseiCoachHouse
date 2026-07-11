@@ -1,7 +1,10 @@
 package com.ralsei.dto.request.auth;
 
-import jakarta.validation.constraints.Email;
+import com.ralsei.util.StringNormalize;
+import com.ralsei.util.validation.BookingValidationPatterns;
+
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 /**
@@ -18,7 +21,15 @@ public record StaffForgotPasswordRequest(
     String username,
 
     @NotBlank(message = "Email không được để trống.")
-    @Email(message = "Email không hợp lệ.")
-    @Size(max = 100, message = "Email không được vượt quá 100 ký tự.")
+    @Size(max = BookingValidationPatterns.EMAIL_MAX_LENGTH, message = "Email không được vượt quá 254 ký tự.")
+    @Pattern(
+        regexp = BookingValidationPatterns.EMAIL,
+        message = "Email không hợp lệ."
+    )
     String email
-) {}
+) {
+    public StaffForgotPasswordRequest {
+        username = StringNormalize.trimToEmpty(username);
+        email = StringNormalize.trimToEmpty(email);
+    }
+}

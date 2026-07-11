@@ -28,7 +28,7 @@ const formatSeatLayout = (seatLayoutName) => {
  * The column order mirrors the operational flow: route, coach, crew, time,
  * status, price, and capacity.
  */
-export default function StaffTripInfoTable({ data, loading }) {
+export default function StaffTripInfoTable({ data, loading, onViewCrew }) {
     if (loading) {
         return <div className="staff-trip-info-loading">Đang tải danh sách chuyến xe...</div>;
     }
@@ -61,7 +61,19 @@ export default function StaffTripInfoTable({ data, loading }) {
                     </tr>
                 ) : (
                     data.map((trip) => (
-                        <tr key={trip.tripId}>
+                        <tr
+                            key={trip.tripId}
+                            onClick={() => onViewCrew?.(trip)}
+                            onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ') {
+                                    event.preventDefault();
+                                    onViewCrew?.(trip);
+                                }
+                            }}
+                            tabIndex={0}
+                            title="Nhấn để xem tổ lái"
+                            style={{ cursor: onViewCrew ? 'pointer' : undefined }}
+                        >
                             <td>{trip.departureCity || '---'}</td>
                             <td className="staff-trip-info-route">{trip.routeName || '---'}</td>
                             <td className="staff-trip-info-plate">{trip.licensePlate || '---'}</td>

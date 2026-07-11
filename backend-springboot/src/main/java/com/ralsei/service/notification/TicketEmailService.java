@@ -1,5 +1,6 @@
 package com.ralsei.service.notification;
 
+import com.ralsei.dto.notification.PassengerRefundCompletedEmailPayload;
 import com.ralsei.dto.notification.PassengerTicketCancellationEmailPayload;
 import com.ralsei.dto.notification.PassengerTicketEmailPayload;
 
@@ -19,4 +20,11 @@ public interface TicketEmailService {
      * @param payload detached cancellation information assembled before transaction commit
      */
     void sendTicketCancellation(PassengerTicketCancellationEmailPayload payload);
+
+    /**
+     * Renders and sends a refund completion notice to the primary passenger.
+     *
+     * @param payload detached refund completion information assembled before transaction commit
+     */
+    void sendRefundCompleted(PassengerRefundCompletedEmailPayload payload);
 }

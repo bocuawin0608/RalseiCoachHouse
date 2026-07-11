@@ -96,6 +96,8 @@ public interface PassengerTicketDetailRepository extends JpaRepository<Passenger
                ct.coachTypeName AS coachTypeName,
                pay.paymentMethod AS paymentMethod,
                pay.status AS paymentStatus,
+               pay.transactionId AS transactionId,
+               ptd.expiredAt AS paymentExpiresAt,
                ptd.fullName AS fullName,
                ptd.phone AS phone,
                ptd.email AS email,

@@ -18,6 +18,8 @@ public record CustomerTicketHistoryResponse(
     String coachTypeName,
     String paymentMethod,
     String paymentStatus,
+    String transactionId,
+    LocalDateTime paymentExpiresAt,
     String fullName,
     String phone,
     String email,
