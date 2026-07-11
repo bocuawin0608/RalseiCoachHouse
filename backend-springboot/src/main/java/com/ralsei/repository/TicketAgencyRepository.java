@@ -16,6 +16,7 @@ import com.ralsei.model.TicketAgency;
 public interface TicketAgencyRepository extends JpaRepository<TicketAgency, Integer> {
 
     boolean existsByTicketAgencyNameIgnoreCase(String ticketAgencyName);
+    boolean existsByTicketAgencyNameIgnoreCaseAndStopPointId(String ticketAgencyName, Integer stopPointId);
 
     @Query(value = """
         SELECT ta.ticketAgencyId   AS ticketAgencyId,

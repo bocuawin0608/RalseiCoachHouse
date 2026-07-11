@@ -73,8 +73,10 @@ public class TicketAgencyServiceImpl implements TicketAgencyService {
         coachStopRepo.findById(request.stopPointId())
             .orElseThrow(() -> new ResourceNotFoundException("Điểm dừng không tồn tại!"));
 
-        if (ticketAgencyRepo.existsByTicketAgencyNameIgnoreCase(request.ticketAgencyName().trim())) {
-            throw new BusinessRuleException("Tên đại lý bán vé đã tồn tại trong hệ thống!");
+        String name = request.ticketAgencyName().trim();
+        Integer stopId = request.stopPointId();
+        if (ticketAgencyRepo.existsByTicketAgencyNameIgnoreCaseAndStopPointId(name, stopId)) {
+            throw new BusinessRuleException("Đại lý '" + name + "' đã tồn tại tại điểm dừng này!");
         }
 
         TicketAgency ta = TicketAgency.builder()
@@ -95,9 +97,10 @@ public class TicketAgencyServiceImpl implements TicketAgencyService {
             .orElseThrow(() -> new ResourceNotFoundException("Điểm dừng không tồn tại!"));
 
         String newName = request.ticketAgencyName().trim();
-        if (!ta.getTicketAgencyName().equalsIgnoreCase(newName)
-            && ticketAgencyRepo.existsByTicketAgencyNameIgnoreCase(newName)) {
-            throw new BusinessRuleException("Tên đại lý bán vé đã tồn tại trong hệ thống!");
+        Integer newStopId = request.stopPointId();
+        boolean nameChanged = !ta.getTicketAgencyName().equalsIgnoreCase(newName) || ta.getStopPointId() != (newStopId != null ? newStopId : 0);
+        if (nameChanged && ticketAgencyRepo.existsByTicketAgencyNameIgnoreCaseAndStopPointId(newName, newStopId)) {
+            throw new BusinessRuleException("Đại lý '" + newName + "' đã tồn tại tại điểm dừng này!");
         }
 
         ta.setTicketAgencyName(newName);
@@ -113,6 +116,13 @@ public class TicketAgencyServiceImpl implements TicketAgencyService {
     public void toggleActive(Integer ticketAgencyId) {
         TicketAgency ta = ticketAgencyRepo.findById(ticketAgencyId)
             .orElseThrow(() -> new ResourceNotFoundException("Bến xe không tồn tại!"));
+        if (ta.isActive()) {
+            long staffCount = staffRepo.countByTicketAgencyId(ticketAgencyId);
+            if (staffCount > 0) {
+                throw new BusinessRuleException(
+                    "Đại lý này còn " + staffCount + " nhân viên đang làm việc. Vui lòng chuyển họ sang đại lý khác trước khi vô hiệu hóa.");
+            }
+        }
         ta.setActive(!ta.isActive());
         ticketAgencyRepo.save(ta);
     }
@@ -135,7 +145,7 @@ public class TicketAgencyServiceImpl implements TicketAgencyService {
     public List<CoachStopDropdownDTO> getCoachStopDropdown() {
         return coachStopRepo.findAll().stream()
             .filter(CoachStop::isActive)
-            .map(cs -> new CoachStopDropdownDTO(cs.getStopPointId(), cs.getStopPointName()))
+            .map(cs -> new CoachStopDropdownDTO(cs.getStopPointId(), cs.getStopPointName(), cs.getAddress(), cs.getCity()))
             .collect(Collectors.toList());
     }
 
@@ -156,14 +166,23 @@ public class TicketAgencyServiceImpl implements TicketAgencyService {
         CoachStop cs = coachStopRepo.findById(ta.getStopPointId()).orElse(null);
         String stopPointName = cs != null ? cs.getStopPointName() : null;
         String city = cs != null ? cs.getCity() : null;
+        String address = cs != null ? cs.getAddress() : null;
+
+        List<TicketAgencyDetailResponse.StaffSummary> staffList = staffRepo.findByTicketAgencyId(ta.getTicketAgencyId())
+            .stream()
+            .map(s -> new TicketAgencyDetailResponse.StaffSummary(s.getStaffId(), s.getStaffName(), s.getStaffPosition()))
+            .collect(Collectors.toList());
+
         return new TicketAgencyDetailResponse(
             ta.getTicketAgencyId(),
             ta.getTicketAgencyName(),
             ta.getStopPointId(),
             stopPointName,
             city,
+            address,
             ta.isActive(),
             staffRepo.countByTicketAgencyId(ta.getTicketAgencyId()),
+            staffList,
             ta.getCreatedAt(),
             ta.getCreatedBy(),
             ta.getUpdatedAt(),

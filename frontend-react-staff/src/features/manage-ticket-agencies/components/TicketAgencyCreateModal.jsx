@@ -19,6 +19,8 @@ export default function TicketAgencyCreateModal({ isOpen, onClose, onSuccess }) 
         }
     }, [isOpen]);
 
+    const selectedStop = coachStops.find(cs => cs.stopPointId == form.stopPointId);
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setForm(prev => ({ ...prev, [name]: value }));
@@ -74,6 +76,11 @@ export default function TicketAgencyCreateModal({ isOpen, onClose, onSuccess }) 
                                     <option key={cs.stopPointId} value={cs.stopPointId}>{cs.stopPointName}</option>
                                 ))}
                             </Form.Select>
+                            {selectedStop && (
+                                <small className="text-muted d-block mt-1">
+                                    {selectedStop.address}{selectedStop.city ? `, ${selectedStop.city}` : ''}
+                                </small>
+                            )}
                         </Col>
                     </Row>
                 </Modal.Body>
