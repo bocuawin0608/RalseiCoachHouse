@@ -23,6 +23,8 @@ export default function TicketAgencyUpdateModal({ isOpen, data, onClose, onSucce
         }
     }, [isOpen, data]);
 
+    const selectedStop = coachStops.find(cs => cs.stopPointId == form.stopPointId);
+
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
         setForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
@@ -55,7 +57,7 @@ export default function TicketAgencyUpdateModal({ isOpen, data, onClose, onSucce
 
     return (
         <Modal show={isOpen} onHide={onClose} centered>
-            <Modal.Header closeButton><Modal.Title>Cập nhật bến xe</Modal.Title></Modal.Header>
+            <Modal.Header closeButton><Modal.Title>Sửa đại lý</Modal.Title></Modal.Header>
             <Form onSubmit={handleSubmit}>
                 <Modal.Body>
                     {errorMsg && (
@@ -76,6 +78,11 @@ export default function TicketAgencyUpdateModal({ isOpen, data, onClose, onSucce
                                     <option key={cs.stopPointId} value={cs.stopPointId}>{cs.stopPointName}</option>
                                 ))}
                             </Form.Select>
+                            {selectedStop && (
+                                <small className="text-muted d-block mt-1">
+                                    {selectedStop.address}{selectedStop.city ? `, ${selectedStop.city}` : ''}
+                                </small>
+                            )}
                         </Col>
                         <Col md={3} className="d-flex align-items-end">
                             <Form.Check type="switch" id="ta-active-switch" label="Kích hoạt"

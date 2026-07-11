@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Container, Button, Card } from 'react-bootstrap';
+import { Container, Button, Card, Alert } from 'react-bootstrap';
 import { BsPlusLg } from 'react-icons/bs';
 import { useTicketAgencies, TicketAgencyFilter, TicketAgencyTable, TicketAgencyCreateModal, TicketAgencyUpdateModal, TicketAgencyDetailModal, ticketAgencyApi } from '../../features/manage-ticket-agencies';
 import Pagination from '../../components/common/Pagination';
@@ -9,8 +9,15 @@ export default function TicketAgencyListPage() {
     const [modalState, setModalState] = useState({ type: null, data: null });
     const closeModal = () => setModalState({ type: null, data: null });
 
+    const [toggleError, setToggleError] = useState('');
+
     const handleToggle = (a) => {
         const action = a.active !== false ? 'vô hiệu hóa' : 'kích hoạt';
+        if (a.active !== false && a.staffCount > 0) {
+            setToggleError(`Đại lý này còn ${a.staffCount} nhân viên đang làm việc. Vui lòng chuyển họ sang đại lý khác trước khi vô hiệu hóa.`);
+            return;
+        }
+        setToggleError('');
         if (window.confirm(`Bạn có chắc chắn muốn ${action} bến xe "${a.ticketAgencyName}"?`)) {
             ticketAgencyApi.toggleActive(a.ticketAgencyId)
                 .then(() => refetch())
@@ -26,6 +33,9 @@ export default function TicketAgencyListPage() {
                     <BsPlusLg className="me-1" /> Thêm bến xe
                 </Button>
             </div>
+            {toggleError && (
+                <Alert variant="danger" dismissible onClose={() => setToggleError('')} className="py-2">{toggleError}</Alert>
+            )}
             <TicketAgencyFilter filters={filters} onFilterChange={handleFilterChange} onReset={handleReset} />
             <Card>
                 <Card.Body className="p-0">
