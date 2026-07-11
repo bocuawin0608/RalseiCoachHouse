@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Alert, Card, Container } from 'react-bootstrap';
 import Pagination from '../../../components/common/Pagination';
 import StaffTripInfoFilters from '../../../features/staff-trip-info/components/StaffTripInfoFilters';
 import StaffTripInfoTable from '../../../features/staff-trip-info/components/StaffTripInfoTable';
 import { useStaffTripInfo } from '../../../features/staff-trip-info/hooks/useStaffTripInfo';
+import { TripCrewModal } from '../../../features/trip';
 import '../../../features/staff-trip-info/styles/staffTripInfo.css';
 
 /** Formats yyyy-MM-dd values into a compact Vietnamese date label. */
@@ -10,6 +12,19 @@ const formatDisplayDate = (dateValue) => {
     if (!dateValue) return '---';
     const [year, month, day] = dateValue.split('-');
     return `${day}/${month}/${year}`;
+};
+
+/** Adapts staff-trip ISO departureTime into TripCrewModal's date + time fields. */
+const toCrewModalTrip = (trip) => {
+    if (!trip?.departureTime || trip.departureDate) return trip;
+    const value = new Date(trip.departureTime);
+    if (Number.isNaN(value.getTime())) return trip;
+    const pad = (n) => String(n).padStart(2, '0');
+    return {
+        ...trip,
+        departureDate: `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`,
+        departureTime: `${pad(value.getHours())}:${pad(value.getMinutes())}`,
+    };
 };
 
 /**
@@ -30,6 +45,8 @@ export default function StaffTripInfoPage() {
         handleCheckboxChange,
         handleReset,
     } = useStaffTripInfo();
+
+    const [crewTrip, setCrewTrip] = useState(null);
 
     return (
         <Container fluid className="staff-trip-info-page">
@@ -62,12 +79,27 @@ export default function StaffTripInfoPage() {
 
             <Card className="staff-trip-info-table-card">
                 <Card.Body>
-                    <StaffTripInfoTable data={trips} loading={loading} />
+                    <StaffTripInfoTable
+                        data={trips}
+                        loading={loading}
+                        onViewCrew={(trip) => setCrewTrip(toCrewModalTrip(trip))}
+                    />
                     <div className="staff-trip-info-pagination">
                         <Pagination pageInfo={pageInfo} onPageChange={setPageInfo} />
                     </div>
                 </Card.Body>
             </Card>
+
+            <TripCrewModal
+                isOpen={Boolean(crewTrip)}
+                trip={crewTrip}
+                onClose={() => setCrewTrip(null)}
+                ticketsHref={
+                    crewTrip?.tripId
+                        ? `/staff/passenger-tickets/search?tripId=${encodeURIComponent(crewTrip.tripId)}`
+                        : undefined
+                }
+            />
         </Container>
     );
 }
