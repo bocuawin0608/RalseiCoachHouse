@@ -101,6 +101,21 @@ public class StaffServiceImpl implements StaffService {
             staff.setActive(request.isActive());
         }
         staffRepo.save(staff);
+
+        List<Integer> roleIds = request.roleIds();
+        if (roleIds != null && staff.getAccountId() != null) {
+            accountRoleRepo.deleteByAccountId(staff.getAccountId());
+            List<AccountRole> newRoles = roleIds.stream()
+                .filter(rid -> rid != null)
+                .map(rid -> AccountRole.builder()
+                    .accountId(staff.getAccountId())
+                    .roleId(rid)
+                    .build())
+                .collect(Collectors.toList());
+            if (!newRoles.isEmpty()) {
+                accountRoleRepo.saveAll(newRoles);
+            }
+        }
     }
 
     @Override
@@ -207,7 +222,8 @@ public class StaffServiceImpl implements StaffService {
             proj.getIsActive() != null && proj.getIsActive(),
             proj.getDob(),
             proj.getHireDate(),
-            proj.getCreatedAt()
+            proj.getCreatedAt(),
+            proj.getRoleName()
         );
     }
 

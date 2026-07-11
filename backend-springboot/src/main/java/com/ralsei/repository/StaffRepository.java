@@ -15,6 +15,7 @@ import com.ralsei.model.Staff;
 public interface StaffRepository extends JpaRepository<Staff, Integer> {
 
     Optional<Staff> findByAccountId(Integer accountId);
+    List<Staff> findByTicketAgencyId(Integer ticketAgencyId);
     boolean existsByAccountId(Integer accountId);
     boolean existsByPhoneIgnoreCase(String phone);
     boolean existsByEmailIgnoreCaseAndStaffIdNot(String email, Integer staffId);
@@ -33,7 +34,8 @@ public interface StaffRepository extends JpaRepository<Staff, Integer> {
             s.isActive           AS isActive,
             s.dob                AS dob,
             s.hireDate           AS hireDate,
-            s.createdAt          AS createdAt
+            s.createdAt          AS createdAt,
+        COALESCE((SELECT TOP 1 r.roleName FROM account_role ar JOIN role r ON r.roleId = ar.roleId WHERE ar.accountId = a.accountId), '') AS roleName
         FROM staff s
         LEFT JOIN ticket_agency ta ON ta.ticketAgencyId = s.ticketAgencyId
         LEFT JOIN account a ON a.accountId = s.accountId

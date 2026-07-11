@@ -17,4 +17,5 @@ public interface StaffListProjection {
     LocalDate getHireDate();
     LocalDateTime getCreatedAt();
     Boolean getIsActive();
+    String getRoleName();
 }

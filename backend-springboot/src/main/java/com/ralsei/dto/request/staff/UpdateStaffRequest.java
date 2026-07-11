@@ -1,6 +1,7 @@
 package com.ralsei.dto.request.staff;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import jakarta.validation.constraints.NotBlank;
 
@@ -19,5 +20,6 @@ public record UpdateStaffRequest(
     String staffPosition,
     LocalDate hireDate,
     Integer ticketAgencyId,
-    Boolean isActive
+    Boolean isActive,
+    List<Integer> roleIds
 ) {}
