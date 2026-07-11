@@ -52,6 +52,8 @@ public interface PassengerTicketRepository extends JpaRepository<PassengerTicket
     int markMajorChangeIfUnused(@Param("passengerTicketId") Integer passengerTicketId,
                                 @Param("majorChangeType") PassengerTicketMajorChangeType majorChangeType);
 
+    List<PassengerTicket> findByCustomerIdOrderByCreatedAtDesc(Integer customerId);
+
     @Query("""
         SELECT COUNT(pt) > 0
         FROM PassengerTicket pt
