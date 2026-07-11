@@ -5,6 +5,9 @@ import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.dto.response.cargoticket.CargoTicketResponse;
 import com.ralsei.dto.response.cargoticket.CargoTicketFormOptionsResponse;
 import com.ralsei.dto.response.cargoticket.CustomerContactResponse;
+import com.ralsei.dto.request.cargoticket.TripByStopRequest;
+import com.ralsei.dto.response.cargoticket.TripByStopResponse;
+import com.ralsei.model.Trip;
 
 import java.util.List;
 
@@ -24,4 +27,6 @@ public interface CargoTicketService {
     List<CustomerContactResponse> searchContacts(String phone);
 
     void completePayment(int cargoTicketId);
+
+    List<TripByStopResponse> getTripsByStopsInOrder(TripByStopRequest request);
 }

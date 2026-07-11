@@ -10,5 +10,6 @@ export const cargoTicketApi = {
     updateCargoTicket: (id, data) => axiosClient.put(`${BASE_URL}/${id}`, data),
     disableCargoTicket: (id) => axiosClient.put(`${BASE_URL}/${id}/disable`),
     searchContacts: (phone) => axiosClient.get(`${BASE_URL}/contacts/search`, { params: { phone } }),
-    completePayment: (id) => axiosClient.put(`${BASE_URL}/${id}/complete-payment`)
+    completePayment: (id) => axiosClient.put(`${BASE_URL}/${id}/complete-payment`),
+    getTripsByStops: (params) => axiosClient.get(`${BASE_URL}/trips-by-stops`, { params })
 };
