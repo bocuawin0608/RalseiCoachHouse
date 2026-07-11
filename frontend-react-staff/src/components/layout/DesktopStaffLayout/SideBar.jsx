@@ -4,7 +4,7 @@ import { Collapse } from 'react-bootstrap';
 import {
     BsList, BsGrid1X2, BsBusFront, BsSignpostSplit,
     BsChevronDown, BsChevronRight, BsTags, BsGeoAlt,
-    BsBoxSeam, BsCashCoin, BsGift, BsTicketPerforated, BsInfoCircle, BsReceipt
+    BsBoxSeam, BsGift, BsTicketPerforated, BsInfoCircle, BsCashCoin, BsReceipt
 } from 'react-icons/bs';
 import { useAuth } from '../../../features/auth';
 
@@ -140,28 +140,10 @@ export default function Sidebar() {
                     )}
 
                     {hasAccess(['ADMIN', 'MANAGER']) && (
-                        <div>
-                            <div
-                                className="d-flex align-items-center justify-content-between px-3 py-2 rounded text-light opacity-75 hover-opacity-100"
-                                style={{ cursor: 'pointer' }}
-                                onClick={() => handleToggleMenu('cargo')}
-                            >
-                                <div className="d-flex align-items-center gap-3">
-                                    <BsBoxSeam size={20} className="flex-shrink-0" />
-                                    <span>Quản lý loại hàng</span>
-                                </div>
-                                {openMenu === 'cargo' ? <BsChevronDown size={14} /> : <BsChevronRight size={14} />}
-                            </div>
-
-                            <Collapse in={openMenu === 'cargo'}>
-                                <div className="ps-4 mt-1 d-flex flex-column gap-1">
-                                    <NavLink to="/management/cargo-types" className={navLinkClass}>
-                                        <BsBoxSeam size={16} />
-                                        <span style={{ fontSize: '0.9rem' }}>Loại hàng</span>
-                                    </NavLink>
-                                </div>
-                            </Collapse>
-                        </div>
+                        <NavLink to="/management/cargo-types" className={navLinkClass}>
+                            <BsBoxSeam size={20} className="flex-shrink-0" />
+                            <span>Quản lý loại hàng</span>
+                        </NavLink>
                     )}
 
                     {hasAccess(['ADMIN', 'MANAGER']) && (
@@ -177,6 +159,10 @@ export default function Sidebar() {
                             <NavLink to="/management/trips" className={navLinkClass} end>
                                 <BsBusFront size={20} className="flex-shrink-0" />
                                 <span>Quản lý chuyến xe</span>
+                            </NavLink>
+                            <NavLink to="/management/refunds?status=PENDING&tab=passenger" className={navLinkClass} end>
+                                <BsCashCoin size={20} className="flex-shrink-0" />
+                                <span>Xử lý hoàn tiền</span>
                             </NavLink>
                         </>
                     )}

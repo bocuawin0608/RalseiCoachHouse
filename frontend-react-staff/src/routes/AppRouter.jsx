@@ -19,6 +19,7 @@ import { cargoTicketRoutes } from '../features/cargoTickets';
 import { tripStaffRoutes } from '../features/tripStaff';
 import { passengerTicketRoutes } from '../features/passenger-tickets';
 import { staffTripInfoRoutes } from '../features/staff-trip-info';
+import { refundRoutes } from '../features/refunds';
 
 const AppRouter = () => {
     return (
@@ -40,7 +41,12 @@ const AppRouter = () => {
                     {cargoRoutes}
                     {voucherRoutes}
                     {tripRoutes}
+<<<<<<< HEAD
 
+=======
+                    {refundRoutes}
+                    
+>>>>>>> 4a6c085cbfe2e543f29c4f2542f2076680c632ef
                     {/* route dưới thì chỉ admin vào đc, manager thì ko */}
                     <Route element={<RoleGuard allowedRoles={['ADMIN']} />}>
                         <Route path="system-config" element={<div>Cấu hình hệ thống</div>} />

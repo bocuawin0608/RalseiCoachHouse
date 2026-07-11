@@ -37,7 +37,7 @@
 .customer-history-card__footer { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--ralsei-green); color: var(--color-text-muted); font-size: .88rem; flex-wrap: wrap; }
 .customer-history-card__footer span { display: inline-flex; align-items: center; gap: 5px; }
 .customer-history-card__footer > strong { margin-left: auto; color: var(--ralsei-black); }
-.customer-history-card__actions { display: flex; justify-content: flex-end; margin-top: 14px; }
+.customer-history-card__actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
 .customer-history-card__actions button { min-width: 125px; padding: 9px 22px; border: 0; border-radius: 999px; background: var(--ralsei-black); color: var(--ralsei-white); }
 .customer-history-card__actions button:hover:not(:disabled) { background: var(--ralsei-pink); }
 .customer-history-card__actions button:disabled { background: var(--ralsei-footer); cursor: not-allowed; opacity: .66; }

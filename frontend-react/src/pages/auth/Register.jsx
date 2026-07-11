@@ -3,6 +3,15 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Form, Button, Alert, Card } from 'react-bootstrap';
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { auth, useAuth, authApi } from '../../features/auth';
+import {
+  EMAIL_MAX_LENGTH,
+  EMAIL_REGEX,
+  FULL_NAME_MAX_LENGTH,
+  FULL_NAME_REGEX,
+  PHONE_MAX_LENGTH,
+  PHONE_REGEX,
+  trimInput,
+} from '../../utils/identityPatterns';
 
 const formatPhoneForFirebase = (phone) => phone.startsWith('0') ? '+84' + phone.slice(1) : phone;
 
@@ -19,15 +28,36 @@ export default function Register() {
   const [error, setError] = useState('');
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
-{/**
+
+  const normalizeRegisterForm = () => {
+    const normalized = {
+      customerName: trimInput(formData.customerName),
+      username: trimInput(formData.username),
+      email: trimInput(formData.email),
+    };
+    setFormData(normalized);
+    return normalized;
+  };
+
+  /**
    * Handles sending OTP to the user's phone number
-   */}
+   */
   const handleSendOtp = async (e) => {
     e.preventDefault();
     setError('');
-    
-    if (!formData.username.match(/^0[0-9]{9}$/)) {
-      setError('Số điện thoại không hợp lệ!');
+
+    const normalized = normalizeRegisterForm();
+
+    if (!FULL_NAME_REGEX.test(normalized.customerName)) {
+      setError('Họ tên không hợp lệ. Vui lòng nhập ít nhất 2 ký tự, chỉ gồm chữ cái và khoảng trắng!');
+      return;
+    }
+    if (!PHONE_REGEX.test(normalized.username)) {
+      setError('SĐT không hợp lệ. Vui lòng nhập 10 chữ số, bắt đầu bằng 03 hoặc 05 hoặc 07 hoặc 08 hoặc 09!');
+      return;
+    }
+    if (!EMAIL_REGEX.test(normalized.email) || normalized.email.length > EMAIL_MAX_LENGTH) {
+      setError('Email không hợp lệ! Ví dụ hợp lệ: name.hehe@example.com');
       return;
     }
     
@@ -37,8 +67,8 @@ export default function Register() {
       if (window.recaptchaVerifier) {
         try {
           window.recaptchaVerifier.clear(); 
-        } catch (e) {
-          console.error("Clear recaptcha lỗi:", e);
+        } catch (clearError) {
+          console.error("Clear recaptcha lỗi:", clearError);
         }
         window.recaptchaVerifier = null; 
       }
@@ -47,7 +77,7 @@ export default function Register() {
           size: 'invisible'
         });
       
-      const formattedPhone = formatPhoneForFirebase(formData.username);
+      const formattedPhone = formatPhoneForFirebase(normalized.username);
       const confirmResult = await signInWithPhoneNumber(auth, formattedPhone, window.recaptchaVerifierRegister);
       
       setConfirmationResult(confirmResult);
@@ -67,7 +97,12 @@ export default function Register() {
 
     try {
       const userCredential = await confirmationResult.confirm(otp);
-      const response = await authApi.customerPhoneRegister(userCredential, formData);
+      const normalized = {
+        customerName: trimInput(formData.customerName),
+        username: trimInput(formData.username),
+        email: trimInput(formData.email),
+      };
+      const response = await authApi.customerPhoneRegister(userCredential, normalized);
       processAuthSuccess(response); 
       navigate('/');
     } catch (err) {
@@ -98,6 +133,7 @@ export default function Register() {
                 placeholder="Nhập họ tên của bạn"
                 value={formData.customerName}
                 onChange={handleChange}
+                maxLength={FULL_NAME_MAX_LENGTH}
                 required
               />
             </Form.Group>
@@ -110,6 +146,7 @@ export default function Register() {
                 placeholder="Ví dụ: 0912345678"
                 value={formData.username}
                 onChange={handleChange}
+                maxLength={PHONE_MAX_LENGTH}
                 required
               />
             </Form.Group>
@@ -122,6 +159,7 @@ export default function Register() {
                 placeholder="name@example.com"
                 value={formData.email}
                 onChange={handleChange}
+                maxLength={EMAIL_MAX_LENGTH}
                 required
               />
             </Form.Group>

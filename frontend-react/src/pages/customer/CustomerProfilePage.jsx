@@ -12,6 +12,13 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../features/auth';
 import { customerAccountApi } from '../../features/customerAccount/api/customerAccountApi';
+import {
+  EMAIL_MAX_LENGTH,
+  EMAIL_REGEX,
+  FULL_NAME_MAX_LENGTH,
+  FULL_NAME_REGEX,
+  trimInput,
+} from '../../utils/identityPatterns';
 import './CustomerProfilePage.css';
 
 const EMPTY_EDIT_FORM = {
@@ -76,12 +83,26 @@ export default function CustomerProfilePage() {
   /** Persists editable profile fields to the backend. */
   const handleUpdateProfile = async (event) => {
     event.preventDefault();
-    setSaving(true);
     setModalError('');
+
+    const customerName = trimInput(editForm.customerName);
+    const email = trimInput(editForm.email) || null;
+
+    if (!FULL_NAME_REGEX.test(customerName)) {
+      setModalError('Họ tên không hợp lệ. Vui lòng nhập ít nhất 2 ký tự, chỉ gồm chữ cái và khoảng trắng!');
+      return;
+    }
+    if (email && (!EMAIL_REGEX.test(email) || email.length > EMAIL_MAX_LENGTH)) {
+      setModalError('Email không hợp lệ! Ví dụ hợp lệ: name.hehe@example.com');
+      return;
+    }
+
+    setEditForm((current) => ({ ...current, customerName, email: email || '' }));
+    setSaving(true);
     try {
       const updatedProfile = await customerAccountApi.updateProfile({
-        customerName: editForm.customerName.trim(),
-        email: editForm.email.trim() || null,
+        customerName,
+        email,
         dob: editForm.dob || null,
       });
       setProfile(updatedProfile);
@@ -169,6 +190,7 @@ export default function CustomerProfilePage() {
                 name="customerName"
                 value={editForm.customerName}
                 onChange={handleEditChange}
+                maxLength={FULL_NAME_MAX_LENGTH}
                 disabled={saving}
                 required
               />
@@ -180,6 +202,7 @@ export default function CustomerProfilePage() {
                 name="email"
                 value={editForm.email}
                 onChange={handleEditChange}
+                maxLength={EMAIL_MAX_LENGTH}
                 disabled={saving}
               />
             </Form.Group>

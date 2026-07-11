@@ -1,9 +1,10 @@
 import { Button, Modal } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
 import { BsBusFront, BsPersonBadge, BsTelephone } from 'react-icons/bs';
 import './TripCrewModal.css';
 
 /** Displays the complete driving crew assigned to one concrete trip. */
-export default function TripCrewModal({ isOpen, trip, onClose }) {
+export default function TripCrewModal({ isOpen, trip, onClose, ticketsHref }) {
     if (!isOpen || !trip) return null;
 
     const departureDate = trip.departureDate
@@ -48,7 +49,27 @@ export default function TripCrewModal({ isOpen, trip, onClose }) {
                     </article>
                 </div>
             </Modal.Body>
-            <Modal.Footer><Button className="custom-btn-general" onClick={onClose}>Đóng</Button></Modal.Footer>
+            <Modal.Footer className="d-flex justify-content-end gap-2">
+                {ticketsHref ? (
+                    <>
+                        <Button variant="outline-secondary" onClick={onClose}>
+                            Đóng
+                        </Button>
+                        <Button
+                            as={Link}
+                            to={ticketsHref}
+                            className="custom-btn-general"
+                            onClick={onClose}
+                        >
+                            Xem vé của chuyến này
+                        </Button>
+                    </>
+                ) : (
+                    <Button className="custom-btn-general" onClick={onClose}>
+                        Đóng
+                    </Button>
+                )}
+            </Modal.Footer>
         </Modal>
     );
 }
