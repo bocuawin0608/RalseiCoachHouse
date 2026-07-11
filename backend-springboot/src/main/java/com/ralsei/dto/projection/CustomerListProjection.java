@@ -1,10 +1,7 @@
 package com.ralsei.dto.projection;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
-
-/**
- * CustomerListProjection
- */
 
 public interface CustomerListProjection {
     Integer getCustomerId();
@@ -13,4 +10,8 @@ public interface CustomerListProjection {
     String getEmail();
     LocalDateTime getCreatedAt();
     Boolean getIsActive();
+    Integer getAccountId();
+    Long getTotalTrips();
+    BigDecimal getTotalSpent();
+    LocalDateTime getLastBooking();
 }

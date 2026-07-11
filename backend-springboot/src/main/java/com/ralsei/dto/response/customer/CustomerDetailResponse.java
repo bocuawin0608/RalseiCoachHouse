@@ -1,13 +1,11 @@
 package com.ralsei.dto.response.customer;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-/**
- * CustomerDetailResponse
- */
 
 public record CustomerDetailResponse(
     Integer customerId,
@@ -19,5 +17,20 @@ public record CustomerDetailResponse(
     LocalDateTime createdAt,
     Integer createdBy,
     LocalDateTime updatedAt,
-    Integer updatedBy
-) {}
+    Integer updatedBy,
+    Integer accountId,
+    Long totalTrips,
+    BigDecimal totalSpent,
+    LocalDateTime lastBooking,
+    List<CustomerBookingHistory> bookings
+) {
+
+    public record CustomerBookingHistory(
+        Long passengerTicketId,
+        String ticketCode,
+        LocalDateTime createdAt,
+        BigDecimal totalPrice,
+        String tripCode,
+        String status
+    ) {}
+}

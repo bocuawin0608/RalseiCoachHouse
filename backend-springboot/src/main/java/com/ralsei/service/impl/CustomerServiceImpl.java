@@ -1,5 +1,6 @@
 package com.ralsei.service.impl;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,10 +22,12 @@ import com.ralsei.exception.ResourceNotFoundException;
 import com.ralsei.model.Account;
 import com.ralsei.model.AccountRole;
 import com.ralsei.model.Customer;
+import com.ralsei.model.PassengerTicket;
 import com.ralsei.model.Role;
 import com.ralsei.repository.AccountRepository;
 import com.ralsei.repository.AccountRoleRepository;
 import com.ralsei.repository.CustomerRepository;
+import com.ralsei.repository.PassengerTicketRepository;
 import com.ralsei.repository.RoleRepository;
 import com.ralsei.service.CustomerService;
 
@@ -38,6 +41,7 @@ public class CustomerServiceImpl implements CustomerService {
     private final AccountRepository accountRepo;
     private final AccountRoleRepository accountRoleRepo;
     private final RoleRepository roleRepo;
+    private final PassengerTicketRepository passengerTicketRepo;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -46,8 +50,12 @@ public class CustomerServiceImpl implements CustomerService {
         String search = filterRequest != null && filterRequest.search() != null && !filterRequest.search().isBlank()
             ? filterRequest.search().trim() : null;
         Boolean isActive = filterRequest != null ? filterRequest.isActive() : null;
+        String accountType = filterRequest != null && filterRequest.accountType() != null && !filterRequest.accountType().isBlank()
+            ? filterRequest.accountType().trim() : null;
+        String activity = filterRequest != null && filterRequest.activity() != null && !filterRequest.activity().isBlank()
+            ? filterRequest.activity().trim() : null;
 
-        List<CustomerListProjection> projections = customerRepo.filterCustomers(search, isActive);
+        List<CustomerListProjection> projections = customerRepo.filterCustomers(search, isActive, accountType, activity);
 
         List<CustomerListResponse> responses = projections.stream()
             .map(this::mapToListResponse)
@@ -65,7 +73,43 @@ public class CustomerServiceImpl implements CustomerService {
     public CustomerDetailResponse getCustomerDetail(Integer customerId) {
         Customer customer = customerRepo.findById(customerId)
             .orElseThrow(() -> new ResourceNotFoundException("Khách hàng không tồn tại!"));
-        return mapToDetailResponse(customer);
+
+        List<PassengerTicket> tickets = passengerTicketRepo.findByCustomerIdOrderByCreatedAtDesc(customerId);
+
+        List<CustomerDetailResponse.CustomerBookingHistory> bookings = tickets.stream()
+            .map(t -> new CustomerDetailResponse.CustomerBookingHistory(
+                (long) t.getPassengerTicketId(),
+                t.getTicketCode(),
+                t.getCreatedAt(),
+                t.getTotalPrice(),
+                null,
+                t.getStatus() != null ? t.getStatus().name() : null
+            ))
+            .collect(Collectors.toList());
+
+        long totalTrips = bookings.size();
+        java.math.BigDecimal totalSpent = tickets.stream()
+            .map(PassengerTicket::getTotalPrice)
+            .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+        LocalDateTime lastBooking = tickets.isEmpty() ? null : tickets.get(0).getCreatedAt();
+
+        return new CustomerDetailResponse(
+            customer.getCustomerId(),
+            customer.getCustomerName(),
+            customer.getPhone(),
+            customer.getEmail(),
+            customer.getDob(),
+            customer.isActive(),
+            customer.getCreatedAt(),
+            customer.getCreatedBy(),
+            customer.getUpdatedAt(),
+            customer.getUpdatedBy(),
+            customer.getAccountId(),
+            totalTrips,
+            totalSpent,
+            lastBooking,
+            bookings
+        );
     }
 
     @Override
@@ -170,7 +214,11 @@ public class CustomerServiceImpl implements CustomerService {
             proj.getEmail(),
             null,
             proj.getIsActive() != null && proj.getIsActive(),
-            proj.getCreatedAt()
+            proj.getCreatedAt(),
+            proj.getAccountId(),
+            proj.getTotalTrips() != null ? proj.getTotalTrips() : 0L,
+            proj.getTotalSpent() != null ? proj.getTotalSpent() : java.math.BigDecimal.ZERO,
+            proj.getLastBooking()
         );
     }
 
@@ -185,7 +233,12 @@ public class CustomerServiceImpl implements CustomerService {
             customer.getCreatedAt(),
             customer.getCreatedBy(),
             customer.getUpdatedAt(),
-            customer.getUpdatedBy()
+            customer.getUpdatedBy(),
+            customer.getAccountId(),
+            0L,
+            java.math.BigDecimal.ZERO,
+            null,
+            List.of()
         );
     }
 }

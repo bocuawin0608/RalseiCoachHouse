@@ -6,7 +6,7 @@ export default function CustomerFilter({ filters, onFilterChange, onReset }) {
         <div className="card mb-3">
             <div className="card-body">
                 <Row className="g-2 align-items-end">
-                    <Col md={4}>
+                    <Col md={3}>
                         <Form.Label className="fw-semibold small">Tìm kiếm</Form.Label>
                         <div className="position-relative">
                             <Form.Control
@@ -19,6 +19,23 @@ export default function CustomerFilter({ filters, onFilterChange, onReset }) {
                             />
                             <BsSearch className="position-absolute top-50 end-0 translate-middle-y me-2 text-muted" />
                         </div>
+                    </Col>
+                    <Col md={2}>
+                        <Form.Label className="fw-semibold small">Loại tài khoản</Form.Label>
+                        <Form.Select name="accountType" value={filters.accountType} onChange={onFilterChange} size="sm">
+                            <option value="">Tất cả</option>
+                            <option value="registered">Đã đăng ký</option>
+                            <option value="crm">CRM</option>
+                        </Form.Select>
+                    </Col>
+                    <Col md={2}>
+                        <Form.Label className="fw-semibold small">Hoạt động gần đây</Form.Label>
+                        <Form.Select name="activity" value={filters.activity} onChange={onFilterChange} size="sm">
+                            <option value="">Tất cả</option>
+                            <option value="active">Đang hoạt động</option>
+                            <option value="inactive_3mo">Không hoạt động &gt;3 tháng</option>
+                            <option value="never_booked">Chưa từng đặt vé</option>
+                        </Form.Select>
                     </Col>
                     <Col md={2}>
                         <Form.Label className="fw-semibold small">Trạng thái</Form.Label>
