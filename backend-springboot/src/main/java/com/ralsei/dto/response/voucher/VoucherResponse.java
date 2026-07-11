@@ -28,4 +28,5 @@ public class VoucherResponse {
     private Integer createdBy;
     private Integer updatedBy;
     private String status;
+    private Boolean isActive;
 }

@@ -7,6 +7,7 @@ const STUB_CLASS = {
   UPCOMING: 'voucher-stub-upcoming',
   EXPIRED: 'voucher-stub-expired',
   EXHAUSTED: 'voucher-stub-exhausted',
+  DEACTIVATED: 'voucher-stub-expired',
 };
 
 const BADGE_CLASS = {
@@ -14,6 +15,7 @@ const BADGE_CLASS = {
   UPCOMING: 'voucher-status-badge--upcoming',
   EXPIRED: 'voucher-status-badge--expired',
   EXHAUSTED: 'voucher-status-badge--exhausted',
+  DEACTIVATED: 'voucher-status-badge--expired',
 };
 
 const STATUS_LABEL = {
@@ -21,6 +23,7 @@ const STATUS_LABEL = {
   UPCOMING: 'Sắp diễn ra',
   EXPIRED: 'Đã hết hạn',
   EXHAUSTED: 'Đã dùng hết',
+  DEACTIVATED: 'Đã vô hiệu hóa',
 };
 
 const VoucherTable = ({ vouchers, loading, onView, onEdit, onDelete }) => {
