@@ -99,7 +99,7 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
     private final JwtService jwtService;
 
     private static final long BROWSING_HOLD_TTL_SECONDS = 600;
-    private static final long PAYMENT_HOLD_TTL_SECONDS = 90;
+    private static final long PAYMENT_HOLD_TTL_SECONDS = 900;
     private static final String BANK_TRANSFER_METHOD = "SEPAY";
 
     @Value("${sepay.bank.account}")

@@ -19,6 +19,10 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * AccountRole entity.
+ */
+
 public class AccountRole {
 
     @Id

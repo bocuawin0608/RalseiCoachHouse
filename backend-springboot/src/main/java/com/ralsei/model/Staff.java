@@ -20,6 +20,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import org.hibernate.annotations.DynamicUpdate;
+
 @Entity
 @Table(name = "staff")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
@@ -28,6 +30,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@DynamicUpdate
+/**
+ * Staff entity.
+ */
+
 public class Staff extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -19,6 +19,10 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * TicketAgency entity.
+ */
+
 public class TicketAgency extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

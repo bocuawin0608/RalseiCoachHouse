@@ -1,5 +1,9 @@
 package com.ralsei.model.enums;
 
+/**
+ * RoleEnum entity.
+ */
+
 public enum RoleEnum {
     ADMIN,
     MANAGER,

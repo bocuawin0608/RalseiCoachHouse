@@ -212,6 +212,39 @@ BEGIN
 END;
 
 -- ============================================================================
+-- ADMIN TEST DATA (Manage Customers, Ticket Agencies, Staff)
+-- ============================================================================
+PRINT N'-> Them du lieu test cho admin module...';
+
+-- Customers khong co account (test CRUD truc tiep)
+INSERT INTO [customer] (customerName, phone, email, dob, isActive)
+VALUES (N'Nguyen Van A', '0911111111', 'nguyenvana@gmail.com', '1990-01-15', 1),
+       (N'Tran Thi B', '0922222222', 'tranthib@gmail.com', '1995-06-20', 1),
+       (N'Le Van C', '0933333333', 'levanc@gmail.com', '1988-12-05', 1),
+       (N'Pham Thi D', '0944444444', 'phamthid@gmail.com', '2000-03-10', 1),
+       (N'Hoang Van E', '0955555555', 'hoangvane@gmail.com', '1975-09-25', 0);
+
+-- Coach stop o Tp.HCM cho ticket agency test
+INSERT INTO [coach_stop] (stopPointName, address, city, surcharge, isActive, latitude, longitude)
+VALUES (N'Ben Xe Mien Dong', N'292 Dinh Bo Linh, Binh Thanh', N'TP. Ho Chi Minh', 0.00, 1, 10.8231, 106.6947),
+       (N'Ben Xe Mien Tay', N'395 Kinh Duong Vuong, Binh Tan', N'TP. Ho Chi Minh', 0.00, 1, 10.7553, 106.6258);
+
+-- Them ticket agency o Tp.HCM
+INSERT INTO [ticket_agency] (stopPointId, ticketAgencyName)
+VALUES (6, N'Dai ly Ben Xe Mien Dong'),
+       (7, N'Dai ly Ben Xe Mien Tay');
+
+-- Mot staff da bi vo hieu hoa (test filter)
+INSERT INTO [account] (username, passwordHash, isActive) OUTPUT inserted.accountId INTO @IdOutput
+VALUES ('0999999999', '$2a$10$G1TCgI4zgHQpN1hyuRMEaOOvGeoSg7MCMQDapcuLl0NsIZNn104w2', 1);
+SELECT TOP 1 @GeneratedId = Id FROM @IdOutput; DELETE FROM @IdOutput;
+INSERT INTO [account_role] (accountId, roleId) VALUES (@GeneratedId, 4);
+INSERT INTO [staff] (accountId, ticketAgencyId, staffName, phone, email, dob, cccd, staffPosition, hireDate, isActive)
+VALUES (@GeneratedId, 6, N'Tai Xe Nghi Viec', '0999999999', 'taixenghiviec@vexedb.vn', '1992-07-15', '030092000099', 'DRIVER', '2025-06-01', 0);
+
+PRINT N'-> Hoan tat du lieu test admin!';
+
+-- ============================================================================
 -- LEVEL 2.5: CONFIGURING ROUTE STOPS & PRICES
 -- ============================================================================
 INSERT INTO [route_stop] (routeId, stopPointId, stopOrder, kilometersFromStart, minutesFromStart) VALUES 
@@ -641,7 +674,7 @@ WHERE [coachTypeId] = 3;
 SELECT * FROM [account];
 SELECT * FROM [role];
 SELECT * FROM [voucher];
-SELECT * FROM [coach_stop];     
+SELECT * FROM [coach_stop];
 SELECT * FROM [route];
 SELECT * FROM [coach_type];
 SELECT * FROM [cargo_type];

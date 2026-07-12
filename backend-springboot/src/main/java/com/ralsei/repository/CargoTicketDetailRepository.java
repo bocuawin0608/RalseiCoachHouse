@@ -10,22 +10,9 @@ import com.ralsei.dto.projection.customer.CargoOrderLookupProjection;
 import com.ralsei.dto.projection.customer.CargoOrderStopProjection;
 import com.ralsei.model.CargoTicketDetail;
 
-/**
- * Stores cargo-detail persistence operations and customer-site cargo lookup queries.
- * Customer lookup SQL remains here so operational repositories are not coupled to
- * the public read model.
- */
 public interface CargoTicketDetailRepository extends JpaRepository<CargoTicketDetail, Integer> {
     List<CargoTicketDetail> findByCargoTicket_CargoTicketId(int cargoTicketId);
 
-    /**
-     * Finds orders owned by the authenticated customer account. Pickup and drop-off
-     * are joined directly from the ticket snapshot identifiers; joining every
-     * route stop here would incorrectly multiply detail rows.
-     *
-     * @param accountId trusted account identifier extracted from the access token
-     * @return one row per cargo detail, newest orders first
-     */
     @Query(value = """
         SELECT ct.cargoTicketId AS cargoTicketId,
                ct.ticketCode AS ticketCode,
@@ -80,11 +67,6 @@ public interface CargoTicketDetailRepository extends JpaRepository<CargoTicketDe
         """, nativeQuery = true)
     List<CargoOrderLookupProjection> findCargoOrdersByAccountId(@Param("accountId") Integer accountId);
 
-    /**
-     * Loads only the route stops belonging to orders authorized by the supplied
-     * account. Keeping the ownership predicate in SQL prevents unrelated trip
-     * timelines from being queried through client-provided identifiers.
-     */
     @Query(value = """
         SELECT DISTINCT ct.cargoTicketId AS cargoTicketId,
                cs.stopPointId AS stopPointId,

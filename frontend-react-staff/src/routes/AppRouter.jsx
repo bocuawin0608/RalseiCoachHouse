@@ -16,6 +16,11 @@ import { voucherRoutes } from '../features/vouchers';
 import { cargoRoutes } from '../features/cargo';
 import { tripRoutes } from '../features/trip';
 import { cargoTicketRoutes } from '../features/cargoTickets';
+import { accountRoutes } from '../features/manage-accounts';
+import { roleRoutes } from '../features/manage-roles';
+import { customerRoutes } from '../features/manage-customers';
+import { ticketAgencyRoutes } from '../features/manage-ticket-agencies';
+import { staffRoutes } from '../features/manage-staff';
 import { tripStaffRoutes } from '../features/tripStaff';
 import { passengerTicketRoutes } from '../features/passenger-tickets';
 import { staffTripInfoRoutes } from '../features/staff-trip-info';
@@ -45,8 +50,11 @@ const AppRouter = () => {
 
                     {/* route dưới thì chỉ admin vào đc, manager thì ko */}
                     <Route element={<RoleGuard allowedRoles={['ADMIN']} />}>
-                        <Route path="system-config" element={<div>Cấu hình hệ thống</div>} />
-                        <Route path="manage-accounts" element={<div>Phân quyền tài khoản</div>} />
+                        {accountRoutes}
+                        {customerRoutes}
+                        {ticketAgencyRoutes}
+                        {roleRoutes}
+                        {staffRoutes}
                     </Route>
 
                 </Route>

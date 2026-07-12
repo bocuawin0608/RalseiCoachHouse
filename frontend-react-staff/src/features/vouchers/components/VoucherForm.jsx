@@ -36,7 +36,16 @@ const VoucherForm = ({ initialData, isSubmitting, hasReferences, onSubmit, onBac
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => {
+      const updated = { ...prev, [name]: value };
+      if (name === 'discountType' && value === 'FIXED') {
+        updated.maxDiscountValue = prev.discountValue;
+      }
+      if (name === 'discountValue' && formData.discountType === 'FIXED') {
+        updated.maxDiscountValue = value;
+      }
+      return updated;
+    });
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
     }
@@ -46,6 +55,10 @@ const VoucherForm = ({ initialData, isSubmitting, hasReferences, onSubmit, onBac
     const newErrors = {};
     if (!formData.voucherCode.trim()) {
       newErrors.voucherCode = 'Vui lòng nhập mã voucher';
+    } else if (!/^[a-zA-Z0-9]+$/.test(formData.voucherCode.trim())) {
+      newErrors.voucherCode = 'Mã voucher chỉ được chứa chữ và số';
+    } else if (formData.voucherCode.trim().length > 50) {
+      newErrors.voucherCode = 'Mã voucher không được vượt quá 50 ký tự';
     }
     if (!formData.discountValue || parseFloat(formData.discountValue) <= 0) {
       newErrors.discountValue = 'Vui lòng nhập giá trị giảm hợp lệ';
@@ -54,6 +67,14 @@ const VoucherForm = ({ initialData, isSubmitting, hasReferences, onSubmit, onBac
     }
     if (!formData.startEffectiveDate) {
       newErrors.startEffectiveDate = 'Vui lòng chọn ngày bắt đầu';
+    } else if (!initialData) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const start = new Date(formData.startEffectiveDate);
+      start.setHours(0, 0, 0, 0);
+      if (start < today) {
+        newErrors.startEffectiveDate = 'Ngày bắt đầu phải là hôm nay hoặc trong tương lai';
+      }
     }
     if (!formData.endEffectiveDate) {
       newErrors.endEffectiveDate = 'Vui lòng chọn ngày kết thúc';
@@ -155,6 +176,7 @@ const VoucherForm = ({ initialData, isSubmitting, hasReferences, onSubmit, onBac
                     name="maxDiscountValue"
                     value={formData.maxDiscountValue}
                     onChange={handleChange}
+                    readOnly={formData.discountType === 'FIXED'}
                   />
                 </Form.Group>
               </Col>
@@ -193,6 +215,7 @@ const VoucherForm = ({ initialData, isSubmitting, hasReferences, onSubmit, onBac
                     value={formData.startEffectiveDate}
                     onChange={handleChange}
                     isInvalid={!!errors.startEffectiveDate}
+                    min={initialData ? undefined : new Date().toISOString().slice(0, 16)}
                   />
                   <Form.Control.Feedback type="invalid">{errors.startEffectiveDate}</Form.Control.Feedback>
                 </Form.Group>
