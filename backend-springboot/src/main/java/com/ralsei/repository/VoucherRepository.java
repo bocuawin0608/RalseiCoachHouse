@@ -24,8 +24,8 @@ public interface VoucherRepository extends JpaRepository<Voucher, Integer> {
     @Query("SELECT v FROM Voucher v WHERE " +
             "(:search IS NULL OR v.voucherCode LIKE %:search%) " +
             "AND (:discountType IS NULL OR v.discountType = :discountType) " +
-            "AND (:fromDate IS NULL OR v.startEffectiveDate >= :fromDate) " +
-            "AND (:toDate IS NULL OR v.endEffectiveDate <= :toDate) ")
+            "AND (:fromDate IS NULL OR v.endEffectiveDate >= :fromDate) " +
+            "AND (:toDate IS NULL OR v.startEffectiveDate <= :toDate) ")
     Page<Voucher> searchVouchers(@Param("search") String search,
                                  @Param("discountType") String discountType,
                                  @Param("fromDate") LocalDateTime fromDate,
