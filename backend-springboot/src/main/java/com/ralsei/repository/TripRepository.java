@@ -26,6 +26,13 @@ import com.ralsei.model.Trip;
 
 import jakarta.transaction.Transactional;
 
+/**
+ * Persistence boundary for trip workflows.
+ *
+ * <p>Customer and staff queries coexist here but have different visibility
+ * rules. Customer queries expose only scheduled, future, priced, selectable
+ * trips; staff queries retain operational records needed for management.</p>
+ */
 public interface TripRepository extends JpaRepository<Trip, Integer> {
     
     /***
@@ -97,7 +104,9 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
      * snapshot for each trip. Price is resolved by the trip departure time so
      * old or future trips do not disappear because today's price row changed.
      * Trips whose departure time has already passed are excluded using the
-     * request timestamp supplied by the service.
+     * request timestamp supplied by the service. A customer result must have at
+     * least one active AVAILABLE seat, so sold-out and fully deactivated coaches
+     * never reach the selection screen.
      */
     @Query(value = """
             SELECT
@@ -114,8 +123,13 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             JOIN route r ON t.routeId = r.routeId
             JOIN coach c ON t.coachId = c.coachId
             JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId
-            JOIN coach_type_price ctp ON ct.coachTypeId = ctp.coachTypeId
-                AND t.departureTime BETWEEN ctp.startEffectiveDate AND ctp.endEffectiveDate
+            CROSS APPLY (
+                SELECT TOP (1) effective_price.seatPrice
+                FROM coach_type_price effective_price
+                WHERE effective_price.coachTypeId = ct.coachTypeId
+                  AND t.departureTime BETWEEN effective_price.startEffectiveDate AND effective_price.endEffectiveDate
+                ORDER BY effective_price.startEffectiveDate DESC, effective_price.coachTypePriceId DESC
+            ) ctp
             LEFT JOIN (
                 SELECT
                     ts.tripId,
@@ -130,6 +144,7 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
               AND t.departureTime BETWEEN :start AND :end
               AND t.departureTime >= :currentTime
               AND t.[status] = 'SCHEDULED'
+              AND COALESCE(seat_counts.availableSeats, 0) > 0
               AND (:checkTimeSlots = 0 OR (
                   (:slot1StartMinute IS NOT NULL AND DATEDIFF(MINUTE, CAST(t.departureTime AS DATE), t.departureTime) BETWEEN :slot1StartMinute AND :slot1EndMinute) OR
                   (:slot2StartMinute IS NOT NULL AND DATEDIFF(MINUTE, CAST(t.departureTime AS DATE), t.departureTime) BETWEEN :slot2StartMinute AND :slot2EndMinute) OR
@@ -150,12 +165,25 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             JOIN route r ON t.routeId = r.routeId
             JOIN coach c ON t.coachId = c.coachId
             JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId
-            JOIN coach_type_price ctp ON ct.coachTypeId = ctp.coachTypeId
-                AND t.departureTime BETWEEN ctp.startEffectiveDate AND ctp.endEffectiveDate
+            CROSS APPLY (
+                SELECT TOP (1) effective_price.seatPrice
+                FROM coach_type_price effective_price
+                WHERE effective_price.coachTypeId = ct.coachTypeId
+                  AND t.departureTime BETWEEN effective_price.startEffectiveDate AND effective_price.endEffectiveDate
+                ORDER BY effective_price.startEffectiveDate DESC, effective_price.coachTypePriceId DESC
+            ) ctp
             WHERE r.routeName = :route
               AND t.departureTime BETWEEN :start AND :end
               AND t.departureTime >= :currentTime
               AND t.[status] = 'SCHEDULED'
+              AND EXISTS (
+                  SELECT 1
+                  FROM trip_seat available_ts
+                  JOIN seat available_s ON available_s.seatId = available_ts.seatId
+                  WHERE available_ts.tripId = t.tripId
+                    AND available_s.isActive = 1
+                    AND UPPER(LTRIM(RTRIM(available_ts.[status]))) = 'AVAILABLE'
+              )
               AND (:checkTimeSlots = 0 OR (
                   (:slot1StartMinute IS NOT NULL AND DATEDIFF(MINUTE, CAST(t.departureTime AS DATE), t.departureTime) BETWEEN :slot1StartMinute AND :slot1EndMinute) OR
                   (:slot2StartMinute IS NOT NULL AND DATEDIFF(MINUTE, CAST(t.departureTime AS DATE), t.departureTime) BETWEEN :slot2StartMinute AND :slot2EndMinute) OR
@@ -191,8 +219,9 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
     /**
      * Loads the default customer trip list for a route/date before any filters
      * are selected. The projection shape intentionally matches filterTrips so
-     * the frontend does not need a separate placeholder mapping. Departed
-     * trips are excluded using the same request-time rule as filtered search.
+     * the frontend does not need a separate placeholder mapping. Departed trips
+     * and trips without an active AVAILABLE seat are excluded using the same
+     * rules as filtered search.
      */
     @Query(value = """
             SELECT
@@ -211,8 +240,13 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             JOIN route r ON t.routeId = r.routeId
             JOIN coach c ON t.coachId = c.coachId
             JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId
-            JOIN coach_type_price ctp ON ct.coachTypeId = ctp.coachTypeId
-                AND t.departureTime BETWEEN ctp.startEffectiveDate AND ctp.endEffectiveDate
+            CROSS APPLY (
+                SELECT TOP (1) effective_price.seatPrice
+                FROM coach_type_price effective_price
+                WHERE effective_price.coachTypeId = ct.coachTypeId
+                  AND t.departureTime BETWEEN effective_price.startEffectiveDate AND effective_price.endEffectiveDate
+                ORDER BY effective_price.startEffectiveDate DESC, effective_price.coachTypePriceId DESC
+            ) ctp
             LEFT JOIN (
                 SELECT
                     ts.tripId,
@@ -227,6 +261,7 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
               AND t.departureTime >= :currentTime
               AND r.routeName = :route
               AND t.[status] = 'SCHEDULED'
+              AND COALESCE(seat_counts.availableSeats, 0) > 0
             ORDER BY t.departureTime
             """, countQuery = """
             SELECT COUNT(t.tripId)
@@ -234,12 +269,25 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             JOIN route r ON t.routeId = r.routeId
             JOIN coach c ON t.coachId = c.coachId
             JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId
-            JOIN coach_type_price ctp ON ct.coachTypeId = ctp.coachTypeId
-                AND t.departureTime BETWEEN ctp.startEffectiveDate AND ctp.endEffectiveDate
+            CROSS APPLY (
+                SELECT TOP (1) effective_price.seatPrice
+                FROM coach_type_price effective_price
+                WHERE effective_price.coachTypeId = ct.coachTypeId
+                  AND t.departureTime BETWEEN effective_price.startEffectiveDate AND effective_price.endEffectiveDate
+                ORDER BY effective_price.startEffectiveDate DESC, effective_price.coachTypePriceId DESC
+            ) ctp
             WHERE t.departureTime BETWEEN :start AND :end
               AND t.departureTime >= :currentTime
               AND r.routeName = :route
               AND t.[status] = 'SCHEDULED'
+              AND EXISTS (
+                  SELECT 1
+                  FROM trip_seat available_ts
+                  JOIN seat available_s ON available_s.seatId = available_ts.seatId
+                  WHERE available_ts.tripId = t.tripId
+                    AND available_s.isActive = 1
+                    AND UPPER(LTRIM(RTRIM(available_ts.[status]))) = 'AVAILABLE'
+              )
             """, nativeQuery = true)
     Page<TripDetailProjection> findTripDetails(
             @Param("start") LocalDateTime start,

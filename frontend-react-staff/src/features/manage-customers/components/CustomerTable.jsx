@@ -71,7 +71,7 @@ export default function CustomerTable({ customers, loading, error, onViewDetail,
                         <th>ID</th>
                         <th>Họ tên</th>
                         <th>SĐT</th>
-                        <th>Loại TK</th>
+                        {/* <th>Loại TK</th> */}
                         {thSortable('Số chuyến', 'totalTrips')}
                         {thSortable('Tổng chi tiêu', 'totalSpent')}
                         <th>Đặt gần nhất</th>
@@ -97,11 +97,11 @@ export default function CustomerTable({ customers, loading, error, onViewDetail,
                                     {neverBooked && <Badge bg="dark" className="ms-1" style={{ fontSize: '0.65rem' }}>Chưa đặt vé</Badge>}
                                 </td>
                                 <td>{c.phone || <span className="text-muted">—</span>}</td>
-                                <td>
+                                {/* <td>
                                     <Badge bg={hasAccount ? 'primary' : 'warning'} text={hasAccount ? 'white' : 'dark'} style={{ fontSize: '0.75rem' }}>
                                         {hasAccount ? 'Đã đăng ký' : 'CRM'}
                                     </Badge>
-                                </td>
+                                </td> */}
                                 <td>{trips}</td>
                                 <td>{formatCurrency(c.totalSpent)}</td>
                                 <td style={{ fontSize: '0.85rem' }}>{formatDate(c.lastBooking)}</td>

@@ -315,10 +315,10 @@ export default function StaffUpdateModal({ isOpen, data, onClose, onSuccess, tic
                                 ))}
                             </Form.Select>
                         </Col>
-                        <Col md={3} className="d-flex align-items-end">
+                        {/* <Col md={3} className="d-flex align-items-end">
                             <Form.Check type="switch" id="s-active-switch" label="Kích hoạt"
                                 name="isActive" checked={form.isActive} onChange={handleChange} />
-                        </Col>
+                        </Col> */}
                     </Row>
                     <h6 className="fw-bold text-secondary border-bottom pb-2 mt-3">Phân quyền</h6>
                     <Row className="g-2">

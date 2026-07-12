@@ -44,19 +44,19 @@ export default function CustomerDetailModal({ isOpen, data, onClose }) {
                     <>
                         <h6 className="fw-bold text-secondary border-bottom pb-2">Thông tin khách hàng</h6>
                         <Row className="mb-3">
-                            <Col md={4}><strong>ID:</strong> {detail.customerId}</Col>
-                            <Col md={4}>
+                            <Col md={6}><strong>ID:</strong> {detail.customerId}</Col>
+                            <Col md={6}>
                                 <strong>Trạng thái:</strong>{' '}
                                 <Badge bg={detail.active !== false ? 'success' : 'danger'}>
                                     {detail.active !== false ? 'Hoạt động' : 'Đã khóa'}
                                 </Badge>
                             </Col>
-                            <Col md={4}>
+                            {/* <Col md={4}>
                                 <strong>Loại TK:</strong>{' '}
                                 <Badge bg={detail.accountId ? 'primary' : 'secondary'}>
                                     {detail.accountId ? 'Đã đăng ký' : 'CRM'}
                                 </Badge>
-                            </Col>
+                            </Col> */}
                             <Col md={6} className="mt-2"><strong>Họ tên:</strong> {detail.customerName}</Col>
                             <Col md={6} className="mt-2"><strong>SĐT:</strong> {detail.phone || '—'}</Col>
                             <Col md={6} className="mt-2"><strong>Email:</strong> {detail.email || '—'}</Col>

@@ -133,32 +133,10 @@ export default function Sidebar() {
                     )}
 
                     {hasAccess(['ADMIN', 'MANAGER']) && (
-                        <div>
-                            <div
-                                className="d-flex align-items-center justify-content-between px-2 py-2 rounded text-light opacity-75 hover-opacity-100"
-                                style={{ cursor: 'pointer' }}
-                                onClick={() => handleToggleMenu('cargo')}
-                            >
-                                <div className="d-flex align-items-center gap-3">
-                                    <BsBoxSeam size={20} className="flex-shrink-0" />
-                                    <span>Quản lý loại hàng</span>
-                                </div>
-                                {openMenu === 'cargo' ? <BsChevronDown size={14} /> : <BsChevronRight size={14} />}
-                            </div>
-
-                            <Collapse in={openMenu === 'cargo'}>
-                                <div className="ps-4 mt-1 d-flex flex-column gap-1">
-                                    <NavLink to="/management/cargo-types" className={navLinkClass}>
-                                        <BsBoxSeam size={16} />
-                                        <span style={{ fontSize: '0.9rem' }}>Loại hàng</span>
-                                    </NavLink>
-                                    <NavLink to="/management/freight-rates" className={navLinkClass}>
-                                        <BsCashCoin size={16} />
-                                        <span style={{ fontSize: '0.9rem' }}>Giá cước</span>
-                                    </NavLink>
-                                </div>
-                            </Collapse>
-                        </div>
+                        <NavLink to="/management/cargo-types" className={navLinkClass}>
+                            <BsBoxSeam size={20} className="flex-shrink-0" />
+                            <span>Quản lý loại hàng</span>
+                        </NavLink>
                     )}
 
                     {hasAccess(['ADMIN', 'MANAGER']) && (
@@ -183,10 +161,6 @@ export default function Sidebar() {
 
                     {hasAccess(['ADMIN']) && (
                         <>
-                            <NavLink to="/management/manage-roles" className={navLinkClass} end>
-                                <BsShieldCheck size={20} className="flex-shrink-0" />
-                                <span>Xem vai trò</span>
-                            </NavLink>
                             <NavLink to="/management/manage-ticket-agencies" className={navLinkClass} end>
                                 <BsBuilding size={20} className="flex-shrink-0" />
                                 <span>Đại lý bán vé</span>
@@ -214,6 +188,10 @@ export default function Sidebar() {
                                         <NavLink to="/management/manage-accounts" className={navLinkClass}>
                                             <BsPeopleFill size={16} />
                                             <span style={{ fontSize: '0.9rem' }}>Quản lý tài khoản</span>
+                                        </NavLink>
+                                        <NavLink to="/management/manage-roles" className={navLinkClass} end>
+                                            <BsShieldCheck size={16} className="flex-shrink-0" />
+                                            <span style={{ fontSize: '0.9rem' }}>Xem vai trò</span>
                                         </NavLink>
                                     </div>
                                 </Collapse>

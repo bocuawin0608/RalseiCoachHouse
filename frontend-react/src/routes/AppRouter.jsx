@@ -7,7 +7,6 @@ import GuestGuard from './GuestGuard';
 import RoleGuard from './RoleGuard';
 // Pages
 import HomePage from '../pages/public/home/HomePage';
-import CargoTrackingPage from '../pages/public/cargo-tracking/CargoTrackingPage';
 import Login from '../pages/auth/Login';
 import Register from '../pages/auth/Register';
 import BookingPaymentPage from '../pages/public/booking/BookingPaymentPage';
@@ -23,7 +22,6 @@ const AppRouter = () => {
         <Routes>
             <Route element={<PublicLayout />}>
                 <Route path="/" element={<HomePage />} />
-                <Route path="/tra-cuu" element={<CargoTrackingPage />} />
                 <Route path="/booking/trip/:tripId" element={<BookingTripPage />} />
                 <Route path="/booking/payment/:transactionId" element={<BookingPaymentPage />} />
                 <Route path="/unauthorized" element={<div>401 - Unauthorized.</div>} />

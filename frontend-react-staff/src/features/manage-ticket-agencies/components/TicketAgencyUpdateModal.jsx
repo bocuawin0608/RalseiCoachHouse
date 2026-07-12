@@ -68,10 +68,10 @@ export default function TicketAgencyUpdateModal({ isOpen, data, onClose, onSucce
                             <Form.Label className="small">Tên đại lý <span className="text-danger">*</span></Form.Label>
                             <Form.Control name="ticketAgencyName" value={form.ticketAgencyName} onChange={handleChange} required maxLength={200} size="sm" autoFocus />
                         </Col>
-                        <Col md={3} className="d-flex align-items-end">
+                        {/* <Col md={3} className="d-flex align-items-end">
                             <Form.Check type="switch" id="ta-active-switch" label="Kích hoạt"
                                 name="isActive" checked={form.isActive} onChange={handleChange} />
-                        </Col>
+                        </Col> */}
                     </Row>
                 </Modal.Body>
                 <Modal.Footer>

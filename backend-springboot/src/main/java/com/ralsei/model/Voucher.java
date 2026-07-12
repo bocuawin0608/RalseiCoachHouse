@@ -54,12 +54,4 @@ public class Voucher extends BaseEntity {
 
     @Column(name = "usedCount", nullable = false)
     private int usedCount;
-
-    @Column(name = "isActive", nullable = false)
-    @Builder.Default
-    private Boolean isActive = true;
-
-    public boolean isActive() {
-        return isActive != null && isActive;
-    }
 }

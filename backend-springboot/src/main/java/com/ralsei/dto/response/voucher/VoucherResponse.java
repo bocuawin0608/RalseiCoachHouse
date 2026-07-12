@@ -1,12 +1,12 @@
 package com.ralsei.dto.response.voucher;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -28,5 +28,4 @@ public class VoucherResponse {
     private Integer createdBy;
     private Integer updatedBy;
     private String status;
-    private Boolean isActive;
 }

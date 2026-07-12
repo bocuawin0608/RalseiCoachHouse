@@ -33,7 +33,7 @@ export default function StaffTable({ staffList, loading, error, onViewDetail, on
                         <th>ID</th>
                         <th>Họ tên</th>
                         <th>SĐT</th>
-                        <th>CCCD</th>
+                        {/* <th>CCCD</th> */}
                         <th>Chức vụ</th>
                         <th>Vai trò</th>
                         <th>Bến xe / Đại lý</th>
@@ -50,7 +50,7 @@ export default function StaffTable({ staffList, loading, error, onViewDetail, on
                                 <td>{s.staffId}</td>
                                 <td className="fw-medium">{s.staffName}</td>
                                 <td>{s.phone || <span className="text-muted">—</span>}</td>
-                                <td style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{maskCccd(s.cccd)}</td>
+                                {/* <td style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{maskCccd(s.cccd)}</td> */}
                                 <td><Badge bg="info">{s.staffPosition}</Badge></td>
                                 <td>
                                     {s.roleName
