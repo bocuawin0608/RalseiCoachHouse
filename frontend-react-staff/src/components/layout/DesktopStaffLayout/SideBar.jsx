@@ -75,14 +75,7 @@ export default function Sidebar() {
                         </NavLink>
                     )}
 
-                    {hasAccess(['TICKET_STAFF']) && (
-                        <NavLink to="/staff/cargo-tickets" className={navLinkClass} end>
-                            <BsReceipt size={20} className="flex-shrink-0" />
-                            <span>Vé hàng hóa</span>
-                        </NavLink>
-                    )}
-
-                    {hasAccess(['ADMIN', 'MANAGER']) && (
+                    {hasAccess(['MANAGER']) && (
                         <div>
                             <div
                                 className="d-flex align-items-center justify-content-between px-2 py-2 rounded text-light opacity-75 hover-opacity-100"
@@ -111,7 +104,7 @@ export default function Sidebar() {
                         </div>
                     )}
 
-                    {hasAccess(['ADMIN', 'MANAGER']) && (
+                    {hasAccess(['MANAGER']) && (
                         <div>
                             <div
                                 className="d-flex align-items-center justify-content-between px-2 py-2 rounded text-light opacity-75 hover-opacity-100"
@@ -140,21 +133,21 @@ export default function Sidebar() {
                         </div>
                     )}
 
-                    {hasAccess(['ADMIN', 'MANAGER']) && (
+                    {hasAccess(['MANAGER']) && (
                         <NavLink to="/management/cargo-types" className={navLinkClass}>
                             <BsBoxSeam size={20} className="flex-shrink-0" />
                             <span>Quản lý loại hàng</span>
                         </NavLink>
                     )}
 
-                    {hasAccess(['ADMIN', 'MANAGER']) && (
+                    {hasAccess(['MANAGER']) && (
                         <NavLink to="/management/vouchers" className={navLinkClass} end>
                             <BsGift size={20} className="flex-shrink-0" />
                             <span>Quản lý voucher</span>
                         </NavLink>
                     )}
 
-                    {hasAccess(['ADMIN', 'MANAGER']) && (
+                    {hasAccess(['MANAGER']) && (
                         <>
                             <NavLink to="/management/trips" className={navLinkClass} end>
                                 <BsBusFront size={20} className="flex-shrink-0" />
@@ -213,13 +206,17 @@ export default function Sidebar() {
 
                     {hasAccess(['TICKET_STAFF']) && (
                         <>
+                            <NavLink to="/staff/trips/info" className={navLinkClass} end>
+                                <BsInfoCircle size={20} className="flex-shrink-0" />
+                                <span>Thông tin chuyến xe</span>
+                            </NavLink>
                             <NavLink to="/staff/passenger-tickets/search" className={navLinkClass} end>
                                 <BsTicketPerforated size={20} className="flex-shrink-0" />
                                 <span>Vé hành khách</span>
                             </NavLink>
-                            <NavLink to="/staff/trips/info" className={navLinkClass} end>
-                                <BsInfoCircle size={20} className="flex-shrink-0" />
-                                <span>Thông tin chuyến xe</span>
+                            <NavLink to="/staff/cargo-tickets" className={navLinkClass} end>
+                                <BsReceipt size={20} className="flex-shrink-0" />
+                                <span>Vé hàng hóa</span>
                             </NavLink>
                         </>
                     )}

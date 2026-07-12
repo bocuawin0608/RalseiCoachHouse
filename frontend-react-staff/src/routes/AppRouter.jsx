@@ -69,11 +69,9 @@ const AppRouter = () => {
 
                 <Route element={<RoleGuard allowedRoles={['TICKET_STAFF']} />}>
                     <Route element={<DesktopLayout />}>
-                        <Route path="ticket/sell" element={<div>Bán vé</div>} />
-                        <Route path="ticket/history" element={<div>Lịch sử bán</div>} />
-                        {cargoTicketRoutes}
-                        {passengerTicketRoutes}
                         {staffTripInfoRoutes}
+                        {passengerTicketRoutes}
+                        {cargoTicketRoutes}
                     </Route>
                 </Route>
 
