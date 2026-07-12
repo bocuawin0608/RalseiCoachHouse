@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tripService } from '../../../features/trips/api/tripServices';
 import './HomePage.css';
@@ -27,6 +27,11 @@ const TIME_SLOT_FILTERS = [
     ['12:00-18:00', 'Buổi chiều 12:00 - 18:00'],
     ['18:00-23:59', 'Buổi tối 18:00 - 24:00'],
 ];
+const PRICE_FILTERS = {
+    UNDER_300K: { min: 0, max: 299999.99 },
+    BETWEEN_300K_AND_500K: { min: 300000, max: 500000 },
+    OVER_500K: { min: 500000.01, max: null },
+};
 const COACH_IMAGES = {
     luxury: '/images/xe-luxury.jpeg',
     limousine: '/images/xe-vip.jpg',
@@ -129,13 +134,65 @@ const extractLocationsFromRoutes = (routes) => {
 };
 
 /**
- * Normalizes backend timestamps before displaying HH:mm to the customer.
+ * Normalizes a backend timestamp before displaying HH:mm to the customer.
+ * Untrusted or malformed values return a visible placeholder instead of
+ * leaking arbitrary response text into the schedule card.
  */
 const formatTime = (value) => {
-    if (!value) return '--:--';
+    if (typeof value !== 'string' || !value.trim()) return '--:--';
+    const normalizedValue = value.includes('T') ? value : value.replace(' ', 'T');
+    if (Number.isNaN(new Date(normalizedValue).getTime())) return '--:--';
     if (value.includes('T')) return value.split('T')[1].substring(0, 5);
     if (value.includes(' ')) return value.split(' ')[1].substring(0, 5);
-    return value.substring(0, 5);
+    return '--:--';
+};
+
+/**
+ * Validates and normalizes one public trip before React is allowed to render it.
+ * This is a second safety boundary for rolling deployments or corrupt cached
+ * responses; the backend remains the authoritative validation layer.
+ *
+ * @returns a normalized selectable trip, or {@code null} for unsafe data
+ */
+const normalizeSelectableTrip = (trip) => {
+    if (!trip || !Number.isInteger(Number(trip.tripId)) || Number(trip.tripId) <= 0) return null;
+
+    if (typeof trip.seatPrice !== 'number') return null;
+    const seatPrice = trip.seatPrice;
+    if (!Number.isFinite(seatPrice) || seatPrice < 0) return null;
+
+    const fallbackTotalSeats = Number(trip.totalSeats);
+    const availableSeats = trip.availableSeats == null
+        ? fallbackTotalSeats
+        : Number(trip.availableSeats);
+    if (!Number.isFinite(availableSeats) || availableSeats <= 0) return null;
+
+    return { ...trip, tripId: Number(trip.tripId), seatPrice, availableSeats };
+};
+
+/**
+ * Validates a result page and keeps one card per concrete trip. Overlapping
+ * effective-price records must not create duplicate customer choices while an
+ * older backend is being rolled forward.
+ */
+const normalizeSelectableTrips = (trips) => {
+    const uniqueTrips = new Map();
+    trips.forEach((trip) => {
+        const normalizedTrip = normalizeSelectableTrip(trip);
+        if (normalizedTrip && !uniqueTrips.has(normalizedTrip.tripId)) {
+            uniqueTrips.set(normalizedTrip.tripId, normalizedTrip);
+        }
+    });
+    return Array.from(uniqueTrips.values());
+};
+
+/**
+ * Splits a route into the first endpoint and the complete remaining endpoint.
+ * Joining the tail preserves legitimate names containing additional hyphens.
+ */
+const splitRouteEndpoints = (routeName = '') => {
+    const [departure = '', ...destinationParts] = routeName.split(/\s*-\s*/);
+    return [departure.trim(), destinationParts.join(' - ').trim()];
 };
 
 /**
@@ -290,6 +347,7 @@ const HomePage = () => {
     const [selectedTimeSlots, setSelectedTimeSlots] = useState([]);
     const [selectedLayouts, setSelectedLayouts] = useState([]);
     const [priceRange, setPriceRange] = useState({ min: null, max: null });
+    const latestSearchRequestRef = useRef(0);
 
     useEffect(() => {
         tripService
@@ -412,6 +470,9 @@ const HomePage = () => {
         if (effectiveTripType === TRIP_TYPE.ROUND_TRIP
             && (!effectiveReturnDate || effectiveReturnDate < effectiveOutboundDate)) return;
 
+        const searchRequestId = latestSearchRequestRef.current + 1;
+        latestSearchRequestRef.current = searchRequestId;
+
         setHasSearched(true);
         setActiveJourneyLeg(journeyLeg);
         const routeText = `${searchDeparture.trim()} - ${searchDestination.trim()}`;
@@ -450,22 +511,29 @@ const HomePage = () => {
             if (searchParams.maxPrice === null) delete searchParams.maxPrice;
 
             const responseData = await tripService.searchTrips(searchParams);
-            setTrips(responseData?.content || []);
+            if (searchRequestId !== latestSearchRequestRef.current) return;
+            const rawTrips = Array.isArray(responseData?.content) ? responseData.content : [];
+            const safeTrips = normalizeSelectableTrips(rawTrips);
+            setTrips(safeTrips);
+            if (rawTrips.length > 0 && safeTrips.length === 0) {
+                setResultMessage('Dữ liệu chuyến xe không hợp lệ hoặc chuyến đã hết chỗ.');
+            }
             setPagination({
                 pageNumber: responseData?.pageNumber ?? pageNumber,
-                totalElements: responseData?.totalElements ?? 0,
+                totalElements: Math.max(0, (responseData?.totalElements ?? safeTrips.length) - (rawTrips.length - safeTrips.length)),
                 totalPages: responseData?.totalPages ?? 0,
             });
             if (!isAdvancedSearch && journeyLeg === JOURNEY_LEG.OUTBOUND) {
                 saveSearchHistory(`${departure.trim()} - ${destination.trim()}`);
             }
         } catch (error) {
+            if (searchRequestId !== latestSearchRequestRef.current) return;
             setTrips([]);
             setPagination({ pageNumber: 0, totalElements: 0, totalPages: 0 });
             setResultMessage('Không thể tải lịch trình. Vui lòng thử lại.');
             console.error('Không thể tải lịch trình khách hàng:', error);
         } finally {
-            setLoading(false);
+            if (searchRequestId === latestSearchRequestRef.current) setLoading(false);
         }
     };
 
@@ -513,6 +581,7 @@ const HomePage = () => {
      * Opens the stop timeline and resolves route data using the selected trip id.
      */
     const openTripStops = async (trip) => {
+        if (!normalizeSelectableTrip(trip)) return;
         setStopModal({ trip, stops: [], loading: true, error: '' });
         try {
             const stops = await tripService.getTripStops(trip.tripId);
@@ -526,6 +595,16 @@ const HomePage = () => {
     /** Closes the trip-stop modal and clears its request state. */
     const closeTripStops = () => {
         setStopModal({ trip: null, stops: [], loading: false, error: '' });
+    };
+
+    /**
+     * Opens booking only for a trip that still satisfies the customer-side
+     * identifier, price, and availability contract.
+     */
+    const selectTrip = (trip) => {
+        const selectableTrip = normalizeSelectableTrip(trip);
+        if (!selectableTrip) return;
+        navigate(`/booking/trip/${selectableTrip.tripId}`, { state: buildTripInfoFromSearchCard(selectableTrip) });
     };
 
     const clearAllFilters = () => {
@@ -542,9 +621,9 @@ const HomePage = () => {
      * Passing an override avoids waiting for asynchronous React state updates.
      */
     const applyHistory = (item) => {
-        const routeParts = (item.route || '').split('-');
-        const nextDeparture = item.departure || routeParts[0]?.trim() || '';
-        const nextDestination = item.destination || routeParts[1]?.trim() || '';
+        const [historyDeparture, historyDestination] = splitRouteEndpoints(item.route || '');
+        const nextDeparture = item.departure || historyDeparture;
+        const nextDestination = item.destination || historyDestination;
         const nextTripType = item.tripType || TRIP_TYPE.ONE_WAY;
         const nextDate = preserveDate(item.date);
         const nextReturnDate = preserveDate(item.returnDate);
@@ -774,9 +853,9 @@ const HomePage = () => {
                             <div className="filter-group">
                                 <h5>Giá</h5>
                                 <div className="filter-tags-grid vertical-tags">
-                                    <button type="button" className={`filter-tag-btn ${priceRange.min === 0 && priceRange.max === 300000 ? 'active' : ''}`} onClick={() => handlePriceRangeChange(0, 300000)}>Dưới 300.000đ</button>
-                                    <button type="button" className={`filter-tag-btn ${priceRange.min === 300000 && priceRange.max === 500000 ? 'active' : ''}`} onClick={() => handlePriceRangeChange(300000, 500000)}>300.000đ - 500.000đ</button>
-                                    <button type="button" className={`filter-tag-btn ${priceRange.min === 500000 && priceRange.max === 2000000 ? 'active' : ''}`} onClick={() => handlePriceRangeChange(500000, 2000000)}>Trên 500.000đ</button>
+                                    <button type="button" className={`filter-tag-btn ${priceRange.min === PRICE_FILTERS.UNDER_300K.min && priceRange.max === PRICE_FILTERS.UNDER_300K.max ? 'active' : ''}`} onClick={() => handlePriceRangeChange(PRICE_FILTERS.UNDER_300K.min, PRICE_FILTERS.UNDER_300K.max)}>Dưới 300.000đ</button>
+                                    <button type="button" className={`filter-tag-btn ${priceRange.min === PRICE_FILTERS.BETWEEN_300K_AND_500K.min && priceRange.max === PRICE_FILTERS.BETWEEN_300K_AND_500K.max ? 'active' : ''}`} onClick={() => handlePriceRangeChange(PRICE_FILTERS.BETWEEN_300K_AND_500K.min, PRICE_FILTERS.BETWEEN_300K_AND_500K.max)}>300.000đ - 500.000đ</button>
+                                    <button type="button" className={`filter-tag-btn ${priceRange.min === PRICE_FILTERS.OVER_500K.min && priceRange.max === PRICE_FILTERS.OVER_500K.max ? 'active' : ''}`} onClick={() => handlePriceRangeChange(PRICE_FILTERS.OVER_500K.min, PRICE_FILTERS.OVER_500K.max)}>Trên 500.000đ</button>
                                 </div>
                             </div>
                         </aside>
@@ -813,12 +892,12 @@ const HomePage = () => {
                             ) : (
                                 <div className="advanced-trips-list">
                                     {trips.map((trip, index) => {
-                                        const routeParts = (trip.routeName || currentSearchRoute).split('-');
-                                        const displayDeparture = routeParts[0]?.trim() || departure;
-                                        const displayDestination = routeParts[1]?.trim() || destination;
+                                        const [routeDeparture, routeDestination] = splitRouteEndpoints(trip.routeName || currentSearchRoute);
+                                        const displayDeparture = routeDeparture || departure;
+                                        const displayDestination = routeDestination || destination;
                                         const rawVehicleType = trip.coachTypeName || 'Xe khách';
                                         const displayVehicleType = rawVehicleType;
-                                        const displayPrice = Number(trip.seatPrice || 0);
+                                        const displayPrice = trip.seatPrice;
                                         const parsedAvailableSeats = Number(trip.availableSeats);
                                         const parsedTotalSeats = Number(trip.totalSeats);
                                         const displaySeatsLeft = Number.isFinite(parsedAvailableSeats)
@@ -863,10 +942,9 @@ const HomePage = () => {
 
                                                 <div className="trip-card-actions-bar">
                                                     <button type="button" className="btn-secondary-info" onClick={() => openTripStops(trip)}>Xem điểm đón trả</button>
-                                                    <button type="button" className="btn-primary-select" 
-                                                        onClick={
-                                                            () => navigate(`/booking/trip/${trip.tripId}`, {state: buildTripInfoFromSearchCard(trip)})
-                                                        }
+                                                    <button type="button" className="btn-primary-select"
+                                                        disabled={!normalizeSelectableTrip(trip)}
+                                                        onClick={() => selectTrip(trip)}
                                                     >Chọn chuyến</button>
                                                 </div>
                                             </div>
@@ -953,7 +1031,8 @@ const HomePage = () => {
                             <button
                                 type="button"
                                 className="btn-primary-select"
-                                onClick={() => navigate(`/booking/trip/${stopModal.trip.tripId}`, { state: buildTripInfoFromSearchCard(stopModal.trip) })}
+                                disabled={!normalizeSelectableTrip(stopModal.trip)}
+                                onClick={() => selectTrip(stopModal.trip)}
                             >
                                 Chọn chuyến
                             </button>

@@ -138,8 +138,18 @@ public class VoucherServiceImpl implements VoucherService {
         Voucher voucher = voucherRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Voucher not found with id: " + id));
 
-        voucher.setIsActive(false);
-        voucherRepository.save(voucher);
+        boolean hasReferences = passengerTicketRepository.existsByVoucherId(id);
+        if (hasReferences) {
+            LocalDateTime now = LocalDateTime.now();
+            if (now.isBefore(voucher.getStartEffectiveDate())) {
+                voucher.setEndEffectiveDate(voucher.getStartEffectiveDate());
+            } else {
+                voucher.setEndEffectiveDate(now);
+            }
+            voucherRepository.save(voucher);
+        } else {
+            voucherRepository.delete(voucher);
+        }
     }
 
     @Override
@@ -178,14 +188,10 @@ public class VoucherServiceImpl implements VoucherService {
                 .createdBy(voucher.getCreatedBy())
                 .updatedBy(voucher.getUpdatedBy())
                 .status(computeStatus(voucher))
-                .isActive(voucher.isActive())
                 .build();
     }
 
     private String computeStatus(Voucher voucher) {
-        if (!voucher.isActive()) {
-            return "DEACTIVATED";
-        }
         LocalDateTime now = LocalDateTime.now();
         if (now.isAfter(voucher.getEndEffectiveDate())) {
             return "EXPIRED";

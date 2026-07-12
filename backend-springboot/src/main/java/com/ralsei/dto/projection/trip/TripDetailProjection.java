@@ -1,6 +1,11 @@
 package com.ralsei.dto.projection.trip;
 import java.time.LocalDateTime;
 
+/**
+ * Read-only customer result returned by the default trip-search query.
+ * Its common fields intentionally match {@link TripFilterProjection} so React
+ * can use one card renderer for default and filtered searches.
+ */
 public interface TripDetailProjection {
     Integer getTripId();
     String getCoachTypeName();

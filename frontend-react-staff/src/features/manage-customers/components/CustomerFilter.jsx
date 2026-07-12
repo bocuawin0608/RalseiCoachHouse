@@ -20,14 +20,14 @@ export default function CustomerFilter({ filters, onFilterChange, onReset }) {
                             <BsSearch className="position-absolute top-50 end-0 translate-middle-y me-2 text-muted" />
                         </div>
                     </Col>
-                    <Col md={2}>
+                    {/* <Col md={2}>
                         <Form.Label className="fw-semibold small">Loại tài khoản</Form.Label>
                         <Form.Select name="accountType" value={filters.accountType} onChange={onFilterChange} size="sm">
                             <option value="">Tất cả</option>
                             <option value="registered">Đã đăng ký</option>
                             <option value="crm">CRM</option>
                         </Form.Select>
-                    </Col>
+                    </Col> */}
                     <Col md={2}>
                         <Form.Label className="fw-semibold small">Hoạt động gần đây</Form.Label>
                         <Form.Select name="activity" value={filters.activity} onChange={onFilterChange} size="sm">
