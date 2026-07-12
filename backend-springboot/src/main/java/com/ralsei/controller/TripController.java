@@ -32,9 +32,10 @@ import java.util.Map;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-/***
- * 
- * TripController: nhớ comment vào nhá
+/**
+ * HTTP entry point for public customer trip discovery and authenticated staff
+ * trip operations. Each endpoint delegates business rules to {@link TripService}
+ * and keeps request binding concerns at the web boundary.
  */
 @RestController
 @RequestMapping("/api/v1")
@@ -58,6 +59,12 @@ public class TripController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * Searches public trips using validated customer-facing filters.
+     *
+     * @param request date, route, pagination, time, layout, and price filters
+     * @return a page containing only selectable trips with active available seats
+     */
     @GetMapping(value = "/trips/home", params = "advanced=true")
     public ResponseEntity<PagedResponse<TripFilterProjection>> filterTrips(
             @Valid @ModelAttribute TripFilterRequest request) {

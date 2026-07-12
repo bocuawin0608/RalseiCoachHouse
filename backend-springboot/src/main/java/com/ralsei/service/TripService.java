@@ -17,7 +17,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-
+/**
+ * Application boundary for customer search and staff trip-management use cases.
+ * Customer methods return public projections; staff methods retain their
+ * operational projections and are intentionally unaffected by customer rules.
+ */
 public interface TripService {
         /**
          * This interface class use to get all trip in the day customer site
@@ -38,6 +42,10 @@ public interface TripService {
 
         );
 
+        /**
+         * Searches selectable customer trips using optional time, coach, and
+         * price filters that have already passed transport validation.
+         */
         PagedResponse<TripFilterProjection> getFilteredTripDetails(
                         LocalDateTime start,
                         LocalDateTime end,

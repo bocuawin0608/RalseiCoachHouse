@@ -54,5 +54,4 @@ public class Voucher extends BaseEntity {
 
     @Column(name = "usedCount", nullable = false)
     private int usedCount;
-
 }

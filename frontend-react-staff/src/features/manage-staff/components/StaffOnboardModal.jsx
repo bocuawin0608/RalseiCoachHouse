@@ -1,0 +1,239 @@
+import { useState, useEffect } from 'react';
+import { Modal, Form, Row, Col, Button, Alert, Spinner } from 'react-bootstrap';
+import { BsExclamationTriangleFill, BsCheckCircle } from 'react-icons/bs';
+import staffApi from '../api/staffApi';
+import accountApi from '../../manage-accounts/api/accountApi';
+
+const STAFF_ROLES = ['ADMIN', 'MANAGER', 'TICKET_STAFF', 'TRIP_STAFF'];
+
+const POSITION_BY_ROLE = {
+    ADMIN: ['MANAGER'],
+    MANAGER: ['MANAGER'],
+    TICKET_STAFF: ['TICKET_STAFF'],
+    TRIP_STAFF: ['DRIVER', 'ATTENDANT'],
+};
+
+export default function StaffOnboardModal({ isOpen, onClose, onSuccess, ticketAgencies }) {
+    const [form, setForm] = useState({
+        staffName: '', phone: '', email: '', cccd: '', dob: '',
+        staffPosition: '', hireDate: '', ticketAgencyId: '',
+    });
+    const [roles, setRoles] = useState([]);
+    const [selectedRoles, setSelectedRoles] = useState([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [errorMsg, setErrorMsg] = useState('');
+    const [result, setResult] = useState(null);
+
+    useEffect(() => {
+        if (isOpen) {
+            setForm({
+                staffName: '', phone: '', email: '', cccd: '', dob: '',
+                staffPosition: '', hireDate: '', ticketAgencyId: '',
+            });
+            setSelectedRoles([]);
+            setErrorMsg('');
+            setResult(null);
+            accountApi.getAllRoles()
+                .then(res => setRoles((res || []).filter(r => STAFF_ROLES.includes(r.roleName))))
+                .catch(() => {});
+        }
+    }, [isOpen]);
+
+    const selectedRoleName = roles.find(r => selectedRoles.includes(r.roleId))?.roleName;
+    const positionOptions = selectedRoleName ? (POSITION_BY_ROLE[selectedRoleName] || []) : [];
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setForm(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleRoleToggle = (roleId) => {
+        setSelectedRoles(prev =>
+            prev.includes(roleId) ? [] : [roleId]
+        );
+    };
+
+    const agencyRequired = selectedRoleName === 'TICKET_STAFF';
+    const agencyDisabled = selectedRoleName === 'ADMIN' || selectedRoleName === 'TRIP_STAFF';
+
+    useEffect(() => {
+        if (selectedRoleName && positionOptions.length > 0) {
+            const current = form.staffPosition;
+            if (!current || !positionOptions.includes(current)) {
+                setForm(prev => ({
+                    ...prev,
+                    staffPosition: positionOptions[0],
+                    ticketAgencyId: agencyDisabled ? '' : prev.ticketAgencyId,
+                }));
+            }
+        }
+    }, [selectedRoleName]);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setErrorMsg('');
+
+        const phone = form.phone.trim().replace(/\s/g, '');
+        const phoneRegex = /^(0|\+84)(3[2-9]|5[2689]|7[0-9]|8[1-9]|9[0-9])\d{7}$/;
+        if (!phoneRegex.test(phone)) {
+            setErrorMsg('Số điện thoại không hợp lệ. Phải là số ĐTDĐ Việt Nam (bắt đầu 03, 05, 07, 08, 09).');
+            return;
+        }
+
+        if (form.hireDate && new Date(form.hireDate) < new Date('1900-01-01')) {
+            setErrorMsg('Ngày vào làm không hợp lệ.');
+            return;
+        }
+        const cccd = form.cccd.trim();
+        if (cccd && !/^[0-9]{9,12}$/.test(cccd)) {
+            setErrorMsg('CCCD không hợp lệ (9-12 chữ số).');
+            return;
+        }
+        if (form.dob) {
+            const birth = new Date(form.dob);
+            const cutoff = new Date();
+            cutoff.setFullYear(cutoff.getFullYear() - 16);
+            if (birth > cutoff) {
+                setErrorMsg('Nhân viên phải từ đủ 16 tuổi trở lên.');
+                return;
+            }
+        }
+
+        if (agencyRequired && !form.ticketAgencyId) {
+            setErrorMsg('Nhân viên bán vé phải trực thuộc một bến xe.');
+            return;
+        }
+
+        setIsSubmitting(true);
+        setResult(null);
+        try {
+            const payload = {
+                staffName: form.staffName.trim(),
+                phone: phone,
+                email: form.email.trim() || null,
+                cccd: form.cccd.trim() || null,
+                dob: form.dob || null,
+                staffPosition: form.staffPosition,
+                hireDate: form.hireDate,
+                ticketAgencyId: agencyDisabled || !form.ticketAgencyId ? null : parseInt(form.ticketAgencyId, 10),
+                roleIds: selectedRoles,
+            };
+            const res = await staffApi.onboard(payload);
+            setResult(res);
+        } catch (err) {
+            const data = err.response?.data;
+            if (data?.fieldErrors) {
+                const msgs = Object.entries(data.fieldErrors).map(([f, m]) => `- ${f}: ${m}`);
+                setErrorMsg(['Dữ liệu không hợp lệ:', ...msgs].join('\n'));
+            } else {
+                setErrorMsg(data?.message || 'Có lỗi xảy ra.');
+            }
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleClose = () => {
+        if (result) onSuccess();
+        onClose();
+    };
+
+    return (
+        <Modal show={isOpen} onHide={handleClose} size="lg" centered>
+            <Modal.Header closeButton>
+                <Modal.Title>{result ? 'Onboard thành công' : 'Onboard nhân viên mới'}</Modal.Title>
+            </Modal.Header>
+            {result ? (
+                <Modal.Body>
+                    <Alert variant="success" className="d-flex align-items-center gap-2">
+                        <BsCheckCircle size={24} />
+                        <div>
+                            <strong>Đã tạo nhân viên và tài khoản!</strong><br />
+                            Username: <code>{result.username}</code><br />
+                            Mật khẩu: <code>123456</code>
+                        </div>
+                    </Alert>
+                </Modal.Body>
+            ) : (
+                <Form onSubmit={handleSubmit}>
+                    <Modal.Body>
+                        {errorMsg && (
+                            <Alert variant="danger" className="py-2 mb-3">
+                                <div className="d-flex align-items-start gap-2">
+                                    <BsExclamationTriangleFill className="mt-1 flex-shrink-0" />
+                                    <span style={{whiteSpace: 'pre-line'}}>{errorMsg}</span>
+                                </div>
+                            </Alert>
+                        )}
+                        <h6 className="fw-bold text-secondary border-bottom pb-2">Thông tin nhân sự</h6>
+                        <Row className="g-2 mb-3">
+                            <Col md={4}>
+                                <Form.Label className="small">Họ tên <span className="text-danger">*</span></Form.Label>
+                                <Form.Control name="staffName" value={form.staffName} onChange={handleChange} required maxLength={100} size="sm" />
+                            </Col>
+                            <Col md={3}>
+                                <Form.Label className="small">SĐT (username) <span className="text-danger">*</span></Form.Label>
+                                <Form.Control name="phone" value={form.phone} onChange={handleChange} required size="sm" />
+                            </Col>
+                            <Col md={3}>
+                                <Form.Label className="small">Email</Form.Label>
+                                <Form.Control type="email" name="email" value={form.email} onChange={handleChange} size="sm" />
+                            </Col>
+                            <Col md={2}>
+                                <Form.Label className="small">CCCD</Form.Label>
+                                <Form.Control name="cccd" value={form.cccd} onChange={handleChange} size="sm" />
+                            </Col>
+                            <Col md={3}>
+                                <Form.Label className="small">Ngày sinh</Form.Label>
+                                <Form.Control type="date" name="dob" value={form.dob} onChange={handleChange} size="sm" />
+                            </Col>
+                            <Col md={3}>
+                                <Form.Label className="small">Chức vụ <span className="text-danger">*</span></Form.Label>
+                                <Form.Select name="staffPosition" value={form.staffPosition} onChange={handleChange} size="sm">
+                                    <option value="">-- Chọn chức vụ --</option>
+                                    {positionOptions.map(p => (
+                                        <option key={p} value={p}>{p}</option>
+                                    ))}
+                                </Form.Select>
+                            </Col>
+                            <Col md={3}>
+                                <Form.Label className="small">Ngày vào làm <span className="text-danger">*</span></Form.Label>
+                                <Form.Control type="date" name="hireDate" value={form.hireDate} onChange={handleChange} required size="sm" />
+                            </Col>
+                            <Col md={3}>
+                                <Form.Label className="small">Bến xe {agencyRequired && <span className="text-danger">*</span>}</Form.Label>
+                                <Form.Select name="ticketAgencyId" value={form.ticketAgencyId} onChange={handleChange} size="sm" disabled={agencyDisabled}>
+                                    <option value="">-- Không trực thuộc --</option>
+                                    {ticketAgencies.map(ta => (
+                                        <option key={ta.ticketAgencyId} value={ta.ticketAgencyId}>{ta.ticketAgencyName}</option>
+                                    ))}
+                                </Form.Select>
+                            </Col>
+                        </Row>
+                        <h6 className="fw-bold text-secondary border-bottom pb-2">Phân quyền</h6>
+                        <Row className="g-2">
+                            {roles.length === 0 ? (
+                                <p className="text-muted small">Đang tải danh sách vai trò...</p>
+                            ) : (
+                                roles.map(role => (
+                                    <Col md={3} key={role.roleId}>
+                                        <Form.Check type="checkbox" label={role.roleName}
+                                            checked={selectedRoles.includes(role.roleId)}
+                                            onChange={() => handleRoleToggle(role.roleId)} />
+                                    </Col>
+                                ))
+                            )}
+                        </Row>
+                        <small className="text-muted">Mật khẩu mặc định: <code>123456</code></small>
+                    </Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>Hủy</Button>
+                        <Button variant="primary" type="submit" disabled={isSubmitting || selectedRoles.length === 0}>
+                            {isSubmitting ? <><Spinner size="sm" /> Đang xử lý...</> : 'Onboard'}
+                        </Button>
+                    </Modal.Footer>
+                </Form>
+            )}
+        </Modal>
+    );
+}

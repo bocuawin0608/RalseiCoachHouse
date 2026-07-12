@@ -86,7 +86,7 @@ export default function Login() {
       }
     } catch (err) {
       console.log(err);
-      // setError(err.message || "Đăng nhập thất bại, vui lòng thử lại!");
+      setError(err.message || "Đăng nhập thất bại, vui lòng thử lại!");
     }
   };
 

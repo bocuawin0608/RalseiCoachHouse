@@ -30,6 +30,17 @@ TestResults.xml
 .txt
 
 docs/
+
+# Secrets
+**/firebase-service-account.json
+**/application-dev.properties
+**/application-API.properties
+
+#Local docs
+/documents/*.md
+/documents/Test_Plan_System.docx
+/documents/Test_Plan_Cargo_Tracking.docx
+
 tracker/
 
 #ignore agent skillset
@@ -38,4 +49,3 @@ skills-lock.json
 # Seed / test SQL files (local test data, not part of core schema)
 backend-springboot/db/seed_*.sql
 backend-springboot/db/test_*.sql
-

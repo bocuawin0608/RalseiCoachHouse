@@ -6,7 +6,7 @@ const ROUTE_PRIORITY = ["ADMIN", "MANAGER", "TICKET_STAFF", "TRIP_STAFF"];
 const ROUTE_MAP = {
     ADMIN: "/management/dashboard",
     MANAGER: "/management/dashboard",
-    TICKET_STAFF: "/staff/passenger-tickets/search",
+    TICKET_STAFF: "/staff/trips/info",
     TRIP_STAFF: "/staff",
 }
 
