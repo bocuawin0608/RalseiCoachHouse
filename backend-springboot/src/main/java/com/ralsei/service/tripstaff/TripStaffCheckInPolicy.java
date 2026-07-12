@@ -20,6 +20,7 @@ import com.ralsei.model.enums.PassengerTicketStatus;
 @Component
 public class TripStaffCheckInPolicy {
 
+    private static final int CHECK_IN_OPEN_MINUTES_BEFORE_DEPARTURE = 60;
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
     public void assertStaffAssigned(Trip trip, int staffId) {
@@ -30,8 +31,13 @@ public class TripStaffCheckInPolicy {
 
     public void assertWithinCheckInWindow(Trip trip, Route route, LocalDateTime now) {
         LocalDateTime departureTime = trip.getDepartureTime();
+        LocalDateTime checkInOpen = departureTime.minusMinutes(CHECK_IN_OPEN_MINUTES_BEFORE_DEPARTURE);
         LocalDateTime checkInClose = departureTime.plusMinutes(route.getTotalMinutes());
 
+        if (now.isBefore(checkInOpen)) {
+            throw new BusinessRuleException(
+                    "Chưa đến giờ check-in (mở từ " + checkInOpen.format(TIME_FORMAT) + ")");
+        }
         if (now.isAfter(checkInClose)) {
             throw new BusinessRuleException("Đã hết thời gian check-in cho chuyến này");
         }
@@ -44,12 +50,14 @@ public class TripStaffCheckInPolicy {
     }
 
     public void assertTicketConfirmed(PassengerTicket ticket) {
-        if (ticket.getStatus() != PassengerTicketStatus.CONFIRMED) {
-            if (ticket.getStatus() == PassengerTicketStatus.CANCELLED) {
-                throw new BusinessRuleException("Vé đã bị hủy");
-            }
-            throw new BusinessRuleException("Vé chưa được xác nhận");
+        PassengerTicketStatus status = ticket.getStatus();
+        if (status == PassengerTicketStatus.CONFIRMED || status == PassengerTicketStatus.CHANGED) {
+            return;
         }
+        if (status == PassengerTicketStatus.CANCELLED) {
+            throw new BusinessRuleException("Vé đã bị hủy");
+        }
+        throw new BusinessRuleException("Vé chưa được xác nhận");
     }
 
     public void assertTripNotCompleted(Trip trip) {
@@ -59,13 +67,6 @@ public class TripStaffCheckInPolicy {
         }
         if ("CANCELLED".equals(status)) {
             throw new BusinessRuleException("Chuyến đã bị hủy");
-        }
-    }
-
-    public void assertDepartureTimeArrived(Trip trip, LocalDateTime now) {
-        if (now.isBefore(trip.getDepartureTime())) {
-            throw new BusinessRuleException(
-                    "Chưa đến giờ khởi hành (" + trip.getDepartureTime().format(TIME_FORMAT) + ")");
         }
     }
 
