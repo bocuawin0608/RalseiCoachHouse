@@ -6,8 +6,6 @@ import { BsExclamationTriangleFill } from 'react-icons/bs';
 export default function RouteUpdateInfoModal({ isOpen, data, onClose, onSuccess }) {
     const [formData, setFormData] = useState({
         routeName: '',
-        totalKilometers: '',
-        totalMinutes: '',
         active: true
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -18,8 +16,6 @@ export default function RouteUpdateInfoModal({ isOpen, data, onClose, onSuccess 
             if (data && isOpen) {
                 setFormData({
                     routeName: data.routeName || '',
-                    totalKilometers: data.totalKilometers || '',
-                    totalMinutes: data.totalMinutes || '',
                     active: data.active !== undefined ? data.active : data.isActive
                 });
                 setError(null);
@@ -30,8 +26,6 @@ export default function RouteUpdateInfoModal({ isOpen, data, onClose, onSuccess 
 
     const hasAnyChange = data && (
         data.routeName !== formData.routeName ||
-        data.totalKilometers !== formData.totalKilometers ||
-        data.totalMinutes !== formData.totalMinutes ||
         (data.active !== undefined ? data.active : data.isActive) !== formData.active
     );
 
@@ -58,8 +52,8 @@ export default function RouteUpdateInfoModal({ isOpen, data, onClose, onSuccess 
             // First update basic info
             await routeApi.updateRouteInfo(data.routeId, {
                 routeName: formData.routeName,
-                totalKilometers: formData.totalKilometers,
-                totalMinutes: formData.totalMinutes,
+                totalKilometers: data.totalKilometers,
+                totalMinutes: data.totalMinutes,
                 active: formData.active
             });
 
@@ -108,37 +102,7 @@ export default function RouteUpdateInfoModal({ isOpen, data, onClose, onSuccess 
                         />
                     </Form.Group>
 
-                    <div className="d-flex gap-3 mb-4">
-                        <Form.Group className="flex-fill">
-                            <Form.Label className="fw-semibold text-secondary">
-                                Khoảng cách (km) <span className="text-danger">*</span>
-                            </Form.Label>
-                            <Form.Control
-                                type="number"
-                                name="totalKilometers"
-                                step="0.1" min="0"
-                                value={formData.totalKilometers}
-                                onChange={handleInputChange}
-                                required
-                                className="py-2"
-                            />
-                        </Form.Group>
 
-                        <Form.Group className="flex-fill">
-                            <Form.Label className="fw-semibold text-secondary">
-                                Thời gian (phút) <span className="text-danger">*</span>
-                            </Form.Label>
-                            <Form.Control
-                                type="number"
-                                name="totalMinutes"
-                                min="0"
-                                value={formData.totalMinutes}
-                                onChange={handleInputChange}
-                                required
-                                className="py-2"
-                            />
-                        </Form.Group>
-                    </div>
 
                     <Form.Group className="mb-3">
                         <Form.Label className="fw-semibold text-secondary">Trạng thái hệ thống</Form.Label>

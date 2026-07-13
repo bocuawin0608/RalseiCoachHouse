@@ -35,6 +35,7 @@ import com.ralsei.repository.TripRepository;
 import com.ralsei.repository.TripSeatRepository;
 import com.ralsei.service.notification.PassengerTicketEmailAssembler;
 import com.ralsei.service.notification.TicketEmailService;
+import com.ralsei.service.passengerbooking.SeatHoldService;
 import com.ralsei.service.passengerticket.PassengerTicketStaffPolicy;
 import com.ralsei.service.passengerticket.StaffPassengerTicketCancelService;
 import com.ralsei.service.passengerticket.StaffPassengerTicketQueryService;
@@ -54,6 +55,7 @@ public class StaffPassengerTicketCancelServiceImpl implements StaffPassengerTick
     private final TripSeatRepository tripSeatRepository;
     private final TripRepository tripRepository;
     private final StaffRepository staffRepository;
+    private final SeatHoldService seatHoldService;
     private final PassengerTicketStaffPolicy policy;
     private final StaffPassengerTicketQueryService queryService;
     private final ObjectMapper objectMapper;
@@ -132,6 +134,8 @@ public class StaffPassengerTicketCancelServiceImpl implements StaffPassengerTick
         List<Integer> seatIds = ticketDetailRepository.findTripSeatIdsByPassengerTicketId(first.getPassengerTicketId());
         if (!seatIds.isEmpty()) {
             tripSeatRepository.updateStatusByTripSeatIds(seatIds, TripSeatStatus.AVAILABLE);
+            // Seat map overlays Redis locks on top of DB status — must clear holds or UI stays LOCKED
+            seatHoldService.forceReleaseSeatsByIds(seatIds);
         }
 
         payment.setRefundAmount(refundAmount);

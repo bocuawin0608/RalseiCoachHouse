@@ -50,6 +50,12 @@ public class CoachStop extends BaseEntity {
     @Builder.Default
     private Set<RouteStop> routeStops = new HashSet<>();
 
+    @Column(name = "latitude", nullable = false)
+    private BigDecimal latitude;
+
+    @Column(name = "longitude", nullable = false)
+    private BigDecimal longitude;
+
     @Builder.Default
     @Column(name = "surcharge", nullable = false, columnDefinition = "DECIMAL(15,2) DEFAULT 0.00")
     private BigDecimal surcharge = BigDecimal.ZERO;

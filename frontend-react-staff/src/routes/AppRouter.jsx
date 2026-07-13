@@ -15,6 +15,7 @@ import { coachRoutes } from '../features/coaches';
 import { voucherRoutes } from '../features/vouchers';
 import { cargoRoutes } from '../features/cargo';
 import { tripRoutes } from '../features/trip';
+import { cargoTicketRoutes } from '../features/cargoTickets';
 import { accountRoutes } from '../features/manage-accounts';
 import { roleRoutes } from '../features/manage-roles';
 import { customerRoutes } from '../features/manage-customers';
@@ -46,7 +47,7 @@ const AppRouter = () => {
                     {voucherRoutes}
                     {tripRoutes}
                     {refundRoutes}
-                    
+
                     {/* route dưới thì chỉ admin vào đc, manager thì ko */}
                     <Route element={<RoleGuard allowedRoles={['ADMIN']} />}>
                         {accountRoutes}
@@ -68,13 +69,14 @@ const AppRouter = () => {
 
                 <Route element={<RoleGuard allowedRoles={['TICKET_STAFF']} />}>
                     <Route element={<DesktopLayout />}>
-                        {passengerTicketRoutes}
                         {staffTripInfoRoutes}
+                        {passengerTicketRoutes}
+                        {cargoTicketRoutes}
                     </Route>
                 </Route>
 
                 <Route element={<RoleGuard allowedRoles={['TRIP_STAFF']} />}>
-                    <Route element={<MobileLayout />}> 
+                    <Route element={<MobileLayout />}>
                         {tripStaffRoutes}
                     </Route>
                 </Route>

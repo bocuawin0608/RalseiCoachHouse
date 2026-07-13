@@ -20,6 +20,8 @@ import com.ralsei.dto.request.payment.PaymentCheckoutRequest;
 import com.ralsei.dto.request.sePay.SepayWebhookRequest;
 import com.ralsei.dto.notification.PassengerTicketEmailPayload;
 import com.ralsei.exception.BusinessRuleException;
+import com.ralsei.model.CargoTicket;
+import com.ralsei.model.PassengerTicket;
 import com.ralsei.model.PassengerTicketDetail;
 import com.ralsei.model.Payment;
 import com.ralsei.model.enums.PassengerTicketDetailStatus;
@@ -35,6 +37,9 @@ import com.ralsei.service.notification.PassengerTicketEmailAssembler;
 import com.ralsei.service.notification.TicketEmailService;
 import com.ralsei.service.passengerbooking.BoardingQrTokenGenerator;
 import com.ralsei.service.passengerbooking.PaymentSseService;
+import com.ralsei.service.passengerbooking.SeatHoldService;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -54,6 +59,10 @@ public class PaymentServiceImpl implements PaymentService {
     private final BoardingQrTokenGenerator boardingQrTokenGenerator;
     private final PassengerTicketEmailAssembler passengerTicketEmailAssembler;
     private final TicketEmailService ticketEmailService;
+    private final SeatHoldService seatHoldService;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Override
     @Transactional
@@ -62,9 +71,13 @@ public class PaymentServiceImpl implements PaymentService {
 
         String transactionId = transactionIdGenerator.generateUniqueTransactionId();
 
+        CargoTicket ct = request.getCargoTicketId() != null
+                ? entityManager.getReference(CargoTicket.class, request.getCargoTicketId())
+                : null;
+
         Payment payment = Payment.builder()
                 .passengerTicketId(request.getPassengerTicketId())
-                .cargoTicketId(request.getCargoTicketId())
+                .cargoTicket(ct)
                 .amount(request.getAmount())
                 .paymentMethod(request.getPaymentMethod())
                 .transactionId(transactionId)
@@ -123,15 +136,16 @@ public class PaymentServiceImpl implements PaymentService {
                     return;
                 }
 
-                // completeIfCurrent evicts the managed entity; sync in-memory copy for downstream use only.
+                // completeIfCurrent evicts the managed entity; sync in-memory copy for
+                // downstream use only.
                 payment.setStatus("COMPLETED");
                 payment.setPaymentTime(paymentTime);
                 payment.setCallbackData(callbackData);
 
                 if (payment.getPassengerTicketId() != null) {
                     completePassengerPaymentTarget(payment);
-                } else if (payment.getCargoTicketId() != null) {
-                    completeCargoPaymentTarget(payment); 
+                } else if (payment.getCargoTicket().getCargoTicketId() > 0) {
+                    completeCargoPaymentTarget(payment);
                 } else {
                     throw new BusinessRuleException("Dữ liệu thanh toán không hợp lệ!");
                 }
@@ -152,7 +166,8 @@ public class PaymentServiceImpl implements PaymentService {
     public Payment getPaymentByTransactionId(String transactionId) {
         return paymentRepository.findByTransactionId(transactionId)
                 .orElseThrow(
-                        () -> new IllegalArgumentException("Không tìm thấy thanh toán có mã giao dịch: " + transactionId));
+                        () -> new IllegalArgumentException(
+                                "Không tìm thấy thanh toán có mã giao dịch: " + transactionId));
     }
 
     @Override
@@ -192,33 +207,36 @@ public class PaymentServiceImpl implements PaymentService {
                 PassengerTicketStatus.CONFIRMED);
 
         if (rowsAffected == 0) {
-            throw new BusinessRuleException("Thao tác thất bại: Vé không tồn tại hoặc trạng thái vé đã thay đổi trước đó!");
+            throw new BusinessRuleException(
+                    "Thao tác thất bại: Vé không tồn tại hoặc trạng thái vé đã thay đổi trước đó!");
         }
 
         List<PassengerTicketDetail> details = passengerTicketDetailRepository
-            .findByPassengerTicketId(payment.getPassengerTicketId());
+                .findByPassengerTicketId(payment.getPassengerTicketId());
 
         if (!details.isEmpty()) {
             List<Integer> tripSeatIds = new ArrayList<>();
-            
+
             for (PassengerTicketDetail detail : details) {
                 detail.setStatus(PassengerTicketDetailStatus.CONFIRMED.name());
                 detail.setQrcode(boardingQrTokenGenerator.generateToken());
-                
+
                 if (detail.getTripSeatId() > 0) {
                     tripSeatIds.add(detail.getTripSeatId());
                 }
             }
-            
+
             passengerTicketDetailRepository.saveAll(details);
-            
+
             if (!tripSeatIds.isEmpty()) {
                 tripSeatRepository.updateStatusByTripSeatIds(tripSeatIds, TripSeatStatus.SOLD);
+                // Booking Redis locks can outlive payment; clear so seat map shows SOLD from DB, not LOCKED
+                seatHoldService.forceReleaseSeatsByIds(tripSeatIds);
             }
         }
 
-        PassengerTicketEmailPayload emailPayload =
-            passengerTicketEmailAssembler.assemble(payment.getPassengerTicketId());
+        PassengerTicketEmailPayload emailPayload = passengerTicketEmailAssembler
+                .assemble(payment.getPassengerTicketId());
         sendTicketEmailAfterCommit(emailPayload, payment.getPassengerTicketId());
     }
 
@@ -227,7 +245,7 @@ public class PaymentServiceImpl implements PaymentService {
      * committed. This prevents a rollback from leaving the customer with an
      * email for a ticket that was never successfully confirmed.
      *
-     * @param payload detached ticket information safe to use after commit
+     * @param payload           detached ticket information safe to use after commit
      * @param passengerTicketId identifier used only for failure diagnostics
      */
     private void sendTicketEmailAfterCommit(
@@ -240,7 +258,7 @@ public class PaymentServiceImpl implements PaymentService {
                     ticketEmailService.sendTicketConfirmation(payload);
                 } catch (Exception exception) {
                     log.error("Failed to send ticket confirmation for passengerTicketId={}",
-                        passengerTicketId, exception);
+                            passengerTicketId, exception);
                 }
             }
         });

@@ -1,11 +1,86 @@
+/* Desktop staff shell — contain overflow so wide tables never shove the sidebar */
+.desktop-staff-shell {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    background: #f8fafc;
+}
+
+.desktop-staff-sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    height: 100vh;
+    background: #1a2e26;
+    overflow: hidden;
+    white-space: nowrap;
+    transition: width 0.3s ease, min-width 0.3s ease, border-color 0.3s ease;
+}
+
+.desktop-staff-sidebar.is-collapsed {
+    width: 0;
+    min-width: 0;
+    border-color: transparent !important;
+}
+
+.desktop-staff-sidebar-nav {
+    flex: 1;
+    overflow-x: hidden;
+    overflow-y: auto;
+    transition: opacity 0.2s ease;
+}
+
+.desktop-staff-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.desktop-staff-header {
+    height: 60px;
+    flex-shrink: 0;
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    gap: 10px;
+}
+
+.desktop-staff-header-left {
+    display: flex;
+    align-items: center;
+    min-width: 32px;
+}
+
+.desktop-staff-header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.desktop-staff-main {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    padding: 24px;
+    background: #f8fafc;
+    overflow: auto;
+}
+
 /* Custom Sidebar Utilities */
 .hover-opacity-100:hover {
     opacity: 1 !important;
-    background-color: rgba(255, 255, 255, 0.05); /* Sáng lên một tí khi đưa chuột vào */
+    background-color: rgba(255, 255, 255, 0.05);
 }
+
 .transition-all {
     transition: all 0.2s ease-in-out;
 }
+
 a.active {
-    opacity: 1 !important; /* Đảm bảo khi NavLink active thì nó không bị class text-light đè */
+    opacity: 1 !important;
 }

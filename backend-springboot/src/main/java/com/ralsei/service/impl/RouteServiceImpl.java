@@ -1,5 +1,6 @@
 package com.ralsei.service.impl;
 
+import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -11,18 +12,26 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.Comparator;
+import java.util.ArrayList;
+
+import com.ralsei.service.GoongService;
 
 import com.ralsei.dto.request.CoachAndRouteStop.RouteRequest;
+import com.ralsei.dto.request.CoachAndRouteStop.RouteStopCreateRequest;
+import com.ralsei.dto.request.CoachAndRouteStop.RouteWithStopsRequest;
 import com.ralsei.dto.projection.route.RouteLocationDropdownProjection;
 import com.ralsei.dto.response.CoachAndRouteStop.RouteDropdownDTO;
 import com.ralsei.dto.response.CoachAndRouteStop.RouteResponse;
 import com.ralsei.dto.response.CoachAndRouteStop.RouteStopResponse;
+import com.ralsei.dto.response.CoachAndRouteStop.RouteWithStopsResponse;
 import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.exception.ResourceNotFoundException;
+import com.ralsei.model.CoachStop;
 import com.ralsei.model.Route;
 import com.ralsei.model.RouteStop;
+import com.ralsei.repository.CoachStopRepository;
 import com.ralsei.repository.RouteRepository;
-import com.ralsei.repository.RouteStopRepository;
 import com.ralsei.service.RouteService;
 
 import lombok.RequiredArgsConstructor;
@@ -32,7 +41,8 @@ import lombok.RequiredArgsConstructor;
 public class RouteServiceImpl implements RouteService {
 
     private final RouteRepository routeRepository;
-    private final RouteStopRepository routeStopRepository;
+    private final CoachStopRepository coachStopRepository;
+    private final GoongService goongService;
 
     @Override
     @Transactional
@@ -46,6 +56,59 @@ public class RouteServiceImpl implements RouteService {
                 .build();
         Route saved = routeRepository.save(Objects.requireNonNull(route));
         return mapToResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    public RouteWithStopsResponse createRouteWithStops(RouteWithStopsRequest request) {
+        Route route = Route.builder()
+                .routeName(request.getRouteName())
+                .isActive(true)
+                .routeStops(new HashSet<>())
+                .build();
+
+        List<RouteStopCreateRequest> stopRequests = request.getRouteStops();
+        if (stopRequests == null || stopRequests.size() < 2) {
+            throw new IllegalArgumentException("A route must have at least 2 stops.");
+        }
+
+        List<RouteStop> sortedStops = new ArrayList<>();
+
+        for (RouteStopCreateRequest stopRequest : stopRequests) {
+            CoachStop coachStop = coachStopRepository.findById(Objects.requireNonNull(stopRequest.getStopPointId()))
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "CoachStop not found with ID: " + stopRequest.getStopPointId()));
+
+            boolean orderExists = sortedStops.stream()
+                    .anyMatch(rs -> rs.getStopOrder() == stopRequest.getStopOrder());
+            if (orderExists) {
+                throw new IllegalArgumentException(
+                        "Stop order " + stopRequest.getStopOrder() + " already exists in this route.");
+            }
+
+            RouteStop routeStop = RouteStop.builder()
+                    .route(route)
+                    .coachStop(coachStop)
+                    .stopOrder(stopRequest.getStopOrder())
+                    .build();
+
+            sortedStops.add(routeStop);
+        }
+
+        // Sort by order
+        sortedStops.sort(Comparator.comparingInt(RouteStop::getStopOrder));
+
+        // Call Goong API to calculate distances
+        goongService.calculateAndSetRouteStopsDistances(sortedStops);
+
+        // Assign total distance to Route
+        route.setTotalKilometers(sortedStops.get(sortedStops.size() - 1).getKilometersFromStart());
+        route.setTotalMinutes(sortedStops.get(sortedStops.size() - 1).getMinutesFromStart());
+
+        route.getRouteStops().addAll(sortedStops);
+
+        Route saved = routeRepository.save(Objects.requireNonNull(route));
+        return mapToRouteWithStopsResponse(saved);
     }
 
     @Override
@@ -136,6 +199,30 @@ public class RouteServiceImpl implements RouteService {
                 .build();
     }
 
+    private RouteWithStopsResponse mapToRouteWithStopsResponse(Route route) {
+        if (route == null) {
+            return null;
+        }
+        List<RouteStopResponse> stopResponses = null;
+        if (route.getRouteStops() != null) {
+            stopResponses = route.getRouteStops().stream()
+                    .map(this::mapStopToResponse)
+                    .collect(Collectors.toList());
+        }
+        return RouteWithStopsResponse.builder()
+                .routeId(route.getRouteId())
+                .routeName(route.getRouteName())
+                .totalKilometers(route.getTotalKilometers())
+                .totalMinutes(route.getTotalMinutes())
+                .isActive(route.isActive())
+                .createdAt(route.getCreatedAt())
+                .createdBy(route.getCreatedBy())
+                .updatedAt(route.getUpdatedAt())
+                .updatedBy(route.getUpdatedBy())
+                .routeStops(stopResponses)
+                .build();
+    }
+
     private RouteStopResponse mapStopToResponse(RouteStop rs) {
         if (rs == null) {
             return null;
@@ -147,6 +234,7 @@ public class RouteServiceImpl implements RouteService {
                 .stopPointId(rs.getCoachStop() != null ? rs.getCoachStop().getStopPointId() : 0)
                 .stopPointName(rs.getCoachStop() != null ? rs.getCoachStop().getStopPointName() : null)
                 .address(rs.getCoachStop() != null ? rs.getCoachStop().getAddress() : null)
+                .city(rs.getCoachStop() != null ? rs.getCoachStop().getCity() : null)
                 .stopOrder(rs.getStopOrder())
                 .kilometersFromStart(rs.getKilometersFromStart())
                 .minutesFromStart(rs.getMinutesFromStart())

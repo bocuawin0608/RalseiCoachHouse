@@ -43,7 +43,7 @@ public class TripStaffCargoServiceImpl implements TripStaffCargoService {
     @Override
     @Transactional(readOnly = true)
     public TripStaffCargoResponse getCargoList(String authorizationHeader, int tripId) {
-        resolveStaffId(authorizationHeader);
+        resolveStaff(authorizationHeader);
 
         List<CargoTicket> tickets = cargoTicketRepository.findByTripId(tripId);
 
@@ -57,7 +57,7 @@ public class TripStaffCargoServiceImpl implements TripStaffCargoService {
     @Override
     @Transactional
     public void loadCargo(String authorizationHeader, int tripId, int cargoTicketId) {
-        int staffId = resolveStaffId(authorizationHeader);
+        Staff staff = resolveStaff(authorizationHeader);
         CargoTicket ticket = findCargoForTrip(tripId, cargoTicketId);
 
         if (!"RECEIVED".equals(ticket.getStatus())) {
@@ -66,14 +66,14 @@ public class TripStaffCargoServiceImpl implements TripStaffCargoService {
         }
 
         ticket.setStatus("LOADED");
-        ticket.setLoadedBy(staffId);
+        ticket.setLoadedBy(staff);
         cargoTicketRepository.save(ticket);
     }
 
     @Override
     @Transactional
     public void unloadCargo(String authorizationHeader, int tripId, int cargoTicketId) {
-        int staffId = resolveStaffId(authorizationHeader);
+        Staff staff = resolveStaff(authorizationHeader);
         CargoTicket ticket = findCargoForTrip(tripId, cargoTicketId);
 
         if (!"LOADED".equals(ticket.getStatus())) {
@@ -82,14 +82,14 @@ public class TripStaffCargoServiceImpl implements TripStaffCargoService {
         }
 
         ticket.setStatus("ARRIVED");
-        ticket.setUnloadedBy(staffId);
+        ticket.setUnloadedBy(staff);
         cargoTicketRepository.save(ticket);
     }
 
     @Override
     @Transactional
     public void markDelivered(String authorizationHeader, int tripId, int cargoTicketId) {
-        resolveStaffId(authorizationHeader);
+        resolveStaff(authorizationHeader);
         CargoTicket ticket = findCargoForTrip(tripId, cargoTicketId);
 
         if (!"ARRIVED".equals(ticket.getStatus())) {
@@ -121,7 +121,7 @@ public class TripStaffCargoServiceImpl implements TripStaffCargoService {
                 .map(CoachStop::getStopPointName)
                 .orElse("N/A");
 
-        List<CargoTicketDetail> details = cargoTicketDetailRepository.findByCargoTicketId(ticket.getCargoTicketId());
+        List<CargoTicketDetail> details = cargoTicketDetailRepository.findByCargoTicket_CargoTicketId(ticket.getCargoTicketId());
         List<CargoDetailItem> detailItems = details.stream()
                 .map(this::mapToDetailItem)
                 .toList();
@@ -158,7 +158,7 @@ public class TripStaffCargoServiceImpl implements TripStaffCargoService {
                 unit);
     }
 
-    private int resolveStaffId(String authorizationHeader) {
+    private Staff resolveStaff(String authorizationHeader) {
         Integer accountId = jwtService.extractAccountId(authorizationHeader);
         if (accountId == null) {
             throw new BusinessRuleException("Không thể xác định tài khoản đăng nhập");
@@ -171,6 +171,6 @@ public class TripStaffCargoServiceImpl implements TripStaffCargoService {
             throw new BusinessRuleException("Nhân viên không còn hoạt động");
         }
 
-        return staff.getStaffId();
+        return staff;
     }
 }

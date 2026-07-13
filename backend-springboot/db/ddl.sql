@@ -1,4 +1,4 @@
-﻿USE master;
+USE master;
 GO
 
 -- Xóa theo thứ tự từ LEVEL cao xuống LEVEL thấp để không dính Foreign Key Constraints
@@ -130,8 +130,8 @@ CREATE TABLE [coach_stop] (
     [city] NVARCHAR(255) NOT NULL,
     [surcharge] DECIMAL(15,2) NOT NULL DEFAULT 0.00,
     [isActive] BIT NOT NULL DEFAULT 1,
-    [latitude] DECIMAL(12, 8) NOT NULL,
-    [longitude] DECIMAL(12, 8) NOT NULL,
+    [latitude] DECIMAL(20, 16) NOT NULL,
+    [longitude] DECIMAL(20, 16) NOT NULL,
     [createdAt] DATETIME DEFAULT GETDATE(),
     [createdBy] INT NULL,
     [updatedAt] DATETIME DEFAULT GETDATE(),
@@ -257,7 +257,7 @@ CREATE TABLE [route_stop] (
     FOREIGN KEY ([stopPointId]) REFERENCES [coach_stop] ([stopPointId]),
 
 	CONSTRAINT CK_RouteStop_Order CHECK ([stopOrder] >= 1),
-    CONSTRAINT CK_RouteStop_Metrics CHECK ([kilometersFromStart] >= 0 AND [minutesFromStart] >= 0)
+    CONSTRAINT CK_RouteStop_Metrics CHECK (([kilometersFromStart] > 0 AND [minutesFromStart] > 0) OR ([kilometersFromStart] = 0 AND [minutesFromStart] = 0))
 );
 
 CREATE TABLE [coach_type_price] (

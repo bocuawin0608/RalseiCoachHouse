@@ -21,15 +21,15 @@ public interface RoleRepository extends JpaRepository<Role, Integer> {
     boolean existsByRoleNameIgnoreCase(String roleName);
 
     @Query(value = """
-        SELECT r.roleId      AS roleId,
-            r.roleName    AS roleName,
-            r.isActive    AS isActive,
-            (SELECT COUNT(*) FROM account_role ar WHERE ar.roleId = r.roleId) AS assignedCount
-        FROM role r
-        WHERE (:search IS NULL OR LOWER(r.roleName) LIKE LOWER(CONCAT('%', :search, '%')))
-          AND (:isActive IS NULL OR r.isActive = :isActive)
-        ORDER BY r.roleId ASC
-    """, nativeQuery = true)
+                SELECT r.roleId      AS roleId,
+                    r.roleName    AS roleName,
+                    r.isActive    AS isActive,
+                    (SELECT COUNT(*) FROM account_role ar WHERE ar.roleId = r.roleId) AS assignedCount
+                FROM role r
+                WHERE (:search IS NULL OR LOWER(r.roleName) LIKE LOWER(CONCAT('%', :search, '%')))
+                  AND (:isActive IS NULL OR r.isActive = :isActive)
+                ORDER BY r.roleId ASC
+            """, nativeQuery = true)
     List<RoleListProjection> filterRoles(@Param("search") String search, @Param("isActive") Boolean isActive);
 
     @Query(value = "SELECT COUNT(*) FROM account_role ar WHERE ar.roleId = :roleId", nativeQuery = true)

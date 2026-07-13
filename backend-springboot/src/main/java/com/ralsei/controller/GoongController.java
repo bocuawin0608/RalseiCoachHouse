@@ -1,23 +1,41 @@
 package com.ralsei.controller;
 
-import org.springframework.beans.factory.annotation.Value;
+import com.ralsei.dto.request.goong.DistanceTimeRequest;
+import com.ralsei.dto.request.goong.CalculateRouteDistancesRequest;
+import com.ralsei.dto.response.goong.DistanceTimeResponse;
+import com.ralsei.dto.response.goong.CalculateRouteDistancesResponse;
+import com.ralsei.dto.response.goong.GeocodeResponse;
+import com.ralsei.service.GoongService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.RestTemplate;
 
 @RestController
 @RequestMapping("/api/v2/goong")
+@RequiredArgsConstructor
 public class GoongController {
 
-    @Value("${goong.api.key}")
-    private String goongApiKey;
-
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final GoongService goongService;
 
     @GetMapping("/place/autocomplete")
     public ResponseEntity<Object> autocomplete(@RequestParam String input) {
-        String url = "https://rsapi.goong.io/v2/place/autocomplete?api_key=" + goongApiKey + "&input=" + input;
-        Object response = restTemplate.getForObject(url, Object.class);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(goongService.autocomplete(input));
+    }
+
+    @GetMapping("/geocode")
+    public ResponseEntity<GeocodeResponse> geocode(@RequestParam String address) {
+        return ResponseEntity.ok(goongService.geocode(address));
+    }
+
+    @GetMapping("/place/distance-time")
+    public ResponseEntity<DistanceTimeResponse> getDistanceAndTime(@Valid @ModelAttribute DistanceTimeRequest request) {
+        return ResponseEntity.ok(goongService.getDistanceAndTime(request));
+    }
+
+    @PostMapping("/calculate-route-distances")
+    public ResponseEntity<CalculateRouteDistancesResponse> calculateRouteDistances(
+            @Valid @RequestBody CalculateRouteDistancesRequest request) {
+        return ResponseEntity.ok(goongService.calculateRouteDistances(request));
     }
 }
