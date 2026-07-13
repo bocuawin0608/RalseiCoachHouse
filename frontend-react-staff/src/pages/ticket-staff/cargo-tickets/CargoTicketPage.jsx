@@ -49,13 +49,13 @@ export default function CargoTicketPage() {
 
             <Card className="shadow-sm border-0">
                 <Card.Body className="p-0">
-                    <CargoTicketTable data={tickets} loading={loading} onEdit={setSelectedTicket} onView={setViewTicket} onDisable={handleDisable} onCompletePayment={handleCompletePayment} />
+                    <CargoTicketTable data={tickets} loading={loading} onEdit={setSelectedTicket} onView={setViewTicket} onDisable={handleDisable} onCompletePayment={handleCompletePayment} onPaymentSuccess={refetch} />
                     <div className="d-flex justify-content-center py-3 border-top"><Pagination pageInfo={pageInfo} onPageChange={setPageInfo} /></div>
                 </Card.Body>
             </Card>
 
-            {selectedTicket && <CargoTicketUpdateModal key={selectedTicket.cargoTicketId} data={selectedTicket} onClose={() => setSelectedTicket(null)} onSuccess={refetch} />}
-            {viewTicket && <CargoTicketDetailViewModal key={`view-${viewTicket.cargoTicketId}`} ticket={viewTicket} onClose={() => setViewTicket(null)} />}
+            {selectedTicket && <CargoTicketUpdateModal key={selectedTicket.cargoTicketId} data={selectedTicket} onClose={() => { setSelectedTicket(null); refetch(); }} onSuccess={refetch} />}
+            {viewTicket && <CargoTicketDetailViewModal key={`view-${viewTicket.cargoTicketId}`} ticket={viewTicket} onClose={() => { setViewTicket(null); refetch(); }} />}
         </Container>
     );
 }

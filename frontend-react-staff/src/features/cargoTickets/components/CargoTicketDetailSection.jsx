@@ -32,7 +32,7 @@ export default function CargoTicketDetailSection({ draftDetails, onAdd, onChange
                 ) : (
                     draftDetails.map((detail, index) => (
                         <Row key={index} className="g-3 mb-3 pb-3 border-bottom">
-                            <Col md={3}>
+                            <Col md={4}>
                                 <Form.Group>
                                     <Form.Label className="fw-semibold">Loại hàng *</Form.Label>
                                     <Form.Select
@@ -55,11 +55,8 @@ export default function CargoTicketDetailSection({ draftDetails, onAdd, onChange
                             <Col md={2}>
                                 <Field label="Trọng lượng (kg)" type="number" required min="1" onChange={(e) => onChange(index, 'weightKg', e.target.value)} />
                             </Col>
-                            <Col md={2}>
+                            <Col md={3}>
                                 <Field label="Thể tích (m3)" type="number" required min="1" onChange={(e) => onChange(index, 'dimensionVol', e.target.value)} />
-                            </Col>
-                            <Col md={2}>
-                                <Field label="Giá tính (VNĐ)" type="number" required min="1" onChange={(e) => onChange(index, 'calculatedPrice', e.target.value)} />
                             </Col>
                             <Col md={1} className="d-flex align-items-end mb-3">
                                 <Button variant="outline-danger" onClick={() => onRemove(index)}>Xóa</Button>

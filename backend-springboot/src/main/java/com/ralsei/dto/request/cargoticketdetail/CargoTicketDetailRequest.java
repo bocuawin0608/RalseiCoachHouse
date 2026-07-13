@@ -27,6 +27,4 @@ public class CargoTicketDetailRequest {
     @NotNull(message = "Dimension volume is required")
     private BigDecimal dimensionVol;
 
-    @NotNull(message = "Calculated price is required")
-    private BigDecimal calculatedPrice;
 }
