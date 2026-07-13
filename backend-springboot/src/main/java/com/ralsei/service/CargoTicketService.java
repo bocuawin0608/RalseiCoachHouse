@@ -7,7 +7,7 @@ import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.dto.response.cargoticket.CargoTicketFormOptionsResponse;
 import com.ralsei.dto.response.cargoticket.CargoTicketResponse;
 import com.ralsei.dto.response.cargoticket.CustomerContactResponse;
-import com.ralsei.dto.request.cargoticket.TripByStopRequest;
+import com.ralsei.dto.request.cargoticketdetail.CargoTicketDetailRequest;
 import com.ralsei.dto.response.cargoticket.TripByStopResponse;
 import com.ralsei.dto.response.cargoticketdetail.CargoTicketDetailResponse;
 import com.ralsei.model.Trip;
@@ -28,6 +28,12 @@ public interface CargoTicketService {
     CargoTicketResponse updateCargoTicket(int id, CargoTicketRequest request);
 
     List<CargoTicketDetailResponse> getCargoTicketDetailsByTicketId(int cargoTicketId);
+
+    CargoTicketDetailResponse createCargoTicketDetail(int ticketId, CargoTicketDetailRequest request);
+
+    CargoTicketDetailResponse updateCargoTicketDetail(int detailId, CargoTicketDetailRequest request);
+
+    void deleteCargoTicketDetail(int detailId);
 
     void disable(int id);
 

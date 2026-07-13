@@ -29,6 +29,7 @@ import com.ralsei.service.CargoTicketService;
 import com.ralsei.service.TransactionIdGenerator;
 import com.ralsei.model.Staff;
 import com.ralsei.dto.request.cargoticket.TripByStopRequest;
+import com.ralsei.dto.request.cargoticketdetail.CargoTicketDetailRequest;
 import com.ralsei.dto.response.cargoticket.TripByStopResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -113,8 +114,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
         CargoTicket ticket = cargoTicketRepository.findById(response.getCargoTicketId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vé hàng hóa."));
 
-        List<CargoTicketDetail> details = request.getDetails().stream().map(d -> 
-            CargoTicketDetail.builder()
+        List<CargoTicketDetail> details = request.getDetails().stream().map(d -> CargoTicketDetail.builder()
                 .cargoTicket(ticket)
                 .cargoTypePriceId(d.getCargoTypePriceId())
                 .description(d.getDescription())
@@ -122,8 +122,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
                 .weightKg(d.getWeightKg())
                 .dimensionVol(d.getDimensionVol())
                 .calculatedPrice(d.getCalculatedPrice())
-                .build()
-        ).toList();
+                .build()).toList();
 
         cargoTicketDetailRepository.saveAll(details);
 
@@ -142,8 +141,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
                 .weightKg(d.getWeightKg())
                 .dimensionVol(d.getDimensionVol())
                 .calculatedPrice(d.getCalculatedPrice())
-                .build()
-        ).toList();
+                .build()).toList();
     }
 
     @Override
@@ -155,6 +153,69 @@ public class CargoTicketServiceImpl implements CargoTicketService {
 
         copyRequest(request, ticket, ticketCode);
         return mapToResponse(cargoTicketRepository.save(ticket));
+    }
+
+    @Override
+    @Transactional
+    public CargoTicketDetailResponse createCargoTicketDetail(int ticketId, CargoTicketDetailRequest request) {
+        CargoTicket ticket = cargoTicketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vé hàng hóa."));
+
+        CargoTicketDetail detail = CargoTicketDetail.builder()
+                .cargoTicket(ticket)
+                .cargoTypePriceId(request.getCargoTypePriceId())
+                .description(request.getDescription())
+                .quantity(request.getQuantity())
+                .weightKg(request.getWeightKg())
+                .dimensionVol(request.getDimensionVol())
+                .calculatedPrice(request.getCalculatedPrice())
+                .build();
+
+        CargoTicketDetail saved = cargoTicketDetailRepository.save(detail);
+        return CargoTicketDetailResponse.builder()
+                .cargoTicketDetailId(saved.getCargoTicketDetailId())
+                .cargoTicketId(saved.getCargoTicket().getCargoTicketId())
+                .cargoTypePriceId(saved.getCargoTypePriceId())
+                .description(saved.getDescription())
+                .quantity(saved.getQuantity())
+                .weightKg(saved.getWeightKg())
+                .dimensionVol(saved.getDimensionVol())
+                .calculatedPrice(saved.getCalculatedPrice())
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public CargoTicketDetailResponse updateCargoTicketDetail(int detailId, CargoTicketDetailRequest request) {
+        CargoTicketDetail detail = cargoTicketDetailRepository.findById(detailId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chi tiết vé hàng hóa."));
+
+        detail.setCargoTypePriceId(request.getCargoTypePriceId());
+        detail.setDescription(request.getDescription());
+        detail.setQuantity(request.getQuantity());
+        detail.setWeightKg(request.getWeightKg());
+        detail.setDimensionVol(request.getDimensionVol());
+        detail.setCalculatedPrice(request.getCalculatedPrice());
+
+        CargoTicketDetail saved = cargoTicketDetailRepository.save(detail);
+        return CargoTicketDetailResponse.builder()
+                .cargoTicketDetailId(saved.getCargoTicketDetailId())
+                .cargoTicketId(saved.getCargoTicket().getCargoTicketId())
+                .cargoTypePriceId(saved.getCargoTypePriceId())
+                .description(saved.getDescription())
+                .quantity(saved.getQuantity())
+                .weightKg(saved.getWeightKg())
+                .dimensionVol(saved.getDimensionVol())
+                .calculatedPrice(saved.getCalculatedPrice())
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public void deleteCargoTicketDetail(int detailId) {
+        CargoTicketDetail detail = cargoTicketDetailRepository.findById(detailId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chi tiết vé hàng hóa."));
+        cargoTicketDetailRepository.delete(detail);
     }
 
     @Override
