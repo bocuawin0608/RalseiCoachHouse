@@ -39,7 +39,7 @@ const paymentStatusLabel = {
     CANCELLED: 'Đã hủy'
 };
 
-export default function CargoTicketTable({ data, loading, onEdit, onDisable, onCompletePayment, onView }) {
+export default function CargoTicketTable({ data, loading, onEdit, onCompletePayment, onView, onPaymentSuccess }) {
     const [qrTicket, setQrTicket] = useState(null);
 
     if (loading) return <div className="text-center p-5 text-secondary fw-medium">Đang tải dữ liệu...</div>;
@@ -110,9 +110,6 @@ export default function CargoTicketTable({ data, loading, onEdit, onDisable, onC
                                     <Button className="d-flex align-items-center custom-btn-general" onClick={() => onEdit(ticket)} title="Sửa vé">
                                         <BsPencilFill size={16} />
                                     </Button>
-                                    <Button variant="danger" className="d-flex align-items-center" onClick={() => onDisable(ticket)} title="Vô hiệu hóa vé">
-                                        <BsTrashFill size={16} />
-                                    </Button>
                                 </div>
                             </td>
                         </tr>
@@ -120,7 +117,7 @@ export default function CargoTicketTable({ data, loading, onEdit, onDisable, onC
                 </tbody>
             </Table>
 
-            <QrPaymentModal ticket={qrTicket} onClose={() => setQrTicket(null)} />
+            <QrPaymentModal ticket={qrTicket} onClose={() => { setQrTicket(null); if (onPaymentSuccess) onPaymentSuccess(); }} onSuccess={onPaymentSuccess} />
         </>
     );
 }
