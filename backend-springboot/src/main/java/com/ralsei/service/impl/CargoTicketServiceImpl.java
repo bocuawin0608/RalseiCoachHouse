@@ -7,15 +7,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ralsei.dto.request.cargoticket.CargoTicketRequest;
+import com.ralsei.dto.request.cargoticket.CargoTicketWithDetailsRequest;
 import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.dto.response.cargoticket.CargoTicketResponse;
 import com.ralsei.dto.response.cargoticket.CargoTicketFormOptionsResponse;
 import com.ralsei.dto.response.cargoticket.CustomerContactResponse;
+import com.ralsei.dto.response.cargoticketdetail.CargoTicketDetailResponse;
 import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.exception.ResourceNotFoundException;
 import com.ralsei.model.CargoTicket;
+import com.ralsei.model.CargoTicketDetail;
 import com.ralsei.model.Payment;
 import com.ralsei.repository.CargoTicketRepository;
+import com.ralsei.repository.CargoTicketDetailRepository;
 import com.ralsei.repository.CoachStopRepository;
 import com.ralsei.repository.CustomerRepository;
 import com.ralsei.repository.PaymentRepository;
@@ -40,6 +44,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
     private static final String STATUS_ABANDONED = "ABANDONED";
 
     private final CargoTicketRepository cargoTicketRepository;
+    private final CargoTicketDetailRepository cargoTicketDetailRepository;
     private final TripRepository tripRepository;
     private final CustomerRepository customerRepository;
     private final CoachStopRepository coachStopRepository;
@@ -98,6 +103,47 @@ public class CargoTicketServiceImpl implements CargoTicketService {
         paymentRepository.save(payment);
 
         return mapToResponse(savedTicket);
+    }
+
+    @Override
+    @Transactional
+    public CargoTicketResponse createCargoTicketWithDetails(CargoTicketWithDetailsRequest request) {
+        CargoTicketResponse response = createCargoTicket(request);
+
+        CargoTicket ticket = cargoTicketRepository.findById(response.getCargoTicketId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vé hàng hóa."));
+
+        List<CargoTicketDetail> details = request.getDetails().stream().map(d -> 
+            CargoTicketDetail.builder()
+                .cargoTicket(ticket)
+                .cargoTypePriceId(d.getCargoTypePriceId())
+                .description(d.getDescription())
+                .quantity(d.getQuantity())
+                .weightKg(d.getWeightKg())
+                .dimensionVol(d.getDimensionVol())
+                .calculatedPrice(d.getCalculatedPrice())
+                .build()
+        ).toList();
+
+        cargoTicketDetailRepository.saveAll(details);
+
+        return response;
+    }
+
+    @Override
+    public List<CargoTicketDetailResponse> getCargoTicketDetailsByTicketId(int cargoTicketId) {
+        List<CargoTicketDetail> details = cargoTicketDetailRepository.findByCargoTicket_CargoTicketId(cargoTicketId);
+        return details.stream().map(d -> CargoTicketDetailResponse.builder()
+                .cargoTicketDetailId(d.getCargoTicketDetailId())
+                .cargoTicketId(d.getCargoTicket().getCargoTicketId())
+                .cargoTypePriceId(d.getCargoTypePriceId())
+                .description(d.getDescription())
+                .quantity(d.getQuantity())
+                .weightKg(d.getWeightKg())
+                .dimensionVol(d.getDimensionVol())
+                .calculatedPrice(d.getCalculatedPrice())
+                .build()
+        ).toList();
     }
 
     @Override

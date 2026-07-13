@@ -16,12 +16,14 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 import com.ralsei.dto.request.cargoticket.CargoTicketRequest;
+import com.ralsei.dto.request.cargoticket.CargoTicketWithDetailsRequest;
 import com.ralsei.dto.request.cargoticket.TripByStopRequest;
 import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.dto.response.cargoticket.CargoTicketResponse;
 import com.ralsei.dto.response.cargoticket.CargoTicketFormOptionsResponse;
 import com.ralsei.dto.response.cargoticket.CustomerContactResponse;
 import com.ralsei.dto.response.cargoticket.TripByStopResponse;
+import com.ralsei.dto.response.cargoticketdetail.CargoTicketDetailResponse;
 import com.ralsei.service.CargoTicketService;
 
 import java.util.List;
@@ -64,10 +66,21 @@ public class CargoTicketController {
         return ResponseEntity.ok(cargoTicketService.getCargoTicketById(id));
     }
 
+    @GetMapping("/{id:\\d+}/details")
+    public ResponseEntity<List<CargoTicketDetailResponse>> getCargoTicketDetailsByTicketId(@PathVariable @Min(1) int id) {
+        return ResponseEntity.ok(cargoTicketService.getCargoTicketDetailsByTicketId(id));
+    }
+
     @PostMapping
     public ResponseEntity<CargoTicketResponse> createCargoTicket(
             @Valid @RequestBody CargoTicketRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(cargoTicketService.createCargoTicket(request));
+    }
+
+    @PostMapping("/with-details")
+    public ResponseEntity<CargoTicketResponse> createCargoTicketWithDetails(
+            @Valid @RequestBody CargoTicketWithDetailsRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(cargoTicketService.createCargoTicketWithDetails(request));
     }
 
     @PutMapping("/{id:\\d+}")
