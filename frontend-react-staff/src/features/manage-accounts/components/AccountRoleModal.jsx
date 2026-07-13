@@ -1,12 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Modal, Form, Row, Col, Button, Alert, Spinner, Badge } from 'react-bootstrap';
-import { BsExclamationTriangleFill } from 'react-icons/bs';
+import { BsExclamationTriangleFill, BsInfoCircle } from 'react-icons/bs';
 import accountApi from '../api/accountApi';
+
+const STAFF_ROLES = ['ADMIN', 'MANAGER', 'TICKET_STAFF', 'TRIP_STAFF'];
+const CUSTOMER_ROLE = 'CUSTOMER';
+
+function resolveAccountSide(data, roleNames) {
+    if (data?.customerName) return 'customer';
+    if (data?.staffName || data?.staffId) return 'staff';
+
+    const hasStaffRole = roleNames.some((name) => STAFF_ROLES.includes(name));
+    const hasCustomerRole = roleNames.includes(CUSTOMER_ROLE);
+
+    if (hasStaffRole && !hasCustomerRole) return 'staff';
+    if (hasCustomerRole && !hasStaffRole) return 'customer';
+    return 'unknown';
+}
 
 export default function AccountRoleModal({ isOpen, data, onClose, onSuccess }) {
     const [allRoles, setAllRoles] = useState([]);
     const [selectedRoles, setSelectedRoles] = useState([]);
     const [currentRoles, setCurrentRoles] = useState([]);
+    const [currentRoleNames, setCurrentRoleNames] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
 
@@ -15,33 +31,76 @@ export default function AccountRoleModal({ isOpen, data, onClose, onSuccess }) {
             setErrorMsg('');
             setIsSubmitting(false);
             accountApi.getAccountDetail(data.accountId)
-                .then(res => {
-                    const detail = res;
-                    const roleIds = (detail.roles || []).map(r => r.roleId);
+                .then((detail) => {
+                    const roles = detail.roles || [];
+                    const roleIds = roles.map((r) => r.roleId);
                     setCurrentRoles(roleIds);
                     setSelectedRoles([...roleIds]);
+                    setCurrentRoleNames(roles.map((r) => r.roleName));
                 })
-                .catch(() => {});
+                .catch(() => {
+                    const fallbackNames = data.roles || [];
+                    setCurrentRoleNames(fallbackNames);
+                });
             accountApi.getAllRoles()
-                .then(res => setAllRoles(res || []))
+                .then((res) => setAllRoles(res || []))
                 .catch(() => {});
         }
     }, [isOpen, data]);
 
+    const accountSide = useMemo(
+        () => resolveAccountSide(data, currentRoleNames),
+        [data, currentRoleNames]
+    );
+
+    const allowedRoles = useMemo(() => {
+        if (accountSide === 'customer') {
+            return allRoles.filter((r) => r.roleName === CUSTOMER_ROLE);
+        }
+        if (accountSide === 'staff') {
+            return allRoles.filter((r) => STAFF_ROLES.includes(r.roleName));
+        }
+        return allRoles;
+    }, [allRoles, accountSide]);
+
+    const sideHint = accountSide === 'customer'
+        ? 'Tài khoản khách hàng chỉ được giữ role CUSTOMER — không đổi sang role nhân viên.'
+        : accountSide === 'staff'
+            ? 'Tài khoản nhân viên chỉ đổi trong ADMIN / MANAGER / TICKET_STAFF / TRIP_STAFF — không đổi sang CUSTOMER.'
+            : null;
+
     const handleToggle = (roleId) => {
-        setSelectedRoles(prev =>
-            prev.includes(roleId) ? [] : [roleId]
-        );
+        setSelectedRoles((prev) => (prev.includes(roleId) ? [] : [roleId]));
     };
 
-    const hasChanges = JSON.stringify(selectedRoles) !== JSON.stringify(currentRoles);
+    const hasChanges = JSON.stringify([...selectedRoles].sort()) !== JSON.stringify([...currentRoles].sort());
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
         setErrorMsg('');
+
+        const selectedNames = allowedRoles
+            .filter((r) => selectedRoles.includes(r.roleId))
+            .map((r) => r.roleName);
+
+        if (accountSide === 'customer' && selectedNames.some((n) => STAFF_ROLES.includes(n))) {
+            setErrorMsg('Tài khoản khách hàng không được đổi sang role nhân viên.');
+            setIsSubmitting(false);
+            return;
+        }
+        if (accountSide === 'staff' && selectedNames.includes(CUSTOMER_ROLE)) {
+            setErrorMsg('Tài khoản nhân viên không được đổi sang role CUSTOMER.');
+            setIsSubmitting(false);
+            return;
+        }
+
+        const roleIdsToSave = selectedRoles.filter((id) =>
+            allowedRoles.some((r) => r.roleId === id)
+        );
+
         try {
-            await accountApi.assignRoles(data.accountId, { roleIds: selectedRoles });
+            await accountApi.assignRoles(data.accountId, { roleIds: roleIdsToSave });
             onSuccess();
             onClose();
         } catch (err) {
@@ -63,11 +122,17 @@ export default function AccountRoleModal({ isOpen, data, onClose, onSuccess }) {
                             <BsExclamationTriangleFill /><span>{errorMsg}</span>
                         </Alert>
                     )}
-                    {allRoles.length === 0 ? (
+                    {sideHint && (
+                        <Alert variant="info" className="d-flex align-items-start gap-2 py-2">
+                            <BsInfoCircle className="mt-1 flex-shrink-0" />
+                            <span>{sideHint}</span>
+                        </Alert>
+                    )}
+                    {allowedRoles.length === 0 ? (
                         <p className="text-muted">Đang tải...</p>
                     ) : (
                         <Row className="g-2">
-                            {allRoles.map(role => (
+                            {allowedRoles.map((role) => (
                                 <Col md={6} key={role.roleId}>
                                     <Form.Check
                                         type="switch"

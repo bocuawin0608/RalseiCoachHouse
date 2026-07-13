@@ -32,6 +32,7 @@ import com.ralsei.repository.RoleRepository;
 import com.ralsei.repository.StaffRepository;
 import com.ralsei.repository.TicketAgencyRepository;
 import com.ralsei.service.StaffService;
+import com.ralsei.util.AccountRoleGuard;
 
 import lombok.RequiredArgsConstructor;
 
@@ -104,12 +105,21 @@ public class StaffServiceImpl implements StaffService {
 
         List<Integer> roleIds = request.roleIds();
         if (roleIds != null && staff.getAccountId() != null) {
-            accountRoleRepo.deleteByAccountId(staff.getAccountId());
-            List<AccountRole> newRoles = roleIds.stream()
+            List<Role> roles = roleIds.stream()
                 .filter(rid -> rid != null)
-                .map(rid -> AccountRole.builder()
+                .map(rid -> roleRepo.findById(rid)
+                    .orElseThrow(() -> new ResourceNotFoundException("Role không tồn tại với ID: " + rid)))
+                .collect(Collectors.toList());
+
+            AccountRoleGuard.validateStaffOnlyRoles(
+                roles.stream().map(Role::getRoleName).collect(Collectors.toList())
+            );
+
+            accountRoleRepo.deleteByAccountId(staff.getAccountId());
+            List<AccountRole> newRoles = roles.stream()
+                .map(role -> AccountRole.builder()
                     .accountId(staff.getAccountId())
-                    .roleId(rid)
+                    .roleId(role.getRoleId())
                     .build())
                 .collect(Collectors.toList());
             if (!newRoles.isEmpty()) {
@@ -162,11 +172,14 @@ public class StaffServiceImpl implements StaffService {
             throw new BusinessRuleException("Số điện thoại đã được dùng làm tên đăng nhập!");
         }
 
-        // Validate roles exist
+        // Validate roles exist and stay on staff side
         List<Role> roles = request.roleIds().stream()
             .map(id -> roleRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Role không tồn tại với ID: " + id)))
             .collect(Collectors.toList());
+        AccountRoleGuard.validateStaffOnlyRoles(
+            roles.stream().map(Role::getRoleName).collect(Collectors.toList())
+        );
 
         // Create Account
         Account account = Account.builder()
