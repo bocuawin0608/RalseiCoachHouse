@@ -1,13 +1,13 @@
 import { Button, Table } from 'react-bootstrap';
-import { BsEye, BsPencilFill } from 'react-icons/bs';
+import { BsPencilFill } from 'react-icons/bs';
 
-export default function CoachStopTable({ data, loading, onViewDetail, onEditInfo }) {
+export default function CoachStopTable({ data, loading, onEditInfo }) {
     if (loading) {
         return <div className="text-center py-5 text-secondary">Đang tải dữ liệu...</div>;
     }
 
     if (!data || data.length === 0) {
-        return <div className="text-center py-5 text-secondary">Không tìm thấy điểm dừng nào.</div>;
+        return <div className="text-center py-5 text-secondary">Không tìm thấy văn phòng nào.</div>;
     }
 
     return (
@@ -16,7 +16,7 @@ export default function CoachStopTable({ data, loading, onViewDetail, onEditInfo
                 <thead className="bg-light">
                     <tr>
                         <th className="py-3 px-3 ">ID</th>
-                        <th className="py-3 px-3 ">Tên Điểm Dừng</th>
+                        <th className="py-3 px-3 ">Tên Văn Phòng</th>
                         <th className="py-3 px-3 ">Địa Chỉ</th>
                         <th className="py-3 px-3 ">Thành Phố</th>
                         <th className="py-3 px-3 ">Trạng Thái</th>
@@ -37,13 +37,6 @@ export default function CoachStopTable({ data, loading, onViewDetail, onEditInfo
                             </td>
                             <td className="px-3">
                                 <div className="d-flex gap-2 justify-content-center align-items-center">
-                                    <Button
-                                        className="d-flex align-items-center custom-btn-general"
-                                        onClick={() => onViewDetail(stop)}
-                                        title="Xem chi tiết"
-                                    >
-                                        <BsEye size={16} />
-                                    </Button>
                                     <Button
                                         className="d-flex align-items-center custom-btn-general"
                                         onClick={() => onEditInfo(stop)}

@@ -11,7 +11,7 @@ import com.ralsei.dto.projection.customer.CargoOrderStopProjection;
 import com.ralsei.model.CargoTicketDetail;
 
 public interface CargoTicketDetailRepository extends JpaRepository<CargoTicketDetail, Integer> {
-    List<CargoTicketDetail> findByCargoTicketId(int cargoTicketId);
+    List<CargoTicketDetail> findByCargoTicket_CargoTicketId(int cargoTicketId);
 
     @Query(value = """
         SELECT ct.cargoTicketId AS cargoTicketId,

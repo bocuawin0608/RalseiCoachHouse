@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -58,4 +59,8 @@ public interface RouteRepository extends JpaRepository<Route, Integer> {
       SELECT routeName FROM ROUTE
           """, nativeQuery = true)
   List<RouteNameDropdownProjection> routeNameDropdown();
+
+  @Modifying
+  @Query("UPDATE Route r SET r.totalKilometers = :km, r.totalMinutes = :mins WHERE r.routeId = :routeId")
+  void updateRouteTotals(@Param("routeId") int routeId, @Param("km") java.math.BigDecimal km, @Param("mins") int mins);
 }

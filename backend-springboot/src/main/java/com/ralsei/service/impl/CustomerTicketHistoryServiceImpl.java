@@ -34,6 +34,7 @@ import com.ralsei.repository.TripSeatRepository;
 import com.ralsei.service.CustomerTicketHistoryService;
 import com.ralsei.service.notification.PassengerTicketEmailAssembler;
 import com.ralsei.service.notification.TicketEmailService;
+import com.ralsei.service.passengerbooking.SeatHoldService;
 import com.ralsei.util.QRCreateUitility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -57,6 +58,7 @@ public class CustomerTicketHistoryServiceImpl implements CustomerTicketHistorySe
     private final PaymentRepository paymentRepository;
     private final RefundRepository refundRepository;
     private final TripSeatRepository tripSeatRepository;
+    private final SeatHoldService seatHoldService;
     private final QRCreateUitility qrCreateUitility;
     private final ObjectMapper objectMapper;
     private final PassengerTicketEmailAssembler passengerTicketEmailAssembler;
@@ -138,6 +140,8 @@ public class CustomerTicketHistoryServiceImpl implements CustomerTicketHistorySe
             .findTripSeatIdsByPassengerTicketId(ownedTicket.passengerTicketId());
         if (!seatIds.isEmpty()) {
             tripSeatRepository.updateStatusByTripSeatIds(seatIds, TripSeatStatus.AVAILABLE);
+            // Seat map overlays Redis locks on top of DB status — must clear holds or UI stays LOCKED
+            seatHoldService.forceReleaseSeatsByIds(seatIds);
         }
 
         BigDecimal refundAmount = payment.getAmount();

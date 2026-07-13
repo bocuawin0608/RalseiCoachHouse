@@ -7,17 +7,24 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Table;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import org.hibernate.annotations.DynamicUpdate;
 
 @Entity
 @Table(name = "staff")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -64,5 +71,19 @@ public class Staff extends BaseEntity {
     @Column(name = "isActive", nullable = false)
     private boolean isActive;
 
-  
+    @JsonIgnore
+    @OneToMany(mappedBy = "soldBy", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<CargoTicket> cargoTickets;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "loadedBy", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<CargoTicket> loadedCargoTickets;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "unloadedBy", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<CargoTicket> unloadedCargoTickets;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "deliveredBy", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<CargoTicket> deliveredCargoTickets;
 }

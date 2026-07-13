@@ -11,6 +11,11 @@ export const routeApi = {
      * @param {Object} data - routeName, totalKilometers, totalMinutes, active
     */
     createRoute: (data) => { return axiosClient.post(BASE, data); },
+
+    /**
+     * @param {Object} data - routeName, totalKilometers, totalMinutes, active, routeStops
+    */
+    createRouteWithStops: (data) => { return axiosClient.post(`${BASE}/with-stops`, data); },
     
     /**
      * @param {number|string} id 

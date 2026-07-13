@@ -1,10 +1,11 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Button } from "react-bootstrap";
-import { BsTrash, BsPencilFill, BsGripVertical } from "react-icons/bs";
+import { BsTrash, BsGripVertical, BsPlusCircleFill } from "react-icons/bs";
 import { MdDangerous } from "react-icons/md";
+import { FaCirclePlus } from "react-icons/fa6";
 
-export default function SortableRouteStopRow({ stop, onEdit, onDelete }) {
+export default function SortableRouteStopRow({ stop, isDraftMode, pendingCoachStop, onInsertPending, isDeleteMode, isSelected, onToggleSelection }) {
     const {
         attributes,
         listeners,
@@ -12,7 +13,10 @@ export default function SortableRouteStopRow({ stop, onEdit, onDelete }) {
         transform,
         transition,
         isDragging,
-    } = useSortable({ id: stop.routeStopId });
+    } = useSortable({
+        id: stop.routeStopId || stop.id,
+        disabled: !isDraftMode
+    });
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -24,17 +28,43 @@ export default function SortableRouteStopRow({ stop, onEdit, onDelete }) {
     };
 
     return (
-        <tr ref={setNodeRef} style={style} className={!stop.stopPointActive ? 'table-danger' : ''}>
+        <tr
+            ref={setNodeRef}
+            style={{ ...style, cursor: isDraftMode ? 'grab' : 'default' }}
+            className={!stop.stopPointActive ? 'table-danger' : ''}
+            {...attributes}
+            {...(isDraftMode ? listeners : {})}
+            title={isDraftMode ? "Kéo thả để sắp xếp" : ""}
+        >
+            {isDeleteMode && (
+                <td>
+                    <div className="d-flex align-items-center justify-content-center h-100 mt-1">
+                        <input
+                            type="checkbox"
+                            className="form-check-input mt-0"
+                            style={{ cursor: 'pointer', width: '18px', height: '18px' }}
+                            checked={isSelected || false}
+                            onChange={(e) => { e.stopPropagation(); onToggleSelection(); }}
+                            onPointerDown={(e) => e.stopPropagation()}
+                            disabled={!stop.routeStopId} // disable if it's a draft stop that hasn't been saved yet
+                        />
+                    </div>
+                </td>
+            )}
             <td className={`fw-bold ${!stop.stopPointActive ? 'text-danger' : 'text-primary'}`}>
                 <div className="d-flex align-items-center justify-content-center gap-2">
-                    <span
-                        {...attributes}
-                        {...listeners}
-                        style={{ cursor: 'grab', display: 'flex', alignItems: 'center' }}
-                        title="Kéo thả để sắp xếp"
-                    >
-                        <BsGripVertical size={20} className="text-secondary" />
-                    </span>
+                    {pendingCoachStop && (
+                        <Button
+                            variant="none"
+                            className="p-0 text-success d-flex align-items-center justify-content-center"
+                            style={{ minWidth: '24px' }}
+                            onClick={(e) => { e.stopPropagation(); onInsertPending(); }}
+                            onPointerDown={(e) => e.stopPropagation()}
+                            title="Thêm vào sau vị trí này"
+                        >
+                            <FaCirclePlus size={20} />
+                        </Button>
+                    )}
                     <span>{stop.stopOrder}</span>
                     {!stop.stopPointActive && (
                         <MdDangerous size={18} className="text-danger" title="Ngừng HĐ" />
@@ -42,18 +72,9 @@ export default function SortableRouteStopRow({ stop, onEdit, onDelete }) {
                 </div>
             </td>
             <td className="text-start fw-medium">{stop.stopPointName}</td>
-            <td>{stop.kilometersFromStart} km</td>
-            <td>{stop.minutesFromStart} phút</td>
-            <td>
-                <div className="d-flex gap-2 justify-content-center">
-                    <Button className="custom-btn-general" size="sm" onClick={() => onEdit(stop)} title="Sửa điểm dừng">
-                        <BsPencilFill />
-                    </Button>
-                    <Button variant="danger" size="sm" onClick={() => onDelete(stop.routeStopId)} title="Xóa điểm dừng">
-                        <BsTrash />
-                    </Button>
-                </div>
-            </td>
+            <td className="text-start fw-medium">{stop.city}</td>
+            <td>{stop.kilometersFromStart === 0 && stop.stopOrder != 1 || stop.kilometersFromStart === 1.2 ? "- -" : stop.kilometersFromStart + " km"}</td>
+            <td>{stop.minutesFromStart === 0 && stop.stopOrder != 1 || stop.minutesFromStart === 1.2 ? "- -" : (stop.minutesFromStart >= 60 ? Math.floor(stop.minutesFromStart / 60) + " giờ " + (stop.minutesFromStart % 60) + " phút" : stop.minutesFromStart + " phút")} </td>
         </tr>
     );
 }

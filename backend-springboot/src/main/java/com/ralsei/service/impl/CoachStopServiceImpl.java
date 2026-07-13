@@ -4,9 +4,7 @@ import com.ralsei.dto.request.CoachAndRouteStop.CoachStopRequest;
 import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.dto.response.CoachAndRouteStop.CoachStopResponse;
 import com.ralsei.model.CoachStop;
-import com.ralsei.model.RouteStop;
 import com.ralsei.repository.CoachStopRepository;
-import com.ralsei.repository.RouteStopRepository;
 import com.ralsei.service.CoachStopService;
 import com.ralsei.exception.ResourceNotFoundException;
 
@@ -26,12 +24,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class CoachStopServiceImpl implements CoachStopService {
 
     private final CoachStopRepository coachStopRepository;
-    private final RouteStopRepository routeStopRepository;
 
     @Override
     @Transactional
     public CoachStopResponse createCoachStop(CoachStopRequest request) {
-        if (coachStopRepository.existsByAddressIgnoreCaseAndCityIgnoreCase(request.getAddress().trim(), request.getCity().trim())) {
+        if (coachStopRepository.existsByAddressIgnoreCaseAndCityIgnoreCase(request.getAddress().trim(),
+                request.getCity().trim())) {
             throw new IllegalArgumentException("Đã tồn tại điểm dừng với địa chỉ và thành phố này.");
         }
 
@@ -39,9 +37,12 @@ public class CoachStopServiceImpl implements CoachStopService {
                 .stopPointName(request.getStopPointName().trim())
                 .address(request.getAddress().trim())
                 .city(request.getCity().trim())
+                .latitude(request.getLatitude())
+                .longitude(request.getLongitude())
                 .isActive(true)
                 .build();
         CoachStop saved = coachStopRepository.save(Objects.requireNonNull(coachStop));
+
         return mapToResponse(saved);
     }
 
@@ -55,7 +56,8 @@ public class CoachStopServiceImpl implements CoachStopService {
         boolean cityChanged = !coachStop.getCity().equalsIgnoreCase(request.getCity().trim());
 
         if (addressChanged || cityChanged) {
-            if (coachStopRepository.existsByAddressIgnoreCaseAndCityIgnoreCase(request.getAddress().trim(), request.getCity().trim())) {
+            if (coachStopRepository.existsByAddressIgnoreCaseAndCityIgnoreCase(request.getAddress().trim(),
+                    request.getCity().trim())) {
                 throw new IllegalArgumentException("Đã tồn tại điểm dừng với địa chỉ và thành phố này.");
             }
         }
@@ -65,6 +67,7 @@ public class CoachStopServiceImpl implements CoachStopService {
         coachStop.setCity(request.getCity().trim());
 
         CoachStop updated = coachStopRepository.save(coachStop);
+
         return mapToResponse(updated);
     }
 
@@ -105,6 +108,7 @@ public class CoachStopServiceImpl implements CoachStopService {
         // Soft delete the coach stop
         coachStop.setActive(false);
         coachStopRepository.save(coachStop);
+
     }
 
     @Override
@@ -116,6 +120,7 @@ public class CoachStopServiceImpl implements CoachStopService {
         // Restore the coachStop itself
         coachStop.setActive(true);
         coachStopRepository.save(coachStop);
+
     }
 
     private CoachStopResponse mapToResponse(CoachStop coachStop) {

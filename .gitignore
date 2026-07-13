@@ -43,6 +43,9 @@ docs/
 
 tracker/
 
+#ignore agent skillset
+.agents/
+skills-lock.json
 # Seed / test SQL files (local test data, not part of core schema)
 backend-springboot/db/seed_*.sql
 backend-springboot/db/test_*.sql

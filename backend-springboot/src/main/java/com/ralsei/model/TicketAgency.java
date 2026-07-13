@@ -38,5 +38,4 @@ public class TicketAgency extends BaseEntity {
     @Column(name = "isActive", nullable = false)
     private boolean isActive;
 
-    
 }

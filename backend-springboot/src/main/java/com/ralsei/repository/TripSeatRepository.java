@@ -42,7 +42,7 @@ public interface TripSeatRepository extends JpaRepository<TripSeat, Integer> {
     List<TripSeat> findByTripIdAndTripSeatIdInWithSeat(@Param("tripId") Integer tripId,
                                                        @Param("tripSeatIds") List<Integer> tripSeatIds);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
         UPDATE TripSeat ts
         SET ts.status = :status

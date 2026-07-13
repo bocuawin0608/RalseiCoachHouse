@@ -9,7 +9,7 @@ export default function CoachStopFilter({ filters, onFilterChange, onReset }) {
 
                     <Form.Control
                         type="text"
-                        placeholder="Nhập điểm dừng, địa chỉ, thành phố..."
+                        placeholder="Nhập văn phòng, địa chỉ, thành phố..."
                         name="search"
                         value={filters.search}
                         onChange={(e) => onFilterChange(e.target.name, e.target.value)}

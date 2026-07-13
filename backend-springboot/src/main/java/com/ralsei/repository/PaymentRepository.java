@@ -19,6 +19,10 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
 
     boolean existsByTransactionId(String transactionId);
 
+    boolean existsByCargoTicket_CargoTicketId(Integer cargoTicketId);
+
+    Optional<Payment> findByCargoTicket_CargoTicketId(Integer cargoTicketId);
+    
     Optional<Payment> findByPassengerTicketId(Integer passengerTicketId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)

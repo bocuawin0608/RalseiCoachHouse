@@ -5,8 +5,7 @@ export default function RouteTable({
     data,
     loading,
     onEditInfo,
-    onViewDetail,
-    onManageStops
+    onViewDetail
 }) {
 
     if (loading) {
@@ -38,8 +37,8 @@ export default function RouteTable({
                     <tr key={item.routeId}>
                         <td className="px-3 fw-medium text-secondary">#{item.routeId}</td>
                         <td className="px-3 fw-bold text-dark">{item.routeName}</td>
-                        <td className="px-3">{item.totalKilometers} km</td>
-                        <td className="px-3">{item.totalMinutes} min</td>
+                        <td className="px-3">{item.totalKilometers == null ? '- -' : item.totalKilometers + ' km'}</td>
+                        <td className="px-3">{item.totalMinutes == null ? '- -' : Math.floor(item.totalMinutes / 60) + ' giờ ' + (item.totalMinutes % 60) + ' phút'}</td>
                         <td className="px-3">
                             <Badge
                                 bg={item.active ? 'success' : 'secondary'}
@@ -66,14 +65,6 @@ export default function RouteTable({
                                     <BsPencilFill size={16} />
                                 </Button>
 
-                                <Button
-                                    className="d-flex align-items-center gap-1 custom-btn-general"
-                                    onClick={() => onManageStops(item)}
-                                    title="Thêm điểm dừng"
-                                >
-                                    <BsSignpostSplit size={16} />
-                                    <span className="small fw-medium"></span>
-                                </Button>
                             </div>
                         </td>
                     </tr>
