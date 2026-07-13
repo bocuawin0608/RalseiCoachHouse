@@ -27,7 +27,6 @@ import com.ralsei.exception.ResourceNotFoundException;
 import com.ralsei.model.Account;
 import com.ralsei.model.AccountRole;
 import com.ralsei.model.Role;
-import com.ralsei.model.Customer;
 import com.ralsei.model.Staff;
 import com.ralsei.repository.AccountRepository;
 import com.ralsei.repository.AccountRoleRepository;
@@ -35,6 +34,7 @@ import com.ralsei.repository.CustomerRepository;
 import com.ralsei.repository.RoleRepository;
 import com.ralsei.repository.StaffRepository;
 import com.ralsei.service.AccountService;
+import com.ralsei.util.AccountRoleGuard;
 
 import lombok.RequiredArgsConstructor;
 
@@ -131,10 +131,16 @@ public class AccountServiceImpl implements AccountService {
         staffRepo.save(staff);
 
         if (request.roleIds() != null) {
-            for (Integer roleId : request.roleIds()) {
-                Role role = roleRepo.findById(roleId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Role không tồn tại với ID: " + roleId));
+            List<Role> roles = request.roleIds().stream()
+                .map(roleId -> roleRepo.findById(roleId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Role không tồn tại với ID: " + roleId)))
+                .collect(Collectors.toList());
 
+            AccountRoleGuard.validateStaffOnlyRoles(
+                roles.stream().map(Role::getRoleName).collect(Collectors.toList())
+            );
+
+            for (Role role : roles) {
                 AccountRole accountRole = AccountRole.builder()
                     .accountId(account.getAccountId())
                     .roleId(role.getRoleId())
@@ -189,13 +195,36 @@ public class AccountServiceImpl implements AccountService {
         accountRepo.findById(accountId)
             .orElseThrow(() -> new ResourceNotFoundException("Tài khoản không tồn tại!"));
 
+        List<AccountRole> currentAccountRoles = accountRoleRepo.findByAccountId(accountId);
+        List<String> currentRoleNames = currentAccountRoles.stream()
+            .map(ar -> roleRepo.findById(ar.getRoleId()).orElse(null))
+            .filter(r -> r != null)
+            .map(Role::getRoleName)
+            .collect(Collectors.toList());
+
+        List<Role> newRoles = request.roleIds().stream()
+            .map(roleId -> roleRepo.findById(roleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Role không tồn tại với ID: " + roleId)))
+            .collect(Collectors.toList());
+
+        List<String> newRoleNames = newRoles.stream()
+            .map(Role::getRoleName)
+            .collect(Collectors.toList());
+
+        boolean linkedToCustomer = customerRepo.findByAccountId(accountId).isPresent();
+        boolean linkedToStaff = staffRepo.findByAccountId(accountId).isPresent();
+
+        AccountRoleGuard.validateRoleAssignment(
+            linkedToCustomer,
+            linkedToStaff,
+            currentRoleNames,
+            newRoleNames
+        );
+
         accountRoleRepo.deleteByAccountId(accountId);
         accountRoleRepo.flush();
 
-        for (Integer roleId : request.roleIds()) {
-            Role role = roleRepo.findById(roleId)
-                .orElseThrow(() -> new ResourceNotFoundException("Role không tồn tại với ID: " + roleId));
-
+        for (Role role : newRoles) {
             AccountRole accountRole = AccountRole.builder()
                 .accountId(accountId)
                 .roleId(role.getRoleId())

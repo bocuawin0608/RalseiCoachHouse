@@ -256,6 +256,7 @@ public class StaffPassengerTicketChangeServiceImpl implements StaffPassengerTick
         int oldTripSeatId = detail.getTripSeatId();
         if (oldTripSeatId > 0) {
             tripSeatRepository.updateStatusByTripSeatIds(List.of(oldTripSeatId), TripSeatStatus.AVAILABLE);
+            seatHoldService.forceReleaseSeatsByIds(List.of(oldTripSeatId));
         }
 
         tripSeatRepository.updateStatusByTripSeatIds(List.of(newTripSeatId), TripSeatStatus.SOLD);
@@ -449,6 +450,7 @@ public class StaffPassengerTicketChangeServiceImpl implements StaffPassengerTick
 
         if (!oldTripSeatIds.isEmpty()) {
             tripSeatRepository.updateStatusByTripSeatIds(oldTripSeatIds, TripSeatStatus.AVAILABLE);
+            seatHoldService.forceReleaseSeatsByIds(oldTripSeatIds);
         }
 
         tripSeatRepository.updateStatusByTripSeatIds(requestedSeatIds, TripSeatStatus.SOLD);
