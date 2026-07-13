@@ -24,7 +24,7 @@ export default function CargoTicketDetailSection({ draftDetails, onAdd, onChange
         <Card className="shadow-sm border-0 mb-4">
             <Card.Header className="bg-white py-3 d-flex justify-content-between align-items-center">
                 <h5 className="fw-bold mb-0">Chi tiết hàng hóa</h5>
-                <Button className='custom-btn-general fw-medium' size="sm" onClick={onAdd}>Thêm chi tiết</Button>
+                <Button className='custom-btn-general fw-medium' size="sm" onClick={onAdd}>Thêm hàng hóa</Button>
             </Card.Header>
             <Card.Body className="p-4">
                 {draftDetails.length === 0 ? (
