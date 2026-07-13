@@ -1,12 +1,15 @@
 package com.ralsei.service;
 
 import com.ralsei.dto.request.cargoticket.CargoTicketRequest;
+import com.ralsei.dto.request.cargoticket.CargoTicketWithDetailsRequest;
+import com.ralsei.dto.request.cargoticket.TripByStopRequest;
 import com.ralsei.dto.response.PagedResponse;
-import com.ralsei.dto.response.cargoticket.CargoTicketResponse;
 import com.ralsei.dto.response.cargoticket.CargoTicketFormOptionsResponse;
+import com.ralsei.dto.response.cargoticket.CargoTicketResponse;
 import com.ralsei.dto.response.cargoticket.CustomerContactResponse;
 import com.ralsei.dto.request.cargoticket.TripByStopRequest;
 import com.ralsei.dto.response.cargoticket.TripByStopResponse;
+import com.ralsei.dto.response.cargoticketdetail.CargoTicketDetailResponse;
 import com.ralsei.model.Trip;
 
 import java.util.List;
@@ -20,7 +23,11 @@ public interface CargoTicketService {
 
     CargoTicketResponse createCargoTicket(CargoTicketRequest request);
 
+    CargoTicketResponse createCargoTicketWithDetails(CargoTicketWithDetailsRequest request);
+
     CargoTicketResponse updateCargoTicket(int id, CargoTicketRequest request);
+
+    List<CargoTicketDetailResponse> getCargoTicketDetailsByTicketId(int cargoTicketId);
 
     void disable(int id);
 

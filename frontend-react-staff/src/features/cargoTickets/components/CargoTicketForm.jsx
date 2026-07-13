@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useCargoTicketFormOptions } from '../hooks/useCargoTicketFormOptions';
 import { useAuth } from '../../auth/context/AuthContext';
 import PhoneAutocomplete from './PhoneAutocomplete';
+import CargoTicketDetailSection from './CargoTicketDetailSection';
 
 const EMPTY_FORM = {
     tripId: '', customerId: '', senderName: '', senderPhone: '',
@@ -19,6 +20,9 @@ export default function CargoTicketForm({ initialData, onSubmit, submitLabel = '
         ...initialData,
         soldBy: initialData?.soldBy?.staffId ?? initialData?.soldBy ?? EMPTY_FORM.soldBy
     }));
+    const [draftDetails, setDraftDetails] = useState(() =>
+        initialData?.details ? structuredClone(initialData.details) : []
+    );
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const { user } = useAuth();
@@ -50,6 +54,30 @@ export default function CargoTicketForm({ initialData, onSubmit, submitLabel = '
         setError('');
     };
 
+    const handleAddDetail = () => {
+        setDraftDetails(prev => {
+            const newDetails = structuredClone(prev);
+            newDetails.push({ cargoTypePriceId: '', description: '', quantity: 1, weightKg: 0, dimensionVol: 0, calculatedPrice: 0 });
+            return newDetails;
+        });
+    };
+
+    const handleDetailChange = (index, field, value) => {
+        setDraftDetails(prev => {
+            const newDetails = structuredClone(prev);
+            newDetails[index][field] = value;
+            return newDetails;
+        });
+    };
+
+    const handleRemoveDetail = (index) => {
+        setDraftDetails(prev => {
+            const newDetails = structuredClone(prev);
+            newDetails.splice(index, 1);
+            return newDetails;
+        });
+    };
+
     const handleSubmit = async (event) => {
         event.preventDefault();
         if (String(formData.pickupStopId) === String(formData.dropoffStopId)) {
@@ -57,7 +85,15 @@ export default function CargoTicketForm({ initialData, onSubmit, submitLabel = '
             return;
         }
 
-        const payload = buildCargoTicketRequest(formData);
+        if (!initialData?.cargoTicketId && draftDetails.length === 0) {
+            setError('Vui lòng thêm ít nhất một chi tiết hàng hóa.');
+            return;
+        }
+
+        const payload = buildCargoTicketRequest(formData, draftDetails);
+        if (initialData?.cargoTicketId) {
+            delete payload.details;
+        }
         setSubmitting(true);
         try {
             await onSubmit(payload);
@@ -112,6 +148,13 @@ export default function CargoTicketForm({ initialData, onSubmit, submitLabel = '
                     </Row>
                 </Card.Body>
             </Card>
+
+            <CargoTicketDetailSection
+                draftDetails={draftDetails}
+                onAdd={handleAddDetail}
+                onChange={handleDetailChange}
+                onRemove={handleRemoveDetail}
+            />
 
             <Button type="submit" disabled={submitting || optionsLoading || Boolean(optionsError)} className="px-4 py-2 d-flex align-items-center gap-2 custom-btn-general">
                 <BsCheckCircle />{submitting ? 'Đang lưu...' : submitLabel}
@@ -184,7 +227,7 @@ function optionalText(value) {
     return normalized || null;
 }
 
-function buildCargoTicketRequest(form) {
+function buildCargoTicketRequest(form, draftDetails) {
     return {
         tripId: optionalId(form.tripId),
         customerId: optionalId(form.customerId),
@@ -200,6 +243,14 @@ function buildCargoTicketRequest(form) {
         dropoffStopId: Number(form.dropoffStopId),
         status: form.status,
         soldBy: form.soldBy ? { staffId: Number(form.soldBy) } : null,
-        paymentMethod: form.paymentMethod
+        paymentMethod: form.paymentMethod,
+        details: (draftDetails || []).map(d => ({
+            cargoTypePriceId: Number(d.cargoTypePriceId),
+            description: optionalText(d.description),
+            quantity: Number(d.quantity),
+            weightKg: Number(d.weightKg),
+            dimensionVol: Number(d.dimensionVol),
+            calculatedPrice: Number(d.calculatedPrice)
+        }))
     };
 }

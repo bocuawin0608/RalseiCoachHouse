@@ -7,11 +7,13 @@ import { cargoTicketApi } from '../../../features/cargoTickets/api/cargoTicketAp
 import CargoTicketFilter from '../../../features/cargoTickets/components/CargoTicketFilter';
 import CargoTicketTable from '../../../features/cargoTickets/components/CargoTicketTable';
 import CargoTicketUpdateModal from '../../../features/cargoTickets/components/CargoTicketUpdateModal';
+import CargoTicketDetailViewModal from '../../../features/cargoTickets/components/CargoTicketDetailViewModal';
 import { useCargoTickets } from '../../../features/cargoTickets/hooks/useCargoTickets';
 
 export default function CargoTicketPage() {
     const navigate = useNavigate();
     const [selectedTicket, setSelectedTicket] = useState(null);
+    const [viewTicket, setViewTicket] = useState(null);
     const { tickets, loading, error, filters, pageInfo, setPageInfo, handleFilterChange, handleReset, refetch } = useCargoTickets();
 
     const handleDisable = async (ticket) => {
@@ -47,12 +49,13 @@ export default function CargoTicketPage() {
 
             <Card className="shadow-sm border-0">
                 <Card.Body className="p-0">
-                    <CargoTicketTable data={tickets} loading={loading} onEdit={setSelectedTicket} onDisable={handleDisable} onCompletePayment={handleCompletePayment} />
+                    <CargoTicketTable data={tickets} loading={loading} onEdit={setSelectedTicket} onView={setViewTicket} onDisable={handleDisable} onCompletePayment={handleCompletePayment} />
                     <div className="d-flex justify-content-center py-3 border-top"><Pagination pageInfo={pageInfo} onPageChange={setPageInfo} /></div>
                 </Card.Body>
             </Card>
 
             {selectedTicket && <CargoTicketUpdateModal key={selectedTicket.cargoTicketId} data={selectedTicket} onClose={() => setSelectedTicket(null)} onSuccess={refetch} />}
+            {viewTicket && <CargoTicketDetailViewModal key={`view-${viewTicket.cargoTicketId}`} ticket={viewTicket} onClose={() => setViewTicket(null)} />}
         </Container>
     );
 }
