@@ -37,6 +37,7 @@ import com.ralsei.service.notification.PassengerTicketEmailAssembler;
 import com.ralsei.service.notification.TicketEmailService;
 import com.ralsei.service.passengerbooking.BoardingQrTokenGenerator;
 import com.ralsei.service.passengerbooking.PaymentSseService;
+import com.ralsei.service.passengerbooking.SeatHoldService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
@@ -58,6 +59,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final BoardingQrTokenGenerator boardingQrTokenGenerator;
     private final PassengerTicketEmailAssembler passengerTicketEmailAssembler;
     private final TicketEmailService ticketEmailService;
+    private final SeatHoldService seatHoldService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -228,6 +230,8 @@ public class PaymentServiceImpl implements PaymentService {
 
             if (!tripSeatIds.isEmpty()) {
                 tripSeatRepository.updateStatusByTripSeatIds(tripSeatIds, TripSeatStatus.SOLD);
+                // Booking Redis locks can outlive payment; clear so seat map shows SOLD from DB, not LOCKED
+                seatHoldService.forceReleaseSeatsByIds(tripSeatIds);
             }
         }
 
