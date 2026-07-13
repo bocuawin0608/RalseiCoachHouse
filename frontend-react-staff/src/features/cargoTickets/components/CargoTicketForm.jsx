@@ -57,7 +57,7 @@ export default function CargoTicketForm({ initialData, onSubmit, submitLabel = '
     const handleAddDetail = () => {
         setDraftDetails(prev => {
             const newDetails = structuredClone(prev);
-            newDetails.push({ cargoTypePriceId: '', description: '', quantity: 1, weightKg: 0, dimensionVol: 0, calculatedPrice: 0 });
+            newDetails.push({ cargoTypePriceId: '', description: '', quantity: 1, weightKg: 0, dimensionVol: 0 });
             return newDetails;
         });
     };
@@ -140,10 +140,9 @@ export default function CargoTicketForm({ initialData, onSubmit, submitLabel = '
                 <Card.Header className="bg-white py-3"><h5 className="fw-bold mb-0">Thanh toán và xử lý</h5></Card.Header>
                 <Card.Body className="p-4">
                     <Row className="g-3">
-                        <Col md={3}><Field label="Tổng tiền (VNĐ)" name="totalPrice" type="number" value={formData.totalPrice} onChange={handleChange} required min="0" /></Col>
-                        <Col md={3}><Field label="Tiền thu hộ COD (VNĐ)" name="codAmount" type="number" value={formData.codAmount} onChange={handleChange} required min="0" /></Col>
-                        <Col md={3}><Form.Group><Form.Label className="fw-semibold">Người trả phí *</Form.Label><Form.Select name="feePayer" value={formData.feePayer} onChange={handleChange}><option value="SENDER">Người gửi</option><option value="RECEIVER">Người nhận</option></Form.Select></Form.Group></Col>
-                        <Col md={3}><Form.Group><Form.Label className="fw-semibold">Phương thức thanh toán *</Form.Label><Form.Select name="paymentMethod" value={formData.paymentMethod} onChange={handleChange} required><option value="CASH">Tiền mặt</option><option value="BANK_TRANSFER">Chuyển khoản</option></Form.Select></Form.Group></Col>
+                        <Col md={4}><Field label="Tiền thu hộ COD (VNĐ)" name="codAmount" type="number" value={formData.codAmount} onChange={handleChange} required min="0" /></Col>
+                        <Col md={4}><Form.Group><Form.Label className="fw-semibold">Người trả phí *</Form.Label><Form.Select name="feePayer" value={formData.feePayer} onChange={handleChange}><option value="SENDER">Người gửi</option><option value="RECEIVER">Người nhận</option></Form.Select></Form.Group></Col>
+                        <Col md={4}><Form.Group><Form.Label className="fw-semibold">Phương thức thanh toán *</Form.Label><Form.Select name="paymentMethod" value={formData.paymentMethod} onChange={handleChange} required><option value="CASH">Tiền mặt</option><option value="BANK_TRANSFER">Chuyển khoản</option></Form.Select></Form.Group></Col>
                         <Col xs={12}><Form.Group><Form.Label className="fw-semibold">Mô tả hàng hóa</Form.Label><Form.Control as="textarea" rows={3} name="description" value={formData.description || ''} onChange={handleChange} /></Form.Group></Col>
                     </Row>
                 </Card.Body>
@@ -249,8 +248,8 @@ function buildCargoTicketRequest(form, draftDetails) {
             description: optionalText(d.description),
             quantity: Number(d.quantity),
             weightKg: Number(d.weightKg),
-            dimensionVol: Number(d.dimensionVol),
-            calculatedPrice: Number(d.calculatedPrice)
+            dimensionVol: Number(d.dimensionVol)
+
         }))
     };
 }

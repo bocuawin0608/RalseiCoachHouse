@@ -48,7 +48,7 @@ export default function CargoTicketDetailViewModal({ ticket, onClose }) {
     const handleAddDetail = () => {
         setDraftDetails(prev => {
             const newDetails = structuredClone(prev);
-            newDetails.push({ cargoTypePriceId: '', description: '', quantity: 1, weightKg: 0, dimensionVol: 0, calculatedPrice: 0 });
+            newDetails.push({ cargoTypePriceId: '', description: '', quantity: 1, weightKg: 0, dimensionVol: 0 });
             return newDetails;
         });
     };
@@ -88,8 +88,7 @@ export default function CargoTicketDetailViewModal({ ticket, onClose }) {
                     cargoTypePriceId: Number(item.cargoTypePriceId),
                     quantity: Number(item.quantity),
                     weightKg: Number(item.weightKg),
-                    dimensionVol: Number(item.dimensionVol),
-                    calculatedPrice: Number(item.calculatedPrice)
+                    dimensionVol: Number(item.dimensionVol)
                 });
             }
             for (const item of updatedItems) {
@@ -98,8 +97,7 @@ export default function CargoTicketDetailViewModal({ ticket, onClose }) {
                     cargoTypePriceId: Number(item.cargoTypePriceId),
                     quantity: Number(item.quantity),
                     weightKg: Number(item.weightKg),
-                    dimensionVol: Number(item.dimensionVol),
-                    calculatedPrice: Number(item.calculatedPrice)
+                    dimensionVol: Number(item.dimensionVol)
                 });
             }
 

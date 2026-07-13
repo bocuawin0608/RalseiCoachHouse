@@ -69,7 +69,8 @@ public class CargoTicketController {
     }
 
     @GetMapping("/{id:\\d+}/details")
-    public ResponseEntity<List<CargoTicketDetailResponse>> getCargoTicketDetailsByTicketId(@PathVariable @Min(1) int id) {
+    public ResponseEntity<List<CargoTicketDetailResponse>> getCargoTicketDetailsByTicketId(
+            @PathVariable @Min(1) int id) {
         return ResponseEntity.ok(cargoTicketService.getCargoTicketDetailsByTicketId(id));
     }
 
@@ -96,7 +97,8 @@ public class CargoTicketController {
     public ResponseEntity<CargoTicketDetailResponse> createCargoTicketDetail(
             @PathVariable @Min(1) int ticketId,
             @Valid @RequestBody CargoTicketDetailRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(cargoTicketService.createCargoTicketDetail(ticketId, request));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(cargoTicketService.createCargoTicketDetail(ticketId, request));
     }
 
     @PutMapping("/details/{detailId:\\d+}")
