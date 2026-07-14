@@ -52,5 +52,4 @@ public class CargoTicketDetail extends BaseEntity {
     @Column(name = "calculatedPrice", nullable = false)
     private BigDecimal calculatedPrice;
 
-   
 }

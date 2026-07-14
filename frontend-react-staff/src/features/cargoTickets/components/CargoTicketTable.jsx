@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Badge, Button, Table } from 'react-bootstrap';
-import { BsPencilFill, BsTrashFill, BsCashCoin } from 'react-icons/bs';
+import { BsPencilFill, BsTrashFill, BsCashCoin, BsEye } from 'react-icons/bs';
 import { formatCurrency } from '../../../utils/formatters';
 import { FaArrowDownLong } from "react-icons/fa6";
 import QrPaymentModal from './QrPaymentModal';
@@ -39,7 +39,7 @@ const paymentStatusLabel = {
     CANCELLED: 'Đã hủy'
 };
 
-export default function CargoTicketTable({ data, loading, onEdit, onDisable, onCompletePayment }) {
+export default function CargoTicketTable({ data, loading, onEdit, onCompletePayment, onView, onPaymentSuccess }) {
     const [qrTicket, setQrTicket] = useState(null);
 
     if (loading) return <div className="text-center p-5 text-secondary fw-medium">Đang tải dữ liệu...</div>;
@@ -100,15 +100,15 @@ export default function CargoTicketTable({ data, loading, onEdit, onDisable, onC
                             <td className="px-3">
                                 <div className="d-flex gap-2 justify-content-center">
                                     {ticket.payment?.status === 'PENDING' && (
-                                        <Button variant="success" className="d-flex align-items-center" onClick={() => handlePaymentClick(ticket)} title="Hoàn thành thanh toán">
+                                        <Button className="custom-btn-general d-flex align-items-center" onClick={() => handlePaymentClick(ticket)} title="Hoàn thành thanh toán">
                                             <BsCashCoin size={16} />
                                         </Button>
                                     )}
+                                    <Button className="custom-btn-general d-flex align-items-center text-white" onClick={() => onView(ticket)} title="Xem chi tiết">
+                                        <BsEye size={16} />
+                                    </Button>
                                     <Button className="d-flex align-items-center custom-btn-general" onClick={() => onEdit(ticket)} title="Sửa vé">
                                         <BsPencilFill size={16} />
-                                    </Button>
-                                    <Button variant="danger" className="d-flex align-items-center" onClick={() => onDisable(ticket)} title="Vô hiệu hóa vé">
-                                        <BsTrashFill size={16} />
                                     </Button>
                                 </div>
                             </td>
@@ -117,7 +117,7 @@ export default function CargoTicketTable({ data, loading, onEdit, onDisable, onC
                 </tbody>
             </Table>
 
-            <QrPaymentModal ticket={qrTicket} onClose={() => setQrTicket(null)} />
+            <QrPaymentModal ticket={qrTicket} onClose={() => { setQrTicket(null); if (onPaymentSuccess) onPaymentSuccess(); }} onSuccess={onPaymentSuccess} />
         </>
     );
 }

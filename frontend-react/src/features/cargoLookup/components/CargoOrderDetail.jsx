@@ -7,13 +7,20 @@ import {
 } from '../utils/cargoLookupFormatters';
 
 /** Read-only detail view for one selected cargo order. */
-export default function CargoOrderDetail({ order, onBack, onOpenRoute }) {
+export default function CargoOrderDetail({ order, onBack, onOpenRoute, onDisable }) {
     return (
         <section className="cargo-detail-shell">
             <header className="cargo-detail-heading">
                 <button type="button" onClick={onBack}><FiArrowLeft /> Quay lại</button>
                 <div><span>CHI TIẾT ĐƠN HÀNG</span><h1>{order.ticketCode}</h1></div>
-                <strong className={`cargo-status cargo-status--${order.status?.toLowerCase()}`}>{formatCargoStatus(order.status)}</strong>
+                <div className="d-flex flex-column align-items-end gap-2">
+                    <strong className={`cargo-status cargo-status--${order.status?.toLowerCase()}`}>{formatCargoStatus(order.status)}</strong>
+                    {order.status === 'RECEIVED' && onDisable && (
+                        <button type="button" className="btn btn-sm btn-outline-danger fw-semibold" onClick={() => onDisable(order)}>
+                            Hủy đơn hàng
+                        </button>
+                    )}
+                </div>
             </header>
 
             <div className="cargo-detail-grid">
