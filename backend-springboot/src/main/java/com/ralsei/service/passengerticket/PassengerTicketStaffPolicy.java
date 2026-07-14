@@ -20,12 +20,24 @@ public class PassengerTicketStaffPolicy {
 
     private static final long CHANGE_CUTOFF_HOURS = 3;
     private static final long FULL_REFUND_CUTOFF_HOURS = 5;
+    private static final long CANCEL_MIN_AGE_HOURS = 24;
 
     public long hoursUntilDeparture(LocalDateTime departureTime) {
         if (departureTime == null) {
             return Long.MIN_VALUE;
         }
         return Duration.between(LocalDateTime.now(), departureTime).toHours();
+    }
+
+    public long hoursSinceCreated(LocalDateTime createdAt) {
+        if (createdAt == null) {
+            return Long.MIN_VALUE;
+        }
+        return Duration.between(createdAt, LocalDateTime.now()).toHours();
+    }
+
+    public boolean canCancelByTicketAge(LocalDateTime createdAt) {
+        return hoursSinceCreated(createdAt) >= CANCEL_MIN_AGE_HOURS;
     }
 
     public LocalDateTime resolveRefundPolicyDepartureTime(
@@ -81,6 +93,7 @@ public class PassengerTicketStaffPolicy {
         List<StaffPassengerTicketRowProjection> seatRows,
         String paymentStatus,
         LocalDateTime departureTime,
+        LocalDateTime bookedAt,
         String tripStatus,
         PassengerTicketMajorChangeType majorChangeType
     ) {
@@ -99,6 +112,12 @@ public class PassengerTicketStaffPolicy {
 
         if (!"SCHEDULED".equals(tripStatus)) {
             throw new BusinessRuleException("Chỉ được hủy vé trên chuyến đang lên lịch.");
+        }
+
+        if (!canCancelByTicketAge(bookedAt)) {
+            throw new BusinessRuleException(
+                "Chỉ được hủy vé sau ít nhất " + CANCEL_MIN_AGE_HOURS + " giờ kể từ thời điểm đặt vé."
+            );
         }
 
         if (!canCancel(hoursUntilDeparture(departureTime))) {
@@ -244,6 +263,7 @@ public class PassengerTicketStaffPolicy {
         String ticketStatus,
         List<StaffPassengerTicketRowProjection> seatRows,
         LocalDateTime departureTime,
+        LocalDateTime bookedAt,
         String paymentStatus,
         String tripStatus,
         PassengerTicketMajorChangeType majorChangeType
@@ -251,7 +271,7 @@ public class PassengerTicketStaffPolicy {
         List<String> actions = new ArrayList<>();
         long hoursLeft = hoursUntilDeparture(departureTime);
         boolean modifiableWindow = canModify(hoursLeft);
-        boolean cancellableWindow = canCancel(hoursLeft);
+        boolean cancellableWindow = canCancel(hoursLeft) && canCancelByTicketAge(bookedAt);
         boolean paymentCompleted = "COMPLETED".equals(paymentStatus);
         boolean tripScheduled = "SCHEDULED".equals(tripStatus);
         boolean majorChangeAvailable = majorChangeType == null;

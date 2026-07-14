@@ -298,6 +298,7 @@ public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicke
                 first.getTicketStatus(),
                 rows,
                 first.getDepartureTime(),
+                first.getBookedAt(),
                 first.getPaymentStatus(),
                 tripStatus,
                 ticketEntity.getMajorChangeType()

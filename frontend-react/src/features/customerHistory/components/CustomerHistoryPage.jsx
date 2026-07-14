@@ -11,6 +11,7 @@ import '../styles/customerHistory.css';
 import TicketCancellationModal from './TicketCancellationModal';
 
 const CANCELLATION_CUTOFF_MILLISECONDS = 5 * 60 * 60 * 1000;
+const CANCEL_MIN_AGE_MILLISECONDS = 24 * 60 * 60 * 1000;
 
 /**
  * Full customer service-history page backed entirely by authenticated API data.
@@ -33,10 +34,22 @@ export default function CustomerHistoryPage() {
         }
     };
 
-    /** A ticket remains cancellable only until five hours before departure. */
+    /** Cancellable after 24h from booking and until five hours before departure. */
     const canCancel = (booking) => booking.status === 'CONFIRMED'
+        && booking.bookedAt
+        && pageOpenedAt >= new Date(booking.bookedAt).getTime() + CANCEL_MIN_AGE_MILLISECONDS
         && booking.departureTime
         && new Date(booking.departureTime).getTime() > pageOpenedAt + CANCELLATION_CUTOFF_MILLISECONDS;
+
+    const cancelDisabledReason = (booking) => {
+        if (booking.status !== 'CONFIRMED') {
+            return 'Chỉ được hủy vé đã xác nhận';
+        }
+        if (!booking.bookedAt || pageOpenedAt < new Date(booking.bookedAt).getTime() + CANCEL_MIN_AGE_MILLISECONDS) {
+            return 'Chỉ được hủy vé sau ít nhất 24 giờ kể từ thời điểm đặt vé';
+        }
+        return 'Chỉ được hủy vé trước giờ xuất bến ít nhất 5 tiếng';
+    };
 
     /** Pending tickets can resume payment while the hold countdown is still active. */
     const canPayNow = (booking) => booking.status === 'PENDING'
@@ -116,7 +129,7 @@ export default function CustomerHistoryPage() {
                                 <button
                                     type="button"
                                     disabled={!canCancel(booking)}
-                                    title={canCancel(booking) ? 'Hủy vé và yêu cầu hoàn tiền' : 'Chỉ được hủy vé trước giờ xuất bến ít nhất 5 tiếng'}
+                                    title={canCancel(booking) ? 'Hủy vé và yêu cầu hoàn tiền' : cancelDisabledReason(booking)}
                                     onClick={(event) => openCancellation(event, booking)}
                                 >
                                     Hủy vé
