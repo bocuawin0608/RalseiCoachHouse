@@ -51,6 +51,7 @@ import lombok.extern.slf4j.Slf4j;
 public class CustomerTicketHistoryServiceImpl implements CustomerTicketHistoryService {
 
     private static final long CANCELLATION_CUTOFF_HOURS = 5;
+    private static final long CANCEL_MIN_AGE_HOURS = 24;
     private static final String CUSTOMER_CANCELLATION_REASON = "Khách hàng hủy vé trước giờ xuất bến";
 
     private final PassengerTicketDetailRepository ticketDetailRepository;
@@ -110,6 +111,12 @@ public class CustomerTicketHistoryServiceImpl implements CustomerTicketHistorySe
         CustomerTicketHistoryResponse ownedTicket = getOwnedTicket(accountId, ticketCode);
         if (!PassengerTicketStatus.CONFIRMED.name().equals(ownedTicket.status())) {
             throw new BusinessRuleException("Chỉ vé đã thanh toán và chưa hủy mới có thể yêu cầu hoàn tiền.");
+        }
+        if (ownedTicket.bookedAt() == null
+            || ownedTicket.bookedAt().plusHours(CANCEL_MIN_AGE_HOURS).isAfter(LocalDateTime.now())) {
+            throw new BusinessRuleException(
+                "Chỉ được hủy vé sau ít nhất " + CANCEL_MIN_AGE_HOURS + " giờ kể từ thời điểm đặt vé."
+            );
         }
         LocalDateTime cancellationDeadline = LocalDateTime.now().plusHours(CANCELLATION_CUTOFF_HOURS);
         if (ownedTicket.departureTime() == null || !ownedTicket.departureTime().isAfter(cancellationDeadline)) {

@@ -91,6 +91,7 @@ public class StaffPassengerTicketCancelServiceImpl implements StaffPassengerTick
             rows,
             first.getPaymentStatus(),
             first.getDepartureTime(),
+            first.getBookedAt(),
             trip.getStatus(),
             ticketEntity.getMajorChangeType()
         );
