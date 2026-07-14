@@ -7,15 +7,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ralsei.dto.request.cargoticket.CargoTicketRequest;
+import com.ralsei.dto.request.cargoticket.CargoTicketWithDetailsRequest;
 import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.dto.response.cargoticket.CargoTicketResponse;
 import com.ralsei.dto.response.cargoticket.CargoTicketFormOptionsResponse;
 import com.ralsei.dto.response.cargoticket.CustomerContactResponse;
+import com.ralsei.dto.response.cargoticketdetail.CargoTicketDetailResponse;
 import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.exception.ResourceNotFoundException;
 import com.ralsei.model.CargoTicket;
+import com.ralsei.model.CargoTicketDetail;
 import com.ralsei.model.Payment;
 import com.ralsei.repository.CargoTicketRepository;
+import com.ralsei.repository.CargoTicketDetailRepository;
 import com.ralsei.repository.CoachStopRepository;
 import com.ralsei.repository.CustomerRepository;
 import com.ralsei.repository.PaymentRepository;
@@ -25,7 +29,11 @@ import com.ralsei.service.CargoTicketService;
 import com.ralsei.service.TransactionIdGenerator;
 import com.ralsei.model.Staff;
 import com.ralsei.dto.request.cargoticket.TripByStopRequest;
+import com.ralsei.dto.request.cargoticketdetail.CargoTicketDetailRequest;
 import com.ralsei.dto.response.cargoticket.TripByStopResponse;
+import com.ralsei.repository.CargoTypePriceRepository;
+import com.ralsei.model.CargoTypePrice;
+import com.ralsei.util.FreightCalculatorUtility;
 
 import lombok.RequiredArgsConstructor;
 import java.math.BigDecimal;
@@ -40,11 +48,13 @@ public class CargoTicketServiceImpl implements CargoTicketService {
     private static final String STATUS_ABANDONED = "ABANDONED";
 
     private final CargoTicketRepository cargoTicketRepository;
+    private final CargoTicketDetailRepository cargoTicketDetailRepository;
     private final TripRepository tripRepository;
     private final CustomerRepository customerRepository;
     private final CoachStopRepository coachStopRepository;
     private final StaffRepository staffRepository;
     private final PaymentRepository paymentRepository;
+    private final CargoTypePriceRepository cargoTypePriceRepository;
     private final TransactionIdGenerator transactionIdGenerator;
 
     @Override
@@ -102,13 +112,169 @@ public class CargoTicketServiceImpl implements CargoTicketService {
 
     @Override
     @Transactional
+    public CargoTicketResponse createCargoTicketWithDetails(CargoTicketWithDetailsRequest request) {
+        // Calculate the prices first to satisfy the Payment DB constraint (> 0)
+        List<CargoTicketDetail> mappedDetails = new java.util.ArrayList<>();
+        BigDecimal preCalculatedTotal = BigDecimal.ZERO;
+
+        for (var d : request.getDetails()) {
+            BigDecimal calcPrice = calculateDetailPrice(d.getCargoTypePriceId(), d.getDimensionVol(), d.getQuantity());
+            preCalculatedTotal = preCalculatedTotal.add(calcPrice);
+
+            mappedDetails.add(CargoTicketDetail.builder()
+                    .cargoTypePriceId(d.getCargoTypePriceId())
+                    .description(d.getDescription())
+                    .quantity(d.getQuantity())
+                    .weightKg(d.getWeightKg())
+                    .dimensionVol(d.getDimensionVol())
+                    .calculatedPrice(calcPrice)
+                    .build());
+        }
+
+        // Pass the pre-calculated total so the Payment row can be inserted successfully
+        request.setTotalPrice(preCalculatedTotal);
+        CargoTicketResponse response = createCargoTicket(request);
+
+        CargoTicket ticket = cargoTicketRepository.findById(response.getCargoTicketId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vé hàng hóa."));
+
+        for (CargoTicketDetail detail : mappedDetails) {
+            detail.setCargoTicket(ticket);
+        }
+
+        cargoTicketDetailRepository.saveAll(mappedDetails);
+
+        // Ensure flushed to DB so updateTicketTotalPrice can read them
+        cargoTicketDetailRepository.flush();
+        updateTicketTotalPrice(ticket);
+
+        return mapToResponse(ticket);
+    }
+
+    @Override
+    public List<CargoTicketDetailResponse> getCargoTicketDetailsByTicketId(int cargoTicketId) {
+        List<CargoTicketDetail> details = cargoTicketDetailRepository.findByCargoTicket_CargoTicketId(cargoTicketId);
+        return details.stream().map(d -> CargoTicketDetailResponse.builder()
+                .cargoTicketDetailId(d.getCargoTicketDetailId())
+                .cargoTicketId(d.getCargoTicket().getCargoTicketId())
+                .cargoTypePriceId(d.getCargoTypePriceId())
+                .description(d.getDescription())
+                .quantity(d.getQuantity())
+                .weightKg(d.getWeightKg())
+                .dimensionVol(d.getDimensionVol())
+                .calculatedPrice(d.getCalculatedPrice())
+                .build()).toList();
+    }
+
+    @Override
+    @Transactional
     public CargoTicketResponse updateCargoTicket(int id, CargoTicketRequest request) {
         CargoTicket ticket = findByIdOrThrow(id);
         String ticketCode = ticket.getTicketCode();
         validateReferences(request);
 
         copyRequest(request, ticket, ticketCode);
-        return mapToResponse(cargoTicketRepository.save(ticket));
+        CargoTicket savedTicket = cargoTicketRepository.save(ticket);
+
+        Payment payment = paymentRepository.findByCargoTicket_CargoTicketId(savedTicket.getCargoTicketId())
+                .orElse(null);
+        if (payment != null && request.getPaymentMethod() != null) {
+            payment.setPaymentMethod(request.getPaymentMethod());
+            paymentRepository.save(payment);
+        } else if (payment == null && request.getPaymentMethod() != null) {
+            payment = Payment.builder()
+                    .cargoTicket(savedTicket)
+                    .amount(savedTicket.getTotalPrice())
+                    .paymentMethod(request.getPaymentMethod())
+                    .transactionId(transactionIdGenerator.generateUniqueTransactionId())
+                    .status("PENDING")
+                    .refundAmount(BigDecimal.ZERO)
+                    .build();
+            paymentRepository.save(payment);
+        }
+
+        return mapToResponse(savedTicket);
+    }
+
+    @Override
+    @Transactional
+    public CargoTicketDetailResponse createCargoTicketDetail(int ticketId, CargoTicketDetailRequest request) {
+        CargoTicket ticket = cargoTicketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vé hàng hóa."));
+
+        BigDecimal calcPrice = calculateDetailPrice(request.getCargoTypePriceId(), request.getDimensionVol(),
+                request.getQuantity());
+
+        CargoTicketDetail detail = CargoTicketDetail.builder()
+                .cargoTicket(ticket)
+                .cargoTypePriceId(request.getCargoTypePriceId())
+                .description(request.getDescription())
+                .quantity(request.getQuantity())
+                .weightKg(request.getWeightKg())
+                .dimensionVol(request.getDimensionVol())
+                .calculatedPrice(calcPrice)
+                .build();
+
+        CargoTicketDetail saved = cargoTicketDetailRepository.save(detail);
+
+        cargoTicketDetailRepository.flush();
+        updateTicketTotalPrice(ticket);
+
+        return CargoTicketDetailResponse.builder()
+                .cargoTicketDetailId(saved.getCargoTicketDetailId())
+                .cargoTicketId(saved.getCargoTicket().getCargoTicketId())
+                .cargoTypePriceId(saved.getCargoTypePriceId())
+                .description(saved.getDescription())
+                .quantity(saved.getQuantity())
+                .weightKg(saved.getWeightKg())
+                .dimensionVol(saved.getDimensionVol())
+                .calculatedPrice(saved.getCalculatedPrice())
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public CargoTicketDetailResponse updateCargoTicketDetail(int detailId, CargoTicketDetailRequest request) {
+        CargoTicketDetail detail = cargoTicketDetailRepository.findById(detailId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chi tiết vé hàng hóa."));
+
+        BigDecimal calcPrice = calculateDetailPrice(request.getCargoTypePriceId(), request.getDimensionVol(),
+                request.getQuantity());
+
+        detail.setCargoTypePriceId(request.getCargoTypePriceId());
+        detail.setDescription(request.getDescription());
+        detail.setQuantity(request.getQuantity());
+        detail.setWeightKg(request.getWeightKg());
+        detail.setDimensionVol(request.getDimensionVol());
+        detail.setCalculatedPrice(calcPrice);
+
+        CargoTicketDetail saved = cargoTicketDetailRepository.save(detail);
+
+        cargoTicketDetailRepository.flush();
+        updateTicketTotalPrice(detail.getCargoTicket());
+
+        return CargoTicketDetailResponse.builder()
+                .cargoTicketDetailId(saved.getCargoTicketDetailId())
+                .cargoTicketId(saved.getCargoTicket().getCargoTicketId())
+                .cargoTypePriceId(saved.getCargoTypePriceId())
+                .description(saved.getDescription())
+                .quantity(saved.getQuantity())
+                .weightKg(saved.getWeightKg())
+                .dimensionVol(saved.getDimensionVol())
+                .calculatedPrice(saved.getCalculatedPrice())
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public void deleteCargoTicketDetail(int detailId) {
+        CargoTicketDetail detail = cargoTicketDetailRepository.findById(detailId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chi tiết vé hàng hóa."));
+        CargoTicket ticket = detail.getCargoTicket();
+        cargoTicketDetailRepository.delete(detail);
+
+        cargoTicketDetailRepository.flush();
+        updateTicketTotalPrice(ticket);
     }
 
     @Override
@@ -165,6 +331,30 @@ public class CargoTicketServiceImpl implements CargoTicketService {
                         .status(t.getStatus())
                         .build())
                 .toList();
+    }
+
+    private BigDecimal calculateDetailPrice(int cargoTypePriceId, BigDecimal dimensionVol, int quantity) {
+        CargoTypePrice price = cargoTypePriceRepository.findById(cargoTypePriceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn giá cước hàng hóa."));
+        BigDecimal unitPrice = FreightCalculatorUtility.calculatePriceWithSurcharge(dimensionVol,
+                price.getPricePerUnit());
+        return unitPrice.multiply(BigDecimal.valueOf(quantity));
+    }
+
+    private void updateTicketTotalPrice(CargoTicket ticket) {
+        List<CargoTicketDetail> details = cargoTicketDetailRepository
+                .findByCargoTicket_CargoTicketId(ticket.getCargoTicketId());
+        BigDecimal total = details.stream()
+                .map(CargoTicketDetail::getCalculatedPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        ticket.setTotalPrice(total);
+        cargoTicketRepository.save(ticket);
+
+        Payment payment = paymentRepository.findByCargoTicket_CargoTicketId(ticket.getCargoTicketId()).orElse(null);
+        if (payment != null) {
+            payment.setAmount(total);
+            paymentRepository.save(payment);
+        }
     }
 
     private void validateReferences(CargoTicketRequest request) {

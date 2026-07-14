@@ -20,9 +20,24 @@ export default function CargoLookupPage() {
         return () => { active = false; };
     }, []);
 
+    const handleDisable = async (order) => {
+        if (!window.confirm(`Bạn có chắc muốn hủy đơn hàng ${order.ticketCode}?`)) return;
+        try {
+            await cargoLookupApi.disableCargoOrder(order.cargoTicketId);
+            window.alert('Hủy đơn hàng thành công.');
+            setSelectedOrder(null);
+            
+            // Refetch history
+            const orders = await cargoLookupApi.getHistory();
+            setState({ orders, loading: false, error: '' });
+        } catch (err) {
+            window.alert(err.response?.data?.message || 'Hủy đơn hàng thất bại.');
+        }
+    };
+
     if (selectedOrder) return (
         <main className="cargo-history-page">
-            <CargoOrderDetail order={selectedOrder} onBack={() => setSelectedOrder(null)} onOpenRoute={() => setRouteOrder(selectedOrder)} />
+            <CargoOrderDetail order={selectedOrder} onBack={() => setSelectedOrder(null)} onOpenRoute={() => setRouteOrder(selectedOrder)} onDisable={handleDisable} />
             {routeOrder && <CargoRouteModal order={routeOrder} onClose={() => setRouteOrder(null)} />}
         </main>
     );
