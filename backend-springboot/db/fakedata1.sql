@@ -1,13 +1,3 @@
--- fakedata1.sql
--- Aligned with current ddl.sql + Spring Boot business rules:
---   * Corridor: Hà Nội <-> Quảng Trị (physical stops in former Quảng Bình geography)
---   * Each coach_stop has exactly one ticket_agency
---   * Customer accounts: authProvider=firebase, passwordHash=NULL, firebaseUid set
---   * Staff accounts: authProvider=local + bcrypt password
---   * Cargo pricing matches FreightCalculatorUtility (volume base + type surcharge)
---   * Passenger/cargo itineraries respect route_stop order on the trip's route
---   * Address format: at least two comma-separated segments; city = letters/spaces only
-
 USE VeXeDB;
 GO
 
@@ -91,14 +81,14 @@ INSERT INTO [coach_stop] (stopPointName, address, city, surcharge, isActive, lat
 (N'Bến Xe Nước Ngầm',           N'Số 1 Ngọc Hồi, Hoàng Mai',                      N'Hà Nội',     0.00,      1, 20.9399174370000000, 105.8442251250000000),
 (N'Bến Xe Giáp Bát',            N'Số 6 Giải Phóng, Hoàng Mai',                    N'Hà Nội',     0.00,      1, 20.9782000000000000, 105.8411000000000000),
 (N'Bến Xe Mỹ Đình',             N'Số 20 Phạm Hùng, Nam Từ Liêm',                  N'Hà Nội',     0.00,      1, 21.0285000000000000, 105.7782000000000000),
-(N'Sảnh T1+T2 - Sân bay Nội Bài', N'Sảnh E, Nhà ga T1, Sóc Sơn',                  N'Hà Nội',     100000.00, 1, 21.2149337000000000, 105.8007099000000000),
-(N'Văn phòng Cầu Giấy',         N'Số 125 Xuân Thủy, Cầu Giấy',                    N'Hà Nội',     30000.00,  1, 21.0368000000000000, 105.7825000000000000),
+(N'Sảnh T1+T2 - Sân bay Nội Bài', N'Sảnh E, Nhà ga T1, Sóc Sơn',                  N'Hà Nội',     100000.00,	1, 21.2149337000000000, 105.8007099000000000),
+(N'Văn phòng Cầu Giấy',         N'Số 125 Xuân Thủy, Cầu Giấy',                    N'Hà Nội',     0.00,		1, 21.0368000000000000, 105.7825000000000000),
 -- Quảng Trị (physical boundary = former Quảng Bình)
 (N'Trạm Dừng Ba Đồn',           N'Phường Ba Đồn, Thị xã Ba Đồn',                  N'Quảng Trị',  0.00,      1, 17.7546377497501000, 106.4233121072500000),
 (N'Trạm Dừng Quảng Ninh',       N'Thị trấn Hoàn Lão, Huyện Quảng Ninh',           N'Quảng Trị',  0.00,      1, 17.6485000000000000, 106.5082000000000000),
 (N'Văn Phòng Đồng Hới',         N'Số 58 Trần Hưng Đạo, Đồng Hới',                 N'Quảng Trị',  0.00,      1, 17.4691879169492000, 106.6104383894200000),
 (N'Bến Xe Đồng Hới',            N'Số 95 Lý Thường Kiệt, Đồng Hới',                N'Quảng Trị',  0.00,      1, 17.4682000000000000, 106.6221000000000000),
-(N'Trạm Dừng Phong Nha',        N'Thị trấn Phong Nha, Huyện Bố Trạch',            N'Quảng Trị',  20000.00,  1, 17.5904000000000000, 106.2831000000000000),
+(N'Trạm Dừng Phong Nha',        N'Thị trấn Phong Nha, Huyện Bố Trạch',            N'Quảng Trị',  0.00,		1, 17.5904000000000000, 106.2831000000000000),
 (N'Trạm Dừng Lệ Thủy',          N'Quốc Lộ 1A, Huyện Lệ Thủy',                     N'Quảng Trị',  0.00,      1, 17.2425945873282000, 106.8147884762850000),
 (N'Văn phòng Kiến Giang',       N'Thị trấn Kiến Giang, Huyện Lệ Thủy',            N'Quảng Trị',  0.00,      1, 17.2231000000000000, 106.7915000000000000);
 
