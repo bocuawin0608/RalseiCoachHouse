@@ -3,6 +3,7 @@ import { BsCheckCircle, BsExclamationTriangleFill } from 'react-icons/bs';
 import { useMemo, useState, useEffect } from 'react';
 import { useCargoTicketFormOptions } from '../hooks/useCargoTicketFormOptions';
 import { useAuth } from '../../auth/context/AuthContext';
+import { routeApi } from '../../routes/api/routeApi';
 import PhoneAutocomplete from './PhoneAutocomplete';
 import CargoTicketDetailSection from './CargoTicketDetailSection';
 
@@ -26,10 +27,17 @@ export default function CargoTicketForm({ initialData, onSubmit, submitLabel = '
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const { user } = useAuth();
-    const { trips, customers, stops, sellers, loading: optionsLoading, error: optionsError } = useCargoTicketFormOptions(
+    const { trips, customers, stops, sellers, routes, loading: optionsLoading, error: optionsError } = useCargoTicketFormOptions(
         formData.pickupStopId,
         formData.dropoffStopId
     );
+    const [selectedRouteId, setSelectedRouteId] = useState('');
+    const [routeDetail, setRouteDetail] = useState(null);
+
+    useEffect(() => {
+        if (!selectedRouteId) { setRouteDetail(null); return; }
+        routeApi.getRouteDetail(selectedRouteId).then(r => setRouteDetail(r)).catch(() => setRouteDetail(null));
+    }, [selectedRouteId]);
 
     useEffect(() => {
         if (sellers?.length > 0 && user?.username && !formData.soldBy && !initialData?.cargoTicketId) {
@@ -39,18 +47,42 @@ export default function CargoTicketForm({ initialData, onSubmit, submitLabel = '
             }
         }
     }, [sellers, user, formData.soldBy, initialData]);
+
     const eligibleTrips = useMemo(
         () => filterTripsForSelectedStops(trips, stops, formData.pickupStopId, formData.dropoffStopId),
         [trips, stops, formData.pickupStopId, formData.dropoffStopId]
     );
-    const pickupStopOptions = useMemo(
-        () => excludeSelectedStop(stops, formData.dropoffStopId),
-        [stops, formData.dropoffStopId]
-    );
-    const dropoffStopOptions = useMemo(
-        () => excludeSelectedStop(stops, formData.pickupStopId),
-        [stops, formData.pickupStopId]
-    );
+
+    const stopsForRoute = useMemo(() => {
+        if (!selectedRouteId || !routeDetail?.routeStops?.length) return [];
+        return routeDetail.routeStops.map(rs => ({
+            stopPointId: rs.stopPointId,
+            stopPointName: rs.stopPointName,
+            city: rs.city,
+            stopOrder: rs.stopOrder,
+        })).sort((a, b) => a.stopOrder - b.stopOrder);
+    }, [selectedRouteId, routeDetail]);
+
+    // Derive origin/destination from the FIRST and LAST unique city in stop order
+    // e.g. "Hà Nội - Quảng Bình": first stops city = "Hà Nội", last stops city = "Quảng Bình"
+    const { originCity, destinationCity } = useMemo(() => {
+        const uniqueCities = [];
+        for (const s of stopsForRoute) {
+            if (s.city && !uniqueCities.includes(s.city)) uniqueCities.push(s.city);
+        }
+        if (uniqueCities.length < 2) return { originCity: null, destinationCity: null };
+        return { originCity: uniqueCities[0], destinationCity: uniqueCities[uniqueCities.length - 1] };
+    }, [stopsForRoute]);
+
+    const pickupStopOptions = useMemo(() => {
+        const base = originCity ? stopsForRoute.filter(s => s.city === originCity) : stopsForRoute;
+        return excludeSelectedStop(base, formData.dropoffStopId);
+    }, [stopsForRoute, originCity, formData.dropoffStopId]);
+
+    const dropoffStopOptions = useMemo(() => {
+        const base = destinationCity ? stopsForRoute.filter(s => s.city === destinationCity) : stopsForRoute;
+        return excludeSelectedStop(base, formData.pickupStopId);
+    }, [stopsForRoute, destinationCity, formData.pickupStopId]);
 
     const handleChange = (event) => {
         const { name, value } = event.target;
@@ -59,6 +91,12 @@ export default function CargoTicketForm({ initialData, onSubmit, submitLabel = '
             [name]: value,
             ...((name === 'pickupStopId' || name === 'dropoffStopId') ? { tripId: '' } : {})
         }));
+        setError('');
+    };
+
+    const handleRouteChange = (event) => {
+        setSelectedRouteId(event.target.value);
+        setFormData((previous) => ({ ...previous, pickupStopId: '', dropoffStopId: '', tripId: '' }));
         setError('');
     };
 
@@ -129,8 +167,9 @@ export default function CargoTicketForm({ initialData, onSubmit, submitLabel = '
                 <Card.Header className="bg-white py-3"><h5 className="fw-bold mb-0">Thông tin vé và hành trình</h5></Card.Header>
                 <Card.Body className="p-4">
                     <Row className="g-3">
-                        <Col md={4}><Dropdown label="Điểm nhận" name="pickupStopId" value={formData.pickupStopId} onChange={handleChange} loading={optionsLoading} options={pickupStopOptions} optionValue="stopPointId" renderOption={(item) => item.stopPointName} required /></Col>
-                        <Col md={4}><Dropdown label="Điểm trả" name="dropoffStopId" value={formData.dropoffStopId} onChange={handleChange} loading={optionsLoading} options={dropoffStopOptions} optionValue="stopPointId" renderOption={(item) => item.stopPointName} required /></Col>
+                        <Col md={4}><Dropdown label="Tuyến đường" name="routeId" value={selectedRouteId} onChange={handleRouteChange} loading={optionsLoading} options={routes} optionValue="routeId" renderOption={(item) => item.routeName} emptyLabel="-- Tất cả tuyến --" /></Col>
+                        <Col md={4}><Dropdown label="Điểm nhận" name="pickupStopId" value={formData.pickupStopId} onChange={handleChange} loading={optionsLoading} options={pickupStopOptions} optionValue="stopPointId" renderOption={(item) => `${item.stopPointName} (${item.city})`} required disabled={!selectedRouteId} emptyLabel="-- Chọn tuyến trước --" /></Col>
+                        <Col md={4}><Dropdown label="Điểm trả" name="dropoffStopId" value={formData.dropoffStopId} onChange={handleChange} loading={optionsLoading} options={dropoffStopOptions} optionValue="stopPointId" renderOption={(item) => `${item.stopPointName} (${item.city})`} required disabled={!selectedRouteId} emptyLabel="-- Chọn tuyến trước --" /></Col>
                         <Col md={8}><Dropdown label="Chuyến đi phù hợp" name="tripId" value={formData.tripId ?? ''} onChange={handleChange} loading={optionsLoading} options={eligibleTrips} optionValue="tripId" renderOption={tripLabel} disabled={!formData.pickupStopId || !formData.dropoffStopId} /></Col>
                         <Col md={4}>
                             <Form.Group><Form.Label className="fw-semibold">Trạng thái *</Form.Label><Form.Select name="status" value={formData.status} onChange={handleChange} required>

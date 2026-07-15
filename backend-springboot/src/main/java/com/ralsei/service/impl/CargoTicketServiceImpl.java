@@ -23,6 +23,7 @@ import com.ralsei.repository.CargoTicketDetailRepository;
 import com.ralsei.repository.CoachStopRepository;
 import com.ralsei.repository.CustomerRepository;
 import com.ralsei.repository.PaymentRepository;
+import com.ralsei.repository.RouteRepository;
 import com.ralsei.repository.StaffRepository;
 import com.ralsei.repository.TripRepository;
 import com.ralsei.service.CargoTicketService;
@@ -31,6 +32,7 @@ import com.ralsei.model.Staff;
 import com.ralsei.dto.request.cargoticket.TripByStopRequest;
 import com.ralsei.dto.request.cargoticketdetail.CargoTicketDetailRequest;
 import com.ralsei.dto.response.cargoticket.TripByStopResponse;
+import com.ralsei.dto.response.CoachAndRouteStop.RouteDropdownDTO;
 import com.ralsei.repository.CargoTypePriceRepository;
 import com.ralsei.model.CargoTypePrice;
 import com.ralsei.util.FreightCalculatorUtility;
@@ -56,6 +58,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
     private final PaymentRepository paymentRepository;
     private final CargoTypePriceRepository cargoTypePriceRepository;
     private final TransactionIdGenerator transactionIdGenerator;
+    private final RouteRepository routeRepository;
 
     @Override
     public PagedResponse<CargoTicketResponse> getAllCargoTickets(int page, int size) {
@@ -71,6 +74,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
     @Override
     public CargoTicketFormOptionsResponse getFormOptions(Integer pickupStopId, Integer dropoffStopId) {
         return CargoTicketFormOptionsResponse.builder()
+                .routes(routeRepository.findRoutesForDropdown())
                 .trips(pickupStopId != null && dropoffStopId != null && !pickupStopId.equals(dropoffStopId)
                         ? tripRepository.findCargoTicketTripOptions(pickupStopId, dropoffStopId)
                         : List.of())
