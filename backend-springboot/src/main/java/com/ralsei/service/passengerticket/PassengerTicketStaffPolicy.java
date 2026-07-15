@@ -183,10 +183,8 @@ public class PassengerTicketStaffPolicy {
             throw new BusinessRuleException("Chỉ được chuyển sang chuyến đang lên lịch.");
         }
 
-        if (!canModify(hoursUntilDeparture(newTripDepartureTime))) {
-            throw new BusinessRuleException(
-                "Chuyến mới phải khởi hành sau ít nhất " + CHANGE_CUTOFF_HOURS + " giờ nữa."
-            );
+        if (newTripDepartureTime == null || !newTripDepartureTime.isAfter(LocalDateTime.now())) {
+            throw new BusinessRuleException("Chuyến mới phải chưa khởi hành.");
         }
 
         if (availableSeats < requiredSeats) {

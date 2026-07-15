@@ -302,7 +302,7 @@ public class StaffPassengerTicketChangeServiceImpl implements StaffPassengerTick
 
         LocalDateTime dayStart = departureDate.atStartOfDay();
         LocalDateTime dayEnd = departureDate.atTime(23, 59, 59, 999_000_000);
-        LocalDateTime minDepartureTime = LocalDateTime.now().plusHours(3);
+        LocalDateTime minDepartureTime = LocalDateTime.now();
 
         return tripRepository.findStaffTransferCandidates(
             routeId,
