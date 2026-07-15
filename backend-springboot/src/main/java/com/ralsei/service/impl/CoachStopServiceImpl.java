@@ -21,12 +21,22 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the coach stop service impl component for the application.
+ */
 public class CoachStopServiceImpl implements CoachStopService {
 
     private final CoachStopRepository coachStopRepository;
 
     @Override
     @Transactional
+    /**
+     * Creates the coach stop.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the created coach stop
+     */
     public CoachStopResponse createCoachStop(CoachStopRequest request) {
         if (coachStopRepository.existsByAddressIgnoreCaseAndCityIgnoreCase(request.getAddress().trim(),
                 request.getCity().trim())) {
@@ -48,6 +58,14 @@ public class CoachStopServiceImpl implements CoachStopService {
 
     @Override
     @Transactional
+    /**
+     * Updates the coach stop.
+     *
+     * @param id the value supplied for this operation
+     * @param request the value supplied for this operation
+     *
+     * @return the updated coach stop
+     */
     public CoachStopResponse updateCoachStop(int id, CoachStopRequest request) {
         CoachStop coachStop = coachStopRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("CoachStop not found with ID: " + id));
@@ -73,6 +91,13 @@ public class CoachStopServiceImpl implements CoachStopService {
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Returns the coach stop by id.
+     *
+     * @param id the value supplied for this operation
+     *
+     * @return the coach stop by id
+     */
     public CoachStopResponse getCoachStopById(int id) {
         CoachStop coachStop = coachStopRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("CoachStop not found with ID: " + id));
@@ -81,6 +106,16 @@ public class CoachStopServiceImpl implements CoachStopService {
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Returns the all coach stops.
+     *
+     * @param search the value supplied for this operation
+     * @param isActive the value supplied for this operation
+     * @param page the value supplied for this operation
+     * @param size the value supplied for this operation
+     *
+     * @return the all coach stops
+     */
     public PagedResponse<CoachStopResponse> getAllCoachStops(String search, Boolean isActive, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("stopPointId").descending());
         String safeSearch = search != null ? search.trim() : null;
@@ -101,6 +136,11 @@ public class CoachStopServiceImpl implements CoachStopService {
 
     @Override
     @Transactional
+    /**
+     * Executes the soft delete coach stop operation.
+     *
+     * @param id the value supplied for this operation
+     */
     public void softDeleteCoachStop(int id) {
         CoachStop coachStop = coachStopRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("CoachStop not found with ID: " + id));
@@ -113,6 +153,11 @@ public class CoachStopServiceImpl implements CoachStopService {
 
     @Override
     @Transactional
+    /**
+     * Executes the restore coach stop operation.
+     *
+     * @param id the value supplied for this operation
+     */
     public void restoreCoachStop(int id) {
         CoachStop coachStop = coachStopRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("CoachStop not found with ID: " + id));

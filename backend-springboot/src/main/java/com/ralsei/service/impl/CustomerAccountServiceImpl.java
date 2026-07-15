@@ -31,6 +31,9 @@ import lombok.RequiredArgsConstructor;
  */
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the customer account service impl component for the application.
+ */
 public class CustomerAccountServiceImpl implements CustomerAccountService {
 
     private final AccountRepository accountRepository;
@@ -54,6 +57,13 @@ public class CustomerAccountServiceImpl implements CustomerAccountService {
      */
     @Override
     @Transactional
+    /**
+     * Updates the current profile.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the updated current profile
+     */
     public CustomerProfileResponse updateCurrentProfile(CustomerProfileUpdateRequest request) {
         AccountProjection account = findCurrentAccountProjection();
         Customer customer = findActiveCustomer(account.getAccountId());
@@ -78,6 +88,11 @@ public class CustomerAccountServiceImpl implements CustomerAccountService {
      */
     @Override
     @Transactional
+    /**
+     * Executes the deactivate current account operation.
+     *
+     * @return the operation result
+     */
     public CustomerAccountActionResponse deactivateCurrentAccount() {
         AccountProjection projection = findCurrentAccountProjection();
         Customer customer = findActiveCustomer(projection.getAccountId());

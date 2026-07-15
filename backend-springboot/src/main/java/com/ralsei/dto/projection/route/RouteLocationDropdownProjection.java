@@ -5,6 +5,9 @@ package com.ralsei.dto.projection.route;
  * This projection is intentionally separate from {@code RouteDropdownDTO},
  * whose established two-field contract is shared by existing consumers.
  */
+/**
+ * Projects the route location dropdow data shape for query results.
+ */
 public interface RouteLocationDropdownProjection {
 
     /** Identifies the route serving this location. */

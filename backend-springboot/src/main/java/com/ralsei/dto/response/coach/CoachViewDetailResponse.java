@@ -4,6 +4,9 @@ import java.util.List;
 
 import com.ralsei.model.enums.CoachStatus;
 
+/**
+ * Represents the response payload for coach view detail operations.
+ */
 public record CoachViewDetailResponse(
     Integer coachId,
     String routeName,

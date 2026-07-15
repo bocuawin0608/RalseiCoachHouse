@@ -11,6 +11,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Represents the request payload for calculate route distances operations.
+ */
 public class CalculateRouteDistancesRequest {
     @NotNull(message = "Route ID is required")
     @Min(value = 1, message = "Route ID must be greater than 0")

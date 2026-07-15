@@ -5,6 +5,9 @@ import java.time.LocalDateTime;
 /**
  * Read-only customer view of one ordered stop on a concrete trip route.
  */
+/**
+ * Projects the trip sto data shape for query results.
+ */
 public interface TripStopProjection {
 
     Integer getTripId();

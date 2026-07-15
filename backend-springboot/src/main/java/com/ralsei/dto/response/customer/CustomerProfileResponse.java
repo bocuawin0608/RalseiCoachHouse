@@ -8,6 +8,9 @@ import java.util.List;
  * Account and provider fields are read-only so the UI can explain which
  * authentication method owns sensitive credential changes.
  */
+/**
+ * Represents the response payload for customer profile operations.
+ */
 public record CustomerProfileResponse(
     Integer customerId,
     Integer accountId,

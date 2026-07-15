@@ -16,6 +16,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+/**
+ * Represents the request payload for payment checkout operations.
+ */
 public class PaymentCheckoutRequest {
     private Integer passengerTicketId;
     private Integer cargoTicketId;
@@ -29,6 +32,11 @@ public class PaymentCheckoutRequest {
     private String paymentMethod;
 
     @AssertTrue(message = "Payment must target exactly one ticket type")
+    /**
+     * Returns whether the single payment target is active.
+     *
+     * @return {@code true} if the single payment target is active; otherwise {@code false}
+     */
     public boolean isSinglePaymentTarget() {
         return (passengerTicketId != null && cargoTicketId == null)
                 || (passengerTicketId == null && cargoTicketId != null);

@@ -8,6 +8,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.ralsei.model.CoachStatusLog;
 
+/**
+ * Provides persistence access for coach status log data.
+ */
 public interface CoachStatusLogRepository extends JpaRepository<CoachStatusLog, Integer> {
 
     Page<CoachStatusLog> findByCoach_CoachIdOrderByCreatedAtDesc(Integer coachId, Pageable pageable);

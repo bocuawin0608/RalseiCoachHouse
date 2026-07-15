@@ -35,6 +35,9 @@ import lombok.RequiredArgsConstructor;
 @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
 @RequiredArgsConstructor
 @Validated
+/**
+ * Handles HTTP requests for staff refund operations.
+ */
 public class StaffRefundController {
 
     private final StaffRefundService staffRefundService;

@@ -4,6 +4,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Represents the response payload for staff passenger ticket detail operations.
+ */
 public record StaffPassengerTicketDetailResponse(
     Integer passengerTicketId,
     String ticketCode,
@@ -34,6 +37,9 @@ public record StaffPassengerTicketDetailResponse(
     String majorChangeType,
     LocalDateTime refundPolicyDepartureTime
 ) {
+    /**
+     * Provides the seat item component for the application.
+     */
     public record SeatItem(
         Integer ticketDetailId,
         Integer tripSeatId,
@@ -47,6 +53,9 @@ public record StaffPassengerTicketDetailResponse(
         Integer childBirthYear
     ) {}
 
+    /**
+     * Provides the refund item component for the application.
+     */
     public record RefundItem(
         Integer refundId,
         BigDecimal amount,

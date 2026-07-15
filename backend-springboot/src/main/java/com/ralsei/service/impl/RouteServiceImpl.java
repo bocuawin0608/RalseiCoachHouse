@@ -38,6 +38,9 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the route service impl component for the application.
+ */
 public class RouteServiceImpl implements RouteService {
 
     private final RouteRepository routeRepository;
@@ -46,6 +49,13 @@ public class RouteServiceImpl implements RouteService {
 
     @Override
     @Transactional
+    /**
+     * Creates the route.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the created route
+     */
     public RouteResponse createRoute(RouteRequest request) {
         Route route = Route.builder()
                 .routeName(request.getRouteName())
@@ -60,6 +70,13 @@ public class RouteServiceImpl implements RouteService {
 
     @Override
     @Transactional
+    /**
+     * Creates the route with stops.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the created route with stops
+     */
     public RouteWithStopsResponse createRouteWithStops(RouteWithStopsRequest request) {
         Route route = Route.builder()
                 .routeName(request.getRouteName())
@@ -113,6 +130,14 @@ public class RouteServiceImpl implements RouteService {
 
     @Override
     @Transactional
+    /**
+     * Updates the route.
+     *
+     * @param id the value supplied for this operation
+     * @param request the value supplied for this operation
+     *
+     * @return the updated route
+     */
     public RouteResponse updateRoute(int id, RouteRequest request) {
         Route route = routeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Route not found with ID: " + id));
@@ -127,6 +152,13 @@ public class RouteServiceImpl implements RouteService {
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Returns the route by id.
+     *
+     * @param id the value supplied for this operation
+     *
+     * @return the route by id
+     */
     public RouteResponse getRouteById(int id) {
         Route route = routeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Route not found with ID: " + id));
@@ -135,6 +167,16 @@ public class RouteServiceImpl implements RouteService {
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Returns the all routes.
+     *
+     * @param search the value supplied for this operation
+     * @param isActive the value supplied for this operation
+     * @param page the value supplied for this operation
+     * @param size the value supplied for this operation
+     *
+     * @return the all routes
+     */
     public PagedResponse<RouteResponse> getAllRoutes(String search, Boolean isActive, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("routeId").descending());
         String safeSearch = search != null ? search.trim() : null;
@@ -155,6 +197,11 @@ public class RouteServiceImpl implements RouteService {
 
     @Override
     @Transactional
+    /**
+     * Executes the soft delete route operation.
+     *
+     * @param id the value supplied for this operation
+     */
     public void softDeleteRoute(int id) {
         Route route = routeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Route not found with ID: " + id));
@@ -166,6 +213,11 @@ public class RouteServiceImpl implements RouteService {
 
     @Override
     @Transactional
+    /**
+     * Executes the restore route operation.
+     *
+     * @param id the value supplied for this operation
+     */
     public void restoreRoute(int id) {
         Route route = routeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Route not found with ID: " + id));
@@ -242,12 +294,22 @@ public class RouteServiceImpl implements RouteService {
     }
 
     @Override
+    /**
+     * Finds the routes for dropdown.
+     *
+     * @return the matching result
+     */
     public List<RouteDropdownDTO> findRoutesForDropdown() {
         return routeRepository.findRoutesForDropdown();
     }
 
     /** {@inheritDoc} */
     @Override
+    /**
+     * Finds the route locations for customer dropdown.
+     *
+     * @return the matching result
+     */
     public List<RouteLocationDropdownProjection> findRouteLocationsForCustomerDropdown() {
         return routeRepository.findRouteLocationsForCustomerDropdown();
     }

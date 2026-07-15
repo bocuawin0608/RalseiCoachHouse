@@ -8,6 +8,9 @@ import java.util.List;
  * Account and role fields are read-only so the frontend can render context
  * without allowing privilege or operational assignment edits.
  */
+/**
+ * Represents the response payload for staff profile operations.
+ */
 public record StaffProfileResponse(
     Integer staffId,
     Integer accountId,

@@ -13,6 +13,9 @@ import java.time.LocalDateTime;
  * @param transactionId payout reference recorded during confirmation
  * @param refundMethod outbound refund channel used for the payout
  */
+/**
+ * Provides the passenger refund completed email payload component for the application.
+ */
 public record PassengerRefundCompletedEmailPayload(
     PassengerTicketEmailPayload ticket,
     BigDecimal refundAmount,

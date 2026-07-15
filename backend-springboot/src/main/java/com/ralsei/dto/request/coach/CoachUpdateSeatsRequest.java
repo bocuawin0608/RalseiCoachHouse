@@ -12,11 +12,17 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Represents the request payload for coach update seats operations.
+ */
 public record CoachUpdateSeatsRequest(
     @NotEmpty(message = "Danh sách ghế không được để trống.")
     @Valid
     List<SeatToggle> seats
 ) {
+    /**
+     * Provides the seat toggle component for the application.
+     */
     public record SeatToggle(
         @NotNull @Positive Integer seatId,
         @NotNull Boolean isActive,

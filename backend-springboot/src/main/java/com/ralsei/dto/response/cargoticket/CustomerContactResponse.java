@@ -9,6 +9,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+/**
+ * Represents the response payload for customer contact operations.
+ */
 public class CustomerContactResponse {
     private String phone;
     private String name;

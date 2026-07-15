@@ -7,6 +7,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Represents the request payload for customer login operations.
+ */
 public record CustomerLoginRequest(
     @NotBlank(message = "Firebase token không được để trống")
     @Size(max = 4096, message = "Firebase token không hợp lệ.")

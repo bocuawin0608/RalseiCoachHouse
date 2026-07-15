@@ -30,6 +30,9 @@ import lombok.RequiredArgsConstructor;
  */
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the passenger ticket email assembler component for the application.
+ */
 public class PassengerTicketEmailAssembler {
 
     private final PassengerTicketRepository passengerTicketRepository;
@@ -46,6 +49,13 @@ public class PassengerTicketEmailAssembler {
      * @throws ResourceNotFoundException when the ticket or its seat details do not exist
      */
     @Transactional(readOnly = true)
+    /**
+     * Executes the assemble operation.
+     *
+     * @param passengerTicketId the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public PassengerTicketEmailPayload assemble(Integer passengerTicketId) {
         PassengerTicket ticket = passengerTicketRepository.findById(passengerTicketId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vé!"));

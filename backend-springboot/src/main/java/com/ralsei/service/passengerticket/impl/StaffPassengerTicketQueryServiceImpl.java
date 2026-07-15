@@ -38,6 +38,9 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the staff passenger ticket query service impl component for the application.
+ */
 public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicketQueryService {
 
     private static final Pattern TICKET_CODE_PATTERN = Pattern.compile("[A-Za-z0-9_-]{3,64}");
@@ -102,6 +105,13 @@ public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicke
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Returns the detail.
+     *
+     * @param ticketCode the value supplied for this operation
+     *
+     * @return the detail
+     */
     public StaffPassengerTicketDetailResponse getDetail(String ticketCode) {
         if (ticketCode == null || ticketCode.isBlank()) {
             throw new ResourceNotFoundException("Mã vé không hợp lệ.");
@@ -119,6 +129,14 @@ public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicke
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Returns the seat qr image.
+     *
+     * @param ticketCode the value supplied for this operation
+     * @param ticketDetailId the value supplied for this operation
+     *
+     * @return the seat qr image
+     */
     public byte[] getSeatQrImage(String ticketCode, Integer ticketDetailId) {
         String token = ticketDetailRepository.findStaffQrToken(ticketCode, ticketDetailId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy mã QR của ghế."));

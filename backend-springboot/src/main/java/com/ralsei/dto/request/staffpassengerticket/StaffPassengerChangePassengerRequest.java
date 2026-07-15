@@ -7,6 +7,9 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
+/**
+ * Represents the request payload for staff passenger change passenger operations.
+ */
 public record StaffPassengerChangePassengerRequest(
     @NotBlank(message = "Vui lòng nhập họ tên!")
     @Pattern(

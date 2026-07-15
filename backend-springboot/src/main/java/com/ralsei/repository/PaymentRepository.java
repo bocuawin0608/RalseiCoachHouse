@@ -12,6 +12,9 @@ import org.springframework.data.repository.query.Param;
 
 import com.ralsei.model.Payment;
 
+/**
+ * Provides persistence access for payment data.
+ */
 public interface PaymentRepository extends JpaRepository<Payment, Integer> {
     Optional<Payment> findByTransactionIdAndStatus(String transactionId, String status);
 

@@ -37,6 +37,9 @@ import lombok.RequiredArgsConstructor;
 @PreAuthorize("hasRole('TRIP_STAFF')")
 @RequiredArgsConstructor
 @Validated
+/**
+ * Handles HTTP requests for trip staff operations.
+ */
 public class TripStaffController {
 
     private final TripStaffPassengerService tripStaffPassengerService;

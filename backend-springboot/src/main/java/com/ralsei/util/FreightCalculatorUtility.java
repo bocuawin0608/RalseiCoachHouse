@@ -54,6 +54,13 @@ public final class FreightCalculatorUtility {
      * @return freight without intermediate rounding
      * @throws IllegalArgumentException when volume is null or negative
      */
+    /**
+     * Executes the calculate freight operation.
+     *
+     * @param volume the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public static BigDecimal calculateFreight(BigDecimal volume) {
         validateNonNegative(volume, "Volume");
 
@@ -71,6 +78,13 @@ public final class FreightCalculatorUtility {
      * @return base price rounded to whole VND
      * @throws IllegalArgumentException when freight is null or negative
      */
+    /**
+     * Executes the calculate base price operation.
+     *
+     * @param freight the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public static BigDecimal calculateBasePrice(BigDecimal freight) {
         validateNonNegative(freight, "Freight");
 
@@ -83,6 +97,13 @@ public final class FreightCalculatorUtility {
      *
      * @param volume cargo volume ({@code V})
      * @return freight-based base price rounded to whole VND
+     */
+    /**
+     * Executes the calculate base price from volume operation.
+     *
+     * @param volume the value supplied for this operation
+     *
+     * @return the operation result
      */
     public static BigDecimal calculateBasePriceFromVolume(BigDecimal volume) {
         return calculateBasePrice(calculateFreight(volume));

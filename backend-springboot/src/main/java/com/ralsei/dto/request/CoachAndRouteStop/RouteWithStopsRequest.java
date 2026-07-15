@@ -18,6 +18,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Represents the request payload for route with stops operations.
+ */
 public class RouteWithStopsRequest {
     @NotBlank(message = "Route name is required")
     @Size(max = 255, message = "Route name must be less than 255 characters")

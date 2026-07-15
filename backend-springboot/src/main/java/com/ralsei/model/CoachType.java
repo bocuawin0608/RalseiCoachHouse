@@ -25,6 +25,9 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Provides the coach type component for the application.
+ */
 public class CoachType extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

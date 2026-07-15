@@ -44,6 +44,9 @@ import lombok.RequiredArgsConstructor;
  * Implementation of {@link com.ralsei.service.AccountService}.
  */
 
+/**
+ * Provides the account service impl component for the application.
+ */
 public class AccountServiceImpl implements AccountService {
 
     private final AccountRepository accountRepo;
@@ -55,6 +58,14 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Filters the accounts records.
+     *
+     * @param filterRequest the value supplied for this operation
+     * @param pageable the value supplied for this operation
+     *
+     * @return the filtered results
+     */
     public Page<AccountListResponse> filterAccounts(AccountFilterRequest filterRequest, Pageable pageable) {
         List<AccountListProjection> projections = accountRepo.findAllAccountList();
 
@@ -92,6 +103,13 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Returns the account detail.
+     *
+     * @param accountId the value supplied for this operation
+     *
+     * @return the account detail
+     */
     public AccountDetailResponse getAccountDetail(Integer accountId) {
         Account account = accountRepo.findById(accountId)
             .orElseThrow(() -> new ResourceNotFoundException("Tài khoản không tồn tại!"));
@@ -101,6 +119,13 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional
+    /**
+     * Creates the account.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the created account
+     */
     public Integer createAccount(CreateAccountRequest request) {
         if (accountRepo.existsByUsername(request.username())) {
             throw new BusinessRuleException("Tên đăng nhập này đã tồn tại trong hệ thống!");
@@ -155,6 +180,12 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional
+    /**
+     * Updates the account.
+     *
+     * @param accountId the value supplied for this operation
+     * @param request the value supplied for this operation
+     */
     public void updateAccount(Integer accountId, UpdateAccountRequest request) {
         Account account = accountRepo.findById(accountId)
             .orElseThrow(() -> new ResourceNotFoundException("Tài khoản không tồn tại!"));
@@ -191,6 +222,12 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional
+    /**
+     * Executes the assign roles operation.
+     *
+     * @param accountId the value supplied for this operation
+     * @param request the value supplied for this operation
+     */
     public void assignRoles(Integer accountId, AssignRolesRequest request) {
         accountRepo.findById(accountId)
             .orElseThrow(() -> new ResourceNotFoundException("Tài khoản không tồn tại!"));
@@ -236,6 +273,12 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional
+    /**
+     * Executes the reset password operation.
+     *
+     * @param accountId the value supplied for this operation
+     * @param request the value supplied for this operation
+     */
     public void resetPassword(Integer accountId, ResetPasswordRequest request) {
         Account account = accountRepo.findById(accountId)
             .orElseThrow(() -> new ResourceNotFoundException("Tài khoản không tồn tại!"));
@@ -246,6 +289,11 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional
+    /**
+     * Executes the toggle active operation.
+     *
+     * @param accountId the value supplied for this operation
+     */
     public void toggleActive(Integer accountId) {
         Account account = accountRepo.findById(accountId)
             .orElseThrow(() -> new ResourceNotFoundException("Tài khoản không tồn tại!"));
@@ -291,6 +339,11 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional
+    /**
+     * Deletes the account.
+     *
+     * @param accountId the value supplied for this operation
+     */
     public void deleteAccount(Integer accountId) {
         Account account = accountRepo.findById(accountId)
             .orElseThrow(() -> new ResourceNotFoundException("Tài khoản không tồn tại!"));

@@ -5,6 +5,9 @@ import java.util.regex.Pattern;
 import lombok.experimental.UtilityClass;
 @UtilityClass
 //WORK IN PROGRESS 
+/**
+ * Provides utility helpers for format handler uti processing.
+ */
 public class FormatHandlerUtility {
     /**
      * Định dạng lại chuỗi đầu vào: loại bỏ khoảng trắng thừa, chuẩn hóa chữ hoa chữ thường, và đảm bảo dấu gạch ngang có khoảng trắng xung quanh
@@ -17,6 +20,13 @@ public class FormatHandlerUtility {
     private static final Pattern MULTIPLE_SPACES_PATTERN = Pattern.compile("\\s+");
     private static final Pattern HYPHEN_SPACES_PATTERN = Pattern.compile("\\s*-\\s*");
 
+    /**
+     * Executes the format province name operation.
+     *
+     * @param input the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public static String formatProvinceName(String input) {
         if (input == null || input.isBlank()) {
             return "";

@@ -27,6 +27,9 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/v1/manager/cargo-types")
 @RequiredArgsConstructor
 @Validated
+/**
+ * Handles HTTP requests for cargo type operations.
+ */
 public class CargoTypeController {
 
     private final CargoTypeService cargoTypeService;
@@ -53,6 +56,13 @@ public class CargoTypeController {
      * Creates the staff-managed cargo type and its surcharge row together.
      */
     @PostMapping()
+    /**
+     * Creates the cargo type.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the created cargo type
+     */
     public ResponseEntity<CargoTypeResponse> createCargoType(@Valid @RequestBody CargoTypeManagementRequest request) {
         CargoTypeResponse response = cargoTypeService.createCargoTypeManagement(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);

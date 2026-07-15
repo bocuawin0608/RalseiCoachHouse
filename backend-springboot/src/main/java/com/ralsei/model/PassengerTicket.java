@@ -27,6 +27,9 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Provides the passenger ticket component for the application.
+ */
 public class PassengerTicket extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

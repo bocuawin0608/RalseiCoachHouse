@@ -11,6 +11,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Represents the response payload for route stop operations.
+ */
 public class RouteStopResponse {
     private int routeStopId;
     private int routeId;

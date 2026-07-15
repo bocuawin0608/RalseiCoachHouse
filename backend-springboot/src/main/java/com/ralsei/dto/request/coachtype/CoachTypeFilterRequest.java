@@ -7,6 +7,9 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Represents the request payload for coach type filter operations.
+ */
 public record CoachTypeFilterRequest(
     @Size(max = 100, message = "Tên sơ đồ tìm kiếm không được vượt quá 100 ký tự.")
     String coachTypeName,

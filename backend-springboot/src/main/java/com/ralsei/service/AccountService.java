@@ -18,6 +18,9 @@ import com.ralsei.dto.response.account.RoleResponse;
  * Service interface for account management operations.
  */
 
+/**
+ * Provides the business service contract for account.
+ */
 public interface AccountService {
     Page<AccountListResponse> filterAccounts(AccountFilterRequest filterRequest, Pageable pageable);
     AccountDetailResponse getAccountDetail(Integer accountId);

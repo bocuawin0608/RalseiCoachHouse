@@ -10,6 +10,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ralsei.model.Account;
 import com.ralsei.model.RefreshToken;
 
+/**
+ * Provides persistence access for refresh token data.
+ */
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Integer> {
     Optional<RefreshToken> findByToken(String token);
 

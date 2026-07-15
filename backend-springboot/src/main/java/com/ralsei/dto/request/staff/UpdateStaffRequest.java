@@ -9,6 +9,9 @@ import jakarta.validation.constraints.NotBlank;
  * UpdateStaffRequest
  */
 
+/**
+ * Represents the request payload for update staff operations.
+ */
 public record UpdateStaffRequest(
     @NotBlank(message = "Tên nhân viên không được để trống.")
     String staffName,

@@ -11,6 +11,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+/**
+ * Represents the request payload for sepay webhook operations.
+ */
 public class SepayWebhookRequest {
     private Long id;
     private String gateway;

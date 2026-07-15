@@ -20,6 +20,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+/**
+ * Represents the request payload for cargo ticket operations.
+ */
 public class CargoTicketRequest {
     @Min(value = 1, message = "Trip ID must be greater than 0")
     private Integer tripId;

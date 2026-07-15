@@ -7,6 +7,9 @@ import com.ralsei.model.enums.CoachStatus;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Represents the request payload for coach filter operations.
+ */
 public record CoachFilterRequest(
     @Size(max = 20, message = "Biển số xe tìm kiếm không được vượt quá 20 ký tự.")
     String licensePlate,

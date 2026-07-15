@@ -18,6 +18,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Represents the request payload for cargo type price operations.
+ */
 public class CargoTypePriceRequest {
 
     @NotNull(message = "Cargo type ID is required")

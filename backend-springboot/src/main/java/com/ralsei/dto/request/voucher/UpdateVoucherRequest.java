@@ -18,6 +18,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Represents the request payload for update voucher operations.
+ */
 public class UpdateVoucherRequest {
     @NotBlank(message = "Voucher code is required")
     private String voucherCode;

@@ -5,6 +5,9 @@ import com.ralsei.util.StringNormalize;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Represents the request payload for staff login operations.
+ */
 public record StaffLoginRequest(
     @NotBlank(message = "Tên đăng nhập không được để trống")
     @Size(max = 50, message = "Tên đăng nhập không được vượt quá 50 ký tự.")

@@ -9,6 +9,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * StaffDetailResponse
  */
 
+/**
+ * Represents the response payload for staff detail operations.
+ */
 public record StaffDetailResponse(
     Integer staffId,
     Integer accountId,

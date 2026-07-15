@@ -40,6 +40,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the staff refund service impl component for the application.
+ */
 public class StaffRefundServiceImpl implements StaffRefundService {
 
     private static final Pattern BANK_TRANSFER_TRANSACTION_PATTERN =
@@ -116,6 +119,13 @@ public class StaffRefundServiceImpl implements StaffRefundService {
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Returns the passenger refund detail.
+     *
+     * @param refundId the value supplied for this operation
+     *
+     * @return the passenger refund detail
+     */
     public StaffRefundDetailResponse getPassengerRefundDetail(int refundId) {
         StaffPassengerRefundRowProjection row = refundRepository.findPassengerRefundRowByRefundId(refundId);
         if (row == null) {
@@ -180,6 +190,9 @@ public class StaffRefundServiceImpl implements StaffRefundService {
     ) {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
+            /**
+             * Executes the after commit operation.
+             */
             public void afterCommit() {
                 try {
                     ticketEmailService.sendRefundCompleted(payload);

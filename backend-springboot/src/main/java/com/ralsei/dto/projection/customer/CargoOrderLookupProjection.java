@@ -7,6 +7,9 @@ import java.time.LocalDateTime;
  * Flat, read-only database row used to assemble one public cargo order.
  * Master-ticket columns repeat for each cargo detail and are grouped by the service.
  */
+/**
+ * Projects the cargo order looku data shape for query results.
+ */
 public interface CargoOrderLookupProjection {
     Integer getCargoTicketId();
     String getTicketCode();

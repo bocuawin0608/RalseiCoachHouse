@@ -43,9 +43,18 @@ import lombok.RequiredArgsConstructor;
  * All endpoints require ADMIN role.
  */
 
+/**
+ * Handles HTTP requests for account operations.
+ */
 public class AccountController {
     private final AccountService accountService;
-
+    
+    /**
+     * Lọc danh sách tài khoản dựa trên các tiêu chí lọc
+     * @param filterRequest Yêu cầu lọc
+     * @param pageable Thông tin phân trang
+     * @return ResponseEntity<Page<AccountListResponse>>
+     */
     @GetMapping(path = {"", "/"})
     public ResponseEntity<Page<AccountListResponse>> filterAccounts(
         @Valid @ModelAttribute AccountFilterRequest filterRequest,
@@ -53,25 +62,48 @@ public class AccountController {
     ) {
         return ResponseEntity.ok(accountService.filterAccounts(filterRequest, pageable));
     }
-
+    /**
+     * Lấy danh sách tất cả các vai trò
+     * @return ResponseEntity<List<RoleResponse>>
+     */
     @GetMapping("/roles")
     public ResponseEntity<List<RoleResponse>> getAllRoles() {
         return ResponseEntity.ok(accountService.getAllRoles());
     }
-
+    /**
+     * Lấy thông tin chi tiết của một tài khoản
+     * @param accountId ID của tài khoản
+     * @return ResponseEntity<AccountDetailResponse>
+     */
     @GetMapping("/{accountId:\\d+}")
     public ResponseEntity<AccountDetailResponse> getAccountDetail(
         @PathVariable @Min(value = 1, message = "ID tài khoản phải lớn hơn 0.") Integer accountId
     ) {
         return ResponseEntity.ok(accountService.getAccountDetail(accountId));
     }
-
+    /**
+     * Tạo một tài khoản mới
+     * @param request Yêu cầu tạo tài khoản
+     * @return ResponseEntity<Integer> ID của tài khoản mới được tạo
+     */
     @PostMapping(path = {"", "/"})
+    /**
+     * Creates the account.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the created account
+     */
     public ResponseEntity<Integer> createAccount(@Valid @RequestBody CreateAccountRequest request) {
         Integer newId = accountService.createAccount(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(newId);
     }
-
+    /**
+     * Cập nhật thông tin của một tài khoản
+     * @param accountId ID của tài khoản
+     * @param request Yêu cầu cập nhật tài khoản
+     * @return ResponseEntity<Void>
+     */
     @PutMapping("/{accountId:\\d+}")
     public ResponseEntity<Void> updateAccount(
         @PathVariable @Min(value = 1, message = "ID tài khoản phải lớn hơn 0.") Integer accountId,
@@ -80,7 +112,12 @@ public class AccountController {
         accountService.updateAccount(accountId, request);
         return ResponseEntity.ok().build();
     }
-
+    /**
+     * Gán vai trò cho một tài khoản
+     * @param accountId ID của tài khoản
+     * @param request Yêu cầu gán vai trò
+     * @return ResponseEntity<Void>
+     */
     @PutMapping("/{accountId:\\d+}/roles")
     public ResponseEntity<Void> assignRoles(
         @PathVariable @Min(value = 1, message = "ID tài khoản phải lớn hơn 0.") Integer accountId,
@@ -89,7 +126,12 @@ public class AccountController {
         accountService.assignRoles(accountId, request);
         return ResponseEntity.ok().build();
     }
-
+    /**
+     * Đặt lại mật khẩu cho một tài khoản
+     * @param accountId ID của tài khoản
+     * @param request Yêu cầu đặt lại mật khẩu
+     * @return ResponseEntity<Void>
+     */
     @PatchMapping("/{accountId:\\d+}/reset-password")
     public ResponseEntity<Void> resetPassword(
         @PathVariable @Min(value = 1, message = "ID tài khoản phải lớn hơn 0.") Integer accountId,
@@ -98,7 +140,11 @@ public class AccountController {
         accountService.resetPassword(accountId, request);
         return ResponseEntity.ok().build();
     }
-
+    /**
+     * Bật/tắt trạng thái hoạt động của một tài khoản
+     * @param accountId ID của tài khoản
+     * @return ResponseEntity<Void>
+     */
     @PatchMapping("/{accountId:\\d+}/toggle-active")
     public ResponseEntity<Void> toggleActive(
         @PathVariable @Min(value = 1, message = "ID tài khoản phải lớn hơn 0.") Integer accountId
@@ -106,7 +152,11 @@ public class AccountController {
         accountService.toggleActive(accountId);
         return ResponseEntity.ok().build();
     }
-
+    /**
+     * Xóa một tài khoản
+     * @param accountId ID của tài khoản
+     * @return ResponseEntity<Void>
+     */
     @DeleteMapping("/{accountId:\\d+}")
     public ResponseEntity<Void> deleteAccount(
         @PathVariable @Min(value = 1, message = "ID tài khoản phải lớn hơn 0.") Integer accountId

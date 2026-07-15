@@ -3,6 +3,9 @@ package com.ralsei.dto.projection.staffpassengerticket;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * Projects the staff passenger transfer candidat data shape for query results.
+ */
 public interface StaffPassengerTransferCandidateProjection {
     Integer getTripId();
     String getRouteName();

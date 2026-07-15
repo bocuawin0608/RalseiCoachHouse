@@ -12,6 +12,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Represents the response payload for cargo type price operations.
+ */
 public class CargoTypePriceResponse {
     private int cargoTypePriceId;
     private int cargoTypeId;

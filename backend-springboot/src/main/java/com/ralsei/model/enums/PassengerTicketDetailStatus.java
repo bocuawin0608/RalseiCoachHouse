@@ -3,6 +3,9 @@ package com.ralsei.model.enums;
 import lombok.Getter;
 
 @Getter
+/**
+ * Provides the passenger ticket detail status component for the application.
+ */
 public enum PassengerTicketDetailStatus {
     PENDING("Đang xử lý"),
     CONFIRMED("Đã xác nhận"),

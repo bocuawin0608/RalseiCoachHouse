@@ -19,6 +19,9 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Provides the accompanied child component for the application.
+ */
 public class AccompaniedChild extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

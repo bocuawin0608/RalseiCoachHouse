@@ -9,6 +9,9 @@ import com.ralsei.dto.response.customer.CustomerProfileResponse;
  * This boundary keeps profile ownership checks in the backend instead of
  * trusting the browser with account identifiers.
  */
+/**
+ * Provides the business service contract for customer account.
+ */
 public interface CustomerAccountService {
 
     /**

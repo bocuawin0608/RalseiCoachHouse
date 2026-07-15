@@ -18,12 +18,20 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Configuration
+/**
+ * Configures firebase for the application.
+ */
 public class FirebaseConfig {
 
     @Value("${firebase.service-account-key:firebase-service-account.json}")
     private String serviceAccountKeyPath;
-
+    /**
+     * Khởi tạo Firebase Admin SDK khi ứng dụng Spring Boot khởi động
+     */
     @PostConstruct
+    /**
+     * Executes the init operation.
+     */
     public void init() {
         try {
             if (FirebaseApp.getApps().stream().anyMatch(app -> app.getName().equals(FirebaseApp.DEFAULT_APP_NAME))) {
@@ -47,8 +55,16 @@ public class FirebaseConfig {
             log.warn("Firebase Admin SDK could not be initialized: {}. Firebase token verification will be disabled.", e.getMessage());
         }
     }
-
+    /**
+     * Tạo bean FirebaseAuth để sử dụng trong ứng dụng
+     * @return FirebaseAuth
+     */
     @Bean
+    /**
+     * Executes the firebase auth operation.
+     *
+     * @return the operation result
+     */
     public FirebaseAuth firebaseAuth() {
         if (FirebaseApp.getApps().stream().anyMatch(app -> app.getName().equals(FirebaseApp.DEFAULT_APP_NAME))) {
             return FirebaseAuth.getInstance();

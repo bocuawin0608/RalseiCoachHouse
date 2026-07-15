@@ -15,6 +15,9 @@ import java.math.BigDecimal;
  * @param refundMethod outbound refund channel selected when the refund was created
  * @param reason business reason recorded when the refund request was created
  */
+/**
+ * Represents the response payload for staff refund list item operations.
+ */
 public record StaffRefundListItemResponse(
     int refundId,
     String ticketCode,

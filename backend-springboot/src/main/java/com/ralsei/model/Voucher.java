@@ -22,6 +22,9 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Provides the voucher component for the application.
+ */
 public class Voucher extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

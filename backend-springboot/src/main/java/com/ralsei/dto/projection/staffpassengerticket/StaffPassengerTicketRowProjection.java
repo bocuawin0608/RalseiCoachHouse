@@ -6,6 +6,9 @@ import java.time.LocalDateTime;
 /**
  * One flat row per passenger seat for staff ticket search and detail assembly.
  */
+/**
+ * Projects the staff passenger ticket ro data shape for query results.
+ */
 public interface StaffPassengerTicketRowProjection {
     Integer getPassengerTicketId();
     Integer getTicketDetailId();

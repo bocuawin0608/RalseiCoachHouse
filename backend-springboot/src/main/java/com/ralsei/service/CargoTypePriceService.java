@@ -6,6 +6,9 @@ import com.ralsei.dto.request.cargotypeprice.CargoTypePriceRequest;
 import com.ralsei.dto.response.cargotypeprice.CargoTypePriceResponse;
 import com.ralsei.dto.response.PagedResponse;
 
+/**
+ * Provides the business service contract for cargo type price.
+ */
 public interface CargoTypePriceService {
     PagedResponse<CargoTypePriceResponse> getAllCargoTypePrices(int cargoTypeId, String search, int page, int size);
 

@@ -15,6 +15,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+/**
+ * Provides the passenger payment expiry scheduler component for the application.
+ */
 public class PassengerPaymentExpiryScheduler {
 
     private static final int BATCH_SIZE = 200;
@@ -23,6 +26,9 @@ public class PassengerPaymentExpiryScheduler {
     private final PassengerPendingPaymentService passengerPendingPaymentService;
 
     @Scheduled(fixedDelayString = "${booking.payment-expiry-scan-delay-ms:30000}")
+    /**
+     * Executes the expire overdue pending passenger payments operation.
+     */
     public void expireOverduePendingPassengerPayments() {
         List<String> transactionIds = paymentRepository.findOverduePendingPassengerTransactionIds(
                 LocalDateTime.now(),

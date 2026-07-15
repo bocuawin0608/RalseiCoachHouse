@@ -4,6 +4,9 @@ import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.dto.response.staffpassengerticket.StaffPassengerTicketDetailResponse;
 import com.ralsei.dto.response.staffpassengerticket.StaffPassengerTicketListItemResponse;
 
+/**
+ * Provides the business service contract for staff passenger ticket query.
+ */
 public interface StaffPassengerTicketQueryService {
 
     PagedResponse<StaffPassengerTicketListItemResponse> search(

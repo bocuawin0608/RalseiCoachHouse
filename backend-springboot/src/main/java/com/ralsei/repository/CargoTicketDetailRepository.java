@@ -10,6 +10,9 @@ import com.ralsei.dto.projection.customer.CargoOrderLookupProjection;
 import com.ralsei.dto.projection.customer.CargoOrderStopProjection;
 import com.ralsei.model.CargoTicketDetail;
 
+/**
+ * Provides persistence access for cargo ticket detail data.
+ */
 public interface CargoTicketDetailRepository extends JpaRepository<CargoTicketDetail, Integer> {
     List<CargoTicketDetail> findByCargoTicket_CargoTicketId(int cargoTicketId);
 

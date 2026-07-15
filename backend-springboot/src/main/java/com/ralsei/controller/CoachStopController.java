@@ -13,11 +13,21 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/coach-stops")
 @RequiredArgsConstructor
+/**
+ * Handles HTTP requests for coach stop operations.
+ */
 public class CoachStopController {
 
     private final CoachStopService coachStopService;
 
     @PostMapping
+    /**
+     * Creates the coach stop.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the created coach stop
+     */
     public ResponseEntity<CoachStopResponse> createCoachStop(@Valid @RequestBody CoachStopRequest request) {
         CoachStopResponse response = coachStopService.createCoachStop(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -32,6 +42,13 @@ public class CoachStopController {
     }
 
     @GetMapping("/{id}")
+    /**
+     * Returns the coach stop by id.
+     *
+     * @param id the value supplied for this operation
+     *
+     * @return the coach stop by id
+     */
     public ResponseEntity<CoachStopResponse> getCoachStopById(@PathVariable int id) {
         CoachStopResponse response = coachStopService.getCoachStopById(id);
         return ResponseEntity.ok(response);
@@ -48,12 +65,26 @@ public class CoachStopController {
     }
 
     @PatchMapping("/{id}/soft-delete")
+    /**
+     * Executes the soft delete coach stop operation.
+     *
+     * @param id the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public ResponseEntity<Void> softDeleteCoachStop(@PathVariable int id) {
         coachStopService.softDeleteCoachStop(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/restore")
+    /**
+     * Executes the restore coach stop operation.
+     *
+     * @param id the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public ResponseEntity<Void> restoreCoachStop(@PathVariable int id) {
         coachStopService.restoreCoachStop(id);
         return ResponseEntity.noContent().build();

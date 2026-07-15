@@ -24,6 +24,9 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/payment")
 @RequiredArgsConstructor
+/**
+ * Handles HTTP requests for payment operations.
+ */
 public class PaymentController {
 
     private final PaymentService paymentService;
@@ -32,6 +35,13 @@ public class PaymentController {
     private String sepayApiToken;
 
     @PostMapping("/checkout")
+    /**
+     * Executes the initialize payment operation.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public ResponseEntity<?> initializePayment(@Valid @RequestBody PaymentCheckoutRequest request) {
         try {
             Payment payment = paymentService.initializePayment(request);
@@ -69,6 +79,13 @@ public class PaymentController {
     }
 
     @GetMapping("/transaction/{transactionId}")
+    /**
+     * Returns the payment by transaction id.
+     *
+     * @param transactionId the value supplied for this operation
+     *
+     * @return the payment by transaction id
+     */
     public ResponseEntity<?> getPaymentByTransactionId(@PathVariable String transactionId) {
         try {
             Payment payment = paymentService.getPaymentByTransactionId(transactionId);

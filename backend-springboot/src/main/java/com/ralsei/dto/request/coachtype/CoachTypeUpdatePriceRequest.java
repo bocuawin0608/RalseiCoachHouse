@@ -6,6 +6,9 @@ import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 
+/**
+ * Represents the request payload for coach type update price operations.
+ */
 public record CoachTypeUpdatePriceRequest(
     @NotNull(message = "Giá tiền không được để trống.")
     @PositiveOrZero(message = "Giá tiền không được nhỏ hơn 0.")

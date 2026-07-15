@@ -15,11 +15,21 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1/route-stops")
 @RequiredArgsConstructor
+/**
+ * Handles HTTP requests for route stop operations.
+ */
 public class RouteStopController {
 
     private final RouteStopService routeStopService;
 
     @PostMapping
+    /**
+     * Creates the route stop.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the created route stop
+     */
     public ResponseEntity<RouteStopResponse> createRouteStop(@Valid @RequestBody RouteStopRequest request) {
         RouteStopResponse response = routeStopService.createRouteStop(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -41,6 +51,13 @@ public class RouteStopController {
     }
 
     @GetMapping("/{id}")
+    /**
+     * Returns the route stop by id.
+     *
+     * @param id the value supplied for this operation
+     *
+     * @return the route stop by id
+     */
     public ResponseEntity<RouteStopResponse> getRouteStopById(@PathVariable int id) {
         RouteStopResponse response = routeStopService.getRouteStopById(id);
         return ResponseEntity.ok(response);
@@ -58,6 +75,11 @@ public class RouteStopController {
     }
 
     @DeleteMapping("/{id}")
+    /**
+     * Deletes the route stop.
+     *
+     * @param id the value supplied for this operation
+     */
     public ResponseEntity<Void> deleteRouteStop(@PathVariable int id) {
         routeStopService.deleteRouteStop(id);
         return ResponseEntity.noContent().build();

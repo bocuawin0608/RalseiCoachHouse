@@ -10,11 +10,25 @@ public final class SeatCodeUtility {
 
     private SeatCodeUtility() {}
 
+    /**
+     * Returns whether the valid is active.
+     *
+     * @param input the value supplied for this operation
+     *
+     * @return {@code true} if the valid is active; otherwise {@code false}
+     */
     public static boolean isValid(String input) {
         String normalized = normalizeOrNull(input);
         return normalized != null && SEAT_CODE_PATTERN.matcher(normalized).matches();
     }
 
+    /**
+     * Executes the normalize operation.
+     *
+     * @param input the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public static String normalize(String input) {
         String normalized = normalizeOrNull(input);
         if (normalized == null || !SEAT_CODE_PATTERN.matcher(normalized).matches()) {

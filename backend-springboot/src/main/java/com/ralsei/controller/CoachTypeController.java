@@ -39,6 +39,9 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/v1/coach-types")
 @RequiredArgsConstructor
 @Validated
+/**
+ * Handles HTTP requests for coach type operations.
+ */
 public class CoachTypeController {
     private final CoachTypeService coachTypeService;
 
@@ -53,6 +56,13 @@ public class CoachTypeController {
 
     @PostMapping(path = {"", "/"})
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    /**
+     * Creates the coach type.
+     *
+     * @param createRequest the value supplied for this operation
+     *
+     * @return the created coach type
+     */
     public ResponseEntity<Integer> createCoachType(@Valid @RequestBody CoachTypeCreateRequest createRequest) {
         Integer newId = coachTypeService.createCoachType(createRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(newId);

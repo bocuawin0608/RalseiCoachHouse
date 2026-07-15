@@ -39,6 +39,9 @@ import lombok.RequiredArgsConstructor;
  * All endpoints require ADMIN role.
  */
 
+/**
+ * Handles HTTP requests for staff operations.
+ */
 public class StaffController {
     private final StaffService staffService;
 
@@ -58,6 +61,13 @@ public class StaffController {
     }
 
     @PostMapping("/onboard")
+    /**
+     * Executes the onboard staff operation.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public ResponseEntity<OnboardStaffResponse> onboardStaff(@Valid @RequestBody OnboardStaffRequest request) {
         OnboardStaffResponse response = staffService.onboardStaff(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);

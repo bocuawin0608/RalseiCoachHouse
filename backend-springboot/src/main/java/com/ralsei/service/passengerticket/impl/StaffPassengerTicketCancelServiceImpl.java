@@ -46,6 +46,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the staff passenger ticket cancel service impl component for the application.
+ */
 public class StaffPassengerTicketCancelServiceImpl implements StaffPassengerTicketCancelService {
 
     private final PassengerTicketDetailRepository ticketDetailRepository;
@@ -180,6 +183,9 @@ public class StaffPassengerTicketCancelServiceImpl implements StaffPassengerTick
     ) {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
+            /**
+             * Executes the after commit operation.
+             */
             public void afterCommit() {
                 try {
                     ticketEmailService.sendTicketCancellation(payload);

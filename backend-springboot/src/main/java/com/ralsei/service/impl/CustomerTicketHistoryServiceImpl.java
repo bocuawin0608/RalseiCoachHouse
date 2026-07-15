@@ -48,6 +48,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the customer ticket history service impl component for the application.
+ */
 public class CustomerTicketHistoryServiceImpl implements CustomerTicketHistoryService {
 
     private static final long CANCELLATION_CUTOFF_HOURS = 5;
@@ -68,6 +71,13 @@ public class CustomerTicketHistoryServiceImpl implements CustomerTicketHistorySe
     /** {@inheritDoc} */
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Returns the history.
+     *
+     * @param accountId the value supplied for this operation
+     *
+     * @return the history
+     */
     public List<CustomerTicketHistoryResponse> getHistory(Integer accountId) {
         validateAccountId(accountId);
         return assembleTickets(ticketDetailRepository.findCustomerTicketHistory(accountId, null));
@@ -76,6 +86,14 @@ public class CustomerTicketHistoryServiceImpl implements CustomerTicketHistorySe
     /** {@inheritDoc} */
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Returns the detail.
+     *
+     * @param accountId the value supplied for this operation
+     * @param ticketCode the value supplied for this operation
+     *
+     * @return the detail
+     */
     public CustomerTicketHistoryResponse getDetail(Integer accountId, String ticketCode) {
         if (ticketCode == null || ticketCode.isBlank()) {
             throw new ResourceNotFoundException("Mã vé không hợp lệ.");
@@ -91,6 +109,14 @@ public class CustomerTicketHistoryServiceImpl implements CustomerTicketHistorySe
     /** {@inheritDoc} */
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Returns the seat qr image.
+     *
+     * @param accountId the value supplied for this operation
+     * @param ticketDetailId the value supplied for this operation
+     *
+     * @return the seat qr image
+     */
     public byte[] getSeatQrImage(Integer accountId, Integer ticketDetailId) {
         validateAccountId(accountId);
         String token = ticketDetailRepository.findOwnedQrToken(ticketDetailId, accountId)
@@ -202,6 +228,9 @@ public class CustomerTicketHistoryServiceImpl implements CustomerTicketHistorySe
     ) {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
+            /**
+             * Executes the after commit operation.
+             */
             public void afterCommit() {
                 try {
                     ticketEmailService.sendTicketCancellation(payload);

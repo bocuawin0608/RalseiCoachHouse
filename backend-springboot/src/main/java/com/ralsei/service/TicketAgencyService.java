@@ -16,6 +16,9 @@ import com.ralsei.dto.response.ticketagency.TicketAgencyListResponse;
  * Service interface for ticketagency management operations.
  */
 
+/**
+ * Provides the business service contract for ticket agency.
+ */
 public interface TicketAgencyService {
     Page<TicketAgencyListResponse> filterTicketAgencies(TicketAgencyFilterRequest filterRequest, Pageable pageable);
     TicketAgencyDetailResponse getTicketAgencyDetail(Integer ticketAgencyId);

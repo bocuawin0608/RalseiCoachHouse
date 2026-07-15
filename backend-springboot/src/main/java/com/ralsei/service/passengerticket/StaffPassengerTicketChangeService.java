@@ -14,6 +14,9 @@ import com.ralsei.dto.response.staffpassengerticket.StaffPassengerTransferCandid
 
 import java.time.LocalDate;
 
+/**
+ * Provides the business service contract for staff passenger ticket change.
+ */
 public interface StaffPassengerTicketChangeService {
 
     StaffPassengerTicketDetailResponse changePassengerInfo(

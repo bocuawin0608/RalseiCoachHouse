@@ -9,6 +9,9 @@ import jakarta.validation.constraints.Size;
  * UpdateTicketAgencyRequest
  */
 
+/**
+ * Represents the request payload for update ticket agency operations.
+ */
 public record UpdateTicketAgencyRequest(
     @NotBlank(message = "Tên bến xe không được để trống.")
     @Size(max = 200, message = "Tên bến xe không được vượt quá 200 ký tự.")

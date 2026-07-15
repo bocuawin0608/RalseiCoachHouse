@@ -24,6 +24,9 @@ import java.time.LocalDateTime;
  * @param updatedAt timestamp of the latest refund update
  * @param updatedByStaffDisplay resolved updater as {@code staffName - phone}, or {@code null}
  */
+/**
+ * Represents the response payload for staff refund detail operations.
+ */
 public record StaffRefundDetailResponse(
     int refundId,
     int paymentId,

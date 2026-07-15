@@ -4,6 +4,9 @@
  */
 package com.ralsei.dto.response.tripstaff;
 
+/**
+ * Represents the response payload for check in operations.
+ */
 public record CheckInResponse(
         Integer ticketDetailId,
         String fullName,

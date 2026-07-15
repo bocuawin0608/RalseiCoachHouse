@@ -4,6 +4,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Represents the request payload for staff passenger ticket cancel operations.
+ */
 public record StaffPassengerTicketCancelRequest(
     @NotBlank(message = "Vui lòng nhập tên ngân hàng.")
     @Size(max = 100, message = "Tên ngân hàng không được vượt quá 100 ký tự.")

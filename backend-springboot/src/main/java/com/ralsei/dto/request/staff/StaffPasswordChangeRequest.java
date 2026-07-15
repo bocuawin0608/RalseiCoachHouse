@@ -12,6 +12,9 @@ import jakarta.validation.constraints.Size;
  * @param currentPassword staff member's existing local password
  * @param newPassword replacement password meeting the internal strength rule
  */
+/**
+ * Represents the request payload for staff password change operations.
+ */
 public record StaffPasswordChangeRequest(
     @NotBlank(message = "Mật khẩu hiện tại không được để trống.")
     @Size(max = 72, message = "Mật khẩu hiện tại không được vượt quá 72 ký tự.")

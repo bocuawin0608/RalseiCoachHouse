@@ -15,6 +15,9 @@ import com.ralsei.dto.request.coachtype.CoachTypeFilterRequest;
 import com.ralsei.dto.response.coachtype.CoachTypeDropdownDTO;
 import com.ralsei.model.CoachType;
 
+/**
+ * Provides persistence access for coach type data.
+ */
 public interface CoachTypeRepository extends JpaRepository<CoachType, Integer> {
     @Query(value = """
         SELECT 

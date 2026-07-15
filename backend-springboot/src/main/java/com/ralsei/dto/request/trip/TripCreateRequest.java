@@ -8,6 +8,9 @@ import lombok.Setter;
 @Data
 @Getter
 @Setter
+/**
+ * Represents the request payload for trip create operations.
+ */
 public class TripCreateRequest {
     private Integer routeId;
     private Integer coachId;

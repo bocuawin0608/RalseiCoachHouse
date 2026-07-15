@@ -9,6 +9,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * AccountListResponse
  */
 
+/**
+ * Represents the response payload for account list operations.
+ */
 public record AccountListResponse(
     Integer accountId,
     String username,

@@ -49,6 +49,9 @@ import java.util.List;
 @PreAuthorize("hasRole('TICKET_STAFF')")
 @RequiredArgsConstructor
 @Validated
+/**
+ * Handles HTTP requests for staff passenger ticket operations.
+ */
 public class StaffPassengerTicketController {
 
     private final StaffPassengerTicketQueryService queryService;

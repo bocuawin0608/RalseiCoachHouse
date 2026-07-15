@@ -15,6 +15,9 @@ import jakarta.validation.constraints.Size;
  * @param username local staff login username
  * @param email staff profile email that must belong to the same account
  */
+/**
+ * Represents the request payload for staff forgot password operations.
+ */
 public record StaffForgotPasswordRequest(
     @NotBlank(message = "Tên đăng nhập không được để trống.")
     @Size(max = 50, message = "Tên đăng nhập không được vượt quá 50 ký tự.")

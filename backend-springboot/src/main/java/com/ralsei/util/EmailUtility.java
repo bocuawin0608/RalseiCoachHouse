@@ -22,6 +22,9 @@ import lombok.RequiredArgsConstructor;
  */
 @Component
 @RequiredArgsConstructor
+/**
+ * Provides utility helpers for email uti processing.
+ */
 public class EmailUtility {
 
     private static final String PNG_CONTENT_TYPE = "image/png";

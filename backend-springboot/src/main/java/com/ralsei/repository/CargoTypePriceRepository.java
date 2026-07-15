@@ -9,6 +9,9 @@ import org.springframework.data.repository.query.Param;
 
 import com.ralsei.model.CargoTypePrice;
 
+/**
+ * Provides persistence access for cargo type price data.
+ */
 public interface CargoTypePriceRepository extends JpaRepository<CargoTypePrice, Integer> {
   Page<CargoTypePrice> findByCargoTypeId(int cargoTypeId, Pageable pageable);
 

@@ -33,6 +33,9 @@ import lombok.RequiredArgsConstructor;
  * Implementation of {@link com.ralsei.service.TicketAgencyService}.
  */
 
+/**
+ * Provides the ticket agency service impl component for the application.
+ */
 public class TicketAgencyServiceImpl implements TicketAgencyService {
 
     private final TicketAgencyRepository ticketAgencyRepo;
@@ -41,6 +44,14 @@ public class TicketAgencyServiceImpl implements TicketAgencyService {
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Filters the ticket agencies records.
+     *
+     * @param filterRequest the value supplied for this operation
+     * @param pageable the value supplied for this operation
+     *
+     * @return the filtered results
+     */
     public Page<TicketAgencyListResponse> filterTicketAgencies(TicketAgencyFilterRequest filterRequest, Pageable pageable) {
         String search = filterRequest != null && filterRequest.search() != null && !filterRequest.search().isBlank()
             ? filterRequest.search().trim() : null;
@@ -61,6 +72,13 @@ public class TicketAgencyServiceImpl implements TicketAgencyService {
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Returns the ticket agency detail.
+     *
+     * @param ticketAgencyId the value supplied for this operation
+     *
+     * @return the ticket agency detail
+     */
     public TicketAgencyDetailResponse getTicketAgencyDetail(Integer ticketAgencyId) {
         TicketAgency ta = ticketAgencyRepo.findById(ticketAgencyId)
             .orElseThrow(() -> new ResourceNotFoundException("Bến xe không tồn tại!"));
@@ -69,6 +87,13 @@ public class TicketAgencyServiceImpl implements TicketAgencyService {
 
     @Override
     @Transactional
+    /**
+     * Creates the ticket agency.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the created ticket agency
+     */
     public Integer createTicketAgency(CreateTicketAgencyRequest request) {
         Integer stopId = request.stopPointId();
         coachStopRepo.findById(stopId)
@@ -93,6 +118,12 @@ public class TicketAgencyServiceImpl implements TicketAgencyService {
 
     @Override
     @Transactional
+    /**
+     * Updates the ticket agency.
+     *
+     * @param ticketAgencyId the value supplied for this operation
+     * @param request the value supplied for this operation
+     */
     public void updateTicketAgency(Integer ticketAgencyId, UpdateTicketAgencyRequest request) {
         TicketAgency ta = ticketAgencyRepo.findById(ticketAgencyId)
             .orElseThrow(() -> new ResourceNotFoundException("Bến xe không tồn tại!"));
@@ -114,6 +145,11 @@ public class TicketAgencyServiceImpl implements TicketAgencyService {
 
     @Override
     @Transactional
+    /**
+     * Executes the toggle active operation.
+     *
+     * @param ticketAgencyId the value supplied for this operation
+     */
     public void toggleActive(Integer ticketAgencyId) {
         TicketAgency ta = ticketAgencyRepo.findById(ticketAgencyId)
             .orElseThrow(() -> new ResourceNotFoundException("Bến xe không tồn tại!"));
@@ -130,6 +166,11 @@ public class TicketAgencyServiceImpl implements TicketAgencyService {
 
     @Override
     @Transactional
+    /**
+     * Deletes the ticket agency.
+     *
+     * @param ticketAgencyId the value supplied for this operation
+     */
     public void deleteTicketAgency(Integer ticketAgencyId) {
         TicketAgency ta = ticketAgencyRepo.findById(ticketAgencyId)
             .orElseThrow(() -> new ResourceNotFoundException("Bến xe không tồn tại!"));

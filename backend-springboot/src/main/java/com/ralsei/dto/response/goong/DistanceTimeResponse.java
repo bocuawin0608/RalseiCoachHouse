@@ -9,6 +9,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Represents the response payload for distance time operations.
+ */
 public class DistanceTimeResponse {
     private double distanceKm;
     private double durationMinutes;

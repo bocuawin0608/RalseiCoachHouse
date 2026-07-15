@@ -16,6 +16,9 @@ import com.ralsei.dto.response.coach.CoachStatusChangeCheckResponse;
 import com.ralsei.dto.response.coach.CoachStatusLogResponse;
 import com.ralsei.model.enums.CoachStatus;
 
+/**
+ * Provides the business service contract for coach.
+ */
 public interface CoachService {
     Page<CoachResponse> filterCoaches(CoachFilterRequest filterRequest, Pageable pageable);
     Integer createCoach(CoachCreateRequest request);

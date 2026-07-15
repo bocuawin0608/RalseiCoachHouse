@@ -7,9 +7,15 @@ package com.ralsei.dto.response.tripstaff;
 import java.math.BigDecimal;
 import java.util.List;
 
+/**
+ * Represents the response payload for trip staff cargo operations.
+ */
 public record TripStaffCargoResponse(
     List<CargoItem> cargoItems
 ) {
+    /**
+     * Provides the cargo item component for the application.
+     */
     public record CargoItem(
         int cargoTicketId,
         String ticketCode,
@@ -27,6 +33,9 @@ public record TripStaffCargoResponse(
         List<CargoDetailItem> details
     ) {}
 
+    /**
+     * Provides the cargo detail item component for the application.
+     */
     public record CargoDetailItem(
         int cargoTicketDetailId,
         String description,

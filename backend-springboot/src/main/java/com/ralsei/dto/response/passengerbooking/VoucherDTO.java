@@ -3,6 +3,9 @@ package com.ralsei.dto.response.passengerbooking;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * Represents the data transfer object for voucher.
+ */
 public record VoucherDTO(
     Integer voucherId,
     String voucherCode,

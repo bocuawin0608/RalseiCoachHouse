@@ -26,10 +26,21 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestControllerAdvice
+/**
+ * Provides the global exception handler component for the application.
+ */
 public class GlobalExceptionHandler {
 
     // Hứng lỗi phân quyền (khi user có token hợp lệ nhưng không đủ Role)
     @ExceptionHandler({AuthorizationDeniedException.class, AccessDeniedException.class})
+    /**
+     * Executes the handle access denied exception operation.
+     *
+     * @param ex the value supplied for this operation
+     * @param request the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public ResponseEntity<ErrorResponse> handleAccessDeniedException(Exception ex, HttpServletRequest request) {
         ErrorResponse response = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
@@ -60,6 +71,14 @@ public class GlobalExceptionHandler {
 
     // Hứng lỗi nghiệp vụ (sau level check input validation)
     @ExceptionHandler(BusinessRuleException.class)
+    /**
+     * Executes the handle business rule operation.
+     *
+     * @param ex the value supplied for this operation
+     * @param request the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public ResponseEntity<ErrorResponse> handleBusinessRule(BusinessRuleException ex, HttpServletRequest request) {
         ErrorResponse response = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
@@ -114,6 +133,14 @@ public class GlobalExceptionHandler {
 
     // Hứng lỗi @Valid từ @ModelAttribute
     @ExceptionHandler(BindException.class)
+    /**
+     * Executes the handle bind exception operation.
+     *
+     * @param ex the value supplied for this operation
+     * @param request the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public ResponseEntity<ErrorResponse> handleBindException(BindException ex, HttpServletRequest request) {
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach(error -> {
@@ -228,6 +255,14 @@ public class GlobalExceptionHandler {
 
     // Hứng mọi lỗi còn lại
     @ExceptionHandler(Exception.class)
+    /**
+     * Executes the handle generic exception operation.
+     *
+     * @param ex the value supplied for this operation
+     * @param request the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex, HttpServletRequest request) {
         log.error("Unexpected error: ", ex);
 

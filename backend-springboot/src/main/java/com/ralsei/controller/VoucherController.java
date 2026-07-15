@@ -24,30 +24,67 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/vouchers")
 @RequiredArgsConstructor
+/**
+ * Handles HTTP requests for voucher operations.
+ */
 public class VoucherController {
     private final VoucherService voucherService;
 
     @PostMapping
+    /**
+     * Creates the voucher.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the created voucher
+     */
     public ResponseEntity<VoucherResponse> createVoucher(@Valid @RequestBody CreateVoucherRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(voucherService.createVoucher(request));
     }
 
     @GetMapping("/{id}")
+    /**
+     * Returns the voucher by id.
+     *
+     * @param id the value supplied for this operation
+     *
+     * @return the voucher by id
+     */
     public ResponseEntity<VoucherResponse> getVoucherById(@PathVariable Integer id) {
         return ResponseEntity.ok(voucherService.getVoucherById(id));
     }
 
     @GetMapping
+    /**
+     * Returns the all vouchers.
+     *
+     * @param filterRequest the value supplied for this operation
+     *
+     * @return the all vouchers
+     */
     public ResponseEntity<PagedResponse<VoucherResponse>> getAllVouchers(@Valid @ModelAttribute VoucherFilterRequest filterRequest) {
         return ResponseEntity.ok(voucherService.getAllVouchers(filterRequest));
     }
 
     @PutMapping("/{id}")
+    /**
+     * Updates the voucher.
+     *
+     * @param id the value supplied for this operation
+     * @param request the value supplied for this operation
+     *
+     * @return the updated voucher
+     */
     public ResponseEntity<VoucherResponse> updateVoucher(@PathVariable Integer id, @Valid @RequestBody UpdateVoucherRequest request) {
         return ResponseEntity.ok(voucherService.updateVoucher(id, request));
     }
 
     @DeleteMapping("/{id}")
+    /**
+     * Deletes the voucher.
+     *
+     * @param id the value supplied for this operation
+     */
     public ResponseEntity<Void> deleteVoucher(@PathVariable Integer id) {
         voucherService.deleteVoucher(id);
         return ResponseEntity.noContent().build();

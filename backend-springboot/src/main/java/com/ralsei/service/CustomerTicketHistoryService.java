@@ -9,6 +9,9 @@ import com.ralsei.dto.response.customer.CustomerTicketCancellationResponse;
 /**
  * Defines authenticated customer operations for booking history and boarding QR images.
  */
+/**
+ * Provides the business service contract for customer ticket history.
+ */
 public interface CustomerTicketHistoryService {
 
     /**

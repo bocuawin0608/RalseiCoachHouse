@@ -2,6 +2,9 @@ package com.ralsei.dto.projection.cargoticket;
 
 import java.time.LocalDateTime;
 
+/**
+ * Projects the cargo ticket trip optio data shape for query results.
+ */
 public interface CargoTicketTripOptionProjection {
     Integer getTripId();
     String getRouteName();

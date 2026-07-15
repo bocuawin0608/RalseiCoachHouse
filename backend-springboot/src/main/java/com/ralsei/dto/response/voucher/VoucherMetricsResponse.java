@@ -9,6 +9,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Represents the response payload for voucher metrics operations.
+ */
 public class VoucherMetricsResponse {
     private long totalVouchers;
     private long activeVouchers;

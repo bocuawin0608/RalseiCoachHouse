@@ -10,6 +10,9 @@ import com.ralsei.dto.response.CoachAndRouteStop.RouteWithStopsResponse;
 import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.dto.projection.route.RouteLocationDropdownProjection;
 
+/**
+ * Provides the business service contract for route.
+ */
 public interface RouteService {
     RouteResponse createRoute(RouteRequest request);
 

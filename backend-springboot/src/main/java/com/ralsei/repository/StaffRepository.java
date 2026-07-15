@@ -13,6 +13,9 @@ import com.ralsei.dto.projection.staff.StaffProjection;
 import com.ralsei.dto.projection.cargoticket.CargoTicketStaffOptionProjection;
 import com.ralsei.model.Staff;
 
+/**
+ * Provides persistence access for staff data.
+ */
 public interface StaffRepository extends JpaRepository<Staff, Integer> {
     @Query(value = "SELECT staffId, staffName FROM staff WHERE isActive = 1 AND staffPosition = 'TICKET_STAFF' ORDER BY staffName", nativeQuery = true)
     List<CargoTicketStaffOptionProjection> findCargoTicketSellerOptions();

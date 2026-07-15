@@ -20,6 +20,9 @@ import jakarta.validation.constraints.Size;
  * @param email customer contact email
  * @param dob optional date of birth
  */
+/**
+ * Represents the request payload for customer profile update operations.
+ */
 public record CustomerProfileUpdateRequest(
     @NotBlank(message = "Họ và tên không được để trống.")
     @Size(max = 100, message = "Họ và tên không được vượt quá 100 ký tự.")

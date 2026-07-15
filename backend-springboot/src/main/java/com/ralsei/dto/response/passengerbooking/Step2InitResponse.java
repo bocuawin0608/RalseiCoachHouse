@@ -3,6 +3,9 @@ package com.ralsei.dto.response.passengerbooking;
 import java.math.BigDecimal;
 import java.util.List;
 
+/**
+ * Represents the response payload for step2 init operations.
+ */
 public record Step2InitResponse(
     List<CoachStopDropdownDTO> pickupStopPoints,
     List<CoachStopDropdownDTO> dropoffStopPoints,

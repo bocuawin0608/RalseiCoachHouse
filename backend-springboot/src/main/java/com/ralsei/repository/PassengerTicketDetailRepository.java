@@ -14,6 +14,9 @@ import com.ralsei.dto.projection.passengerbooking.PassengerProfileProjection;
 import com.ralsei.dto.projection.staffpassengerticket.StaffPassengerTicketRowProjection;
 import com.ralsei.model.PassengerTicketDetail;
 
+/**
+ * Provides persistence access for passenger ticket detail data.
+ */
 public interface PassengerTicketDetailRepository extends JpaRepository<PassengerTicketDetail, Integer> {
 
     @Modifying

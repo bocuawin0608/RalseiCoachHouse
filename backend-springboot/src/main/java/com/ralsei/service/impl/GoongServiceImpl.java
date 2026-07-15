@@ -22,6 +22,9 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the goong service impl component for the application.
+ */
 public class GoongServiceImpl implements GoongService {
 
     @Value("${goong.api.key}")
@@ -32,12 +35,26 @@ public class GoongServiceImpl implements GoongService {
     private final RouteRepository routeRepository;
 
     @Override
+    /**
+     * Executes the autocomplete operation.
+     *
+     * @param input the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public Object autocomplete(String input) {
         String url = "https://rsapi.goong.io/v2/place/autocomplete?api_key=" + goongApiKey + "&input=" + input;
         return restTemplate.getForObject(url, Object.class);
     }
 
     @Override
+    /**
+     * Returns the distance and time.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the distance and time
+     */
     public DistanceTimeResponse getDistanceAndTime(DistanceTimeRequest request) {
         String origin = request.getOriginLat() + ", " + request.getOriginLng();
         String destination = request.getDestinationLat() + ", " + request.getDestinationLng();
@@ -63,6 +80,13 @@ public class GoongServiceImpl implements GoongService {
 
     @Override
     @Transactional
+    /**
+     * Executes the calculate route distances operation.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public CalculateRouteDistancesResponse calculateRouteDistances(CalculateRouteDistancesRequest request) {
         int routeId = request.getRouteId();
         List<RouteStop> stops = routeStopRepository.findByRoute_RouteIdOrderByStopOrderAsc(routeId);
@@ -90,6 +114,11 @@ public class GoongServiceImpl implements GoongService {
     }
 
     @Override
+    /**
+     * Executes the calculate and set route stops distances operation.
+     *
+     * @param sortedStops the value supplied for this operation
+     */
     public void calculateAndSetRouteStopsDistances(List<RouteStop> sortedStops) {
         if (sortedStops == null || sortedStops.size() < 2) {
             return;
@@ -143,6 +172,13 @@ public class GoongServiceImpl implements GoongService {
     }
 
     @Override
+    /**
+     * Executes the geocode operation.
+     *
+     * @param address the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public GeocodeResponse geocode(String address) {
         String url = "https://rsapi.goong.io/v2/geocode?api_key=" + goongApiKey + "&address=" + address;
         JsonNode response = restTemplate.getForObject(url, JsonNode.class);

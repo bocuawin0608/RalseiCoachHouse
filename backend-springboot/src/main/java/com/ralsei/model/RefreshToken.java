@@ -24,6 +24,9 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Provides the refresh token component for the application.
+ */
 public class RefreshToken {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,10 +42,20 @@ public class RefreshToken {
     @Column(nullable = false)
     private Boolean isRevoked = false;
 
+    /**
+     * Returns whether the expired is active.
+     *
+     * @return {@code true} if the expired is active; otherwise {@code false}
+     */
     public boolean isExpired() {
         return LocalDateTime.now().isAfter(expiresAt);
     }
 
+    /**
+     * Returns whether the valid is active.
+     *
+     * @return {@code true} if the valid is active; otherwise {@code false}
+     */
     public boolean isValid() {
         return !isRevoked && !isExpired();
     }

@@ -23,6 +23,9 @@ import lombok.Setter;
  * Role entity.
  */
 
+/**
+ * Provides the role component for the application.
+ */
 public class Role extends BaseEntity {
 
     @Id

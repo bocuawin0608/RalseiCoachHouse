@@ -38,6 +38,9 @@ import lombok.RequiredArgsConstructor;
  * All endpoints require ADMIN role.
  */
 
+/**
+ * Handles HTTP requests for customer operations.
+ */
 public class CustomerController {
     private final CustomerService customerService;
 
@@ -57,6 +60,13 @@ public class CustomerController {
     }
 
     @PostMapping(path = {"", "/"})
+    /**
+     * Creates the customer.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the created customer
+     */
     public ResponseEntity<Integer> createCustomer(@Valid @RequestBody CreateCustomerRequest request) {
         Integer newId = customerService.createCustomer(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(newId);

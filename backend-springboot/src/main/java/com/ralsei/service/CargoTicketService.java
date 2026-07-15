@@ -14,6 +14,9 @@ import com.ralsei.dto.response.cargoticketdetail.CargoTicketDetailResponse;
 import com.ralsei.dto.request.cargoticketdetail.CargoTicketDetailPriceRequest;
 import java.util.List;
 
+/**
+ * Provides the business service contract for cargo ticket.
+ */
 public interface CargoTicketService {
     PagedResponse<CargoTicketResponse> getAllCargoTickets(int page, int size);
 

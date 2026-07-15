@@ -10,6 +10,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * CustomerListResponse
  */
 
+/**
+ * Represents the response payload for customer list operations.
+ */
 public record CustomerListResponse(
     Integer customerId,
     String customerName,

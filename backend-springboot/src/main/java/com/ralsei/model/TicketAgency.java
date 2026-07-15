@@ -23,6 +23,9 @@ import lombok.Setter;
  * TicketAgency entity.
  */
 
+/**
+ * Provides the ticket agency component for the application.
+ */
 public class TicketAgency extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

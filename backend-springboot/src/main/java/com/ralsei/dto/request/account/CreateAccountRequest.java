@@ -12,6 +12,9 @@ import jakarta.validation.constraints.Size;
  * CreateAccountRequest
  */
 
+/**
+ * Represents the request payload for create account operations.
+ */
 public record CreateAccountRequest(
     @NotBlank(message = "Tên đăng nhập không được để trống.")
     @Size(max = 50, message = "Tên đăng nhập không được vượt quá 50 ký tự.")

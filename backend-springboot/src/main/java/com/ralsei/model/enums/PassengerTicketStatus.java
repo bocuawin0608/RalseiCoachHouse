@@ -3,6 +3,9 @@ package com.ralsei.model.enums;
 import lombok.Getter;
 
 @Getter
+/**
+ * Provides the passenger ticket status component for the application.
+ */
 public enum PassengerTicketStatus {
     PENDING("Đang xử lý"),
     CONFIRMED("Đã xác nhận"),
@@ -21,6 +24,13 @@ public enum PassengerTicketStatus {
      * @param value raw status text, may be {@code null}
      * @return matching enum constant, or {@code null} when input is blank
      * @throws IllegalArgumentException when the value is not a supported status
+     */
+    /**
+     * Executes the parse search value operation.
+     *
+     * @param value the value supplied for this operation
+     *
+     * @return the operation result
      */
     public static PassengerTicketStatus parseSearchValue(String value) {
         if (value == null || value.isBlank()) {

@@ -35,6 +35,9 @@ import jakarta.transaction.Transactional;
  * rules. Customer queries expose only scheduled, future, priced, selectable
  * trips; staff queries retain operational records needed for management.</p>
  */
+/**
+ * Provides persistence access for trip data.
+ */
 public interface TripRepository extends JpaRepository<Trip, Integer> {
 
     @Query(value = """

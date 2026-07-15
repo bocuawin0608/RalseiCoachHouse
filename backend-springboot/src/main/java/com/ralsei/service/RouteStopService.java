@@ -8,6 +8,9 @@ import com.ralsei.dto.response.CoachAndRouteStop.RouteStopResponse;
 import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.model.RouteStop;
 
+/**
+ * Provides the business service contract for route stop.
+ */
 public interface RouteStopService {
     RouteStopResponse createRouteStop(RouteStopRequest request);
 

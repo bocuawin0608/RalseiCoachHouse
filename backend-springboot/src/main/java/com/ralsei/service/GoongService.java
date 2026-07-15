@@ -8,6 +8,9 @@ import com.ralsei.dto.response.goong.GeocodeResponse;
 import com.ralsei.model.RouteStop;
 import java.util.List;
 
+/**
+ * Provides the business service contract for goong.
+ */
 public interface GoongService {
     Object autocomplete(String input);
     DistanceTimeResponse getDistanceAndTime(DistanceTimeRequest request);

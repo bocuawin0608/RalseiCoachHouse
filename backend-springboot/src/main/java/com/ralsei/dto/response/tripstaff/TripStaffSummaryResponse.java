@@ -6,6 +6,9 @@ package com.ralsei.dto.response.tripstaff;
 
 import java.time.LocalDateTime;
 
+/**
+ * Represents the response payload for trip staff summary operations.
+ */
 public record TripStaffSummaryResponse(
         Integer tripId,
         String routeName,

@@ -13,6 +13,9 @@ import java.time.LocalDate;
  * any service or repository work begins.
  */
 @Data
+/**
+ * Represents the request payload for trip search operations.
+ */
 public class TripSearchRequest {
 
     public static final int MAX_PAGE_SIZE = 100;

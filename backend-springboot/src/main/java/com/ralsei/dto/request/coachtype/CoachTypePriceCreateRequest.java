@@ -8,6 +8,9 @@ import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 
+/**
+ * Represents the request payload for coach type price create operations.
+ */
 public record CoachTypePriceCreateRequest(
     @NotNull(message = "Giá tiền không được để trống.")
     @PositiveOrZero(message = "Giá tiền không được nhỏ hơn 0.")
@@ -20,12 +23,22 @@ public record CoachTypePriceCreateRequest(
     LocalDateTime endEffectiveDate
 ) {
     @AssertTrue(message = "Ngày bắt đầu hiệu lực không được ở quá khứ.")
+    /**
+     * Returns whether the start effective date valid is active.
+     *
+     * @return {@code true} if the start effective date valid is active; otherwise {@code false}
+     */
     public boolean isStartEffectiveDateValid() {
         return startEffectiveDate == null
             || !startEffectiveDate.isBefore(LocalDateTime.now().minusMinutes(5));
     }
 
     @AssertTrue(message = "Ngày kết thúc hiệu lực phải sau ngày bắt đầu.")
+    /**
+     * Returns whether the end effective date valid is active.
+     *
+     * @return {@code true} if the end effective date valid is active; otherwise {@code false}
+     */
     public boolean isEndEffectiveDateValid() {
         return endEffectiveDate == null
             || startEffectiveDate == null

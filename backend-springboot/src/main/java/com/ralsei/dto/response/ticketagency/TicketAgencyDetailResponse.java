@@ -5,6 +5,9 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Represents the response payload for ticket agency detail operations.
+ */
 public record TicketAgencyDetailResponse(
     Integer ticketAgencyId,
     String ticketAgencyName,
@@ -20,5 +23,17 @@ public record TicketAgencyDetailResponse(
     LocalDateTime updatedAt,
     Integer updatedBy
 ) {
+    /**
+     * Provides the staff summary component for the application.
+     */
+    /**
+     * Executes the staff summary operation.
+     *
+     * @param staffId the value supplied for this operation
+     * @param staffName the value supplied for this operation
+     * @param staffPosition the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public record StaffSummary(Integer staffId, String staffName, String staffPosition) {}
 }

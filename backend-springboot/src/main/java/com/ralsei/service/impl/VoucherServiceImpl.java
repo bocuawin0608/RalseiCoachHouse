@@ -28,12 +28,22 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the voucher service impl component for the application.
+ */
 public class VoucherServiceImpl implements VoucherService {
     private final VoucherRepository voucherRepository;
     private final PassengerTicketRepository passengerTicketRepository;
 
     @Override
     @Transactional
+    /**
+     * Creates the voucher.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the created voucher
+     */
     public VoucherResponse createVoucher(CreateVoucherRequest request) {
         validateDiscountValue(request.getDiscountType(), request.getDiscountValue());
         validateDateRange(request.getStartEffectiveDate(), request.getEndEffectiveDate());
@@ -60,6 +70,14 @@ public class VoucherServiceImpl implements VoucherService {
 
     @Override
     @Transactional
+    /**
+     * Updates the voucher.
+     *
+     * @param id the value supplied for this operation
+     * @param request the value supplied for this operation
+     *
+     * @return the updated voucher
+     */
     public VoucherResponse updateVoucher(int id, UpdateVoucherRequest request) {
         Voucher voucher = voucherRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Voucher not found with id: " + id));
@@ -99,6 +117,13 @@ public class VoucherServiceImpl implements VoucherService {
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Returns the voucher by id.
+     *
+     * @param id the value supplied for this operation
+     *
+     * @return the voucher by id
+     */
     public VoucherResponse getVoucherById(int id) {
         Voucher voucher = voucherRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Voucher not found with id: " + id));
@@ -107,6 +132,13 @@ public class VoucherServiceImpl implements VoucherService {
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Returns the all vouchers.
+     *
+     * @param filterRequest the value supplied for this operation
+     *
+     * @return the all vouchers
+     */
     public PagedResponse<VoucherResponse> getAllVouchers(VoucherFilterRequest filterRequest) {
         PageRequest pageRequest = PageRequest.of(
                 filterRequest.getPage(),
@@ -134,6 +166,11 @@ public class VoucherServiceImpl implements VoucherService {
 
     @Override
     @Transactional
+    /**
+     * Deletes the voucher.
+     *
+     * @param id the value supplied for this operation
+     */
     public void deleteVoucher(int id) {
         Voucher voucher = voucherRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Voucher not found with id: " + id));
@@ -234,18 +271,40 @@ public class VoucherServiceImpl implements VoucherService {
 
     @Transactional(readOnly = true)
     @Override
+    /**
+     * Returns the eligible voucher.
+     *
+     * @param voucherId the value supplied for this operation
+     * @param currentOrderValue the value supplied for this operation
+     *
+     * @return the eligible voucher
+     */
     public Voucher getEligibleVoucher(Integer voucherId, BigDecimal currentOrderValue) {
         return voucherRepository.getEligibleVoucher(voucherId, currentOrderValue);
     }
 
     @Transactional
     @Override
+    /**
+     * Executes the increment used count if available operation.
+     *
+     * @param voucherId the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public int incrementUsedCountIfAvailable(Integer voucherId) {
         return voucherRepository.incrementUsedCountIfAvailable(voucherId);
     }
 
     @Transactional
     @Override
+    /**
+     * Executes the decrement used count if applied operation.
+     *
+     * @param voucherId the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public int decrementUsedCountIfApplied(Integer voucherId) {
         return voucherRepository.decrementUsedCountIfApplied(voucherId);
     }

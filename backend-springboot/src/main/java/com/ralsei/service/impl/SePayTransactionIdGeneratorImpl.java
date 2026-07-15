@@ -8,11 +8,19 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the se pay transaction id generator impl component for the application.
+ */
 public class SePayTransactionIdGeneratorImpl implements TransactionIdGenerator {
 
     private final PaymentRepository paymentRepository;
 
     @Override
+    /**
+     * Executes the generate unique transaction id operation.
+     *
+     * @return the operation result
+     */
     public String generateUniqueTransactionId() {
         String transactionId;
         do {

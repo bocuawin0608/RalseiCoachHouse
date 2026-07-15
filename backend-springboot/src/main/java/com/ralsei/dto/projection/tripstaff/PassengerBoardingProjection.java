@@ -4,6 +4,9 @@
  */
 package com.ralsei.dto.projection.tripstaff;
 
+/**
+ * Projects the passenger boardin data shape for query results.
+ */
 public interface PassengerBoardingProjection {
 
     Integer getTicketDetailId();

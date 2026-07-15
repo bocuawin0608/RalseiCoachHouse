@@ -17,6 +17,9 @@ import com.ralsei.dto.response.coach.CoachResponse;
 import com.ralsei.model.Coach;
 import com.ralsei.model.enums.CoachStatus;
 
+/**
+ * Provides persistence access for coach data.
+ */
 public interface CoachRepository extends JpaRepository<Coach, Integer> {
 
     @Query(value = """

@@ -12,6 +12,9 @@ import com.ralsei.dto.projection.CoachStopDropdownProjection;
 import com.ralsei.model.CoachStop;
 import com.ralsei.dto.projection.cargoticket.CargoTicketStopOptionProjection;
 
+/**
+ * Provides persistence access for coach stop data.
+ */
 public interface CoachStopRepository extends JpaRepository<CoachStop, Integer> {
 
   @Query(value = """

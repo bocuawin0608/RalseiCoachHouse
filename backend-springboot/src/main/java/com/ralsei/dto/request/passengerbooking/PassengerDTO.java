@@ -9,6 +9,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Represents the data transfer object for passenger.
+ */
 public record PassengerDTO(
     @NotNull(message = "Mã ghế không được để trống!")
     @Min(value = 1, message = "Mã ghế không hợp lệ!")

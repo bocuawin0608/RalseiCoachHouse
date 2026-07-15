@@ -1,5 +1,8 @@
 package com.ralsei.dto.response.coach;
 
+/**
+ * Represents the data transfer object for seat.
+ */
 public record SeatDTO(
     Integer seatId,
     String seatCode,

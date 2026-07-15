@@ -22,6 +22,9 @@ import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
  * of rendering a token for an authorized customer.</p>
  */
 @Component
+/**
+ * Provides the qrcreate uitility component for the application.
+ */
 public class QRCreateUitility {
 
     private static final int QR_SIZE_PIXELS = 360;
@@ -33,6 +36,13 @@ public class QRCreateUitility {
      * @return PNG file contents
      * @throws IllegalArgumentException when the persisted token is missing
      * @throws IllegalStateException when the QR encoder cannot render the token
+     */
+    /**
+     * Creates the png.
+     *
+     * @param boardingToken the value supplied for this operation
+     *
+     * @return the created png
      */
     public byte[] createPng(String boardingToken) {
         if (boardingToken == null || boardingToken.isBlank()) {

@@ -10,6 +10,9 @@ import com.ralsei.dto.projection.cargotype.CargoTypeManagementProjection;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+/**
+ * Provides persistence access for cargo type data.
+ */
 public interface CargoTypeRepository extends JpaRepository<CargoType, Integer> {
     Page<CargoType> findByCargoTypeNameContainingIgnoreCase(String cargoTypeName, Pageable pageable);
 

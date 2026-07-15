@@ -29,17 +29,34 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/v1/routes")
 @RequiredArgsConstructor
+/**
+ * Handles HTTP requests for route operations.
+ */
 public class RouteController {
 
     private final RouteService routeService;
 
     @PostMapping
+    /**
+     * Creates the route.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the created route
+     */
     public ResponseEntity<RouteResponse> createRoute(@Valid @RequestBody RouteRequest request) {
         RouteResponse response = routeService.createRoute(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/with-stops")
+    /**
+     * Creates the route with stops.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the created route with stops
+     */
     public ResponseEntity<RouteWithStopsResponse> createRouteWithStops(@Valid @RequestBody RouteWithStopsRequest request) {
         RouteWithStopsResponse response = routeService.createRouteWithStops(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -54,6 +71,11 @@ public class RouteController {
     }
 
     @GetMapping("/dropdown")
+    /**
+     * Searches for routes for dropdown records.
+     *
+     * @return the matching results
+     */
     public ResponseEntity<List<RouteDropdownDTO>> searchRoutesForDropdown() {
         return ResponseEntity.ok(routeService.findRoutesForDropdown());
     }
@@ -68,6 +90,13 @@ public class RouteController {
     }
 
     @GetMapping("/{id:\\d+}")
+    /**
+     * Returns the route by id.
+     *
+     * @param id the value supplied for this operation
+     *
+     * @return the route by id
+     */
     public ResponseEntity<RouteResponse> getRouteById(@PathVariable int id) {
         RouteResponse response = routeService.getRouteById(id);
         return ResponseEntity.ok(response);
@@ -84,12 +113,26 @@ public class RouteController {
     }
 
     @PatchMapping("/{id}/soft-delete")
+    /**
+     * Executes the soft delete route operation.
+     *
+     * @param id the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public ResponseEntity<Void> softDeleteRoute(@PathVariable int id) {
         routeService.softDeleteRoute(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/restore")
+    /**
+     * Executes the restore route operation.
+     *
+     * @param id the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public ResponseEntity<Void> restoreRoute(@PathVariable int id) {
         routeService.restoreRoute(id);
         return ResponseEntity.noContent().build();

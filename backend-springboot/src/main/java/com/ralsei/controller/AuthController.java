@@ -22,6 +22,9 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+/**
+ * Handles HTTP requests for auth operations.
+ */
 public class AuthController {
     private final AuthService authService;
 
@@ -57,12 +60,26 @@ public class AuthController {
     }
 
     @PostMapping("/refresh-token")
+    /**
+     * Executes the refresh token operation.
+     *
+     * @param refreshToken the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public ResponseEntity<AuthResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest refreshToken) {
         System.out.println(".... co cai gi chay o day ko ....");
         return ResponseEntity.ok(authService.refreshToken(refreshToken));
     }
 
     @PostMapping("/logout")
+    /**
+     * Executes the logout operation.
+     *
+     * @param refreshToken the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest refreshToken) {
         authService.logout(refreshToken);
         return ResponseEntity.noContent().build();

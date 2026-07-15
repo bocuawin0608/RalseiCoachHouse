@@ -16,12 +16,22 @@ import com.ralsei.model.enums.PassengerTicketMajorChangeType;
 import com.ralsei.model.enums.PassengerTicketStatus;
 
 @Component
+/**
+ * Provides the passenger ticket staff policy component for the application.
+ */
 public class PassengerTicketStaffPolicy {
 
     private static final long CHANGE_CUTOFF_HOURS = 3;
     private static final long FULL_REFUND_CUTOFF_HOURS = 5;
     private static final long CANCEL_MIN_AGE_HOURS = 24;
 
+    /**
+     * Executes the hours until departure operation.
+     *
+     * @param departureTime the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public long hoursUntilDeparture(LocalDateTime departureTime) {
         if (departureTime == null) {
             return Long.MIN_VALUE;
@@ -29,6 +39,13 @@ public class PassengerTicketStaffPolicy {
         return Duration.between(LocalDateTime.now(), departureTime).toHours();
     }
 
+    /**
+     * Executes the hours since created operation.
+     *
+     * @param createdAt the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public long hoursSinceCreated(LocalDateTime createdAt) {
         if (createdAt == null) {
             return Long.MIN_VALUE;
@@ -36,6 +53,13 @@ public class PassengerTicketStaffPolicy {
         return Duration.between(createdAt, LocalDateTime.now()).toHours();
     }
 
+    /**
+     * Executes the can cancel by ticket age operation.
+     *
+     * @param createdAt the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public boolean canCancelByTicketAge(LocalDateTime createdAt) {
         return hoursSinceCreated(createdAt) >= CANCEL_MIN_AGE_HOURS;
     }
@@ -47,6 +71,13 @@ public class PassengerTicketStaffPolicy {
         return refundPolicyDepartureTime != null ? refundPolicyDepartureTime : liveDepartureTime;
     }
 
+    /**
+     * Executes the resolve refund tier label operation.
+     *
+     * @param hoursUntilDeparture the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public String resolveRefundTierLabel(long hoursUntilDeparture) {
         if (hoursUntilDeparture < CHANGE_CUTOFF_HOURS) {
             return "Không được hủy";
@@ -57,14 +88,36 @@ public class PassengerTicketStaffPolicy {
         return "50%";
     }
 
+    /**
+     * Executes the can modify operation.
+     *
+     * @param hoursUntilDeparture the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public boolean canModify(long hoursUntilDeparture) {
         return hoursUntilDeparture >= CHANGE_CUTOFF_HOURS;
     }
 
+    /**
+     * Executes the can cancel operation.
+     *
+     * @param hoursUntilDeparture the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public boolean canCancel(long hoursUntilDeparture) {
         return hoursUntilDeparture >= CHANGE_CUTOFF_HOURS;
     }
 
+    /**
+     * Executes the calculate refund amount operation.
+     *
+     * @param hoursUntilDeparture the value supplied for this operation
+     * @param paymentAmount the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public BigDecimal calculateRefundAmount(long hoursUntilDeparture, BigDecimal paymentAmount) {
         if (paymentAmount == null) {
             throw new BusinessRuleException("Không xác định được số tiền thanh toán.");
@@ -80,6 +133,11 @@ public class PassengerTicketStaffPolicy {
         return paymentAmount.multiply(new BigDecimal("0.5")).setScale(0, RoundingMode.HALF_UP);
     }
 
+    /**
+     * Executes the assert major change quota available operation.
+     *
+     * @param majorChangeType the value supplied for this operation
+     */
     public void assertMajorChangeQuotaAvailable(PassengerTicketMajorChangeType majorChangeType) {
         if (majorChangeType != null) {
             throw new BusinessRuleException(
@@ -192,6 +250,12 @@ public class PassengerTicketStaffPolicy {
         }
     }
 
+    /**
+     * Executes the assert price eligible operation.
+     *
+     * @param originalNetPaid the value supplied for this operation
+     * @param newNetPaid the value supplied for this operation
+     */
     public void assertPriceEligible(BigDecimal originalNetPaid, BigDecimal newNetPaid) {
         if (originalNetPaid == null) {
             throw new BusinessRuleException("Không xác định được số tiền đã thanh toán.");

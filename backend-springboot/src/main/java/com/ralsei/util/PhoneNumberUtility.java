@@ -5,6 +5,13 @@ public final class PhoneNumberUtility {
     private PhoneNumberUtility() {
     }
 
+    /**
+     * Executes the normalize to local format operation.
+     *
+     * @param phone the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public static String normalizeToLocalFormat(String phone) {
         if (phone == null) {
             return null;
@@ -20,6 +27,14 @@ public final class PhoneNumberUtility {
         return trimmed;
     }
 
+    /**
+     * Executes the matches local phone operation.
+     *
+     * @param expectedLocalPhone the value supplied for this operation
+     * @param actualPhone the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public static boolean matchesLocalPhone(String expectedLocalPhone, String actualPhone) {
         String normalizedExpected = normalizeToLocalFormat(expectedLocalPhone);
         String normalizedActual = normalizeToLocalFormat(actualPhone);

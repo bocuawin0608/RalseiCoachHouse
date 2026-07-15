@@ -3,6 +3,9 @@ package com.ralsei.exception;
 import lombok.Getter;
 
 @Getter
+/**
+ * Signals a business rule error condition.
+ */
 public class BusinessRuleException extends RuntimeException {
 
     private final String code;

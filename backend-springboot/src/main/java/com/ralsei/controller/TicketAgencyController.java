@@ -41,6 +41,9 @@ import lombok.RequiredArgsConstructor;
  * All endpoints require ADMIN role.
  */
 
+/**
+ * Handles HTTP requests for ticket agency operations.
+ */
 public class TicketAgencyController {
     private final TicketAgencyService ticketAgencyService;
 
@@ -60,6 +63,13 @@ public class TicketAgencyController {
     }
 
     @PostMapping(path = {"", "/"})
+    /**
+     * Creates the ticket agency.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the created ticket agency
+     */
     public ResponseEntity<Integer> createTicketAgency(@Valid @RequestBody CreateTicketAgencyRequest request) {
         Integer newId = ticketAgencyService.createTicketAgency(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(newId);

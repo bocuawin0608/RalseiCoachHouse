@@ -31,6 +31,9 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the trip staff cargo service impl component for the application.
+ */
 public class TripStaffCargoServiceImpl implements TripStaffCargoService {
 
     private final JwtService jwtService;
@@ -42,6 +45,14 @@ public class TripStaffCargoServiceImpl implements TripStaffCargoService {
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Returns the cargo list.
+     *
+     * @param authorizationHeader the value supplied for this operation
+     * @param tripId the value supplied for this operation
+     *
+     * @return the cargo list
+     */
     public TripStaffCargoResponse getCargoList(String authorizationHeader, int tripId) {
         resolveStaff(authorizationHeader);
 
@@ -56,6 +67,13 @@ public class TripStaffCargoServiceImpl implements TripStaffCargoService {
 
     @Override
     @Transactional
+    /**
+     * Executes the load cargo operation.
+     *
+     * @param authorizationHeader the value supplied for this operation
+     * @param tripId the value supplied for this operation
+     * @param cargoTicketId the value supplied for this operation
+     */
     public void loadCargo(String authorizationHeader, int tripId, int cargoTicketId) {
         Staff staff = resolveStaff(authorizationHeader);
         CargoTicket ticket = findCargoForTrip(tripId, cargoTicketId);
@@ -72,6 +90,13 @@ public class TripStaffCargoServiceImpl implements TripStaffCargoService {
 
     @Override
     @Transactional
+    /**
+     * Executes the unload cargo operation.
+     *
+     * @param authorizationHeader the value supplied for this operation
+     * @param tripId the value supplied for this operation
+     * @param cargoTicketId the value supplied for this operation
+     */
     public void unloadCargo(String authorizationHeader, int tripId, int cargoTicketId) {
         Staff staff = resolveStaff(authorizationHeader);
         CargoTicket ticket = findCargoForTrip(tripId, cargoTicketId);
@@ -88,6 +113,13 @@ public class TripStaffCargoServiceImpl implements TripStaffCargoService {
 
     @Override
     @Transactional
+    /**
+     * Executes the mark delivered operation.
+     *
+     * @param authorizationHeader the value supplied for this operation
+     * @param tripId the value supplied for this operation
+     * @param cargoTicketId the value supplied for this operation
+     */
     public void markDelivered(String authorizationHeader, int tripId, int cargoTicketId) {
         resolveStaff(authorizationHeader);
         CargoTicket ticket = findCargoForTrip(tripId, cargoTicketId);

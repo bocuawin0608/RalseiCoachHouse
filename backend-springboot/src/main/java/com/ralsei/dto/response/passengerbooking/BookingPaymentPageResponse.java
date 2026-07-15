@@ -4,6 +4,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Represents the response payload for booking payment page operations.
+ */
 public record BookingPaymentPageResponse(
     String ticketCode,
     String transactionId,

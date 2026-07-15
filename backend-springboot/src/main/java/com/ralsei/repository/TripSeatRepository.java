@@ -13,6 +13,9 @@ import com.ralsei.dto.response.passengerbooking.TripSeatResponse;
 import com.ralsei.model.TripSeat;
 import com.ralsei.model.enums.TripSeatStatus;
 
+/**
+ * Provides persistence access for trip seat data.
+ */
 public interface TripSeatRepository extends JpaRepository<TripSeat, Integer> {
     @Query(value = """
         SELECT new com.ralsei.dto.response.passengerbooking.TripSeatResponse(

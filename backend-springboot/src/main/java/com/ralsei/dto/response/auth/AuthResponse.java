@@ -9,6 +9,9 @@ import lombok.Getter;
 @Getter
 @Builder
 @AllArgsConstructor
+/**
+ * Represents the response payload for auth operations.
+ */
 public class AuthResponse {
     private final boolean success;
     private final String message;

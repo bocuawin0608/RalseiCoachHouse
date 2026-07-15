@@ -23,6 +23,9 @@ import lombok.Setter;
  * AccountRole entity.
  */
 
+/**
+ * Provides the account role component for the application.
+ */
 public class AccountRole {
 
     @Id

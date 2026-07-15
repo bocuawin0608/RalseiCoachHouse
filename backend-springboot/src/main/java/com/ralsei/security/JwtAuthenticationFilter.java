@@ -22,6 +22,9 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
+/**
+ * Filters incoming requests for jwt authentication processing.
+ */
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
@@ -35,6 +38,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      * @return {@code true} when JWT authentication must be skipped
      */
     @Override
+    /**
+     * Executes the should not filter operation.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the operation result
+     */
     protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
         String path = request.getServletPath();
         return "/api/payment/sepay-ipn".equals(path)

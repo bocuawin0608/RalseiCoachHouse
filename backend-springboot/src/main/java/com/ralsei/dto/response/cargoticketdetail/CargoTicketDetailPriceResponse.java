@@ -8,6 +8,9 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+/**
+ * Represents the response payload for cargo ticket detail price operations.
+ */
 public class CargoTicketDetailPriceResponse {
     private BigDecimal calculatedPrice;
 }

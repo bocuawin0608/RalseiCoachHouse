@@ -4,6 +4,9 @@ package com.ralsei.dto.projection;
  * AccountListProjection
  */
 
+/**
+ * Projects the account lis data shape for query results.
+ */
 public interface AccountListProjection {
     Integer getAccountId();
     String getUsername();

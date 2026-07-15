@@ -34,6 +34,9 @@ import lombok.RequiredArgsConstructor;
 @PreAuthorize("hasRole('CUSTOMER')")
 @RequiredArgsConstructor
 @Validated
+/**
+ * Handles HTTP requests for customer ticket history operations.
+ */
 public class CustomerTicketHistoryController {
 
     private final CustomerTicketHistoryService historyService;

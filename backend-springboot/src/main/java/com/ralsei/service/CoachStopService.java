@@ -4,6 +4,9 @@ import com.ralsei.dto.request.CoachAndRouteStop.CoachStopRequest;
 import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.dto.response.CoachAndRouteStop.CoachStopResponse;
 
+/**
+ * Provides the business service contract for coach stop.
+ */
 public interface CoachStopService {
     CoachStopResponse createCoachStop(CoachStopRequest request);
 

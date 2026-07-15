@@ -30,6 +30,9 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the route stop service impl component for the application.
+ */
 public class RouteStopServiceImpl implements RouteStopService {
 
         private final RouteStopRepository routeStopRepository;
@@ -38,6 +41,13 @@ public class RouteStopServiceImpl implements RouteStopService {
 
         @Override
         @Transactional
+        /**
+         * Creates the route stop.
+         *
+         * @param request the value supplied for this operation
+         *
+         * @return the created route stop
+         */
         public RouteStopResponse createRouteStop(RouteStopRequest request) {
                 Route route = routeRepository.findById(Objects.requireNonNull(request.getRouteId()))
                                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -94,6 +104,14 @@ public class RouteStopServiceImpl implements RouteStopService {
         // deprecated
         @Override
         @Transactional
+        /**
+         * Updates the route stop.
+         *
+         * @param id the value supplied for this operation
+         * @param request the value supplied for this operation
+         *
+         * @return the updated route stop
+         */
         public RouteStopResponse updateRouteStop(int id, RouteStopRequest request) {
                 RouteStop routeStop = routeStopRepository.findById(id)
                                 .orElseThrow(() -> new ResourceNotFoundException("RouteStop not found with ID: " + id));
@@ -146,12 +164,29 @@ public class RouteStopServiceImpl implements RouteStopService {
 
         @Override
         @Transactional(readOnly = true)
+        /**
+         * Returns the route stop by id.
+         *
+         * @param id the value supplied for this operation
+         *
+         * @return the route stop by id
+         */
         public RouteStopResponse getRouteStopById(int id) {
                 RouteStop routeStop = routeStopRepository.findById(id)
                                 .orElseThrow(() -> new ResourceNotFoundException("RouteStop not found with ID: " + id));
                 return mapToResponse(routeStop);
         }
 
+        /**
+         * Returns the all route stops.
+         *
+         * @param routeId the value supplied for this operation
+         * @param stopPointId the value supplied for this operation
+         * @param page the value supplied for this operation
+         * @param size the value supplied for this operation
+         *
+         * @return the all route stops
+         */
         public PagedResponse<RouteStopResponse> getAllRouteStops(int routeId, int stopPointId, int page, int size) {
                 Pageable pageable = PageRequest.of(page, size, Sort.by("stopOrder").ascending());
                 Page<RouteStop> routeStopPage = routeStopRepository.searchRouteStops(
@@ -174,6 +209,11 @@ public class RouteStopServiceImpl implements RouteStopService {
 
         @Override
         @Transactional
+        /**
+         * Deletes the route stop.
+         *
+         * @param id the value supplied for this operation
+         */
         public void deleteRouteStop(int id) {
                 RouteStop routeStop = routeStopRepository.findById(id)
                                 .orElseThrow(() -> new ResourceNotFoundException("RouteStop not found with ID: " + id));
@@ -221,6 +261,13 @@ public class RouteStopServiceImpl implements RouteStopService {
 
         @Override
         @Transactional
+        /**
+         * Executes the bulk update orders operation.
+         *
+         * @param requests the value supplied for this operation
+         *
+         * @return the operation result
+         */
         public List<RouteStopResponse> bulkUpdateOrders(List<RouteStopOrderUpdateRequest> requests) {
                 if (requests == null || requests.isEmpty()) {
                         return new ArrayList<>();
@@ -278,6 +325,13 @@ public class RouteStopServiceImpl implements RouteStopService {
 
         @Transactional(readOnly = true)
         @Override
+        /**
+         * Returns the stops by trip id.
+         *
+         * @param tripId the value supplied for this operation
+         *
+         * @return the stops by trip id
+         */
         public List<RouteStop> getStopsByTripId(Integer tripId) {
                 return routeStopRepository.findByTripIdWithCoachStop(tripId);
         }

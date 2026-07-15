@@ -22,6 +22,9 @@ import java.util.List;
  * Customer methods return public projections; staff methods retain their
  * operational projections and are intentionally unaffected by customer rules.
  */
+/**
+ * Provides the business service contract for trip.
+ */
 public interface TripService {
         /**
          * This interface class use to get all trip in the day customer site
@@ -115,12 +118,37 @@ public interface TripService {
         // int page,
         // int size
         // );
+        /**
+         * Executes the insert trip operation.
+         *
+         * @param tripRequest the value supplied for this operation
+         *
+         * @return the operation result
+         */
         public String insertTrip(TripCreateRequest tripRequest);
 
+        /**
+         * Updates the trip.
+         *
+         * @param tripId the value supplied for this operation
+         * @param updateRequest the value supplied for this operation
+         *
+         * @return the updated trip
+         */
         public String updateTrip(Integer tripId, TripUpdateRequest updateRequest);
 
+        /**
+         * Deletes the trip.
+         *
+         * @param tripId the value supplied for this operation
+         */
         public String deleteTrip(Integer tripId);
 
+        /**
+         * Finds the routes for dropdown.
+         *
+         * @return the matching result
+         */
         public List<RouteDropdownDTO> findRoutesForDropdown();
 
         List<StaffProjection> getStaffNameDropDown(LocalDate date);

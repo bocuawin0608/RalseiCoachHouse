@@ -76,6 +76,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the passenger booking service impl component for the application.
+ */
 public class PassengerBookingServiceImpl implements PassengerBookingService {
 
     private final TripRepository tripRepo;
@@ -110,6 +113,13 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
     
     @Transactional(readOnly = true)
     @Override
+    /**
+     * Returns the seat map.
+     *
+     * @param tripId the value supplied for this operation
+     *
+     * @return the seat map
+     */
     public List<TripSeatResponse> getSeatMap(Integer tripId) {
         if(!tripRepo.existsById(tripId)) {
             throw new ResourceNotFoundException("Không tìm thấy chuyến xe có ID là: " + tripId);
@@ -126,6 +136,15 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
 
     @Transactional
     @Override
+    /**
+     * Executes the lock seats operation.
+     *
+     * @param tripId the value supplied for this operation
+     * @param request the value supplied for this operation
+     * @param holdToken the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public SeatLockResponse lockSeats(Integer tripId, SeatLockRequest request, String holdToken) {
         //TODO: check kỹ hơn tripId nào với status nào, departure time (now-8?) nào còn đc đặt vé
 
@@ -147,6 +166,14 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
 
     @Transactional
     @Override
+    /**
+     * Executes the release seats operation.
+     *
+     * @param tripSeatIds the value supplied for this operation
+     * @param holdToken the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public boolean releaseSeats(List<Integer> tripSeatIds, String holdToken) {
         if (tripSeatIds == null || tripSeatIds.isEmpty()) {
             return false; 
@@ -163,6 +190,13 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
 
     @Transactional
     @Override
+    /**
+     * Executes the release seats by becon operation.
+     *
+     * @param holdToken the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public boolean releaseSeatsByBecon(String holdToken) {
         if(holdToken == null || holdToken.isBlank()) {
             return false;
@@ -174,6 +208,15 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
 
     @Transactional(readOnly = true)
     @Override
+    /**
+     * Returns the step2 init data.
+     *
+     * @param tripId the value supplied for this operation
+     * @param holdToken the value supplied for this operation
+     * @param accessToken the value supplied for this operation
+     *
+     * @return the step2 init data
+     */
     public Step2InitResponse getStep2InitData(Integer tripId, String holdToken, String accessToken) {
 
         List<RouteStop> routeStops = routeStopService.getStopsByTripId(tripId);
@@ -202,12 +245,28 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
 
     @Transactional(readOnly = true)
     @Override
+    /**
+     * Executes the check phone operation.
+     *
+     * @param phone the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public CheckPhoneResponse checkPhone(String phone) {
         return passengerPhoneVerificationService.checkPhone(phone);
     }
 
     @Transactional(readOnly = true)
     @Override
+    /**
+     * Executes the calculate price operation.
+     *
+     * @param tripId the value supplied for this operation
+     * @param request the value supplied for this operation
+     * @param accessToken the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public PriceCalculationResponse calculatePrice(Integer tripId, PriceCalculationRequest request, String accessToken) {
 
         CoreCalculationResult coreResult = performCorePriceCalculation(
@@ -226,6 +285,16 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
 
     @Transactional
     @Override
+    /**
+     * Executes the confirm booking operation.
+     *
+     * @param tripId the value supplied for this operation
+     * @param request the value supplied for this operation
+     * @param holdToken the value supplied for this operation
+     * @param accessToken the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public BookingConfirmResponse confirmBooking(Integer tripId, BookingConfirmRequest request, String holdToken, String accessToken) {
         validatePassengerChildBirthYears(request.passengers());
         validatePassengerPhoneVerification(request.passengers());
@@ -267,6 +336,15 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
 
     @Transactional(readOnly = true)
     @Override
+    /**
+     * Returns the payment page.
+     *
+     * @param transactionId the value supplied for this operation
+     * @param cancelToken the value supplied for this operation
+     * @param accessToken the value supplied for this operation
+     *
+     * @return the payment page
+     */
     public BookingPaymentPageResponse getPaymentPage(String transactionId, String cancelToken, String accessToken) {
         Payment payment = paymentService.getPaymentByTransactionId(transactionId);
         if (payment.getPassengerTicketId() == null) {
@@ -314,22 +392,48 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
 
     @Transactional
     @Override
+    /**
+     * Executes the expire pending payment if overdue operation.
+     *
+     * @param transactionId the value supplied for this operation
+     */
     public void expirePendingPaymentIfOverdue(String transactionId) {
         passengerPendingPaymentService.expireIfOverdue(transactionId);
     }
 
     @Transactional
     @Override
+    /**
+     * Cancels the pending payment by user.
+     *
+     * @param transactionId the value supplied for this operation
+     */
     public void cancelPendingPaymentByUser(String transactionId) {
         passengerPendingPaymentService.cancelByUser(transactionId);
     }
 
     @Override
+    /**
+     * Executes the can cancel pending payment operation.
+     *
+     * @param transactionId the value supplied for this operation
+     * @param cancelToken the value supplied for this operation
+     * @param accessToken the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public boolean canCancelPendingPayment(String transactionId, String cancelToken, String accessToken) {
         return passengerPendingPaymentService.canCancelByUser(transactionId, cancelToken, accessToken);
     }
 
     @Override
+    /**
+     * Executes the subscribe payment status operation.
+     *
+     * @param transactionId the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public SseEmitter subscribePaymentStatus(String transactionId) {
         Payment payment = paymentService.getPaymentByTransactionId(transactionId);
         SseEmitter emitter = paymentSseService.createConnection(transactionId);

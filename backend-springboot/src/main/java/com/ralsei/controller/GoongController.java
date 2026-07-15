@@ -14,21 +14,45 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v2/goong")
 @RequiredArgsConstructor
+/**
+ * Handles HTTP requests for goong operations.
+ */
 public class GoongController {
 
     private final GoongService goongService;
 
     @GetMapping("/place/autocomplete")
+    /**
+     * Executes the autocomplete operation.
+     *
+     * @param input the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public ResponseEntity<Object> autocomplete(@RequestParam String input) {
         return ResponseEntity.ok(goongService.autocomplete(input));
     }
 
     @GetMapping("/geocode")
+    /**
+     * Executes the geocode operation.
+     *
+     * @param address the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public ResponseEntity<GeocodeResponse> geocode(@RequestParam String address) {
         return ResponseEntity.ok(goongService.geocode(address));
     }
 
     @GetMapping("/place/distance-time")
+    /**
+     * Returns the distance and time.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the distance and time
+     */
     public ResponseEntity<DistanceTimeResponse> getDistanceAndTime(@Valid @ModelAttribute DistanceTimeRequest request) {
         return ResponseEntity.ok(goongService.getDistanceAndTime(request));
     }

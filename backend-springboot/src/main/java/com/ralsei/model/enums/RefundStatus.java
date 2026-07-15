@@ -6,6 +6,9 @@ import com.ralsei.exception.BusinessRuleException;
  * Lifecycle states persisted in {@code refund.status} and enforced by the
  * database {@code CK_Refund_Status} constraint.
  */
+/**
+ * Provides the refund status component for the application.
+ */
 public enum RefundStatus {
     /** Refund request recorded and awaiting staff payout confirmation. */
     PENDING,
@@ -20,6 +23,13 @@ public enum RefundStatus {
      * @param value raw status text, may be {@code null}
      * @return matching enum constant, or {@code null} when input is blank
      * @throws BusinessRuleException when the value is not a supported status
+     */
+    /**
+     * Executes the from value operation.
+     *
+     * @param value the value supplied for this operation
+     *
+     * @return the operation result
      */
     public static RefundStatus fromValue(String value) {
         if (value == null || value.isBlank()) {

@@ -9,6 +9,9 @@ import jakarta.validation.constraints.Size;
  * CreateCustomerRequest
  */
 
+/**
+ * Represents the request payload for create customer operations.
+ */
 public record CreateCustomerRequest(
     @NotBlank(message = "Tên khách hàng không được để trống.")
     @Size(max = 100, message = "Tên khách hàng không được vượt quá 100 ký tự.")

@@ -32,10 +32,24 @@ public final class AccountRoleGuard {
     private AccountRoleGuard() {
     }
 
+    /**
+     * Returns whether the staff role is active.
+     *
+     * @param roleName the value supplied for this operation
+     *
+     * @return {@code true} if the staff role is active; otherwise {@code false}
+     */
     public static boolean isStaffRole(String roleName) {
         return roleName != null && STAFF_ROLES.contains(roleName);
     }
 
+    /**
+     * Returns whether the customer role is active.
+     *
+     * @param roleName the value supplied for this operation
+     *
+     * @return {@code true} if the customer role is active; otherwise {@code false}
+     */
     public static boolean isCustomerRole(String roleName) {
         return CUSTOMER_ROLE.equals(roleName);
     }
