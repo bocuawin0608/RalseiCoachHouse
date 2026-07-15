@@ -76,7 +76,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
         return CargoTicketFormOptionsResponse.builder()
                 .routes(routeRepository.findRoutesForDropdown())
                 .trips(pickupStopId != null && dropoffStopId != null && !pickupStopId.equals(dropoffStopId)
-                        ? tripRepository.findCargoTicketTripOptions(pickupStopId, dropoffStopId)
+                        ? tripRepository.findCargoTicketTripOptionsWithCoachType(pickupStopId, dropoffStopId)
                         : List.of())
                 .customers(customerRepository.findCargoTicketCustomerOptions())
                 .stops(coachStopRepository.findCargoTicketStopOptions())
@@ -331,6 +331,8 @@ public class CargoTicketServiceImpl implements CargoTicketService {
                         .tripId(t.getTripId())
                         .routeId(t.getRouteId())
                         .coachId(t.getCoachId())
+                        .coachTypeName(t.getCoach() != null && t.getCoach().getCoachType() != null 
+                                ? t.getCoach().getCoachType().getCoachTypeName() : null)
                         .departureTime(t.getDepartureTime())
                         .status(t.getStatus())
                         .build())
