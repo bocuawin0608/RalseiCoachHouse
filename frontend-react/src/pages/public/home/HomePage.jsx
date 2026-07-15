@@ -15,7 +15,7 @@ const JOURNEY_LEG = {
     OUTBOUND: 'OUTBOUND',
     RETURN: 'RETURN',
 };
-const FALLBACK_LOCATIONS = ['Hà Nội', 'Quảng Bình'];
+const FALLBACK_LOCATIONS = ['Hà Nội', 'Quảng Trị'];
 const VEHICLE_FILTERS = [
     { label: 'Xe Limousine VIP 20 phòng', value: 'Limousine' },
     { label: 'Xe Giường Nằm Luxury 32 chỗ', value: 'luxury' },
@@ -797,12 +797,12 @@ const HomePage = () => {
                         <h3 className="office-section-title">Liên hệ</h3>
                         <div className="office-grid-layout">
                             <div className="office-card">
-                                <div className="office-card-header">VP Quảng Bình</div>
+                                <div className="office-card-header">VP Quảng Trị</div>
                                 <div className="office-card-body">
                                     <ul className="address-list">
-                                        <li><SvgIcon name="pin" className="location-icon" />19A Lý Thường Kiệt, Đồng Hới, Quảng Bình</li>
-                                        <li><SvgIcon name="pin" className="location-icon" />Đường Nguyễn Văn Linh, Bố Trạch, Hoàn Lão, Quảng Bình</li>
-                                        <li><SvgIcon name="pin" className="location-icon" />Nguyễn Tất Thành, Kiến Giang, Lệ Thủy, Quảng Bình</li>
+                                        <li><SvgIcon name="pin" className="location-icon" />19A Lý Thường Kiệt, Đồng Hới, Quảng Trị</li>
+                                        <li><SvgIcon name="pin" className="location-icon" />Đường Nguyễn Văn Linh, Bố Trạch, Hoàn Lão, Quảng Trị</li>
+                                        <li><SvgIcon name="pin" className="location-icon" />Nguyễn Tất Thành, Kiến Giang, Lệ Thủy, Quảng Trị</li>
                                     </ul>
                                 </div>
                                 <div className="office-card-footer">Hotline: <strong className="phone-highlight">0914.077.779</strong></div>

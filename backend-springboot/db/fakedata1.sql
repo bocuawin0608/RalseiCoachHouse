@@ -785,3 +785,32 @@ SELECT ct.cargoTypeName, ctp.unit, ctp.pricePerUnit
 FROM [cargo_type] ct
 JOIN [cargo_type_price] ctp ON ct.cargoTypeId = ctp.cargoTypeId;
 SELECT COUNT(*) AS agencies, (SELECT COUNT(*) FROM coach_stop) AS stops FROM [ticket_agency];
+
+
+
+-- RECHECK QUERY AFTER SEED
+SELECT * FROM [account];
+SELECT * FROM [role];
+SELECT * FROM [voucher];
+SELECT * FROM [coach_stop];
+SELECT * FROM [route];
+SELECT * FROM [coach_type];
+SELECT * FROM [cargo_type];
+SELECT * FROM [account_role];
+SELECT * FROM [customer];
+SELECT * FROM [ticket_agency];
+SELECT * FROM [staff];
+SELECT * FROM [route_stop];
+SELECT * FROM [seat];
+SELECT * FROM [coach_type_price];
+SELECT * FROM [cargo_type_price];
+SELECT * FROM [coach];
+SELECT * FROM [trip];
+SELECT * FROM [trip_seat];
+SELECT * FROM [passenger_ticket];
+SELECT * FROM [cargo_ticket];
+SELECT * FROM [passenger_ticket_detail];
+SELECT * FROM [cargo_ticket_detail];
+SELECT * FROM [payment];
+SELECT * FROM [accompanied_child];
+SELECT * FROM [refund];
