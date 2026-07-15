@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { cargoTicketApi } from '../api/cargoTicketApi';
+import { routeApi } from '../../routes/api/routeApi';
 
 export function useCargoTicketFormOptions(pickupStopId, dropoffStopId) {
-    const [options, setOptions] = useState({ trips: [], customers: [], stops: [], sellers: [], handlers: [], drivers: [] });
+    const [options, setOptions] = useState({ trips: [], customers: [], stops: [], sellers: [], handlers: [], drivers: [], routes: [] });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const latestTripRequest = useRef(0);
@@ -13,14 +14,18 @@ export function useCargoTicketFormOptions(pickupStopId, dropoffStopId) {
         setError('');
         try {
             if (!staticLoaded.current) {
-                const data = await cargoTicketApi.getFormOptions();
+                const [data, routesData] = await Promise.all([
+                    cargoTicketApi.getFormOptions(),
+                    routeApi.getRoutesForDropdown()
+                ]);
                 setOptions(prev => ({
                     ...prev,
                     customers: data.customers ?? [],
                     stops: data.stops ?? [],
                     sellers: data.sellers ?? [],
                     handlers: data.handlers ?? [],
-                    drivers: data.drivers ?? []
+                    drivers: data.drivers ?? [],
+                    routes: routesData ?? []
                 }));
                 staticLoaded.current = true;
             }
