@@ -721,7 +721,7 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             WHERE t.routeId = :routeId
               AND t.departureTime >= :dayStart
               AND t.departureTime <= :dayEnd
-              AND t.departureTime >= :minDepartureTime
+              AND t.departureTime > :minDepartureTime
               AND t.[status] = 'SCHEDULED'
               AND (:excludeTripId IS NULL OR t.tripId <> :excludeTripId)
               AND COALESCE(seat_counts.availableSeats, 0) >= :minAvailableSeats
