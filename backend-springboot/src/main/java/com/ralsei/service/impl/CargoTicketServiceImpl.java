@@ -32,7 +32,8 @@ import com.ralsei.model.Staff;
 import com.ralsei.dto.request.cargoticket.TripByStopRequest;
 import com.ralsei.dto.request.cargoticketdetail.CargoTicketDetailRequest;
 import com.ralsei.dto.response.cargoticket.TripByStopResponse;
-import com.ralsei.dto.response.CoachAndRouteStop.RouteDropdownDTO;
+import com.ralsei.dto.response.cargoticketdetail.CargoTicketDetailPriceResponse;
+import com.ralsei.dto.request.cargoticketdetail.CargoTicketDetailPriceRequest;
 import com.ralsei.repository.CargoTypePriceRepository;
 import com.ralsei.model.CargoTypePrice;
 import com.ralsei.util.FreightCalculatorUtility;
@@ -331,12 +332,21 @@ public class CargoTicketServiceImpl implements CargoTicketService {
                         .tripId(t.getTripId())
                         .routeId(t.getRouteId())
                         .coachId(t.getCoachId())
-                        .coachTypeName(t.getCoach() != null && t.getCoach().getCoachType() != null 
-                                ? t.getCoach().getCoachType().getCoachTypeName() : null)
+                        .coachTypeName(t.getCoach() != null && t.getCoach().getCoachType() != null
+                                ? t.getCoach().getCoachType().getCoachTypeName()
+                                : null)
                         .departureTime(t.getDepartureTime())
                         .status(t.getStatus())
                         .build())
                 .toList();
+    }
+
+    @Override
+    public CargoTicketDetailPriceResponse calculatePrice(
+            CargoTicketDetailPriceRequest request) {
+        BigDecimal price = calculateDetailPrice(request.getCargoTypePriceId(), request.getDimensionVol(),
+                request.getQuantity());
+        return new com.ralsei.dto.response.cargoticketdetail.CargoTicketDetailPriceResponse(price);
     }
 
     private BigDecimal calculateDetailPrice(int cargoTypePriceId, BigDecimal dimensionVol, int quantity) {
