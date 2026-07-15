@@ -31,7 +31,7 @@ export function useCargoTickets() {
             }));
         } catch (err) {
             setTickets([]);
-            setError(err.response?.data?.message || 'Không thể tải danh sách vé hàng hóa.');
+            setError(err.response?.data?.message || 'Không thể tải danh sách đơn gửi hàng.');
         } finally {
             setLoading(false);
         }

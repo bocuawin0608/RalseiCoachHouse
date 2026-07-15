@@ -15,6 +15,7 @@ public class TripByStopResponse {
     private int tripId;
     private int routeId;
     private int coachId;
+    private String coachTypeName;
     private LocalDateTime departureTime;
     private String status;
 }

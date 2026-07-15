@@ -22,7 +22,7 @@ export default function CargoTicketPage() {
             await cargoTicketApi.disableCargoTicket(ticket.cargoTicketId);
             await refetch();
         } catch (err) {
-            window.alert(err.response?.data?.message || 'Vô hiệu hóa vé hàng hóa thất bại.');
+            window.alert(err.response?.data?.message || 'Vô hiệu hóa đơn gửi hàng thất bại.');
         }
     };
 
@@ -38,9 +38,9 @@ export default function CargoTicketPage() {
     return (
         <Container fluid className="py-4" style={{ maxWidth: '1400px' }}>
             <div className="d-flex justify-content-between align-items-center mb-4">
-                <h2 className="m-0 fw-bold text-dark">Quản lý vé hàng hóa</h2>
+                <h2 className="m-0 fw-bold text-dark">Quản lý đơn gửi hàng</h2>
                 <Button className="fw-medium shadow-sm custom-btn-general" onClick={() => navigate('/staff/cargo-tickets/create')}>
-                    + Thêm vé hàng hóa
+                    + Thêm đơn gửi hàng
                 </Button>
             </div>
 

@@ -116,18 +116,18 @@ export default function CargoTicketDetailViewModal({ ticket, onClose }) {
     return (
         <Modal show onHide={onClose} size="xl" centered backdrop="static">
             <Modal.Header closeButton>
-                <Modal.Title>Chi tiết vé hàng hóa: {ticket.ticketCode}</Modal.Title>
+                <Modal.Title>Chi tiết đơn gửi hàng: {ticket.ticketCode}</Modal.Title>
             </Modal.Header>
             <Modal.Body className="p-4">
                 <div className="d-flex justify-content-end mb-3 gap-2">
                     {!isDraftMode ? (
-                        <Button variant="primary" className="d-flex align-items-center custom-btn-general" onClick={handleEnableDraftMode}>
-                            <BsPencilFill className="me-2" /> Chế độ nháp (Sửa/Thêm/Xóa)
+                        <Button variant="primary" className="fw-medium d-flex align-items-center custom-btn-general" onClick={handleEnableDraftMode}>
+                            <BsPencilFill className="me-2" /> Chỉnh sửa tất cả
                         </Button>
                     ) : (
                         <>
-                            <Button variant="danger" onClick={handleCancelDraftMode} disabled={saving}>Hủy bỏ</Button>
-                            <Button variant="success" onClick={handleSaveDraft} disabled={saving}>
+                            <Button variant="outline-secondary" className='fw-medium' onClick={handleCancelDraftMode} disabled={saving}>Hủy bỏ</Button>
+                            <Button variant="success" className='fw-medium' onClick={handleSaveDraft} disabled={saving}>
                                 {saving ? <Spinner size="sm" /> : 'Lưu thay đổi'}
                             </Button>
                         </>
@@ -156,7 +156,7 @@ export default function CargoTicketDetailViewModal({ ticket, onClose }) {
                                     <th className="text-end">Số lượng</th>
                                     <th className="text-end">Trọng lượng (kg)</th>
                                     <th className="text-end">Thể tích (m3)</th>
-                                    <th className="text-end">Giá tính (VNĐ)</th>
+                                    <th className="text-end">Giá (VNĐ)</th>
                                     <th>Mô tả</th>
                                 </tr>
                             </thead>

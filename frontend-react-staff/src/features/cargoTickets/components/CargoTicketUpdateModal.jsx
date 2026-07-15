@@ -13,7 +13,7 @@ export default function CargoTicketUpdateModal({ data, onClose, onSuccess }) {
 
     return (
         <Modal show onHide={onClose} size="xl" centered backdrop="static">
-            <Modal.Header closeButton><Modal.Title>Cập nhật vé hàng hóa</Modal.Title></Modal.Header>
+            <Modal.Header closeButton><Modal.Title>Cập nhật đơn gửi hàng</Modal.Title></Modal.Header>
             <Modal.Body className="p-4"><CargoTicketForm initialData={data} onSubmit={handleSubmit} submitLabel="Lưu thay đổi" /></Modal.Body>
         </Modal>
     );

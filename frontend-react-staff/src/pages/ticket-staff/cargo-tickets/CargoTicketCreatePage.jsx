@@ -16,7 +16,7 @@ export default function CargoTicketCreatePage() {
             <Button variant="link" className="text-decoration-none text-secondary p-0 mb-3 d-flex align-items-center gap-2" onClick={() => navigate('/staff/cargo-tickets')}>
                 <BsArrowLeft /> Quay lại danh sách
             </Button>
-            <h2 className="mb-4 fw-bold text-dark">Thêm vé hàng hóa</h2>
+            <h2 className="mb-4 fw-bold text-dark">Thêm đơn gửi hàng</h2>
             <CargoTicketForm onSubmit={handleSubmit} />
         </Container>
     );
