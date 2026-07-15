@@ -215,8 +215,6 @@ function PartyCard({ title, prefix, data, onChange, setFormData }) {
     </Card.Body></Card>;
 }
 
-
-
 function Field({ label, ...props }) {
     return <Form.Group><Form.Label className="fw-semibold">{label}{props.required ? ' *' : ''}</Form.Label><Form.Control {...props} /></Form.Group>;
 }
@@ -237,8 +235,18 @@ function Dropdown({ label, options, optionValue, renderOption, loading, emptyLab
     );
 }
 
+const TRIP_STATUS_MAP = {
+    'SCHEDULED': 'Đã lên lịch',
+    'IN_PROGRESS': 'Đang chạy',
+    'COMPLETED': 'Hoàn thành',
+    'CANCELLED': 'Đã hủy'
+};
+
 const tripLabel = (trip) => {
-    return `Chuyến đi ${trip.tripId}`;
+    const time = trip.departureTime ? formatDateTime(trip.departureTime) : 'Chưa có giờ';
+    const localizedStatus = trip.status ? (TRIP_STATUS_MAP[trip.status] || trip.status) : '';
+    const coachType = trip.coachTypeName ? ` - Loại xe: ${trip.coachTypeName}` : '';
+    return `Mã: ${trip.tripId} - Giờ chạy: ${time}${coachType} - [${localizedStatus}]`;
 };
 
 function formatDateTime(value) {
@@ -253,7 +261,6 @@ function filterTripsForSelectedStops(trips, stops, pickupStopId, dropoffStopId) 
     const hasPickup = stops.some((stop) => String(stop.stopPointId) === String(pickupStopId));
     const hasDropoff = stops.some((stop) => String(stop.stopPointId) === String(dropoffStopId));
     if (!hasPickup || !hasDropoff) return [];
-
     return trips.filter((trip) => {
         // Backend already filters by time and stops. 
         // We only check this to prevent showing stale trips from a previous selection while loading.
