@@ -15,6 +15,9 @@ import com.ralsei.dto.projection.route.RouteLocationDropdownProjection;
 import com.ralsei.dto.response.CoachAndRouteStop.RouteDropdownDTO;
 import com.ralsei.model.Route;
 
+/**
+ * Provides persistence access for route data.
+ */
 public interface RouteRepository extends JpaRepository<Route, Integer> {
 
   @Query("""

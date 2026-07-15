@@ -14,6 +14,9 @@ import com.ralsei.model.Refund;
 /**
  * Persistence boundary for customer and staff refund workflows.
  */
+/**
+ * Provides persistence access for refund data.
+ */
 public interface RefundRepository extends JpaRepository<Refund, Integer> {
 
     /** Prevents duplicate active refunds for the same completed payment. */

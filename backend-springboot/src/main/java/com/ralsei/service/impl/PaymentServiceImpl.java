@@ -47,6 +47,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the payment service impl component for the application.
+ */
 public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
@@ -66,6 +69,13 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
+    /**
+     * Executes the initialize payment operation.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public Payment initializePayment(PaymentCheckoutRequest request) {
         validateCheckoutRequest(request);
 
@@ -91,6 +101,11 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
+    /**
+     * Executes the process webhook operation.
+     *
+     * @param request the value supplied for this operation
+     */
     public void processWebhook(SepayWebhookRequest request) {
         String content = request.getContent();
         if (content == null || content.isEmpty()) {
@@ -163,6 +178,13 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Returns the payment by transaction id.
+     *
+     * @param transactionId the value supplied for this operation
+     *
+     * @return the payment by transaction id
+     */
     public Payment getPaymentByTransactionId(String transactionId) {
         return paymentRepository.findByTransactionId(transactionId)
                 .orElseThrow(
@@ -172,6 +194,13 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
+    /**
+     * Executes the fail pending payment operation.
+     *
+     * @param transactionId the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public boolean failPendingPayment(String transactionId) {
         int rowsUpdated = paymentRepository.updateStatusIfCurrent(transactionId, "PENDING", "FAILED");
         if (rowsUpdated == 0) {
@@ -253,6 +282,9 @@ public class PaymentServiceImpl implements PaymentService {
             Integer passengerTicketId) {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
+            /**
+             * Executes the after commit operation.
+             */
             public void afterCommit() {
                 try {
                     ticketEmailService.sendTicketConfirmation(payload);

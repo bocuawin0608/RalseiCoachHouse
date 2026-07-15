@@ -26,6 +26,13 @@ public final class ProvinceMapper {
      * Hàm xử lý trung tâm: Biến đổi chuỗi "rác bẩn" thành Object Province chuẩn.
      * Trả về null nếu chuỗi vô nghĩa hoặc cố tình phá hoại.
      */
+    /**
+     * Executes the parse operation.
+     *
+     * @param input the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public static ProvinceEnum parse(String input) {
         if (input == null || input.isBlank()) {
             return null;

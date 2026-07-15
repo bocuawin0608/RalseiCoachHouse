@@ -9,6 +9,9 @@ package com.ralsei.dto.notification;
  * @param boardingToken opaque token rendered as an inline QR image; never expose
  *                      it in logs
  */
+/**
+ * Provides the passenger seat email item component for the application.
+ */
 public record PassengerSeatEmailItem(
     String seatCode,
     String passengerName,

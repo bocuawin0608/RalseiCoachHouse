@@ -8,6 +8,9 @@ package com.ralsei.dto.response.auth;
  * @param success request was accepted for processing
  * @param message generic user-facing outcome
  */
+/**
+ * Represents the response payload for staff forgot password operations.
+ */
 public record StaffForgotPasswordResponse(
     boolean success,
     String message

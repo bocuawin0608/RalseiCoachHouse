@@ -16,11 +16,21 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
+/**
+ * Provides the payment sse service impl component for the application.
+ */
 public class PaymentSseServiceImpl implements PaymentSseService {
 
     private final Map<String, List<SseEmitter>> emitters = new ConcurrentHashMap<>();
 
     @Override
+    /**
+     * Creates the connection.
+     *
+     * @param transactionId the value supplied for this operation
+     *
+     * @return the created connection
+     */
     public SseEmitter createConnection(String transactionId) {
         SseEmitter emitter = new SseEmitter(15 * 60 * 1000L);
 
@@ -51,6 +61,12 @@ public class PaymentSseServiceImpl implements PaymentSseService {
     }
 
     @Override
+    /**
+     * Executes the send status update operation.
+     *
+     * @param transactionId the value supplied for this operation
+     * @param status the value supplied for this operation
+     */
     public void sendStatusUpdate(String transactionId, String status) {
         List<SseEmitter> list = emitters.getOrDefault(transactionId, List.of());
         boolean terminal = "COMPLETED".equals(status) || "FAILED".equals(status);

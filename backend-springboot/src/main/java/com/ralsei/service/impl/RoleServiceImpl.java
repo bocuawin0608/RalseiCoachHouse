@@ -29,12 +29,23 @@ import lombok.RequiredArgsConstructor;
  * Implementation of {@link com.ralsei.service.RoleService}.
  */
 
+/**
+ * Provides the role service impl component for the application.
+ */
 public class RoleServiceImpl implements RoleService {
 
     private final RoleRepository roleRepo;
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Filters the roles records.
+     *
+     * @param filterRequest the value supplied for this operation
+     * @param pageable the value supplied for this operation
+     *
+     * @return the filtered results
+     */
     public Page<RoleListResponse> filterRoles(RoleFilterRequest filterRequest, Pageable pageable) {
         String search = (filterRequest != null && filterRequest.search() != null && !filterRequest.search().isBlank())
             ? filterRequest.search().trim()
@@ -56,6 +67,13 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Returns the role detail.
+     *
+     * @param roleId the value supplied for this operation
+     *
+     * @return the role detail
+     */
     public RoleDetailResponse getRoleDetail(Integer roleId) {
         Role role = roleRepo.findById(roleId)
             .orElseThrow(() -> new ResourceNotFoundException("Vai trò không tồn tại!"));
@@ -64,6 +82,13 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     @Transactional
+    /**
+     * Creates the role.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the created role
+     */
     public Integer createRole(CreateRoleRequest request) {
         String roleName = request.roleName().trim();
         if (roleRepo.existsByRoleNameIgnoreCase(roleName)) {
@@ -80,6 +105,12 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     @Transactional
+    /**
+     * Updates the role.
+     *
+     * @param roleId the value supplied for this operation
+     * @param request the value supplied for this operation
+     */
     public void updateRole(Integer roleId, UpdateRoleRequest request) {
         Role role = roleRepo.findById(roleId)
             .orElseThrow(() -> new ResourceNotFoundException("Vai trò không tồn tại!"));
@@ -103,6 +134,11 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     @Transactional
+    /**
+     * Deletes the role.
+     *
+     * @param roleId the value supplied for this operation
+     */
     public void deleteRole(Integer roleId) {
         Role role = roleRepo.findById(roleId)
             .orElseThrow(() -> new ResourceNotFoundException("Vai trò không tồn tại!"));
@@ -122,6 +158,11 @@ public class RoleServiceImpl implements RoleService {
 
     @Override
     @Transactional
+    /**
+     * Executes the toggle active operation.
+     *
+     * @param roleId the value supplied for this operation
+     */
     public void toggleActive(Integer roleId) {
         Role role = roleRepo.findById(roleId)
             .orElseThrow(() -> new ResourceNotFoundException("Vai trò không tồn tại!"));

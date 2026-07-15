@@ -3,6 +3,9 @@ package com.ralsei.dto.request.passengerbooking;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Represents the request payload for price calculation operations.
+ */
 public record PriceCalculationRequest(
     @Size(max = 36, message = "holdToken không hợp lệ.")
     String holdToken,

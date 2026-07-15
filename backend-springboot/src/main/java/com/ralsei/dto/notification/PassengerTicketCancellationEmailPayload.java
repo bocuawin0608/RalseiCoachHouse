@@ -15,6 +15,9 @@ import java.time.LocalDateTime;
  * @param refundStatus current refund workflow status, for example {@code PENDING}
  * @param cancellationReason short customer-safe reason displayed in the email
  */
+/**
+ * Provides the passenger ticket cancellation email payload component for the application.
+ */
 public record PassengerTicketCancellationEmailPayload(
     PassengerTicketEmailPayload ticket,
     LocalDateTime cancelledAt,

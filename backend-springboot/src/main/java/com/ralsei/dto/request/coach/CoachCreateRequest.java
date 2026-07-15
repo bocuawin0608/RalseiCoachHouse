@@ -10,6 +10,9 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Represents the request payload for coach create operations.
+ */
 public record CoachCreateRequest(
 
     @NotNull(message = "ID loại xe không được để trống.")

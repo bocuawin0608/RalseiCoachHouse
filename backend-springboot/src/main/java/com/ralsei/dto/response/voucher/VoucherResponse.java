@@ -12,6 +12,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Represents the response payload for voucher operations.
+ */
 public class VoucherResponse {
     private int voucherId;
     private String voucherCode;

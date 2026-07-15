@@ -12,6 +12,9 @@ import jakarta.validation.constraints.Size;
  * OnboardStaffRequest
  */
 
+/**
+ * Represents the request payload for onboard staff operations.
+ */
 public record OnboardStaffRequest(
     @NotBlank(message = "Tên nhân viên không được để trống.")
     @Size(max = 100, message = "Tên nhân viên không được vượt quá 100 ký tự.")

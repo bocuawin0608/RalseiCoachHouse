@@ -4,6 +4,9 @@
  */
 package com.ralsei.dto.response.tripstaff;
 
+/**
+ * Represents the response payload for trip staff passenger operations.
+ */
 public record TripStaffPassengerResponse(
         Integer ticketDetailId,
         String fullName,

@@ -35,6 +35,9 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the customer service impl component for the application.
+ */
 public class CustomerServiceImpl implements CustomerService {
 
     private final CustomerRepository customerRepo;
@@ -46,6 +49,14 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Filters the customers records.
+     *
+     * @param filterRequest the value supplied for this operation
+     * @param pageable the value supplied for this operation
+     *
+     * @return the filtered results
+     */
     public Page<CustomerListResponse> filterCustomers(CustomerFilterRequest filterRequest, Pageable pageable) {
         String search = filterRequest != null && filterRequest.search() != null && !filterRequest.search().isBlank()
             ? filterRequest.search().trim() : null;
@@ -70,6 +81,13 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Returns the customer detail.
+     *
+     * @param customerId the value supplied for this operation
+     *
+     * @return the customer detail
+     */
     public CustomerDetailResponse getCustomerDetail(Integer customerId) {
         Customer customer = customerRepo.findById(customerId)
             .orElseThrow(() -> new ResourceNotFoundException("Khách hàng không tồn tại!"));
@@ -114,6 +132,13 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
+    /**
+     * Creates the customer.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the created customer
+     */
     public Integer createCustomer(CreateCustomerRequest request) {
         if (request.phone() != null && !request.phone().isBlank()
             && customerRepo.existsByPhone(request.phone().trim())) {
@@ -155,6 +180,12 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
+    /**
+     * Updates the customer.
+     *
+     * @param customerId the value supplied for this operation
+     * @param request the value supplied for this operation
+     */
     public void updateCustomer(Integer customerId, UpdateCustomerRequest request) {
         Customer customer = customerRepo.findById(customerId)
             .orElseThrow(() -> new ResourceNotFoundException("Khách hàng không tồn tại!"));
@@ -177,6 +208,11 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
+    /**
+     * Executes the toggle active operation.
+     *
+     * @param customerId the value supplied for this operation
+     */
     public void toggleActive(Integer customerId) {
         Customer customer = customerRepo.findById(customerId)
             .orElseThrow(() -> new ResourceNotFoundException("Khách hàng không tồn tại!"));
@@ -193,6 +229,11 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
+    /**
+     * Deletes the customer.
+     *
+     * @param customerId the value supplied for this operation
+     */
     public void deleteCustomer(Integer customerId) {
         Customer customer = customerRepo.findById(customerId)
             .orElseThrow(() -> new ResourceNotFoundException("Khách hàng không tồn tại!"));

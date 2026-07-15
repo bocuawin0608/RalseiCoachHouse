@@ -30,6 +30,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the passenger pending payment service impl component for the application.
+ */
 public class PassengerPendingPaymentServiceImpl implements PassengerPendingPaymentService {
 
     private final PaymentService paymentService;
@@ -44,6 +47,11 @@ public class PassengerPendingPaymentServiceImpl implements PassengerPendingPayme
 
     @Override
     @Transactional
+    /**
+     * Executes the expire if overdue operation.
+     *
+     * @param transactionId the value supplied for this operation
+     */
     public void expireIfOverdue(String transactionId) {
         try {
             Payment payment = paymentService.getPaymentByTransactionId(transactionId);
@@ -66,6 +74,11 @@ public class PassengerPendingPaymentServiceImpl implements PassengerPendingPayme
 
     @Override
     @Transactional
+    /**
+     * Cancels the by user.
+     *
+     * @param transactionId the value supplied for this operation
+     */
     public void cancelByUser(String transactionId) {
         Payment payment = paymentService.getPaymentByTransactionId(transactionId);
         if (payment.getPassengerTicketId() == null) {
@@ -80,6 +93,15 @@ public class PassengerPendingPaymentServiceImpl implements PassengerPendingPayme
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Executes the can cancel by user operation.
+     *
+     * @param transactionId the value supplied for this operation
+     * @param cancelToken the value supplied for this operation
+     * @param accessToken the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public boolean canCancelByUser(String transactionId, String cancelToken, String accessToken) {
         if (cancelToken != null && paymentRepository.isValidCancelToken(transactionId, cancelToken)) {
             return true;

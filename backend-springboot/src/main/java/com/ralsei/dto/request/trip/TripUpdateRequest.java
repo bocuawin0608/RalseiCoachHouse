@@ -16,6 +16,9 @@ import java.time.LocalDateTime;
  * @param departureTime local departure date and 24-hour time
  * @param status database trip status
  */
+/**
+ * Represents the request payload for trip update operations.
+ */
 public record TripUpdateRequest(
         Integer routeId,
         Integer driverId,

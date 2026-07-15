@@ -2,6 +2,9 @@ package com.ralsei.model.enums;
 
 
 
+/**
+ * Provides the province enum component for the application.
+ */
 public enum ProvinceEnum {
     AN_GIANG("An Giang"),
     BA_RIA_VUNG_TAU("Bà Rịa - Vũng Tàu"),

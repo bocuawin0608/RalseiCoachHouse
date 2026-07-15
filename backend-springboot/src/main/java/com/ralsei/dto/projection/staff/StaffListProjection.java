@@ -3,6 +3,9 @@ package com.ralsei.dto.projection.staff;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * Projects the staff lis data shape for query results.
+ */
 public interface StaffListProjection {
     Integer getStaffId();
     String getStaffName();

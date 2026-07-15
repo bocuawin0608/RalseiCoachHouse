@@ -12,6 +12,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Represents the response payload for route operations.
+ */
 public class RouteResponse {
     private int routeId;
     private String routeName;

@@ -15,6 +15,9 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Provides the route stop component for the application.
+ */
 public class RouteStop extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

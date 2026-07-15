@@ -47,6 +47,9 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+/**
+ * Provides the cargo ticket service impl component for the application.
+ */
 public class CargoTicketServiceImpl implements CargoTicketService {
     private static final String STATUS_ABANDONED = "ABANDONED";
 
@@ -62,6 +65,14 @@ public class CargoTicketServiceImpl implements CargoTicketService {
     private final RouteRepository routeRepository;
 
     @Override
+    /**
+     * Returns the all cargo tickets.
+     *
+     * @param page the value supplied for this operation
+     * @param size the value supplied for this operation
+     *
+     * @return the all cargo tickets
+     */
     public PagedResponse<CargoTicketResponse> getAllCargoTickets(int page, int size) {
         Page<CargoTicket> result = cargoTicketRepository.findByStatusNot(
                 STATUS_ABANDONED,
@@ -73,6 +84,14 @@ public class CargoTicketServiceImpl implements CargoTicketService {
     }
 
     @Override
+    /**
+     * Returns the form options.
+     *
+     * @param pickupStopId the value supplied for this operation
+     * @param dropoffStopId the value supplied for this operation
+     *
+     * @return the form options
+     */
     public CargoTicketFormOptionsResponse getFormOptions(Integer pickupStopId, Integer dropoffStopId) {
         return CargoTicketFormOptionsResponse.builder()
                 .routes(routeRepository.findRoutesForDropdown())
@@ -88,12 +107,26 @@ public class CargoTicketServiceImpl implements CargoTicketService {
     }
 
     @Override
+    /**
+     * Returns the cargo ticket by id.
+     *
+     * @param id the value supplied for this operation
+     *
+     * @return the cargo ticket by id
+     */
     public CargoTicketResponse getCargoTicketById(int id) {
         return mapToResponse(findByIdOrThrow(id));
     }
 
     @Override
     @Transactional
+    /**
+     * Creates the cargo ticket.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the created cargo ticket
+     */
     public CargoTicketResponse createCargoTicket(CargoTicketRequest request) {
         String ticketCode = generateTicketCode();
         validateReferences(request);
@@ -117,6 +150,13 @@ public class CargoTicketServiceImpl implements CargoTicketService {
 
     @Override
     @Transactional
+    /**
+     * Creates the cargo ticket with details.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the created cargo ticket with details
+     */
     public CargoTicketResponse createCargoTicketWithDetails(CargoTicketWithDetailsRequest request) {
         // Calculate the prices first to satisfy the Payment DB constraint (> 0)
         List<CargoTicketDetail> mappedDetails = new java.util.ArrayList<>();
@@ -157,6 +197,13 @@ public class CargoTicketServiceImpl implements CargoTicketService {
     }
 
     @Override
+    /**
+     * Returns the cargo ticket details by ticket id.
+     *
+     * @param cargoTicketId the value supplied for this operation
+     *
+     * @return the cargo ticket details by ticket id
+     */
     public List<CargoTicketDetailResponse> getCargoTicketDetailsByTicketId(int cargoTicketId) {
         List<CargoTicketDetail> details = cargoTicketDetailRepository.findByCargoTicket_CargoTicketId(cargoTicketId);
         return details.stream().map(d -> CargoTicketDetailResponse.builder()
@@ -173,6 +220,14 @@ public class CargoTicketServiceImpl implements CargoTicketService {
 
     @Override
     @Transactional
+    /**
+     * Updates the cargo ticket.
+     *
+     * @param id the value supplied for this operation
+     * @param request the value supplied for this operation
+     *
+     * @return the updated cargo ticket
+     */
     public CargoTicketResponse updateCargoTicket(int id, CargoTicketRequest request) {
         CargoTicket ticket = findByIdOrThrow(id);
         String ticketCode = ticket.getTicketCode();
@@ -203,6 +258,14 @@ public class CargoTicketServiceImpl implements CargoTicketService {
 
     @Override
     @Transactional
+    /**
+     * Creates the cargo ticket detail.
+     *
+     * @param ticketId the value supplied for this operation
+     * @param request the value supplied for this operation
+     *
+     * @return the created cargo ticket detail
+     */
     public CargoTicketDetailResponse createCargoTicketDetail(int ticketId, CargoTicketDetailRequest request) {
         CargoTicket ticket = cargoTicketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn gửi hàng."));
@@ -239,6 +302,14 @@ public class CargoTicketServiceImpl implements CargoTicketService {
 
     @Override
     @Transactional
+    /**
+     * Updates the cargo ticket detail.
+     *
+     * @param detailId the value supplied for this operation
+     * @param request the value supplied for this operation
+     *
+     * @return the updated cargo ticket detail
+     */
     public CargoTicketDetailResponse updateCargoTicketDetail(int detailId, CargoTicketDetailRequest request) {
         CargoTicketDetail detail = cargoTicketDetailRepository.findById(detailId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chi tiết đơn gửi hàng."));
@@ -272,6 +343,11 @@ public class CargoTicketServiceImpl implements CargoTicketService {
 
     @Override
     @Transactional
+    /**
+     * Deletes the cargo ticket detail.
+     *
+     * @param detailId the value supplied for this operation
+     */
     public void deleteCargoTicketDetail(int detailId) {
         CargoTicketDetail detail = cargoTicketDetailRepository.findById(detailId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chi tiết đơn gửi hàng."));
@@ -284,6 +360,11 @@ public class CargoTicketServiceImpl implements CargoTicketService {
 
     @Override
     @Transactional
+    /**
+     * Executes the disable operation.
+     *
+     * @param id the value supplied for this operation
+     */
     public void disable(int id) {
         CargoTicket ticket = findByIdOrThrow(id);
 
@@ -292,6 +373,13 @@ public class CargoTicketServiceImpl implements CargoTicketService {
     }
 
     @Override
+    /**
+     * Searches for contacts records.
+     *
+     * @param phone the value supplied for this operation
+     *
+     * @return the matching results
+     */
     public List<CustomerContactResponse> searchContacts(String phone) {
         if (phone == null || phone.trim().isEmpty()) {
             return List.of();
@@ -307,6 +395,11 @@ public class CargoTicketServiceImpl implements CargoTicketService {
 
     @Override
     @Transactional
+    /**
+     * Completes the payment.
+     *
+     * @param cargoTicketId the value supplied for this operation
+     */
     public void completePayment(int cargoTicketId) {
         Payment payment = paymentRepository.findByCargoTicket_CargoTicketId(cargoTicketId)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -325,6 +418,13 @@ public class CargoTicketServiceImpl implements CargoTicketService {
     }
 
     @Override
+    /**
+     * Returns the trips by stops in order.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the trips by stops in order
+     */
     public List<TripByStopResponse> getTripsByStopsInOrder(TripByStopRequest request) {
         return tripRepository.findTripsByStopsInOrder(request.getPickupStopId(), request.getDropoffStopId())
                 .stream()

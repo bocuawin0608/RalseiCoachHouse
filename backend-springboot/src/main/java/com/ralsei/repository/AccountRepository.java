@@ -16,6 +16,9 @@ import com.ralsei.model.Account;
  * Repository interface for {@link com.ralsei.model.Account} entity.
  */
 
+/**
+ * Provides persistence access for account data.
+ */
 public interface AccountRepository extends JpaRepository<Account, Integer> {
     
     @Query(value = """

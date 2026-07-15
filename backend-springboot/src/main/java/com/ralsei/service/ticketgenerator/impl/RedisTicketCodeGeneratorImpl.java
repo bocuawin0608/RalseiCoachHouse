@@ -15,6 +15,9 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the redis ticket code generator impl component for the application.
+ */
 public class RedisTicketCodeGeneratorImpl implements TicketCodeGenerator {
 
     private static final DateTimeFormatter DATE_PREFIX_FORMATTER = DateTimeFormatter.ofPattern("yyMMdd");
@@ -25,6 +28,11 @@ public class RedisTicketCodeGeneratorImpl implements TicketCodeGenerator {
     private final PassengerTicketRepository passengerTicketRepository;
 
     @Override
+    /**
+     * Executes the generate passenger ticket code operation.
+     *
+     * @return the operation result
+     */
     public String generatePassengerTicketCode() {
         String datePrefix = LocalDate.now().format(DATE_PREFIX_FORMATTER);
         String redisKey = TICKET_SEQUENCE_KEY_PREFIX + datePrefix;

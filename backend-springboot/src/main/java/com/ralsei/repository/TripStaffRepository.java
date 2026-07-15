@@ -15,6 +15,9 @@ import com.ralsei.dto.projection.tripstaff.AssignedTripProjection;
 import com.ralsei.dto.projection.tripstaff.PassengerBoardingProjection;
 import com.ralsei.model.Trip;
 
+/**
+ * Provides persistence access for trip staff data.
+ */
 public interface TripStaffRepository extends JpaRepository<Trip, Integer> {
 
     @Query(value = """

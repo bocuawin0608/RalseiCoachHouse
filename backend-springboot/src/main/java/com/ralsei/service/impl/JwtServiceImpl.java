@@ -22,9 +22,19 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 
 @Service
+/**
+ * Provides the jwt service impl component for the application.
+ */
 public class JwtServiceImpl implements JwtService {
 
     @Override
+    /**
+     * Executes the extract account id operation.
+     *
+     * @param token the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public Integer extractAccountId(String token) {
         if (token == null || !token.startsWith("Bearer ")) {
             return null;
@@ -34,6 +44,13 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
+    /**
+     * Executes the extract roles operation.
+     *
+     * @param token the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public List<String> extractRoles(String token) {
         Claims claims = extractAllClaims(token);
         // Lấy list thô ra trước
@@ -59,11 +76,27 @@ public class JwtServiceImpl implements JwtService {
     private long refreshExpiration;
 
     @Override
+    /**
+     * Executes the generate token operation.
+     *
+     * @param account the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public String generateToken(Account account) {
         return generateToken(new HashMap<>(), account);
     }
 
     @Override
+    /**
+     * Executes the generate token operation.
+     *
+     * @param Map<String the value supplied for this operation
+     * @param extraClaims the value supplied for this operation
+     * @param account the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public String generateToken(Map<String, Object> extraClaims, Account account) {
         // extraClaims lúc này ĐÃ có sẵn key "roles" được nhét từ AuthServiceImpl rồi.
         // Chỉ cần bổ sung thêm accountId nếu cần (mặc dù AuthServiceImpl cũng đã nhét
@@ -83,6 +116,13 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
+    /**
+     * Executes the generate refresh token operation.
+     *
+     * @param account the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public String generateRefreshToken(Account account) {
         // Có thể triển khai tương tự, lưu vào DB sau
         return Jwts.builder()
@@ -94,11 +134,27 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
+    /**
+     * Executes the extract username operation.
+     *
+     * @param token the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
     @Override
+    /**
+     * Executes the extract claim operation.
+     *
+     * @param token the value supplied for this operation
+     * @param Function<Claims the value supplied for this operation
+     * @param claimsResolver the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
@@ -119,12 +175,27 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
+    /**
+     * Returns whether the token valid is active.
+     *
+     * @param token the value supplied for this operation
+     * @param userDetails the value supplied for this operation
+     *
+     * @return {@code true} if the token valid is active; otherwise {@code false}
+     */
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
         return (username.equals(userDetails.getUsername())) && !isTokenExpired(token);
     }
 
     @Override
+    /**
+     * Returns whether the token expired is active.
+     *
+     * @param token the value supplied for this operation
+     *
+     * @return {@code true} if the token expired is active; otherwise {@code false}
+     */
     public boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }

@@ -13,6 +13,9 @@ import com.ralsei.dto.response.role.RoleListResponse;
  * Service interface for role management operations.
  */
 
+/**
+ * Provides the business service contract for role.
+ */
 public interface RoleService {
     Page<RoleListResponse> filterRoles(RoleFilterRequest filterRequest, Pageable pageable);
     RoleDetailResponse getRoleDetail(Integer roleId);

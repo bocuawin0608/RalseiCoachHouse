@@ -6,6 +6,9 @@ import java.time.LocalDateTime;
  * Its common fields intentionally match {@link TripFilterProjection} so React
  * can use one card renderer for default and filtered searches.
  */
+/**
+ * Projects the trip detai data shape for query results.
+ */
 public interface TripDetailProjection {
     Integer getTripId();
     String getCoachTypeName();

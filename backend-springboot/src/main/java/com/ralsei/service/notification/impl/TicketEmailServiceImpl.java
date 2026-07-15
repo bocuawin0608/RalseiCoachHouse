@@ -31,6 +31,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the ticket email service impl component for the application.
+ */
 public class TicketEmailServiceImpl implements TicketEmailService {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
@@ -48,6 +51,11 @@ public class TicketEmailServiceImpl implements TicketEmailService {
      * @param payload complete paid-ticket data
      */
     @Override
+    /**
+     * Executes the send ticket confirmation operation.
+     *
+     * @param payload the value supplied for this operation
+     */
     public void sendTicketConfirmation(PassengerTicketEmailPayload payload) {
         validatePayload(payload);
 
@@ -100,6 +108,11 @@ public class TicketEmailServiceImpl implements TicketEmailService {
      * @param payload complete cancelled-ticket and refund data
      */
     @Override
+    /**
+     * Executes the send ticket cancellation operation.
+     *
+     * @param payload the value supplied for this operation
+     */
     public void sendTicketCancellation(PassengerTicketCancellationEmailPayload payload) {
         validateCancellationPayload(payload);
         PassengerTicketEmailPayload ticket = payload.ticket();
@@ -138,6 +151,11 @@ public class TicketEmailServiceImpl implements TicketEmailService {
      * @param payload complete refund and ticket data
      */
     @Override
+    /**
+     * Executes the send refund completed operation.
+     *
+     * @param payload the value supplied for this operation
+     */
     public void sendRefundCompleted(PassengerRefundCompletedEmailPayload payload) {
         validateRefundCompletedPayload(payload);
         PassengerTicketEmailPayload ticket = payload.ticket();

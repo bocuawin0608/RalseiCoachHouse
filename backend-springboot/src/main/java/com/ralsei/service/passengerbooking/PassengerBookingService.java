@@ -15,6 +15,9 @@ import com.ralsei.dto.response.passengerbooking.SeatLockResponse;
 import com.ralsei.dto.response.passengerbooking.Step2InitResponse;
 import com.ralsei.dto.response.passengerbooking.TripSeatResponse;
 
+/**
+ * Provides the business service contract for passenger booking.
+ */
 public interface PassengerBookingService {
     List<TripSeatResponse> getSeatMap(Integer tripId);
     SeatLockResponse lockSeats(Integer tripId, SeatLockRequest request, String holdToken);

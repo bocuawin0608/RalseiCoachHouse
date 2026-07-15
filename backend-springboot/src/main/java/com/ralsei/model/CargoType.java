@@ -19,6 +19,9 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Provides the cargo type component for the application.
+ */
 public class CargoType extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

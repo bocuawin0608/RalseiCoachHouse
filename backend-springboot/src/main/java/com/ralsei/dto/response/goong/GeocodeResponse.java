@@ -11,6 +11,9 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Represents the response payload for geocode operations.
+ */
 public class GeocodeResponse {
     private BigDecimal latitude;
     private BigDecimal longitude;

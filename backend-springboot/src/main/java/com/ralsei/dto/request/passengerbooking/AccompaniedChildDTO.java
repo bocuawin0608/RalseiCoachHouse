@@ -9,6 +9,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
+/**
+ * Represents the data transfer object for accompanied child.
+ */
 public record AccompaniedChildDTO(
     @NotBlank(message = "Vui lòng nhập tên bé!")
     @Pattern(
@@ -21,6 +24,11 @@ public record AccompaniedChildDTO(
     Integer birthYear
 ) {
     @AssertTrue(message = "Trẻ em đi kèm phải từ 0 đến 6 tuổi.")
+    /**
+     * Returns whether the birth year valid is active.
+     *
+     * @return {@code true} if the birth year valid is active; otherwise {@code false}
+     */
     public boolean isBirthYearValid() {
         if (birthYear == null) return true;
         int currentYear = Year.now().getValue();

@@ -7,6 +7,9 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
+/**
+ * Represents the request payload for booking confirm operations.
+ */
 public record BookingConfirmRequest(
     @Min(value = 1, message = "Mã voucher không hợp lệ!")
     Integer voucherId,

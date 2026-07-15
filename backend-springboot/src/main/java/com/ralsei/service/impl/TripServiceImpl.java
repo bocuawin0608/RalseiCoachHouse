@@ -44,6 +44,9 @@ import java.util.Set;
  */
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the trip service impl component for the application.
+ */
 public class TripServiceImpl implements TripService {
     private static final Logger LOGGER = LoggerFactory.getLogger(TripService.class);
     private static final ZoneId BUSINESS_TIME_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
@@ -58,6 +61,13 @@ public class TripServiceImpl implements TripService {
      */
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Returns the trip stops.
+     *
+     * @param tripId the value supplied for this operation
+     *
+     * @return the trip stops
+     */
     public List<TripStopProjection> getTripStops(Integer tripId) {
         if (tripId == null || tripId < 1) {
             throw new IllegalArgumentException("Trip id must be greater than zero.");
@@ -72,6 +82,13 @@ public class TripServiceImpl implements TripService {
      * @return a message indicating the result of the operation
      */
     @Override
+    /**
+     * Executes the insert trip operation.
+     *
+     * @param tripRequest the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public String insertTrip(TripCreateRequest tripRequest) {
         String prompt = "";
         if (tripRequest.getDepartureTime() == null
@@ -312,6 +329,9 @@ public class TripServiceImpl implements TripService {
     }
 
     @Scheduled(cron = "0 0 2 * * ?")
+    /**
+     * Executes the execute auto generate schedule operation.
+     */
     public void executeAutoGenerateSchedule() {
         try {
             int countDate = tripRepository.countDistinctDaysWithSchedule(null, null);
@@ -328,6 +348,14 @@ public class TripServiceImpl implements TripService {
 
     @Override
     @Transactional
+    /**
+     * Updates the trip.
+     *
+     * @param tripId the value supplied for this operation
+     * @param updateRequest the value supplied for this operation
+     *
+     * @return the updated trip
+     */
     public String updateTrip(Integer tripId, TripUpdateRequest updateRequest) {
         Trip trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new NoSuchElementException("Không tìm thấy chuyến xe có ID: " + tripId));
@@ -362,6 +390,11 @@ public class TripServiceImpl implements TripService {
 
     @Override
     @Transactional
+    /**
+     * Deletes the trip.
+     *
+     * @param tripId the value supplied for this operation
+     */
     public String deleteTrip(Integer tripId) {
         Trip trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new NoSuchElementException("Không tìm thấy chuyến xe có ID: " + tripId));
@@ -385,17 +418,36 @@ public class TripServiceImpl implements TripService {
     }
 
     @Override
+    /**
+     * Finds the routes for dropdown.
+     *
+     * @return the matching result
+     */
     public List<RouteDropdownDTO> findRoutesForDropdown() {
         return routeRepository.findRoutesForDropdown();
     }
     //TODO: sửa lại logic thằng của nợ này. 
     @Override
+    /**
+     * Returns the staff name drop down.
+     *
+     * @param date the value supplied for this operation
+     *
+     * @return the staff name drop down
+     */
     public List<StaffProjection> getStaffNameDropDown(LocalDate date) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'getStaffNameDropDown'");
     }
 
     @Override
+    /**
+     * Returns the coach info drop down.
+     *
+     * @param date the value supplied for this operation
+     *
+     * @return the coach info drop down
+     */
     public List<CoachLicensePlateProjection> getCoachInfoDropDown(LocalDate date) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'getCoachInfoDropDown'");
@@ -413,6 +465,14 @@ public class TripServiceImpl implements TripService {
     /** {@inheritDoc} */
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Returns the available drivers.
+     *
+     * @param departureTime the value supplied for this operation
+     * @param excludeTripId the value supplied for this operation
+     *
+     * @return the available drivers
+     */
     public List<TripResourceProjection> getAvailableDrivers(LocalDateTime departureTime, Integer excludeTripId) {
         validateResourceRequest(1, departureTime);
         return tripRepository.findAvailableStaff("DRIVER", departureTime, excludeTripId);
@@ -421,6 +481,14 @@ public class TripServiceImpl implements TripService {
     /** {@inheritDoc} */
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Returns the available attendants.
+     *
+     * @param departureTime the value supplied for this operation
+     * @param excludeTripId the value supplied for this operation
+     *
+     * @return the available attendants
+     */
     public List<TripResourceProjection> getAvailableAttendants(LocalDateTime departureTime, Integer excludeTripId) {
         validateResourceRequest(1, departureTime);
         return tripRepository.findAvailableStaff("ATTENDANT", departureTime, excludeTripId);

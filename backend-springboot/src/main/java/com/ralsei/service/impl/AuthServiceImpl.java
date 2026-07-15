@@ -49,6 +49,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the auth service impl component for the application.
+ */
 public class AuthServiceImpl implements AuthService {
 
     private static final SecureRandom PASSWORD_RANDOM = new SecureRandom();
@@ -80,6 +83,13 @@ public class AuthServiceImpl implements AuthService {
      */
     @Override
     @Transactional
+    /**
+     * Executes the customer login operation.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public AuthResponse customerLogin(CustomerLoginRequest request) {
         FirebaseToken firebaseToken = verifyFirebaseToken(request.idToken());
         String firebaseUid = firebaseToken.getUid();
@@ -123,6 +133,13 @@ public class AuthServiceImpl implements AuthService {
      */
     @Override
     @Transactional
+    /**
+     * Executes the customer register operation.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public AuthResponse customerRegister(CustomerRegisterRequest request) {
         FirebaseToken firebaseToken = verifyFirebaseToken(request.idToken());
         String authProvider = detectAuthProvider(firebaseToken);
@@ -158,6 +175,13 @@ public class AuthServiceImpl implements AuthService {
      */
     @Override
     @Transactional
+    /**
+     * Executes the staff login operation.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public AuthResponse staffLogin(StaffLoginRequest request) {
         AccountProjection account = accountRepository
                 .findByUsernameWithRoles(request.username())
@@ -191,6 +215,13 @@ public class AuthServiceImpl implements AuthService {
      */
     @Override
     @Transactional
+    /**
+     * Executes the staff forgot password operation.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public StaffForgotPasswordResponse staffForgotPassword(StaffForgotPasswordRequest request) {
         AccountProjection projection = accountRepository.findByUsernameWithRoles(request.username())
                 .orElse(null);
@@ -465,6 +496,13 @@ private AuthResponse buildResponse(AccountProjection account) {
 
     @Override
     @Transactional
+    /**
+     * Executes the refresh token operation.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public AuthResponse refreshToken(RefreshTokenRequest request) {
         String refreshToken = request.getRefreshToken();
         
@@ -500,12 +538,22 @@ private AuthResponse buildResponse(AccountProjection account) {
 
     @Override
     @Transactional
+    /**
+     * Executes the logout operation.
+     *
+     * @param request the value supplied for this operation
+     */
     public void logout(RefreshTokenRequest request) {
         refreshTokenRepository.findByToken(request.getRefreshToken()).ifPresent(token -> refreshTokenRepository.delete(token));
     }
 
     @Override
     @Transactional
+    /**
+     * Executes the revoke all user tokens operation.
+     *
+     * @param username the value supplied for this operation
+     */
     public void revokeAllUserTokens(String username) {
 
     }

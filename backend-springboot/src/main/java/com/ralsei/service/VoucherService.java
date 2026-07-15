@@ -12,6 +12,9 @@ import com.ralsei.dto.response.voucher.VoucherMetricsResponse;
 import com.ralsei.dto.response.voucher.VoucherResponse;
 import com.ralsei.model.Voucher;
 
+/**
+ * Provides the business service contract for voucher.
+ */
 public interface VoucherService {
     VoucherResponse createVoucher(CreateVoucherRequest request);
 

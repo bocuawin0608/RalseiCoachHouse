@@ -42,6 +42,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Validated
 @PreAuthorize("hasRole('TICKET_STAFF') or hasRole('CUSTOMER')")
+/**
+ * Handles HTTP requests for cargo ticket operations.
+ */
 public class CargoTicketController {
     private final CargoTicketService cargoTicketService;
 

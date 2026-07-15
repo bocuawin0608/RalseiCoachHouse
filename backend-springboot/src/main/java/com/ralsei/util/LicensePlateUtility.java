@@ -12,6 +12,13 @@ public final class LicensePlateUtility {
 
     private LicensePlateUtility() {}
 
+    /**
+     * Returns whether the valid is active.
+     *
+     * @param input the value supplied for this operation
+     *
+     * @return {@code true} if the valid is active; otherwise {@code false}
+     */
     public static boolean isValid(String input) {
         if (input == null || input.isBlank()) {
             return false;
@@ -23,6 +30,13 @@ public final class LicensePlateUtility {
      * Normalizes a valid license plate to canonical DB format: {@code 73B-555.22} or {@code 29A-1234}.
      *
      * @throws IllegalArgumentException when the input is not a valid plate
+     */
+    /**
+     * Executes the normalize operation.
+     *
+     * @param input the value supplied for this operation
+     *
+     * @return the operation result
      */
     public static String normalize(String input) {
         if (input == null || input.isBlank()) {

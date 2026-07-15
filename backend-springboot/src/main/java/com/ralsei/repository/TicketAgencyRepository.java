@@ -13,6 +13,9 @@ import com.ralsei.model.TicketAgency;
  * Repository interface for {@link com.ralsei.model.TicketAgency} entity.
  */
 
+/**
+ * Provides persistence access for ticket agency data.
+ */
 public interface TicketAgencyRepository extends JpaRepository<TicketAgency, Integer> {
 
     boolean existsByTicketAgencyNameIgnoreCase(String ticketAgencyName);

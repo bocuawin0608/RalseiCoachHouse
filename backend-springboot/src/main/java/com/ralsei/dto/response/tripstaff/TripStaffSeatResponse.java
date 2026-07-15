@@ -6,6 +6,9 @@ package com.ralsei.dto.response.tripstaff;
 
 import com.ralsei.model.enums.TripSeatStatus;
 
+/**
+ * Represents the response payload for trip staff seat operations.
+ */
 public record TripStaffSeatResponse(
         Integer tripSeatId,
         String seatCode,

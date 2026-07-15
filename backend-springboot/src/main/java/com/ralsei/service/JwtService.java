@@ -9,6 +9,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import com.ralsei.model.Account;
 
 import io.jsonwebtoken.Claims;
+/**
+ * Provides the business service contract for jwt.
+ */
 public interface JwtService {
 // Sinh access token
 String generateToken(Account account);

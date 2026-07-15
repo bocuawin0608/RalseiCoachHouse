@@ -10,6 +10,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Represents the request payload for geocode operations.
+ */
 public class GeocodeRequest {
     @NotBlank(message = "Address is required")
     private String address;

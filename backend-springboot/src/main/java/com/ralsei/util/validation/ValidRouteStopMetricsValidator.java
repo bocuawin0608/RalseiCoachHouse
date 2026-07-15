@@ -5,9 +5,20 @@ import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 import java.math.BigDecimal;
 
+/**
+ * Provides the valid route stop metrics validator component for the application.
+ */
 public class ValidRouteStopMetricsValidator implements ConstraintValidator<ValidRouteStopMetrics, RouteStopRequest> {
 
     @Override
+    /**
+     * Returns whether the valid is active.
+     *
+     * @param request the value supplied for this operation
+     * @param context the value supplied for this operation
+     *
+     * @return {@code true} if the valid is active; otherwise {@code false}
+     */
     public boolean isValid(RouteStopRequest request, ConstraintValidatorContext context) {
         if (request == null) {
             return true;

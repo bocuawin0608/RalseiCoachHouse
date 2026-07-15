@@ -505,8 +505,6 @@ SELECT *
 FROM trip_seat ts
     JOIN trip t ON t.tripId = ts.tripSeatId
 
-SELECT * FROM account_role ar JOIN account a ON ar.accountId = a.accountId 
-SELECT * FROM account_role ar JOIN account a ON ar.accountId = a.accountId JOIN role r on r.roleId = ar.roleId 
 SELECT *
 FROM account_role ar JOIN account a ON ar.accountId = a.accountId JOIN role r on r.roleId = ar.roleId
 
@@ -769,3 +767,15 @@ SELECT resourceType, resourceId, previousTripId, previousRouteName, previousDepa
 FROM ordered_trips
 WHERE previousRouteId = routeId
 ORDER BY resourceType, resourceId, departureTime;
+
+USE VeXeDB;
+
+
+SELECT * FROM Account a JOIN Account_Role ar ON a.accountId = ar.accountId JOIN Role r on ar.roleId = r.roleId JOIN Staff s on s.accountId = a.accountId
+
+use VeXeDB;
+SELECT * FROM Voucher 
+
+USE VEXEDB;
+SELECT * FROM CARGO_TICKET_DETAIL
+SELECT * FROM CARGO_TICKET

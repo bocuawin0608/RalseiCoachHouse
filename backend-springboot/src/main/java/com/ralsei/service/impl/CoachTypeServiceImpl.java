@@ -46,6 +46,9 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the coach type service impl component for the application.
+ */
 public class CoachTypeServiceImpl implements CoachTypeService {
 
     private final CoachTypeRepository coachTypeRepo;
@@ -61,6 +64,14 @@ public class CoachTypeServiceImpl implements CoachTypeService {
 
     @Transactional(readOnly = true)
     @Override
+    /**
+     * Filters the coach types records.
+     *
+     * @param filterRequest the value supplied for this operation
+     * @param pageable the value supplied for this operation
+     *
+     * @return the filtered results
+     */
     public Page<CoachTypeResponse> filterCoachTypes(CoachTypeFilterRequest filterRequest, Pageable pageable) {
 
         if (filterRequest.minPrice() != null && filterRequest.maxPrice() != null
@@ -88,6 +99,13 @@ public class CoachTypeServiceImpl implements CoachTypeService {
 
     @Transactional
     @Override
+    /**
+     * Creates the coach type.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the created coach type
+     */
     public Integer createCoachType(CoachTypeCreateRequest request) {
         String name = request.coachTypeName().trim();
         if (coachTypeRepo.existsByCoachTypeNameIgnoreCase(name)) {
@@ -163,6 +181,13 @@ public class CoachTypeServiceImpl implements CoachTypeService {
 
     @Transactional(readOnly = true)
     @Override
+    /**
+     * Returns the coach type detail.
+     *
+     * @param id the value supplied for this operation
+     *
+     * @return the coach type detail
+     */
     public CoachTypeDetailResponse getCoachTypeDetail(Integer id) {
         CoachType coachType = findCoachTypeOrThrow(id);
         LocalDateTime now = LocalDateTime.now();
@@ -191,6 +216,13 @@ public class CoachTypeServiceImpl implements CoachTypeService {
 
     @Transactional(readOnly = true)
     @Override
+    /**
+     * Returns the coach type prices.
+     *
+     * @param id the value supplied for this operation
+     *
+     * @return the coach type prices
+     */
     public List<CoachTypePriceResponse> getCoachTypePrices(Integer id) {
         findCoachTypeOrThrow(id);
         LocalDateTime now = LocalDateTime.now();
@@ -201,6 +233,12 @@ public class CoachTypeServiceImpl implements CoachTypeService {
 
     @Transactional
     @Override
+    /**
+     * Executes the add coach type price operation.
+     *
+     * @param id the value supplied for this operation
+     * @param request the value supplied for this operation
+     */
     public void addCoachTypePrice(Integer id, CoachTypePriceCreateRequest request) {
         CoachType coachType = findCoachTypeOrThrow(id);
         LocalDateTime start = request.startEffectiveDate();
@@ -241,6 +279,13 @@ public class CoachTypeServiceImpl implements CoachTypeService {
 
     @Transactional(readOnly = true)
     @Override
+    /**
+     * Returns the deactivation check.
+     *
+     * @param id the value supplied for this operation
+     *
+     * @return the deactivation check
+     */
     public CoachTypeDeactivationCheckResponse getDeactivationCheck(Integer id) {
         findCoachTypeOrThrow(id);
         List<Coach> activeCoaches = coachRepo.findByCoachType_CoachTypeIdAndStatusNot(id, CoachStatus.RETIRED);
@@ -268,6 +313,12 @@ public class CoachTypeServiceImpl implements CoachTypeService {
 
     @Transactional
     @Override
+    /**
+     * Updates the coach type info.
+     *
+     * @param id the value supplied for this operation
+     * @param updateRequest the value supplied for this operation
+     */
     public void updateCoachTypeInfo(Integer id, CoachTypeUpdateInfoRequest updateRequest) {
         CoachType coachType = findCoachTypeOrThrow(id);
         String name = updateRequest.coachTypeName().trim();
@@ -294,6 +345,12 @@ public class CoachTypeServiceImpl implements CoachTypeService {
 
     @Transactional
     @Override
+    /**
+     * Updates the coach type price.
+     *
+     * @param id the value supplied for this operation
+     * @param updateRequest the value supplied for this operation
+     */
     public void updateCoachTypePrice(Integer id, CoachTypeUpdatePriceRequest updateRequest) {
         addCoachTypePrice(id, new CoachTypePriceCreateRequest(
                 updateRequest.seatPrice(),
@@ -303,6 +360,12 @@ public class CoachTypeServiceImpl implements CoachTypeService {
 
     @Transactional
     @Override
+    /**
+     * Updates the coach type seatmap.
+     *
+     * @param id the value supplied for this operation
+     * @param updateRequest the value supplied for this operation
+     */
     public void updateCoachTypeSeatmap(Integer id, CoachTypeUpdateSeatmapRequest updateRequest) {
         CoachType coachType = findCoachTypeOrThrow(id);
 
@@ -320,6 +383,11 @@ public class CoachTypeServiceImpl implements CoachTypeService {
     }
 
     @Override
+    /**
+     * Finds the active coach types for dropdown.
+     *
+     * @return the matching result
+     */
     public List<CoachTypeDropdownDTO> findActiveCoachTypesForDropdown() {
         return coachTypeRepo.findActiveCoachTypesForDropdown();
     }

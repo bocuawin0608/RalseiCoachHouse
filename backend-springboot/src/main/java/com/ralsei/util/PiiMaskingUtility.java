@@ -3,8 +3,18 @@ package com.ralsei.util;
 import lombok.experimental.UtilityClass;
 
 @UtilityClass
+/**
+ * Provides utility helpers for pii masking uti processing.
+ */
 public class PiiMaskingUtility {
 
+    /**
+     * Executes the mask phone operation.
+     *
+     * @param phone the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public static String maskPhone(String phone) {
         if (phone == null || phone.isBlank()) {
             return "***";
@@ -22,6 +32,13 @@ public class PiiMaskingUtility {
                 + trimmed.substring(trimmed.length() - visibleSuffix);
     }
 
+    /**
+     * Executes the mask full name operation.
+     *
+     * @param fullName the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public static String maskFullName(String fullName) {
         if (fullName == null || fullName.isBlank()) {
             return "***";

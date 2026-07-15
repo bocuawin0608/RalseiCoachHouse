@@ -42,6 +42,9 @@ import lombok.RequiredArgsConstructor;
 @PreAuthorize("isAnonymous() or hasRole('CUSTOMER')")
 @RequiredArgsConstructor
 @Validated
+/**
+ * Handles HTTP requests for passenger booking operations.
+ */
 public class PassengerBookingController {
     
     private final PassengerBookingService bookingService;
@@ -135,6 +138,13 @@ public class PassengerBookingController {
     }
 
     @GetMapping(value = "/payments/{transactionId}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    /**
+     * Executes the stream payment status operation.
+     *
+     * @param transactionId the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public SseEmitter streamPaymentStatus(@PathVariable String transactionId) {
         bookingService.expirePendingPaymentIfOverdue(transactionId);
         return bookingService.subscribePaymentStatus(transactionId);

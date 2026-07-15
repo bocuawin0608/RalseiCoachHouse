@@ -24,11 +24,23 @@ import lombok.RequiredArgsConstructor;
 
 @Configuration
 @RequiredArgsConstructor
+/**
+ * Configures app for the application.
+ */
 public class AppConfig {
 
     private final AccountRepository accountRepository;
 
+    /**
+     * Cấu hình UserDetailsService để Spring Security có thể lấy thông tin người dùng từ DB
+     * @return UserDetailsService
+     */
 @Bean
+/**
+ * Executes the user details service operation.
+ *
+ * @return the operation result
+ */
 public UserDetailsService userDetailsService() {
     return username -> {
         // 1. Lấy dữ liệu tối ưu từ Projection (Chỉ 1 câu lệnh SQL duy nhất)
@@ -59,6 +71,11 @@ public UserDetailsService userDetailsService() {
 }
 
     @Bean
+    /**
+     * Executes the password encoder operation.
+     *
+     * @return the operation result
+     */
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
@@ -72,6 +89,15 @@ public UserDetailsService userDetailsService() {
     }
 
     @Bean
+    /**
+     * Executes the authentication manager operation.
+     *
+     * @param config the value supplied for this operation
+     *
+     * @return the operation result
+     *
+     * @throws Exception if the operation fails
+     */
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }

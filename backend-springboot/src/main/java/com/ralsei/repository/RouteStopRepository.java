@@ -12,6 +12,9 @@ import org.springframework.data.repository.query.Param;
 
 import com.ralsei.model.RouteStop;
 
+/**
+ * Provides persistence access for route stop data.
+ */
 public interface RouteStopRepository extends JpaRepository<RouteStop, Integer> {
 
   @EntityGraph(attributePaths = { "route", "coachStop" })

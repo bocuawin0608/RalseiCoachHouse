@@ -7,6 +7,9 @@ import com.ralsei.dto.request.cargotype.CargoTypeManagementRequest;
 import com.ralsei.dto.response.cargotype.CargoTypeResponse;
 import com.ralsei.dto.response.PagedResponse;
 
+/**
+ * Provides the business service contract for cargo type.
+ */
 public interface CargoTypeService {
     PagedResponse<CargoTypeResponse> getAllCargoTypes(String search, Boolean isActive, int page, int size);
 

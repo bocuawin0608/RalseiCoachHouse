@@ -7,6 +7,9 @@ import java.time.LocalTime;
  * Read-only staff trip row containing display values plus identifiers required
  * to open the complete edit form.
  */
+/**
+ * Projects the trip summar data shape for query results.
+ */
 public interface TripSummaryProjection {
 
     Integer getTripId();

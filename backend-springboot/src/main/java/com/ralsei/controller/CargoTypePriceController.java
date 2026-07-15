@@ -27,6 +27,9 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/v1/manager/cargo-type-prices")
 @RequiredArgsConstructor
 @Validated
+/**
+ * Handles HTTP requests for cargo type price operations.
+ */
 public class CargoTypePriceController {
 
     private final CargoTypePriceService cargoTypePriceService;

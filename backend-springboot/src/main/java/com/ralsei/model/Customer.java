@@ -25,6 +25,9 @@ import lombok.Setter;
  * Customer entity.
  */
 
+/**
+ * Provides the customer component for the application.
+ */
 public class Customer extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

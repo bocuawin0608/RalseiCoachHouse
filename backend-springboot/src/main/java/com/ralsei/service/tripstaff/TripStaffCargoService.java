@@ -6,6 +6,9 @@ package com.ralsei.service.tripstaff;
 
 import com.ralsei.dto.response.tripstaff.TripStaffCargoResponse;
 
+/**
+ * Provides the business service contract for trip staff cargo.
+ */
 public interface TripStaffCargoService {
 
     TripStaffCargoResponse getCargoList(String authorizationHeader, int tripId);

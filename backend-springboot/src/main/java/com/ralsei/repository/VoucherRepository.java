@@ -14,6 +14,9 @@ import org.springframework.data.repository.query.Param;
 
 import com.ralsei.model.Voucher;
 
+/**
+ * Provides persistence access for voucher data.
+ */
 public interface VoucherRepository extends JpaRepository<Voucher, Integer> {
     Optional<Voucher> findByVoucherCode(String voucherCode);
 

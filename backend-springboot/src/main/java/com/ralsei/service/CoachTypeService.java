@@ -17,6 +17,9 @@ import com.ralsei.dto.response.coachtype.CoachTypeDropdownDTO;
 import com.ralsei.dto.response.coachtype.CoachTypePriceResponse;
 import com.ralsei.dto.response.coachtype.CoachTypeResponse;
 
+/**
+ * Provides the business service contract for coach type.
+ */
 public interface CoachTypeService {
     Page<CoachTypeResponse> filterCoachTypes(CoachTypeFilterRequest filterRequest, Pageable pageable);
     Integer createCoachType(CoachTypeCreateRequest request);

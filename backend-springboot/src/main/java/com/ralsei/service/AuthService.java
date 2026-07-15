@@ -8,6 +8,9 @@ import com.ralsei.dto.request.auth.StaffLoginRequest;
 import com.ralsei.dto.response.auth.AuthResponse;
 import com.ralsei.dto.response.auth.StaffForgotPasswordResponse;
 
+/**
+ * Provides the business service contract for auth.
+ */
 public interface AuthService {
 
     // Customer: form login / Google / Facebook với firebase

@@ -10,6 +10,9 @@ import com.ralsei.dto.response.staffrefund.StaffRefundListItemResponse;
 /**
  * Manager workflows for reviewing and completing passenger refund requests.
  */
+/**
+ * Provides the business service contract for staff refund.
+ */
 public interface StaffRefundService {
 
     /**

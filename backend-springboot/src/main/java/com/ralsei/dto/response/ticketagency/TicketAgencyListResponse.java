@@ -8,6 +8,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * TicketAgencyListResponse
  */
 
+/**
+ * Represents the response payload for ticket agency list operations.
+ */
 public record TicketAgencyListResponse(
     Integer ticketAgencyId,
     String ticketAgencyName,

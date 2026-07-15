@@ -22,6 +22,9 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Provides the refund component for the application.
+ */
 public class Refund extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -7,6 +7,9 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Represents the response payload for customer detail operations.
+ */
 public record CustomerDetailResponse(
     Integer customerId,
     String customerName,
@@ -25,6 +28,9 @@ public record CustomerDetailResponse(
     List<CustomerBookingHistory> bookings
 ) {
 
+    /**
+     * Provides the customer booking history component for the application.
+     */
     public record CustomerBookingHistory(
         Long passengerTicketId,
         String ticketCode,

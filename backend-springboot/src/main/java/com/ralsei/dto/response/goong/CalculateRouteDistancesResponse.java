@@ -9,6 +9,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Represents the response payload for calculate route distances operations.
+ */
 public class CalculateRouteDistancesResponse {
     private String message;
     private int updated;

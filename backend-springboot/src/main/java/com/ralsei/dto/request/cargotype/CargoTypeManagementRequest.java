@@ -23,6 +23,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Represents the request payload for cargo type management operations.
+ */
 public class CargoTypeManagementRequest {
 
     @NotBlank(message = "Tên loại hàng là bắt buộc")

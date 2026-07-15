@@ -15,11 +15,21 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the firebase token verifier impl component for the application.
+ */
 public class FirebaseTokenVerifierImpl implements FirebaseTokenVerifier {
 
     private final Optional<FirebaseAuth> firebaseAuth;
 
     @Override
+    /**
+     * Executes the verify id token operation.
+     *
+     * @param idToken the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public FirebaseToken verifyIdToken(String idToken) {
         if (firebaseAuth.isEmpty()) {
             throw new BusinessRuleException("Firebase chưa được cấu hình!");

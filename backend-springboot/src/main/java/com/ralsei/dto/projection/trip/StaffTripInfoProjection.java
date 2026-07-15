@@ -10,6 +10,9 @@ import java.time.LocalDateTime;
  * availability, and trip status. It is intentionally separate from customer
  * search projections so staff-only fields do not leak into public APIs.</p>
  */
+/**
+ * Projects the staff trip inf data shape for query results.
+ */
 public interface StaffTripInfoProjection {
 
     Integer getTripId();

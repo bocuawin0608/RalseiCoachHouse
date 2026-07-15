@@ -6,6 +6,9 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
+/**
+ * Represents the request payload for cargo ticket detail price operations.
+ */
 public class CargoTicketDetailPriceRequest {
     @NotNull(message = "Loại hàng hóa không được để trống")
     private Integer cargoTypePriceId;

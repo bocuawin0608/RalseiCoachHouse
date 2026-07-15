@@ -6,6 +6,9 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Represents the request payload for staff passenger itinerary change operations.
+ */
 public record StaffPassengerItineraryChangeRequest(
     Integer newTripId,
     @NotNull @Min(1) Integer pickupStopId,

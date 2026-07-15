@@ -26,6 +26,9 @@ import java.util.List;
  * @param totalPrice final paid ticket total
  * @param seats immutable email details for every booked seat
  */
+/**
+ * Provides the passenger ticket email payload component for the application.
+ */
 public record PassengerTicketEmailPayload(
     String ticketCode,
     String transactionId,

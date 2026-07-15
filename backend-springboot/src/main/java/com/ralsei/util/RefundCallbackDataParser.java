@@ -16,6 +16,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+/**
+ * Provides the refund callback data parser component for the application.
+ */
 public class RefundCallbackDataParser {
 
     private final ObjectMapper objectMapper;
@@ -25,6 +28,13 @@ public class RefundCallbackDataParser {
      *
      * @param callbackData raw JSON string persisted on the refund row
      * @return parsed bank destination, or {@code null} when input is blank or invalid
+     */
+    /**
+     * Executes the parse operation.
+     *
+     * @param callbackData the value supplied for this operation
+     *
+     * @return the operation result
      */
     public StaffRefundBankDestinationResponse parse(String callbackData) {
         if (callbackData == null || callbackData.isBlank()) {

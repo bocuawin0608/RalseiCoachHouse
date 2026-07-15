@@ -28,6 +28,9 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the cargo type service impl component for the application.
+ */
 public class CargoTypeServiceImpl implements CargoTypeService {
 
     private static final LocalDateTime DEFAULT_SURCHARGE_END_DATE = LocalDateTime.of(2099, 12, 31, 23, 59, 59);
@@ -38,6 +41,16 @@ public class CargoTypeServiceImpl implements CargoTypeService {
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Returns the all cargo types.
+     *
+     * @param search the value supplied for this operation
+     * @param isActive the value supplied for this operation
+     * @param page the value supplied for this operation
+     * @param size the value supplied for this operation
+     *
+     * @return the all cargo types
+     */
     public PagedResponse<CargoTypeResponse> getAllCargoTypes(String search, Boolean isActive, int page, int size) {
         Pageable sortedPageable = PageRequest.of(page, size, Sort.by("cargoTypeId").descending());
         
@@ -57,6 +70,13 @@ public class CargoTypeServiceImpl implements CargoTypeService {
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Returns the cargo type by id.
+     *
+     * @param id the value supplied for this operation
+     *
+     * @return the cargo type by id
+     */
     public CargoTypeResponse getCargoTypeById(int id) {
         CargoType cargoType = findCargoTypeOrThrow(id);
         CargoTypePrice surcharge = cargoTypePriceRepository.findLatestByCargoTypeId(id).orElse(null);
@@ -65,6 +85,13 @@ public class CargoTypeServiceImpl implements CargoTypeService {
 
     @Override
     @Transactional
+    /**
+     * Creates the cargo type.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the created cargo type
+     */
     public CargoTypeResponse createCargoType(CargoTypeRequest request) {
         if (cargoTypeRepository.existsByCargoTypeNameIgnoreCase(request.getCargoTypeName().trim())) {
             throw new IllegalArgumentException("Loại hàng hóa đã tồn tại.");
@@ -81,6 +108,13 @@ public class CargoTypeServiceImpl implements CargoTypeService {
 
     @Override
     @Transactional
+    /**
+     * Creates the cargo type management.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the created cargo type management
+     */
     public CargoTypeResponse createCargoTypeManagement(CargoTypeManagementRequest request) {
         validateManagementRequest(request);
 
@@ -101,6 +135,14 @@ public class CargoTypeServiceImpl implements CargoTypeService {
 
     @Override
     @Transactional
+    /**
+     * Updates the cargo type.
+     *
+     * @param id the value supplied for this operation
+     * @param request the value supplied for this operation
+     *
+     * @return the updated cargo type
+     */
     public CargoTypeResponse updateCargoType(int id, @NonNull CargoTypeRequest request) {
         CargoType cargoType = findCargoTypeOrThrow(id);
 
@@ -119,6 +161,14 @@ public class CargoTypeServiceImpl implements CargoTypeService {
 
     @Override
     @Transactional
+    /**
+     * Updates the cargo type management.
+     *
+     * @param id the value supplied for this operation
+     * @param request the value supplied for this operation
+     *
+     * @return the updated cargo type management
+     */
     public CargoTypeResponse updateCargoTypeManagement(int id, @NonNull CargoTypeManagementRequest request) {
         validateManagementRequest(request);
 
@@ -150,6 +200,11 @@ public class CargoTypeServiceImpl implements CargoTypeService {
 
     @Override
     @Transactional
+    /**
+     * Executes the soft delete cargo type operation.
+     *
+     * @param id the value supplied for this operation
+     */
     public void softDeleteCargoType(int id) {
         CargoType cargoType = findCargoTypeOrThrow(id);
         cargoType.setActive(false);
@@ -167,6 +222,11 @@ public class CargoTypeServiceImpl implements CargoTypeService {
 
     @Override
     @Transactional
+    /**
+     * Executes the restore cargo type operation.
+     *
+     * @param id the value supplied for this operation
+     */
     public void restoreCargoType(int id) {
         CargoType cargoType = findCargoTypeOrThrow(id);
         cargoType.setActive(true);

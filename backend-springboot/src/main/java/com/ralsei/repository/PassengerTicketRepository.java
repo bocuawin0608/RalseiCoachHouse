@@ -12,6 +12,9 @@ import com.ralsei.model.PassengerTicket;
 import com.ralsei.model.enums.PassengerTicketMajorChangeType;
 import com.ralsei.model.enums.PassengerTicketStatus;
 
+/**
+ * Provides persistence access for passenger ticket data.
+ */
 public interface PassengerTicketRepository extends JpaRepository<PassengerTicket, Integer> {
     boolean existsByVoucherId(int voucherId);
 

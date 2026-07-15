@@ -10,6 +10,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Represents the request payload for cargo type operations.
+ */
 public class CargoTypeRequest {
     @NotBlank(message = "Cargo type name is required")
     private String cargoTypeName;

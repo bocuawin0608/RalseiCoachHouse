@@ -10,6 +10,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+/**
+ * Represents the response payload for cargo ticket detail operations.
+ */
 public class CargoTicketDetailResponse {
     private int cargoTicketDetailId;
     private int cargoTicketId;

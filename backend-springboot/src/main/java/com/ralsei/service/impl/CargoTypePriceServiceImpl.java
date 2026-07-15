@@ -22,12 +22,25 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the cargo type price service impl component for the application.
+ */
 public class CargoTypePriceServiceImpl implements CargoTypePriceService {
 
     private final CargoTypePriceRepository cargoTypePriceRepository;
     private final CargoTypeRepository cargoTypeRepository;
 
     @Override
+    /**
+     * Returns the all cargo type prices.
+     *
+     * @param cargoTypeId the value supplied for this operation
+     * @param search the value supplied for this operation
+     * @param page the value supplied for this operation
+     * @param size the value supplied for this operation
+     *
+     * @return the all cargo type prices
+     */
     public PagedResponse<CargoTypePriceResponse> getAllCargoTypePrices(int cargoTypeId, String search, int page, int size) {
         Pageable sortedPageable = PageRequest.of(page, size, Sort.by("cargoTypePriceId").descending());
         Page<CargoTypePrice> pageResult;
@@ -51,12 +64,26 @@ public class CargoTypePriceServiceImpl implements CargoTypePriceService {
     }
 
     @Override
+    /**
+     * Returns the cargo type price by id.
+     *
+     * @param id the value supplied for this operation
+     *
+     * @return the cargo type price by id
+     */
     public CargoTypePriceResponse getCargoTypePriceById(int id) {
         CargoTypePrice cargoTypePrice = findCargoTypePriceOrThrow(id);
         return mapToResponse(cargoTypePrice);
     }
 
     @Override
+    /**
+     * Creates the cargo type price.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the created cargo type price
+     */
     public CargoTypePriceResponse createCargoTypePrice(CargoTypePriceRequest request) {
         // Validate cargo type exists
         cargoTypeRepository.findById(request.getCargoTypeId())
@@ -76,6 +103,14 @@ public class CargoTypePriceServiceImpl implements CargoTypePriceService {
     }
 
     @Override
+    /**
+     * Updates the cargo type price.
+     *
+     * @param id the value supplied for this operation
+     * @param request the value supplied for this operation
+     *
+     * @return the updated cargo type price
+     */
     public CargoTypePriceResponse updateCargoTypePrice(int id, @NonNull CargoTypePriceRequest request) {
         CargoTypePrice cargoTypePrice = findCargoTypePriceOrThrow(id);
 
@@ -97,6 +132,11 @@ public class CargoTypePriceServiceImpl implements CargoTypePriceService {
     }
 
     @Override
+    /**
+     * Deletes the cargo type price.
+     *
+     * @param id the value supplied for this operation
+     */
     public void deleteCargoTypePrice(int id) {
         CargoTypePrice cargoTypePrice = Objects.requireNonNull(findCargoTypePriceOrThrow(id));
         cargoTypePriceRepository.delete(cargoTypePrice);

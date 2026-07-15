@@ -12,7 +12,15 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EntityScan(basePackages = "com.ralsei.model")
 @EnableSpringDataWebSupport(pageSerializationMode = EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO)
 @EnableScheduling
+/**
+ * Provides the application component for the application.
+ */
 public class Application {
+    /**
+     * Executes the main operation.
+     *
+     * @param args the value supplied for this operation
+     */
     public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
     }

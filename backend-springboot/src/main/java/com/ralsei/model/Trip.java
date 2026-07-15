@@ -27,6 +27,9 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Provides the trip component for the application.
+ */
 public class Trip extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

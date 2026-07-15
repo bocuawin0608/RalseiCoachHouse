@@ -23,12 +23,22 @@ import lombok.RequiredArgsConstructor;
 /** Assembles repository rows into stable order-level customer responses. */
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the cargo order lookup service impl component for the application.
+ */
 public class CargoOrderLookupServiceImpl implements CargoOrderLookupService {
     private final CargoTicketDetailRepository cargoTicketDetailRepository;
 
     /** {@inheritDoc} */
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Finds the by account id.
+     *
+     * @param accountId the value supplied for this operation
+     *
+     * @return the matching result
+     */
     public List<CargoOrderLookupResponse> findByAccountId(Integer accountId) {
         validateAccountId(accountId);
         List<CargoOrderLookupProjection> rows = cargoTicketDetailRepository.findCargoOrdersByAccountId(accountId);

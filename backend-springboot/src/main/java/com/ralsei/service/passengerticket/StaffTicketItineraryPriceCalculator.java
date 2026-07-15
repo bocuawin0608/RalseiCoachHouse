@@ -18,6 +18,9 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
+/**
+ * Provides the staff ticket itinerary price calculator component for the application.
+ */
 public class StaffTicketItineraryPriceCalculator {
 
     private final TripRepository tripRepository;
@@ -25,6 +28,9 @@ public class StaffTicketItineraryPriceCalculator {
     private final RouteStopRepository routeStopRepository;
     private final VoucherService voucherService;
 
+    /**
+     * Provides the price breakdown component for the application.
+     */
     public record PriceBreakdown(
         BigDecimal basePrice,
         BigDecimal surcharge,

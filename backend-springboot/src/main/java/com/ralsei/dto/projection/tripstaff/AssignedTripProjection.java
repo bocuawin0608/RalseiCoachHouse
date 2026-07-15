@@ -6,6 +6,9 @@ package com.ralsei.dto.projection.tripstaff;
 
 import java.time.LocalDateTime;
 
+/**
+ * Projects the assigned tri data shape for query results.
+ */
 public interface AssignedTripProjection {
 
     Integer getTripId();

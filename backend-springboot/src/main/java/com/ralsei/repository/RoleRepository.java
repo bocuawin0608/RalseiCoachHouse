@@ -15,6 +15,9 @@ import com.ralsei.model.Role;
  * Repository interface for {@link com.ralsei.model.Role} entity.
  */
 
+/**
+ * Provides persistence access for role data.
+ */
 public interface RoleRepository extends JpaRepository<Role, Integer> {
     Optional<Role> findByRoleName(String roleName);
 

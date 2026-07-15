@@ -12,6 +12,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Represents the response payload for voucher list item operations.
+ */
 public class VoucherListItemResponse {
     private int voucherId;
     private String voucherCode;

@@ -5,6 +5,9 @@ import java.time.LocalDateTime;
 
 import com.ralsei.model.enums.CoachTypePriceStatus;
 
+/**
+ * Represents the response payload for coach type price operations.
+ */
 public record CoachTypePriceResponse(
     Integer coachTypePriceId,
     BigDecimal seatPrice,

@@ -24,6 +24,9 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/v1/customer/me")
 @PreAuthorize("hasRole('CUSTOMER')")
 @RequiredArgsConstructor
+/**
+ * Handles HTTP requests for customer account operations.
+ */
 public class CustomerAccountController {
 
     private final CustomerAccountService customerAccountService;
@@ -50,6 +53,11 @@ public class CustomerAccountController {
      * Soft-deactivates the signed-in customer account.
      */
     @DeleteMapping
+    /**
+     * Executes the deactivate current account operation.
+     *
+     * @return the operation result
+     */
     public ResponseEntity<CustomerAccountActionResponse> deactivateCurrentAccount() {
         return ResponseEntity.ok(customerAccountService.deactivateCurrentAccount());
     }

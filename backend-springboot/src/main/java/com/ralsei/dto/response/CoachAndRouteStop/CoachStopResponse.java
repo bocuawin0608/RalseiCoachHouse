@@ -10,6 +10,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Represents the response payload for coach stop operations.
+ */
 public class CoachStopResponse {
     private int stopPointId;
     private String stopPointName;

@@ -9,6 +9,9 @@ import jakarta.validation.constraints.Size;
  *
  * @param transactionId payout reference supplied by manager; optional for cash refunds
  */
+/**
+ * Represents the request payload for staff refund complete operations.
+ */
 public record StaffRefundCompleteRequest(
     @Size(max = 100, message = "Mã giao dịch không được vượt quá 100 ký tự.")
     String transactionId

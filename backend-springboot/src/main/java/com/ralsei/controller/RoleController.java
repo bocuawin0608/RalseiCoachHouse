@@ -38,6 +38,9 @@ import lombok.RequiredArgsConstructor;
  * All endpoints require ADMIN role.
  */
 
+/**
+ * Handles HTTP requests for role operations.
+ */
 public class RoleController {
     private final RoleService roleService;
 
@@ -57,6 +60,13 @@ public class RoleController {
     }
 
     @PostMapping(path = {"", "/"})
+    /**
+     * Creates the role.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the created role
+     */
     public ResponseEntity<Integer> createRole(@Valid @RequestBody CreateRoleRequest request) {
         Integer newId = roleService.createRole(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(newId);

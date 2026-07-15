@@ -16,6 +16,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+/**
+ * Represents the response payload for cargo ticket operations.
+ */
 public class CargoTicketResponse {
     private int cargoTicketId;
     private Integer tripId;

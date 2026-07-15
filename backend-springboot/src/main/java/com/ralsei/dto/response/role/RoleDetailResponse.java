@@ -8,6 +8,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * RoleDetailResponse
  */
 
+/**
+ * Represents the response payload for role detail operations.
+ */
 public record RoleDetailResponse(
     Integer roleId,
     String roleName,

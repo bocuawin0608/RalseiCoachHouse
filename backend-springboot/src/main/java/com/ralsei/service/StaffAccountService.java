@@ -10,6 +10,9 @@ import com.ralsei.dto.response.staff.StaffProfileResponse;
  * This boundary keeps profile ownership checks in the backend instead of
  * trusting the browser with staff or account identifiers.
  */
+/**
+ * Provides the business service contract for staff account.
+ */
 public interface StaffAccountService {
 
     /**

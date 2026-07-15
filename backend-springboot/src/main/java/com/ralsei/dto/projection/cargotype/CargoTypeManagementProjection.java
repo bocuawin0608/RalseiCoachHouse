@@ -9,6 +9,9 @@ import java.math.BigDecimal;
  * table, so this projection keeps the read query strict and avoids stitching
  * unrelated payloads in the frontend.</p>
  */
+/**
+ * Projects the cargo type managemen data shape for query results.
+ */
 public interface CargoTypeManagementProjection {
 
     int getCargoTypeId();

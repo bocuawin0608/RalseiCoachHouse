@@ -4,6 +4,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Represents the response payload for staff passenger ticket list item operations.
+ */
 public record StaffPassengerTicketListItemResponse(
     Integer passengerTicketId,
     String ticketCode,

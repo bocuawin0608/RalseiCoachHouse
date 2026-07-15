@@ -6,6 +6,9 @@ import java.util.List;
 
 @Data
 @AllArgsConstructor
+/**
+ * Represents the response payload for paged operations.
+ */
 public class PagedResponse<T> {
     private List<T> content;       
     private int pageNumber;        

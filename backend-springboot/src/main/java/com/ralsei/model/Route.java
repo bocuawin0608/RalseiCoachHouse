@@ -17,6 +17,9 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Provides the route component for the application.
+ */
 public class Route extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

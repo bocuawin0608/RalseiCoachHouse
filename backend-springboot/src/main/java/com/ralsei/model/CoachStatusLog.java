@@ -28,6 +28,9 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Provides the coach status log component for the application.
+ */
 public class CoachStatusLog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

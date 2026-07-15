@@ -51,6 +51,9 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the coach service impl component for the application.
+ */
 public class CoachServiceImpl implements CoachService {
 
     private final CoachTypeRepository coachTypeRepo;
@@ -63,12 +66,27 @@ public class CoachServiceImpl implements CoachService {
 
     @Transactional(readOnly = true)
     @Override
+    /**
+     * Filters the coaches records.
+     *
+     * @param filterRequest the value supplied for this operation
+     * @param pageable the value supplied for this operation
+     *
+     * @return the filtered results
+     */
     public Page<CoachResponse> filterCoaches(CoachFilterRequest filterRequest, Pageable pageable) {
         return coachRepo.searchCoaches(sanitizeFilter(filterRequest), pageable);
     }
 
     @Transactional
     @Override
+    /**
+     * Creates the coach.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the created coach
+     */
     public Integer createCoach(CoachCreateRequest request) {
         CoachType coachType = coachTypeRepo.findByCoachTypeIdAndIsActiveTrue(request.coachTypeId())
             .orElseThrow(() -> new ResourceNotFoundException("Loại xe không tồn tại hoặc không hợp lệ!"));
@@ -152,6 +170,14 @@ public class CoachServiceImpl implements CoachService {
 
     @Transactional
     @Override
+    /**
+     * Updates the coach info.
+     *
+     * @param id the value supplied for this operation
+     * @param request the value supplied for this operation
+     *
+     * @return the updated coach info
+     */
     public boolean updateCoachInfo(Integer id, CoachUpdateInfoRequest request) {
         Coach coachToUpdate = findCoachOrThrow(id);
         
@@ -196,6 +222,13 @@ public class CoachServiceImpl implements CoachService {
 
     @Transactional(readOnly = true)
     @Override
+    /**
+     * Returns the coach detail.
+     *
+     * @param id the value supplied for this operation
+     *
+     * @return the coach detail
+     */
     public CoachDetailResponse getCoachDetail(Integer id) {
         Coach coach = findCoachWithRelationsOrThrow(id);
         return buildDetailResponse(coach);
@@ -203,6 +236,14 @@ public class CoachServiceImpl implements CoachService {
 
     @Transactional(readOnly = true)
     @Override
+    /**
+     * Returns the status change check.
+     *
+     * @param id the value supplied for this operation
+     * @param target the value supplied for this operation
+     *
+     * @return the status change check
+     */
     public CoachStatusChangeCheckResponse getStatusChangeCheck(Integer id, CoachStatus target) {
         findCoachOrThrow(id);
         if (target == CoachStatus.MAINTENANCE || target == CoachStatus.RETIRED) {
@@ -219,6 +260,12 @@ public class CoachServiceImpl implements CoachService {
 
     @Transactional
     @Override
+    /**
+     * Executes the report maintenance operation.
+     *
+     * @param id the value supplied for this operation
+     * @param request the value supplied for this operation
+     */
     public void reportMaintenance(Integer id, CoachReportMaintenanceRequest request) {
         Coach coach = findCoachOrThrow(id);
         if (coach.getStatus() != CoachStatus.ACTIVE) {
@@ -230,6 +277,12 @@ public class CoachServiceImpl implements CoachService {
 
     @Transactional
     @Override
+    /**
+     * Executes the reactivate operation.
+     *
+     * @param id the value supplied for this operation
+     * @param request the value supplied for this operation
+     */
     public void reactivate(Integer id, CoachReactivateRequest request) {
         Coach coach = findCoachOrThrow(id);
         if (coach.getStatus() != CoachStatus.MAINTENANCE) {
@@ -243,6 +296,12 @@ public class CoachServiceImpl implements CoachService {
 
     @Transactional
     @Override
+    /**
+     * Executes the retire operation.
+     *
+     * @param id the value supplied for this operation
+     * @param request the value supplied for this operation
+     */
     public void retire(Integer id, CoachRetireRequest request) {
         Coach coach = findCoachOrThrow(id);
         if (coach.getStatus() == CoachStatus.RETIRED) {
@@ -254,6 +313,14 @@ public class CoachServiceImpl implements CoachService {
 
     @Transactional(readOnly = true)
     @Override
+    /**
+     * Returns the status logs.
+     *
+     * @param id the value supplied for this operation
+     * @param pageable the value supplied for this operation
+     *
+     * @return the status logs
+     */
     public Page<CoachStatusLogResponse> getStatusLogs(Integer id, Pageable pageable) {
         findCoachOrThrow(id);
         return coachStatusLogRepo.findByCoach_CoachIdOrderByCreatedAtDesc(id, pageable)
@@ -262,6 +329,12 @@ public class CoachServiceImpl implements CoachService {
 
     @Transactional
     @Override
+    /**
+     * Updates the coach seats.
+     *
+     * @param id the value supplied for this operation
+     * @param request the value supplied for this operation
+     */
     public void updateCoachSeats(Integer id, CoachUpdateSeatsRequest request) {
         Coach coach = findCoachWithRelationsOrThrow(id);
         Map<Integer, Seat> seatMap = coach.getSeats().stream()

@@ -22,6 +22,9 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the passenger phone verification service impl component for the application.
+ */
 public class PassengerPhoneVerificationServiceImpl implements PassengerPhoneVerificationService {
 
     private final AccountRepository accountRepository;
@@ -31,6 +34,13 @@ public class PassengerPhoneVerificationServiceImpl implements PassengerPhoneVeri
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Executes the check phone operation.
+     *
+     * @param phone the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public CheckPhoneResponse checkPhone(String phone) {
         String normalizedPhone = PhoneNumberUtility.normalizeToLocalFormat(phone);
         boolean knownFromAccount = accountRepository.existsByUsername(normalizedPhone);
@@ -49,6 +59,13 @@ public class PassengerPhoneVerificationServiceImpl implements PassengerPhoneVeri
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Returns whether the phone known is active.
+     *
+     * @param phone the value supplied for this operation
+     *
+     * @return {@code true} if the phone known is active; otherwise {@code false}
+     */
     public boolean isPhoneKnown(String phone) {
         String normalizedPhone = PhoneNumberUtility.normalizeToLocalFormat(phone);
         return accountRepository.existsByUsername(normalizedPhone)
@@ -57,6 +74,12 @@ public class PassengerPhoneVerificationServiceImpl implements PassengerPhoneVeri
     }
 
     @Override
+    /**
+     * Executes the verify firebase phone token operation.
+     *
+     * @param phone the value supplied for this operation
+     * @param idToken the value supplied for this operation
+     */
     public void verifyFirebasePhoneToken(String phone, String idToken) {
         if (idToken == null || idToken.isBlank()) {
             throw new BusinessRuleException("Số điện thoại chưa được xác thực OTP!");

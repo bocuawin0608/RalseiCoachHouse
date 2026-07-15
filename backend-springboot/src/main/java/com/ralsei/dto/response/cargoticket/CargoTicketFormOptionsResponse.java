@@ -14,6 +14,9 @@ import lombok.Getter;
 
 @Getter
 @Builder
+/**
+ * Represents the response payload for cargo ticket form options operations.
+ */
 public class CargoTicketFormOptionsResponse {
     private List<RouteDropdownDTO> routes;
     private List<CargoTicketTripOptionWithCoachTypeProjection> trips;

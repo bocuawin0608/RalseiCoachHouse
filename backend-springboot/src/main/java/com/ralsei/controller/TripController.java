@@ -40,6 +40,9 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
+/**
+ * Handles HTTP requests for trip operations.
+ */
 public class TripController {
     private final TripService tripService;
 
@@ -94,11 +97,25 @@ public class TripController {
      */
     @GetMapping("/trips/{tripId}/stops")
     @PreAuthorize("permitAll()")
+    /**
+     * Returns the trip stops.
+     *
+     * @param tripId the value supplied for this operation
+     *
+     * @return the trip stops
+     */
     public ResponseEntity<List<TripStopProjection>> getTripStops(@PathVariable Integer tripId) {
         return ResponseEntity.ok(tripService.getTripStops(tripId));
     }
 
     @PostMapping("/manager/trips/create") // NIKO: Đổi từ /admin/create thành /manager/trips/create
+    /**
+     * Executes the insert trip operation.
+     *
+     * @param tripRequest the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public ResponseEntity<Map<String, String>> insertTrip(@RequestBody TripCreateRequest tripRequest) {
         String result = tripService.insertTrip(tripRequest);
 
@@ -121,6 +138,11 @@ public class TripController {
     }
 
     @DeleteMapping("/manager/trips/delete/{tripId}")
+    /**
+     * Deletes the trip.
+     *
+     * @param tripId the value supplied for this operation
+     */
     public ResponseEntity<Map<String, String>> deleteTrip(@PathVariable Integer tripId) {
         String result = tripService.deleteTrip(tripId);
 

@@ -14,6 +14,9 @@ import org.springframework.data.repository.query.Param;
 import com.ralsei.dto.projection.CustomerListProjection;
 import com.ralsei.model.Customer;
 
+/**
+ * Provides persistence access for customer data.
+ */
 public interface CustomerRepository extends JpaRepository<Customer, Integer> {
     @Query(value = """
             SELECT customerId AS customerId, customerName AS customerName

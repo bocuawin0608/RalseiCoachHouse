@@ -12,6 +12,9 @@ import com.ralsei.dto.request.tripstaff.QrCheckInRequest;
 import com.ralsei.dto.response.tripstaff.CheckInResponse;
 import com.ralsei.dto.response.tripstaff.TripStaffDashboardResponse;
 
+/**
+ * Provides the business service contract for trip staff passenger.
+ */
 public interface TripStaffPassengerService {
 
     List<AssignedTripProjection> getAssignedTrips(String authorizationHeader, LocalDate date);

@@ -42,6 +42,9 @@ import lombok.RequiredArgsConstructor;
  * Implementation of {@link com.ralsei.service.StaffService}.
  */
 
+/**
+ * Provides the staff service impl component for the application.
+ */
 public class StaffServiceImpl implements StaffService {
 
     private final StaffRepository staffRepo;
@@ -54,6 +57,14 @@ public class StaffServiceImpl implements StaffService {
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Filters the staff records.
+     *
+     * @param filterRequest the value supplied for this operation
+     * @param pageable the value supplied for this operation
+     *
+     * @return the filtered results
+     */
     public Page<StaffListResponse> filterStaff(StaffFilterRequest filterRequest, Pageable pageable) {
         String search = filterRequest != null && filterRequest.search() != null && !filterRequest.search().isBlank()
             ? filterRequest.search().trim() : null;
@@ -77,6 +88,13 @@ public class StaffServiceImpl implements StaffService {
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Returns the staff detail.
+     *
+     * @param staffId the value supplied for this operation
+     *
+     * @return the staff detail
+     */
     public StaffDetailResponse getStaffDetail(Integer staffId) {
         Staff staff = staffRepo.findById(staffId)
             .orElseThrow(() -> new ResourceNotFoundException("Nhân viên không tồn tại!"));
@@ -85,6 +103,12 @@ public class StaffServiceImpl implements StaffService {
 
     @Override
     @Transactional
+    /**
+     * Updates the staff.
+     *
+     * @param staffId the value supplied for this operation
+     * @param request the value supplied for this operation
+     */
     public void updateStaff(Integer staffId, UpdateStaffRequest request) {
         Staff staff = staffRepo.findById(staffId)
             .orElseThrow(() -> new ResourceNotFoundException("Nhân viên không tồn tại!"));
@@ -130,6 +154,11 @@ public class StaffServiceImpl implements StaffService {
 
     @Override
     @Transactional
+    /**
+     * Executes the toggle active operation.
+     *
+     * @param staffId the value supplied for this operation
+     */
     public void toggleActive(Integer staffId) {
         Staff staff = staffRepo.findById(staffId)
             .orElseThrow(() -> new ResourceNotFoundException("Nhân viên không tồn tại!"));
@@ -146,6 +175,11 @@ public class StaffServiceImpl implements StaffService {
 
     @Override
     @Transactional
+    /**
+     * Deletes the staff.
+     *
+     * @param staffId the value supplied for this operation
+     */
     public void deleteStaff(Integer staffId) {
         Staff staff = staffRepo.findById(staffId)
             .orElseThrow(() -> new ResourceNotFoundException("Nhân viên không tồn tại!"));
@@ -164,6 +198,13 @@ public class StaffServiceImpl implements StaffService {
 
     @Override
     @Transactional
+    /**
+     * Executes the onboard staff operation.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public OnboardStaffResponse onboardStaff(OnboardStaffRequest request) {
         if (staffRepo.existsByPhoneIgnoreCase(request.phone().trim())) {
             throw new BusinessRuleException("Số điện thoại đã tồn tại trong danh sách nhân viên!");

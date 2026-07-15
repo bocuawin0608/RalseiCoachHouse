@@ -50,6 +50,9 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the trip staff passenger service impl component for the application.
+ */
 public class TripStaffPassengerServiceImpl implements TripStaffPassengerService {
 
     private final JwtService jwtService;
@@ -67,6 +70,14 @@ public class TripStaffPassengerServiceImpl implements TripStaffPassengerService 
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Returns the assigned trips.
+     *
+     * @param authorizationHeader the value supplied for this operation
+     * @param date the value supplied for this operation
+     *
+     * @return the assigned trips
+     */
     public List<AssignedTripProjection> getAssignedTrips(String authorizationHeader, LocalDate date) {
         int staffId = resolveStaffId(authorizationHeader);
         return tripStaffRepository.findAssignedTripsByStaffAndDate(staffId, date.toString());
@@ -74,6 +85,14 @@ public class TripStaffPassengerServiceImpl implements TripStaffPassengerService 
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Returns the dashboard.
+     *
+     * @param authorizationHeader the value supplied for this operation
+     * @param tripId the value supplied for this operation
+     *
+     * @return the dashboard
+     */
     public TripStaffDashboardResponse getDashboard(String authorizationHeader, Integer tripId) {
         int staffId = resolveStaffId(authorizationHeader);
         assertStaffCanAccessTrip(staffId, tripId);
@@ -113,6 +132,15 @@ public class TripStaffPassengerServiceImpl implements TripStaffPassengerService 
 
     @Override
     @Transactional
+    /**
+     * Executes the check in by qr operation.
+     *
+     * @param authorizationHeader the value supplied for this operation
+     * @param tripId the value supplied for this operation
+     * @param request the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public CheckInResponse checkInByQr(String authorizationHeader, Integer tripId, QrCheckInRequest request) {
         int staffId = resolveStaffId(authorizationHeader);
         TripContext context = loadTripContext(staffId, tripId);
@@ -125,6 +153,15 @@ public class TripStaffPassengerServiceImpl implements TripStaffPassengerService 
 
     @Override
     @Transactional
+    /**
+     * Executes the check in manual operation.
+     *
+     * @param authorizationHeader the value supplied for this operation
+     * @param tripId the value supplied for this operation
+     * @param ticketDetailId the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public CheckInResponse checkInManual(String authorizationHeader, Integer tripId, Integer ticketDetailId) {
         int staffId = resolveStaffId(authorizationHeader);
         TripContext context = loadTripContext(staffId, tripId);
@@ -254,6 +291,12 @@ public class TripStaffPassengerServiceImpl implements TripStaffPassengerService 
 
     @Override
     @Transactional
+    /**
+     * Executes the start trip operation.
+     *
+     * @param authorizationHeader the value supplied for this operation
+     * @param tripId the value supplied for this operation
+     */
     public void startTrip(String authorizationHeader, Integer tripId) {
         int staffId = resolveStaffId(authorizationHeader);
         assertStaffCanAccessTrip(staffId, tripId);
@@ -271,6 +314,12 @@ public class TripStaffPassengerServiceImpl implements TripStaffPassengerService 
 
     @Override
     @Transactional
+    /**
+     * Executes the end trip operation.
+     *
+     * @param authorizationHeader the value supplied for this operation
+     * @param tripId the value supplied for this operation
+     */
     public void endTrip(String authorizationHeader, Integer tripId) {
         int staffId = resolveStaffId(authorizationHeader);
         assertStaffCanAccessTrip(staffId, tripId);
@@ -288,6 +337,13 @@ public class TripStaffPassengerServiceImpl implements TripStaffPassengerService 
 
     @Override
     @Transactional
+    /**
+     * Executes the mark no show operation.
+     *
+     * @param authorizationHeader the value supplied for this operation
+     * @param tripId the value supplied for this operation
+     * @param ticketDetailId the value supplied for this operation
+     */
     public void markNoShow(String authorizationHeader, Integer tripId, Integer ticketDetailId) {
         int staffId = resolveStaffId(authorizationHeader);
         assertStaffCanAccessTrip(staffId, tripId);

@@ -21,6 +21,9 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/v1/customer/cargo-history")
 @PreAuthorize("hasRole('CUSTOMER')")
 @RequiredArgsConstructor
+/**
+ * Handles HTTP requests for cargo order lookup operations.
+ */
 public class CargoOrderLookupController {
     private final CargoOrderLookupService cargoOrderLookupService;
     private final JwtService jwtService;

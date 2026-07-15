@@ -19,6 +19,9 @@ import jakarta.validation.constraints.Size;
  * @param email optional staff contact email
  * @param dob optional date of birth; staff must still satisfy the 20+ age rule
  */
+/**
+ * Represents the request payload for staff profile update operations.
+ */
 public record StaffProfileUpdateRequest(
     @NotBlank(message = "Họ và tên không được để trống.")
     @Size(max = 100, message = "Họ và tên không được vượt quá 100 ký tự.")

@@ -5,6 +5,9 @@ import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Represents the response payload for staff list operations.
+ */
 public record StaffListResponse(
     Integer staffId,
     String staffName,

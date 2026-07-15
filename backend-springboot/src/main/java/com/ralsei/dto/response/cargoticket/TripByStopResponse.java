@@ -11,6 +11,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+/**
+ * Represents the response payload for trip by stop operations.
+ */
 public class TripByStopResponse {
     private int tripId;
     private int routeId;

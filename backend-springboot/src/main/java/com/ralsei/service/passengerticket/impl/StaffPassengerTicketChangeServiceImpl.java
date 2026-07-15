@@ -52,6 +52,9 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the staff passenger ticket change service impl component for the application.
+ */
 public class StaffPassengerTicketChangeServiceImpl implements StaffPassengerTicketChangeService {
 
     private static final long STAFF_SEAT_HOLD_TTL_SECONDS = 300;
@@ -123,6 +126,13 @@ public class StaffPassengerTicketChangeServiceImpl implements StaffPassengerTick
 
     @Override
     @Transactional(readOnly = true)
+    /**
+     * Returns the seat map.
+     *
+     * @param tripId the value supplied for this operation
+     *
+     * @return the seat map
+     */
     public List<TripSeatResponse> getSeatMap(Integer tripId) {
         if (!tripRepository.existsById(tripId)) {
             throw new ResourceNotFoundException("Không tìm thấy chuyến xe có ID là: " + tripId);
@@ -137,6 +147,16 @@ public class StaffPassengerTicketChangeServiceImpl implements StaffPassengerTick
 
     @Override
     @Transactional
+    /**
+     * Executes the lock seats operation.
+     *
+     * @param tripId the value supplied for this operation
+     * @param request the value supplied for this operation
+     * @param holdToken the value supplied for this operation
+     * @param lockMode the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public SeatLockResponse lockSeats(Integer tripId, SeatLockRequest request, String holdToken, String lockMode) {
         validateHoldSession(holdToken);
 
@@ -182,6 +202,12 @@ public class StaffPassengerTicketChangeServiceImpl implements StaffPassengerTick
 
     @Override
     @Transactional
+    /**
+     * Executes the release seats operation.
+     *
+     * @param tripSeatIds the value supplied for this operation
+     * @param holdToken the value supplied for this operation
+     */
     public void releaseSeats(List<Integer> tripSeatIds, String holdToken) {
         if (holdToken == null || holdToken.isBlank() || tripSeatIds == null || tripSeatIds.isEmpty()) {
             return;

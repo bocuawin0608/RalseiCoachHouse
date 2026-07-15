@@ -10,6 +10,9 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
+/**
+ * Represents the request payload for coach update info operations.
+ */
 public record CoachUpdateInfoRequest(
     
     @Positive(message = "ID tuyến đường phải là số dương.")

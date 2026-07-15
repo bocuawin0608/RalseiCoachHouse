@@ -19,6 +19,9 @@ import lombok.EqualsAndHashCode;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
+/**
+ * Represents the request payload for trip filter operations.
+ */
 public class TripFilterRequest extends TripSearchRequest {
     private static final int MAX_TIME_SLOTS = 4;
     private static final int MAX_LAYOUTS = 3;
@@ -43,6 +46,11 @@ public class TripFilterRequest extends TripSearchRequest {
      * @return {@code true} when at most four valid, forward time ranges are supplied
      */
     @AssertTrue(message = "Time slots must contain at most four valid HH:mm-HH:mm ranges")
+    /**
+     * Returns whether the time slots valid is active.
+     *
+     * @return {@code true} if the time slots valid is active; otherwise {@code false}
+     */
     public boolean isTimeSlotsValid() {
         List<String> values = flatten(timeSlots);
         if (values.size() > MAX_TIME_SLOTS) {
@@ -58,6 +66,11 @@ public class TripFilterRequest extends TripSearchRequest {
      * @return {@code true} when no more than three non-blank layouts are supplied
      */
     @AssertTrue(message = "At most three layouts may be requested")
+    /**
+     * Returns whether the layouts valid is active.
+     *
+     * @return {@code true} if the layouts valid is active; otherwise {@code false}
+     */
     public boolean isLayoutsValid() {
         return flatten(layouts).size() <= MAX_LAYOUTS;
     }
@@ -68,6 +81,11 @@ public class TripFilterRequest extends TripSearchRequest {
      * @return {@code true} when both optional bounds form a safe ascending range
      */
     @AssertTrue(message = "Price range must be finite, non-negative, and minPrice must not exceed maxPrice")
+    /**
+     * Returns whether the price range valid is active.
+     *
+     * @return {@code true} if the price range valid is active; otherwise {@code false}
+     */
     public boolean isPriceRangeValid() {
         if ((minPrice != null && !Double.isFinite(minPrice))
                 || (maxPrice != null && !Double.isFinite(maxPrice))) {

@@ -14,6 +14,9 @@ import lombok.Getter;
 @Builder
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
+/**
+ * Represents the response payload for error operations.
+ */
 public class ErrorResponse {
 
     private final LocalDateTime timestamp;

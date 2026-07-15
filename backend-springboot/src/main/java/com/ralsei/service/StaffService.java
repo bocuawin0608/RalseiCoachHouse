@@ -14,6 +14,9 @@ import com.ralsei.dto.response.staff.StaffListResponse;
  * Service interface for staff management operations.
  */
 
+/**
+ * Provides the business service contract for staff.
+ */
 public interface StaffService {
     Page<StaffListResponse> filterStaff(StaffFilterRequest filterRequest, Pageable pageable);
     StaffDetailResponse getStaffDetail(Integer staffId);

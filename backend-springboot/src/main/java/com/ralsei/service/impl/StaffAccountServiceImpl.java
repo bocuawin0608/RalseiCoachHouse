@@ -33,6 +33,9 @@ import lombok.RequiredArgsConstructor;
  */
 @Service
 @RequiredArgsConstructor
+/**
+ * Provides the staff account service impl component for the application.
+ */
 public class StaffAccountServiceImpl implements StaffAccountService {
 
     private static final int MIN_STAFF_AGE_YEARS = 20;
@@ -60,6 +63,13 @@ public class StaffAccountServiceImpl implements StaffAccountService {
      */
     @Override
     @Transactional
+    /**
+     * Updates the current profile.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the updated current profile
+     */
     public StaffProfileResponse updateCurrentProfile(StaffProfileUpdateRequest request) {
         AccountProjection account = findCurrentStaffAccountProjection();
         Staff staff = findActiveStaff(account.getAccountId());
@@ -86,6 +96,13 @@ public class StaffAccountServiceImpl implements StaffAccountService {
      */
     @Override
     @Transactional
+    /**
+     * Executes the change current password operation.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the operation result
+     */
     public StaffAccountActionResponse changeCurrentPassword(StaffPasswordChangeRequest request) {
         AccountProjection projection = findCurrentStaffAccountProjection();
         Account account = accountRepository.findById(projection.getAccountId())

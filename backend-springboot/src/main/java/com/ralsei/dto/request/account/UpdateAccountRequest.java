@@ -9,6 +9,9 @@ import jakarta.validation.constraints.Size;
  * UpdateAccountRequest
  */
 
+/**
+ * Represents the request payload for update account operations.
+ */
 public record UpdateAccountRequest(
     @NotBlank(message = "Tên nhân viên không được để trống.")
     @Size(max = 100, message = "Tên nhân viên không được vượt quá 100 ký tự.")
