@@ -116,7 +116,7 @@ export default function CargoTicketDetailViewModal({ ticket, onClose }) {
     return (
         <Modal show onHide={onClose} size="xl" centered backdrop="static">
             <Modal.Header closeButton>
-                <Modal.Title>Chi tiết vé hàng hóa: {ticket.ticketCode}</Modal.Title>
+                <Modal.Title>Chi tiết đơn gửi hàng: {ticket.ticketCode}</Modal.Title>
             </Modal.Header>
             <Modal.Body className="p-4">
                 <div className="d-flex justify-content-end mb-3 gap-2">
