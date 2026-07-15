@@ -15,8 +15,11 @@ import com.ralsei.dto.projection.cargoticket.CargoTicketStopOptionProjection;
 public interface CoachStopRepository extends JpaRepository<CoachStop, Integer> {
 
   @Query(value = """
-      SELECT stopPointId AS stopPointId, stopPointName AS stopPointName
-      FROM coach_stop WHERE isActive = 1 ORDER BY stopPointName
+      SELECT cs.stopPointId AS stopPointId, cs.stopPointName AS stopPointName,
+             rs.routeId AS routeId, cs.city AS city
+      FROM coach_stop cs
+      LEFT JOIN route_stop rs ON cs.stopPointId = rs.stopPointId
+      WHERE cs.isActive = 1 ORDER BY cs.stopPointName
       """, nativeQuery = true)
   java.util.List<CargoTicketStopOptionProjection> findCargoTicketStopOptions();
 

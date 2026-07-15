@@ -27,6 +27,8 @@ import com.ralsei.dto.response.cargoticket.CustomerContactResponse;
 import com.ralsei.dto.response.cargoticket.TripByStopResponse;
 import com.ralsei.dto.response.cargoticketdetail.CargoTicketDetailResponse;
 import com.ralsei.service.CargoTicketService;
+import com.ralsei.dto.response.cargoticketdetail.CargoTicketDetailPriceResponse;
+import com.ralsei.dto.request.cargoticketdetail.CargoTicketDetailPriceRequest;
 
 import java.util.List;
 
@@ -39,7 +41,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/v1/ticket-staff/cargo-tickets")
 @RequiredArgsConstructor
 @Validated
-@PreAuthorize("hasRole('TICKET_STAFF')")
+@PreAuthorize("hasRole('TICKET_STAFF') or hasRole('CUSTOMER')")
 public class CargoTicketController {
     private final CargoTicketService cargoTicketService;
 
@@ -130,5 +132,11 @@ public class CargoTicketController {
     public ResponseEntity<List<TripByStopResponse>> getTripsByStops(
             @Valid @ModelAttribute TripByStopRequest request) {
         return ResponseEntity.ok(cargoTicketService.getTripsByStopsInOrder(request));
+    }
+
+    @PostMapping("/calculate-price")
+    public ResponseEntity<CargoTicketDetailPriceResponse> calculatePrice(
+            @Valid @RequestBody CargoTicketDetailPriceRequest request) {
+        return ResponseEntity.ok(cargoTicketService.calculatePrice(request));
     }
 }

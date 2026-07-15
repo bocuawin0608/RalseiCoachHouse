@@ -3,6 +3,7 @@ import { BsCheckCircle, BsExclamationTriangleFill } from 'react-icons/bs';
 import { useMemo, useState, useEffect } from 'react';
 import { useCargoTicketFormOptions } from '../hooks/useCargoTicketFormOptions';
 import { useAuth } from '../../auth/context/AuthContext';
+import { routeApi } from '../../routes/api/routeApi';
 import PhoneAutocomplete from './PhoneAutocomplete';
 import CargoTicketDetailSection from './CargoTicketDetailSection';
 
@@ -14,7 +15,7 @@ const EMPTY_FORM = {
     paymentMethod: 'CASH'
 };
 
-export default function CargoTicketForm({ initialData, onSubmit, submitLabel = 'Lưu vé hàng hóa' }) {
+export default function CargoTicketForm({ initialData, onSubmit, submitLabel = 'Lưu đơn gửi hàng' }) {
     const [formData, setFormData] = useState(() => ({
         ...EMPTY_FORM,
         ...initialData,
@@ -26,10 +27,17 @@ export default function CargoTicketForm({ initialData, onSubmit, submitLabel = '
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const { user } = useAuth();
-    const { trips, customers, stops, sellers, loading: optionsLoading, error: optionsError } = useCargoTicketFormOptions(
+    const { trips, customers, stops, sellers, routes, loading: optionsLoading, error: optionsError } = useCargoTicketFormOptions(
         formData.pickupStopId,
         formData.dropoffStopId
     );
+    const [selectedRouteId, setSelectedRouteId] = useState('');
+    const [routeDetail, setRouteDetail] = useState(null);
+
+    useEffect(() => {
+        if (!selectedRouteId) { setRouteDetail(null); return; }
+        routeApi.getRouteDetail(selectedRouteId).then(r => setRouteDetail(r)).catch(() => setRouteDetail(null));
+    }, [selectedRouteId]);
 
     useEffect(() => {
         if (sellers?.length > 0 && user?.username && !formData.soldBy && !initialData?.cargoTicketId) {
@@ -39,10 +47,42 @@ export default function CargoTicketForm({ initialData, onSubmit, submitLabel = '
             }
         }
     }, [sellers, user, formData.soldBy, initialData]);
+
     const eligibleTrips = useMemo(
         () => filterTripsForSelectedStops(trips, stops, formData.pickupStopId, formData.dropoffStopId),
         [trips, stops, formData.pickupStopId, formData.dropoffStopId]
     );
+
+    const stopsForRoute = useMemo(() => {
+        if (!selectedRouteId || !routeDetail?.routeStops?.length) return [];
+        return routeDetail.routeStops.map(rs => ({
+            stopPointId: rs.stopPointId,
+            stopPointName: rs.stopPointName,
+            city: rs.city,
+            stopOrder: rs.stopOrder,
+        })).sort((a, b) => a.stopOrder - b.stopOrder);
+    }, [selectedRouteId, routeDetail]);
+
+    // Derive origin/destination from the FIRST and LAST unique city in stop order
+    // e.g. "Hà Nội - Quảng Bình": first stops city = "Hà Nội", last stops city = "Quảng Bình"
+    const { originCity, destinationCity } = useMemo(() => {
+        const uniqueCities = [];
+        for (const s of stopsForRoute) {
+            if (s.city && !uniqueCities.includes(s.city)) uniqueCities.push(s.city);
+        }
+        if (uniqueCities.length < 2) return { originCity: null, destinationCity: null };
+        return { originCity: uniqueCities[0], destinationCity: uniqueCities[uniqueCities.length - 1] };
+    }, [stopsForRoute]);
+
+    const pickupStopOptions = useMemo(() => {
+        const base = originCity ? stopsForRoute.filter(s => s.city === originCity) : stopsForRoute;
+        return excludeSelectedStop(base, formData.dropoffStopId);
+    }, [stopsForRoute, originCity, formData.dropoffStopId]);
+
+    const dropoffStopOptions = useMemo(() => {
+        const base = destinationCity ? stopsForRoute.filter(s => s.city === destinationCity) : stopsForRoute;
+        return excludeSelectedStop(base, formData.pickupStopId);
+    }, [stopsForRoute, destinationCity, formData.pickupStopId]);
 
     const handleChange = (event) => {
         const { name, value } = event.target;
@@ -51,6 +91,12 @@ export default function CargoTicketForm({ initialData, onSubmit, submitLabel = '
             [name]: value,
             ...((name === 'pickupStopId' || name === 'dropoffStopId') ? { tripId: '' } : {})
         }));
+        setError('');
+    };
+
+    const handleRouteChange = (event) => {
+        setSelectedRouteId(event.target.value);
+        setFormData((previous) => ({ ...previous, pickupStopId: '', dropoffStopId: '', tripId: '' }));
         setError('');
     };
 
@@ -102,7 +148,7 @@ export default function CargoTicketForm({ initialData, onSubmit, submitLabel = '
             const validationDetails = response?.fieldErrors
                 ? Object.values(response.fieldErrors).join(' ')
                 : '';
-            setError(validationDetails || response?.message || 'Không thể lưu vé hàng hóa.');
+            setError(validationDetails || response?.message || 'Không thể lưu đơn gửi hàng.');
         } finally {
             setSubmitting(false);
         }
@@ -121,9 +167,9 @@ export default function CargoTicketForm({ initialData, onSubmit, submitLabel = '
                 <Card.Header className="bg-white py-3"><h5 className="fw-bold mb-0">Thông tin vé và hành trình</h5></Card.Header>
                 <Card.Body className="p-4">
                     <Row className="g-3">
-                        <Col md={4}><Dropdown label="Khách hàng" name="customerId" value={formData.customerId ?? ''} onChange={handleChange} loading={optionsLoading} emptyLabel="Khách vãng lai" options={customers} optionValue="customerId" renderOption={(item) => item.customerName} /></Col>
-                        <Col md={4}><Dropdown label="Điểm nhận" name="pickupStopId" value={formData.pickupStopId} onChange={handleChange} loading={optionsLoading} options={stops} optionValue="stopPointId" renderOption={(item) => item.stopPointName} required /></Col>
-                        <Col md={4}><Dropdown label="Điểm trả" name="dropoffStopId" value={formData.dropoffStopId} onChange={handleChange} loading={optionsLoading} options={stops} optionValue="stopPointId" renderOption={(item) => item.stopPointName} required /></Col>
+                        <Col md={4}><Dropdown label="Tuyến đường" name="routeId" value={selectedRouteId} onChange={handleRouteChange} loading={optionsLoading} options={routes} optionValue="routeId" renderOption={(item) => item.routeName} emptyLabel="-- Tất cả tuyến --" /></Col>
+                        <Col md={4}><Dropdown label="Điểm nhận" name="pickupStopId" value={formData.pickupStopId} onChange={handleChange} loading={optionsLoading} options={pickupStopOptions} optionValue="stopPointId" renderOption={(item) => `${item.stopPointName} (${item.city})`} required disabled={!selectedRouteId} emptyLabel="-- Chọn tuyến trước --" /></Col>
+                        <Col md={4}><Dropdown label="Điểm trả" name="dropoffStopId" value={formData.dropoffStopId} onChange={handleChange} loading={optionsLoading} options={dropoffStopOptions} optionValue="stopPointId" renderOption={(item) => `${item.stopPointName} (${item.city})`} required disabled={!selectedRouteId} emptyLabel="-- Chọn tuyến trước --" /></Col>
                         <Col md={8}><Dropdown label="Chuyến đi phù hợp" name="tripId" value={formData.tripId ?? ''} onChange={handleChange} loading={optionsLoading} options={eligibleTrips} optionValue="tripId" renderOption={tripLabel} disabled={!formData.pickupStopId || !formData.dropoffStopId} /></Col>
                         <Col md={4}>
                             <Form.Group><Form.Label className="fw-semibold">Trạng thái *</Form.Label><Form.Select name="status" value={formData.status} onChange={handleChange} required>
@@ -169,8 +215,6 @@ function PartyCard({ title, prefix, data, onChange, setFormData }) {
     </Card.Body></Card>;
 }
 
-
-
 function Field({ label, ...props }) {
     return <Form.Group><Form.Label className="fw-semibold">{label}{props.required ? ' *' : ''}</Form.Label><Form.Control {...props} /></Form.Group>;
 }
@@ -191,8 +235,18 @@ function Dropdown({ label, options, optionValue, renderOption, loading, emptyLab
     );
 }
 
+const TRIP_STATUS_MAP = {
+    'SCHEDULED': 'Đã lên lịch',
+    'IN_PROGRESS': 'Đang chạy',
+    'COMPLETED': 'Hoàn thành',
+    'CANCELLED': 'Đã hủy'
+};
+
 const tripLabel = (trip) => {
-    return `Chuyến đi ${trip.tripId}`;
+    const time = trip.departureTime ? formatDateTime(trip.departureTime) : 'Chưa có giờ';
+    const localizedStatus = trip.status ? (TRIP_STATUS_MAP[trip.status] || trip.status) : '';
+    const coachType = trip.coachTypeName ? ` - Loại xe: ${trip.coachTypeName}` : '';
+    return `Mã: ${trip.tripId} - Giờ chạy: ${time}${coachType} - [${localizedStatus}]`;
 };
 
 function formatDateTime(value) {
@@ -207,7 +261,6 @@ function filterTripsForSelectedStops(trips, stops, pickupStopId, dropoffStopId) 
     const hasPickup = stops.some((stop) => String(stop.stopPointId) === String(pickupStopId));
     const hasDropoff = stops.some((stop) => String(stop.stopPointId) === String(dropoffStopId));
     if (!hasPickup || !hasDropoff) return [];
-
     return trips.filter((trip) => {
         // Backend already filters by time and stops. 
         // We only check this to prevent showing stale trips from a previous selection while loading.
@@ -215,6 +268,10 @@ function filterTripsForSelectedStops(trips, stops, pickupStopId, dropoffStopId) 
         if (trip.dropoffStopId !== undefined && String(trip.dropoffStopId) !== String(dropoffStopId)) return false;
         return true;
     });
+}
+
+function excludeSelectedStop(stops, selectedStopId) {
+    return stops.filter((stop) => String(stop.stopPointId) !== String(selectedStopId));
 }
 
 function optionalId(value) {

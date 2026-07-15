@@ -9,9 +9,9 @@ import com.ralsei.dto.response.cargoticket.CargoTicketResponse;
 import com.ralsei.dto.response.cargoticket.CustomerContactResponse;
 import com.ralsei.dto.request.cargoticketdetail.CargoTicketDetailRequest;
 import com.ralsei.dto.response.cargoticket.TripByStopResponse;
+import com.ralsei.dto.response.cargoticketdetail.CargoTicketDetailPriceResponse;
 import com.ralsei.dto.response.cargoticketdetail.CargoTicketDetailResponse;
-import com.ralsei.model.Trip;
-
+import com.ralsei.dto.request.cargoticketdetail.CargoTicketDetailPriceRequest;
 import java.util.List;
 
 public interface CargoTicketService {
@@ -42,4 +42,6 @@ public interface CargoTicketService {
     void completePayment(int cargoTicketId);
 
     List<TripByStopResponse> getTripsByStopsInOrder(TripByStopRequest request);
+
+    CargoTicketDetailPriceResponse calculatePrice(CargoTicketDetailPriceRequest request);
 }

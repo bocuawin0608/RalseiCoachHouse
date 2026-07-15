@@ -190,7 +190,7 @@ public class PaymentServiceImpl implements PaymentService {
         boolean hasPassengerTicket = request.getPassengerTicketId() != null;
         boolean hasCargoTicket = request.getCargoTicketId() != null;
         if (hasPassengerTicket == hasCargoTicket) {
-            throw new BusinessRuleException("Một thanh toán chỉ được ứng với vé hành khách hoặc vé hàng hóa!");
+            throw new BusinessRuleException("Một thanh toán chỉ được ứng với vé hành khách hoặc đơn gửi hàng!");
         }
         if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new BusinessRuleException("Số tiền thanh toán phải lớn hơn 0!");

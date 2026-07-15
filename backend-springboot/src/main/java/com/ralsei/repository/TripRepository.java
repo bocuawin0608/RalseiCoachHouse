@@ -15,6 +15,7 @@ import org.springframework.data.jpa.repository.query.Procedure;
 import org.springframework.data.repository.query.Param;
 
 import com.ralsei.dto.projection.cargoticket.CargoTicketTripOptionProjection;
+import com.ralsei.dto.projection.cargoticket.CargoTicketTripOptionWithCoachTypeProjection;
 import com.ralsei.dto.projection.coach.CoachUpcomingTripCountProjection;
 import com.ralsei.dto.projection.staffpassengerticket.StaffPassengerTransferCandidateProjection;
 import com.ralsei.dto.projection.trip.StaffTripInfoProjection;
@@ -64,6 +65,39 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             ORDER BY DATEADD(MINUTE, e.pickupMinutes, e.departureTime)
             """, nativeQuery = true)
     java.util.List<CargoTicketTripOptionProjection> findCargoTicketTripOptions(
+            @Param("pickupStopId") int pickupStopId,
+            @Param("dropoffStopId") int dropoffStopId);
+
+    @Query(value = """
+            WITH eligible_trip AS (
+                SELECT t.tripId, t.routeId, t.coachId, t.departureTime, t.[status],
+                       MAX(pickup.minutesFromStart) AS pickupMinutes
+                FROM trip t
+                JOIN route_stop pickup ON pickup.routeId = t.routeId
+                JOIN coach_stop pickupPoint ON pickupPoint.stopPointId = pickup.stopPointId
+                JOIN coach_stop selectedPickup ON selectedPickup.stopPointId = :pickupStopId
+                JOIN route_stop dropoff ON dropoff.routeId = t.routeId AND pickup.stopOrder < dropoff.stopOrder
+                JOIN coach_stop dropoffPoint ON dropoffPoint.stopPointId = dropoff.stopPointId
+                JOIN coach_stop selectedDropoff ON selectedDropoff.stopPointId = :dropoffStopId
+                WHERE pickupPoint.city = selectedPickup.city
+                  AND dropoffPoint.city = selectedDropoff.city
+                  AND t.[status] IN ('SCHEDULED', 'IN_PROGRESS')
+                GROUP BY t.tripId, t.routeId, t.coachId, t.departureTime, t.[status]
+            )
+            SELECT e.tripId AS tripId, r.routeName AS routeName,
+                   e.departureTime AS departureTime, c.licensePlate AS licensePlate,
+                   ct.coachTypeName AS coachTypeName,
+                   e.[status] AS tripStatus,
+                   DATEADD(MINUTE, e.pickupMinutes, e.departureTime) AS pickupTime,
+                   :pickupStopId AS pickupStopId, :dropoffStopId AS dropoffStopId
+            FROM eligible_trip e
+            JOIN route r ON r.routeId = e.routeId
+            JOIN coach c ON c.coachId = e.coachId
+            JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId
+            WHERE DATEADD(MINUTE, e.pickupMinutes, e.departureTime) >= GETDATE()
+            ORDER BY DATEADD(MINUTE, e.pickupMinutes, e.departureTime)
+            """, nativeQuery = true)
+    java.util.List<CargoTicketTripOptionWithCoachTypeProjection> findCargoTicketTripOptionsWithCoachType(
             @Param("pickupStopId") int pickupStopId,
             @Param("dropoffStopId") int dropoffStopId);
 
