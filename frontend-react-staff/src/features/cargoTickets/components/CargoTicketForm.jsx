@@ -14,7 +14,7 @@ const EMPTY_FORM = {
     paymentMethod: 'CASH'
 };
 
-export default function CargoTicketForm({ initialData, onSubmit, submitLabel = 'Lưu vé hàng hóa' }) {
+export default function CargoTicketForm({ initialData, onSubmit, submitLabel = 'Lưu đơn gửi hàng' }) {
     const [formData, setFormData] = useState(() => ({
         ...EMPTY_FORM,
         ...initialData,
@@ -42,6 +42,14 @@ export default function CargoTicketForm({ initialData, onSubmit, submitLabel = '
     const eligibleTrips = useMemo(
         () => filterTripsForSelectedStops(trips, stops, formData.pickupStopId, formData.dropoffStopId),
         [trips, stops, formData.pickupStopId, formData.dropoffStopId]
+    );
+    const pickupStopOptions = useMemo(
+        () => excludeSelectedStop(stops, formData.dropoffStopId),
+        [stops, formData.dropoffStopId]
+    );
+    const dropoffStopOptions = useMemo(
+        () => excludeSelectedStop(stops, formData.pickupStopId),
+        [stops, formData.pickupStopId]
     );
 
     const handleChange = (event) => {
@@ -102,7 +110,7 @@ export default function CargoTicketForm({ initialData, onSubmit, submitLabel = '
             const validationDetails = response?.fieldErrors
                 ? Object.values(response.fieldErrors).join(' ')
                 : '';
-            setError(validationDetails || response?.message || 'Không thể lưu vé hàng hóa.');
+            setError(validationDetails || response?.message || 'Không thể lưu đơn gửi hàng.');
         } finally {
             setSubmitting(false);
         }
@@ -121,9 +129,8 @@ export default function CargoTicketForm({ initialData, onSubmit, submitLabel = '
                 <Card.Header className="bg-white py-3"><h5 className="fw-bold mb-0">Thông tin vé và hành trình</h5></Card.Header>
                 <Card.Body className="p-4">
                     <Row className="g-3">
-                        <Col md={4}><Dropdown label="Khách hàng" name="customerId" value={formData.customerId ?? ''} onChange={handleChange} loading={optionsLoading} emptyLabel="Khách vãng lai" options={customers} optionValue="customerId" renderOption={(item) => item.customerName} /></Col>
-                        <Col md={4}><Dropdown label="Điểm nhận" name="pickupStopId" value={formData.pickupStopId} onChange={handleChange} loading={optionsLoading} options={stops} optionValue="stopPointId" renderOption={(item) => item.stopPointName} required /></Col>
-                        <Col md={4}><Dropdown label="Điểm trả" name="dropoffStopId" value={formData.dropoffStopId} onChange={handleChange} loading={optionsLoading} options={stops} optionValue="stopPointId" renderOption={(item) => item.stopPointName} required /></Col>
+                        <Col md={4}><Dropdown label="Điểm nhận" name="pickupStopId" value={formData.pickupStopId} onChange={handleChange} loading={optionsLoading} options={pickupStopOptions} optionValue="stopPointId" renderOption={(item) => item.stopPointName} required /></Col>
+                        <Col md={4}><Dropdown label="Điểm trả" name="dropoffStopId" value={formData.dropoffStopId} onChange={handleChange} loading={optionsLoading} options={dropoffStopOptions} optionValue="stopPointId" renderOption={(item) => item.stopPointName} required /></Col>
                         <Col md={8}><Dropdown label="Chuyến đi phù hợp" name="tripId" value={formData.tripId ?? ''} onChange={handleChange} loading={optionsLoading} options={eligibleTrips} optionValue="tripId" renderOption={tripLabel} disabled={!formData.pickupStopId || !formData.dropoffStopId} /></Col>
                         <Col md={4}>
                             <Form.Group><Form.Label className="fw-semibold">Trạng thái *</Form.Label><Form.Select name="status" value={formData.status} onChange={handleChange} required>
@@ -215,6 +222,10 @@ function filterTripsForSelectedStops(trips, stops, pickupStopId, dropoffStopId) 
         if (trip.dropoffStopId !== undefined && String(trip.dropoffStopId) !== String(dropoffStopId)) return false;
         return true;
     });
+}
+
+function excludeSelectedStop(stops, selectedStopId) {
+    return stops.filter((stop) => String(stop.stopPointId) !== String(selectedStopId));
 }
 
 function optionalId(value) {

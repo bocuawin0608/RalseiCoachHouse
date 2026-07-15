@@ -39,7 +39,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/v1/ticket-staff/cargo-tickets")
 @RequiredArgsConstructor
 @Validated
-@PreAuthorize("hasRole('TICKET_STAFF')")
+@PreAuthorize("hasRole('TICKET_STAFF') or hasRole('CUSTOMER')")
 public class CargoTicketController {
     private final CargoTicketService cargoTicketService;
 

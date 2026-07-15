@@ -106,10 +106,6 @@ export default function Sidebar() {
                                         <BsSignpostSplit size={16} />
                                         <span style={{ fontSize: '0.9rem' }}>Tuyến đường</span>
                                     </NavLink>
-                                    <NavLink to="/management/coach-stops" className={navLinkClass}>
-                                        <BsGeoAlt size={16} />
-                                        <span style={{ fontSize: '0.9rem' }}>Văn phòng</span>
-                                    </NavLink>
                                 </div>
                             </Collapse>
                         </div>
@@ -198,7 +194,7 @@ export default function Sidebar() {
                             </NavLink>
                             <NavLink to="/staff/cargo-tickets" className={navLinkClass} end>
                                 <BsReceipt size={20} className="flex-shrink-0" />
-                                <span>Vé hàng hóa</span>
+                                <span>Đơn gửi hàng</span>
                             </NavLink>
                         </>
                     )}

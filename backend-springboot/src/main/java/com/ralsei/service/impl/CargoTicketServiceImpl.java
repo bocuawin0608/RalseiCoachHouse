@@ -136,7 +136,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
         CargoTicketResponse response = createCargoTicket(request);
 
         CargoTicket ticket = cargoTicketRepository.findById(response.getCargoTicketId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vé hàng hóa."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn gửi hàng."));
 
         for (CargoTicketDetail detail : mappedDetails) {
             detail.setCargoTicket(ticket);
@@ -200,7 +200,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
     @Transactional
     public CargoTicketDetailResponse createCargoTicketDetail(int ticketId, CargoTicketDetailRequest request) {
         CargoTicket ticket = cargoTicketRepository.findById(ticketId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vé hàng hóa."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn gửi hàng."));
 
         BigDecimal calcPrice = calculateDetailPrice(request.getCargoTypePriceId(), request.getDimensionVol(),
                 request.getQuantity());
@@ -236,7 +236,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
     @Transactional
     public CargoTicketDetailResponse updateCargoTicketDetail(int detailId, CargoTicketDetailRequest request) {
         CargoTicketDetail detail = cargoTicketDetailRepository.findById(detailId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chi tiết vé hàng hóa."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chi tiết đơn gửi hàng."));
 
         BigDecimal calcPrice = calculateDetailPrice(request.getCargoTypePriceId(), request.getDimensionVol(),
                 request.getQuantity());
@@ -269,7 +269,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
     @Transactional
     public void deleteCargoTicketDetail(int detailId) {
         CargoTicketDetail detail = cargoTicketDetailRepository.findById(detailId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chi tiết vé hàng hóa."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chi tiết đơn gửi hàng."));
         CargoTicket ticket = detail.getCargoTicket();
         cargoTicketDetailRepository.delete(detail);
 
@@ -305,7 +305,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
     public void completePayment(int cargoTicketId) {
         Payment payment = paymentRepository.findByCargoTicket_CargoTicketId(cargoTicketId)
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Không tìm thấy thanh toán cho vé hàng hóa ID: " + cargoTicketId));
+                        "Không tìm thấy thanh toán cho đơn gửi hàng ID: " + cargoTicketId));
 
         if (!"CASH".equals(payment.getPaymentMethod())) {
             throw new BusinessRuleException("Chỉ có thể hoàn thành thanh toán tiền mặt.");
@@ -421,7 +421,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
 
     private CargoTicket findByIdOrThrow(int id) {
         return cargoTicketRepository.findByCargoTicketIdAndStatusNot(id, STATUS_ABANDONED).orElseThrow(
-                () -> new ResourceNotFoundException("Không tìm thấy vé hàng hóa có ID là: " + id));
+                () -> new ResourceNotFoundException("Không tìm thấy đơn gửi hàng có ID là: " + id));
     }
 
     private void copyRequest(CargoTicketRequest request, CargoTicket ticket, String ticketCode) {
