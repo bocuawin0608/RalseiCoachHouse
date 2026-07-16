@@ -22,6 +22,7 @@ public interface TicketAgencyRepository extends JpaRepository<TicketAgency, Inte
     boolean existsByTicketAgencyNameIgnoreCase(String ticketAgencyName);
     boolean existsByTicketAgencyNameIgnoreCaseAndStopPointId(String ticketAgencyName, Integer stopPointId);
     boolean existsByStopPointId(Integer stopPointId);
+    boolean existsByStopPointIdAndIsActiveTrue(Integer stopPointId);
     Optional<TicketAgency> findByTicketAgencyIdAndIsActiveTrue(Integer ticketAgencyId);
 
     @Query(value = """
