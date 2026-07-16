@@ -1,6 +1,7 @@
 package com.ralsei.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -21,6 +22,7 @@ public interface TicketAgencyRepository extends JpaRepository<TicketAgency, Inte
     boolean existsByTicketAgencyNameIgnoreCase(String ticketAgencyName);
     boolean existsByTicketAgencyNameIgnoreCaseAndStopPointId(String ticketAgencyName, Integer stopPointId);
     boolean existsByStopPointId(Integer stopPointId);
+    Optional<TicketAgency> findByTicketAgencyIdAndIsActiveTrue(Integer ticketAgencyId);
 
     @Query(value = """
         SELECT ta.ticketAgencyId   AS ticketAgencyId,

@@ -36,6 +36,15 @@ function DetailItem({ detail, index, cargoTypes, armedDeleteIndex, setArmedDelet
         }
     };
 
+    /** Recalculates volume locally as soon as all three dimensions are valid. */
+    const handleDimensionChange = (field, value) => {
+        onChange(index, field, value);
+        const dimensions = { length: detail.length, width: detail.width, height: detail.height, [field]: value };
+        if ([dimensions.length, dimensions.width, dimensions.height].every(item => Number(item) > 0)) {
+            onChange(index, 'dimensionVol', Number(dimensions.length) * Number(dimensions.width) * Number(dimensions.height));
+        }
+    };
+
     useEffect(() => {
         if (!detail.cargoTypePriceId || detail.dimensionVol === undefined || detail.dimensionVol === '' || !detail.quantity) {
             if (detail.calculatedPrice !== undefined) {
@@ -57,7 +66,7 @@ function DetailItem({ detail, index, cargoTypes, armedDeleteIndex, setArmedDelet
         }, 300);
 
         return () => clearTimeout(timeoutId);
-    }, [detail.cargoTypePriceId, detail.dimensionVol, detail.quantity, index, onChange]);
+    }, [detail.cargoTypePriceId, detail.dimensionVol, detail.quantity, detail.calculatedPrice, index, onChange]);
 
     return (
         <div className="bg-light" style={{ borderRadius: '12px', padding: '1rem' }}>
@@ -118,15 +127,45 @@ function DetailItem({ detail, index, cargoTypes, armedDeleteIndex, setArmedDelet
                 />
 
                 <Field
-                    label="Thể tích"
+                    label="Dài"
                     type="number"
-                    required
                     min="0.01"
                     step="any"
                     placeholder="0"
+                    suffix="m"
+                    value={detail.length ?? ''}
+                    onChange={(e) => handleDimensionChange('length', e.target.value)}
+                />
+
+                <Field
+                    label="Rộng"
+                    type="number"
+                    min="0.01"
+                    step="any"
+                    placeholder="0"
+                    suffix="m"
+                    value={detail.width ?? ''}
+                    onChange={(e) => handleDimensionChange('width', e.target.value)}
+                />
+
+                <Field
+                    label="Cao"
+                    type="number"
+                    min="0.01"
+                    step="any"
+                    placeholder="0"
+                    suffix="m"
+                    value={detail.height ?? ''}
+                    onChange={(e) => handleDimensionChange('height', e.target.value)}
+                />
+
+                <Field
+                    label="Thể tích tự động"
+                    type="number"
+                    required
+                    disabled
                     suffix="m³"
                     value={detail.dimensionVol ?? ''}
-                    onChange={(e) => onChange(index, 'dimensionVol', e.target.value)}
                 />
 
                 <Field

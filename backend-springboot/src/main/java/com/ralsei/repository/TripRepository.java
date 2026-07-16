@@ -16,6 +16,7 @@ import org.springframework.data.repository.query.Param;
 
 import com.ralsei.dto.projection.cargoticket.CargoTicketTripOptionProjection;
 import com.ralsei.dto.projection.cargoticket.CargoTicketTripOptionWithCoachTypeProjection;
+import com.ralsei.dto.projection.cargoticket.CargoOperationalTripProjection;
 import com.ralsei.dto.projection.coach.CoachUpcomingTripCountProjection;
 import com.ralsei.dto.projection.staffpassengerticket.StaffPassengerTransferCandidateProjection;
 import com.ralsei.dto.projection.trip.StaffTripInfoProjection;
@@ -39,6 +40,159 @@ import jakarta.transaction.Transactional;
  * Provides persistence access for trip data.
  */
 public interface TripRepository extends JpaRepository<Trip, Integer> {
+
+    /**
+     * Lists today's coaches which will call at the authenticated staff member's
+     * exact agency stop and still have cargo capacity.
+     */
+    @Query(value = """
+            SELECT t.tripId AS tripId, t.routeId AS routeId,
+                   CONCAT(originStop.city, N' - ', destinationStop.city) AS routeName,
+                   t.departureTime AS departureTime,
+                   DATEADD(MINUTE, agencyRouteStop.minutesFromStart, t.departureTime) AS pickupTime,
+                   agencyStop.stopPointId AS pickupStopId,
+                   agencyStop.stopPointName AS pickupStopName,
+                   agencyStop.city AS pickupCity,
+                   t.[status] AS tripStatus,
+                   c.licensePlate AS licensePlate, coachType.coachTypeName AS coachTypeName,
+                   driver.staffName AS driverName, driver.phone AS driverPhone,
+                   driver.cccd AS driverCccd, attendant.staffName AS attendantName,
+                   attendant.phone AS attendantPhone, attendant.cccd AS attendantCccd,
+                   stops.stopSummary AS stopSummary,
+                   CAST(COALESCE(cargo.usedCargoVolume, 0) AS DECIMAL(12,3)) AS usedCargoVolume
+            FROM trip t
+            JOIN route r ON r.routeId = t.routeId
+            JOIN coach c ON c.coachId = t.coachId
+            JOIN coach_type coachType ON coachType.coachTypeId = c.coachTypeId
+            JOIN route_stop agencyRouteStop ON agencyRouteStop.routeId = t.routeId
+            JOIN route_stop originRouteStop ON originRouteStop.routeId = t.routeId
+                 AND originRouteStop.stopOrder = (
+                     SELECT MIN(firstStop.stopOrder)
+                     FROM route_stop firstStop
+                     WHERE firstStop.routeId = t.routeId
+                 )
+            JOIN coach_stop originStop ON originStop.stopPointId = originRouteStop.stopPointId
+            JOIN route_stop destinationRouteStop ON destinationRouteStop.routeId = t.routeId
+                 AND destinationRouteStop.stopOrder = (
+                     SELECT MAX(lastStop.stopOrder)
+                     FROM route_stop lastStop
+                     WHERE lastStop.routeId = t.routeId
+                 )
+            JOIN coach_stop destinationStop
+              ON destinationStop.stopPointId = destinationRouteStop.stopPointId
+            JOIN ticket_agency agency ON agency.stopPointId = agencyRouteStop.stopPointId
+                                      AND agency.isActive = 1
+            JOIN coach_stop agencyStop ON agencyStop.stopPointId = agency.stopPointId
+            JOIN staff currentStaff ON currentStaff.ticketAgencyId = agency.ticketAgencyId
+                                   AND currentStaff.accountId = :accountId
+                                   AND currentStaff.isActive = 1
+            LEFT JOIN staff driver ON driver.staffId = t.driverId
+            LEFT JOIN staff attendant ON attendant.staffId = t.attendantId
+            OUTER APPLY (
+                SELECT STRING_AGG(CONVERT(NVARCHAR(MAX), orderedStops.stopPointName), N' → ')
+                       WITHIN GROUP (ORDER BY orderedStops.stopOrder) AS stopSummary
+                FROM (
+                    SELECT rs.stopOrder, cs.stopPointName
+                    FROM route_stop rs
+                    JOIN coach_stop cs ON cs.stopPointId = rs.stopPointId
+                    WHERE rs.routeId = t.routeId
+                      AND rs.stopOrder >= agencyRouteStop.stopOrder
+                ) orderedStops
+            ) stops
+            OUTER APPLY (
+                SELECT SUM(ctd.dimensionVol * ctd.quantity) AS usedCargoVolume
+                FROM cargo_ticket ct
+                JOIN cargo_ticket_detail ctd ON ctd.cargoTicketId = ct.cargoTicketId
+                WHERE ct.tripId = t.tripId
+                  AND ct.[status] NOT IN ('CANCELLED', 'REJECTED', 'ABANDONED')
+            ) cargo
+            WHERE t.[status] IN ('SCHEDULED', 'IN_PROGRESS')
+              AND originStop.city = agencyStop.city
+              AND DATEADD(MINUTE, agencyRouteStop.minutesFromStart, t.departureTime) >= GETDATE()
+              AND CAST(DATEADD(MINUTE, agencyRouteStop.minutesFromStart, t.departureTime) AS DATE)
+                    = CAST(GETDATE() AS DATE)
+              AND COALESCE(cargo.usedCargoVolume, 0) < 2.50
+            ORDER BY DATEADD(MINUTE, agencyRouteStop.minutesFromStart, t.departureTime), t.tripId
+            """, countQuery = """
+            SELECT COUNT(t.tripId)
+            FROM trip t
+            JOIN route_stop agencyRouteStop ON agencyRouteStop.routeId = t.routeId
+            JOIN coach_stop agencyStop ON agencyStop.stopPointId = agencyRouteStop.stopPointId
+            JOIN route_stop originRouteStop ON originRouteStop.routeId = t.routeId
+                 AND originRouteStop.stopOrder = (
+                     SELECT MIN(firstStop.stopOrder)
+                     FROM route_stop firstStop
+                     WHERE firstStop.routeId = t.routeId
+                 )
+            JOIN coach_stop originStop ON originStop.stopPointId = originRouteStop.stopPointId
+            JOIN ticket_agency agency ON agency.stopPointId = agencyRouteStop.stopPointId
+                                      AND agency.isActive = 1
+            JOIN staff currentStaff ON currentStaff.ticketAgencyId = agency.ticketAgencyId
+                                   AND currentStaff.accountId = :accountId
+                                   AND currentStaff.isActive = 1
+            WHERE t.[status] IN ('SCHEDULED', 'IN_PROGRESS')
+              AND originStop.city = agencyStop.city
+              AND DATEADD(MINUTE, agencyRouteStop.minutesFromStart, t.departureTime) >= GETDATE()
+              AND CAST(DATEADD(MINUTE, agencyRouteStop.minutesFromStart, t.departureTime) AS DATE)
+                    = CAST(GETDATE() AS DATE)
+              AND COALESCE((
+                    SELECT SUM(detail.dimensionVol * detail.quantity)
+                    FROM cargo_ticket cargo
+                    JOIN cargo_ticket_detail detail
+                      ON detail.cargoTicketId = cargo.cargoTicketId
+                    WHERE cargo.tripId = t.tripId
+                      AND cargo.[status] NOT IN ('CANCELLED', 'REJECTED', 'ABANDONED')
+              ), 0) < 2.50
+            """, nativeQuery = true)
+    Page<CargoOperationalTripProjection> findUpcomingCargoOperationalTrips(
+            @Param("accountId") int accountId,
+            Pageable pageable);
+
+    /**
+     * Revalidates a cargo assignment at write time. Exact stop IDs are used;
+     * matching another office merely because it is in the same city is forbidden.
+     */
+    @Query(value = """
+            SELECT CASE WHEN EXISTS (
+                SELECT 1
+                FROM trip t
+                JOIN route_stop pickup ON pickup.routeId = t.routeId
+                JOIN ticket_agency agency ON agency.stopPointId = pickup.stopPointId
+                                         AND agency.ticketAgencyId = :ticketAgencyId
+                                         AND agency.isActive = 1
+                JOIN coach_stop agencyStop ON agencyStop.stopPointId = agency.stopPointId
+                JOIN route_stop originRouteStop ON originRouteStop.routeId = t.routeId
+                     AND originRouteStop.stopOrder = (
+                         SELECT MIN(firstStop.stopOrder)
+                         FROM route_stop firstStop
+                         WHERE firstStop.routeId = t.routeId
+                     )
+                JOIN coach_stop originStop ON originStop.stopPointId = originRouteStop.stopPointId
+                JOIN route_stop dropoff ON dropoff.routeId = t.routeId
+                                       AND dropoff.stopPointId = :dropoffStopId
+                                       AND dropoff.stopOrder > pickup.stopOrder
+                WHERE t.tripId = :tripId
+                  AND pickup.stopPointId = :pickupStopId
+                  AND originStop.city = agencyStop.city
+                  AND t.[status] IN ('SCHEDULED', 'IN_PROGRESS')
+                  AND DATEADD(MINUTE, pickup.minutesFromStart, t.departureTime) >= GETDATE()
+                  AND CAST(DATEADD(MINUTE, pickup.minutesFromStart, t.departureTime) AS DATE)
+                        = CAST(GETDATE() AS DATE)
+                  AND COALESCE((
+                        SELECT SUM(detail.dimensionVol * detail.quantity)
+                        FROM cargo_ticket cargo
+                        JOIN cargo_ticket_detail detail
+                          ON detail.cargoTicketId = cargo.cargoTicketId
+                        WHERE cargo.tripId = t.tripId
+                          AND cargo.[status] NOT IN ('CANCELLED', 'REJECTED', 'ABANDONED')
+                  ), 0) < 2.50
+            ) THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END
+            """, nativeQuery = true)
+    boolean isEligibleForAgencyCargo(
+            @Param("tripId") int tripId,
+            @Param("pickupStopId") int pickupStopId,
+            @Param("dropoffStopId") int dropoffStopId,
+            @Param("ticketAgencyId") int ticketAgencyId);
 
     @Query(value = """
             WITH eligible_trip AS (

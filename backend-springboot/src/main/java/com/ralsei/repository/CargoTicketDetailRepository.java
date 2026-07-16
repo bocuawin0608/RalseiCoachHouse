@@ -1,6 +1,7 @@
 package com.ralsei.repository;
 
 import java.util.List;
+import java.math.BigDecimal;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -15,6 +16,24 @@ import com.ralsei.model.CargoTicketDetail;
  */
 public interface CargoTicketDetailRepository extends JpaRepository<CargoTicketDetail, Integer> {
     List<CargoTicketDetail> findByCargoTicket_CargoTicketId(int cargoTicketId);
+
+    /** Returns occupied cargo volume for active orders assigned to one trip. */
+    @Query(value = """
+            SELECT COALESCE(SUM(ctd.dimensionVol * ctd.quantity), 0)
+            FROM cargo_ticket_detail ctd
+            JOIN cargo_ticket ct ON ct.cargoTicketId = ctd.cargoTicketId
+            WHERE ct.tripId = :tripId
+              AND ct.[status] NOT IN ('CANCELLED', 'REJECTED', 'ABANDONED')
+            """, nativeQuery = true)
+    BigDecimal sumActiveVolumeByTripId(@Param("tripId") int tripId);
+
+    /** Returns the sum of per-package volume multiplied by quantity for one order. */
+    @Query(value = """
+            SELECT COALESCE(SUM(ctd.dimensionVol * ctd.quantity), 0)
+            FROM cargo_ticket_detail ctd
+            WHERE ctd.cargoTicketId = :cargoTicketId
+            """, nativeQuery = true)
+    BigDecimal sumVolumeByCargoTicketId(@Param("cargoTicketId") int cargoTicketId);
 
     @Query(value = """
         SELECT ct.cargoTicketId AS cargoTicketId,

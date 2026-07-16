@@ -635,34 +635,40 @@ WHERE CAST(t.departureTime AS DATE) = '2026-01-01'
 ORDER BY t.departureTime ASC
 
 USE VeXeDB;
-SELECT * FROM passenger_ticket_detail
+SELECT *
+FROM passenger_ticket_detail
 
-SELECT * FROM customer
+SELECT *
+FROM customer
 
 
 
 
-select pt.qrcode, ts.tripSeatId, t.tripId FROM trip_seat ts join trip t on ts.tripId = t.tripId
-join passenger_ticket_detail pt
-on ts.tripSeatId = pt.tripSeatId
-JOIN passenger_ticket p on pt.passengerTicketId = p.passengerTicketId
-JOIN CUSTOMER c on p.customerId = c.customerId
+select pt.qrcode, ts.tripSeatId, t.tripId
+FROM trip_seat ts join trip t on ts.tripId = t.tripId
+    join passenger_ticket_detail pt
+    on ts.tripSeatId = pt.tripSeatId
+    JOIN passenger_ticket p on pt.passengerTicketId = p.passengerTicketId
+    JOIN CUSTOMER c on p.customerId = c.customerId
 WHERE c.accountId = 193 AND cast(t.departureTime AS DATE) = '2026-01-11'
 
 
 
 
-select pt.qrcode FROM trip_seat ts join trip t on ts.tripId = t.tripId
-join passenger_ticket_detail pt
-on ts.tripSeatId = pt.tripSeatId
-JOIN passenger_ticket p on pt.passengerTicketId = p.passengerTicketId
-JOIN CUSTOMER c on p.customerId = c.customerId
+select pt.qrcode
+FROM trip_seat ts join trip t on ts.tripId = t.tripId
+    join passenger_ticket_detail pt
+    on ts.tripSeatId = pt.tripSeatId
+    JOIN passenger_ticket p on pt.passengerTicketId = p.passengerTicketId
+    JOIN CUSTOMER c on p.customerId = c.customerId
 WHERE c.accountId = 193 AND cast(t.departureTime AS DATE) = '2026-01-11'
-AND ts.tripSeatId = 15011 AND t.tripId = 501
+    AND ts.tripSeatId = 15011 AND t.tripId = 501
 
-SELECT * FROM trip_seat
+SELECT *
+FROM trip_seat
 
-SELECT * FROM trip
+SELECT *
+FROM trip
 
 -- Booking-history rows used by CustomerTicketHistoryService.
 -- Set @ticketCode to NULL for the full history or a code for one detail page.
@@ -670,40 +676,40 @@ DECLARE @historyAccountId INT = 193;
 DECLARE @ticketCode VARCHAR(64) = NULL;
 
 SELECT pt.passengerTicketId, ptd.ticketDetailId, pt.ticketCode,
-       pt.status AS ticketStatus, pt.totalPrice, pt.pickupStopName,
-       pt.dropoffStopName, pt.createdAt AS bookedAt, t.departureTime,
-       r.routeName, ct.coachTypeName, pay.paymentMethod,
-       pay.status AS paymentStatus, ptd.fullName, ptd.phone, ptd.email,
-       ptd.seatCodeSnapshot AS seatCode, ptd.price AS seatPrice
+    pt.status AS ticketStatus, pt.totalPrice, pt.pickupStopName,
+    pt.dropoffStopName, pt.createdAt AS bookedAt, t.departureTime,
+    r.routeName, ct.coachTypeName, pay.paymentMethod,
+    pay.status AS paymentStatus, ptd.fullName, ptd.phone, ptd.email,
+    ptd.seatCodeSnapshot AS seatCode, ptd.price AS seatPrice
 FROM passenger_ticket_detail ptd
-JOIN passenger_ticket pt ON pt.passengerTicketId = ptd.passengerTicketId
-JOIN customer c ON c.customerId = pt.customerId
-JOIN trip t ON t.tripId = pt.tripId
-JOIN route r ON r.routeId = t.routeId
-JOIN coach co ON co.coachId = t.coachId
-JOIN coach_type ct ON ct.coachTypeId = co.coachTypeId
-LEFT JOIN payment pay ON pay.passengerTicketId = pt.passengerTicketId
+    JOIN passenger_ticket pt ON pt.passengerTicketId = ptd.passengerTicketId
+    JOIN customer c ON c.customerId = pt.customerId
+    JOIN trip t ON t.tripId = pt.tripId
+    JOIN route r ON r.routeId = t.routeId
+    JOIN coach co ON co.coachId = t.coachId
+    JOIN coach_type ct ON ct.coachTypeId = co.coachTypeId
+    LEFT JOIN payment pay ON pay.passengerTicketId = pt.passengerTicketId
 WHERE c.accountId = @historyAccountId
-  AND (@ticketCode IS NULL OR pt.ticketCode = @ticketCode)
+    AND (@ticketCode IS NULL OR pt.ticketCode = @ticketCode)
 ORDER BY t.departureTime DESC, pt.passengerTicketId DESC, ptd.ticketDetailId;
 
 -- Ownership-safe QR lookup corresponding to GET /customer/history/seats/{id}/qr.
 DECLARE @ticketDetailId INT = 1;
 SELECT ptd.qrcode
 FROM passenger_ticket_detail ptd
-JOIN passenger_ticket pt ON pt.passengerTicketId = ptd.passengerTicketId
-JOIN customer c ON c.customerId = pt.customerId
+    JOIN passenger_ticket pt ON pt.passengerTicketId = ptd.passengerTicketId
+    JOIN customer c ON c.customerId = pt.customerId
 WHERE ptd.ticketDetailId = @ticketDetailId
-  AND c.accountId = @historyAccountId;
+    AND c.accountId = @historyAccountId;
 
 -- Inspect the cancellation/refund result without mutating DDL or fake data.
 DECLARE @cancelledTicketCode VARCHAR(64) = 'REPLACE_WITH_TICKET_CODE';
 SELECT pt.ticketCode, pt.status AS ticketStatus, p.refundAmount,
-       r.amount AS requestedRefundAmount, r.refundMethod,
-       r.status AS refundStatus, r.callbackData AS bankDestination
+    r.amount AS requestedRefundAmount, r.refundMethod,
+    r.status AS refundStatus, r.callbackData AS bankDestination
 FROM passenger_ticket pt
-JOIN payment p ON p.passengerTicketId = pt.passengerTicketId
-LEFT JOIN refund r ON r.paymentId = p.paymentId
+    JOIN payment p ON p.passengerTicketId = pt.passengerTicketId
+    LEFT JOIN refund r ON r.paymentId = p.paymentId
 WHERE pt.ticketCode = @cancelledTicketCode;
 
 
@@ -711,20 +717,20 @@ WHERE pt.ticketCode = @cancelledTicketCode;
 -- The seller determines the agency; pickup/drop-off come directly from the order.
 DECLARE @cargoHistoryAccountId INT = 2;
 SELECT ct.ticketCode, ta.ticketAgencyName, co.licensePlate, driver.staffName,
-       pickup.stopPointName AS pickupStopName, pickup.[address] AS pickupAddress, pickup.city AS pickupCity,
-       dropoff.stopPointName AS dropoffStopName, dropoff.[address] AS dropoffAddress, dropoff.city AS dropoffCity,
-       ct.feePayer, ct.senderName, ct.senderPhone, ct.receiverName, ct.receiverPhone,
-       ctd.createdAt, ctd.dimensionVol, ctd.quantity, ctd.weightKg, ctd.[description]
+    pickup.stopPointName AS pickupStopName, pickup.[address] AS pickupAddress, pickup.city AS pickupCity,
+    dropoff.stopPointName AS dropoffStopName, dropoff.[address] AS dropoffAddress, dropoff.city AS dropoffCity,
+    ct.feePayer, ct.senderName, ct.senderPhone, ct.receiverName, ct.receiverPhone,
+    ctd.createdAt, ctd.dimensionVol, ctd.quantity, ctd.weightKg, ctd.[description]
 FROM cargo_ticket_detail ctd
-JOIN cargo_ticket ct ON ct.cargoTicketId = ctd.cargoTicketId
-LEFT JOIN customer customer ON customer.customerId = ct.customerId
-LEFT JOIN trip t ON t.tripId = ct.tripId
-LEFT JOIN coach co ON co.coachId = t.coachId
-LEFT JOIN staff driver ON driver.staffId = t.driverId AND driver.staffPosition = 'DRIVER'
-JOIN staff seller ON seller.staffId = ct.soldBy
-LEFT JOIN ticket_agency ta ON ta.ticketAgencyId = seller.ticketAgencyId
-JOIN coach_stop pickup ON pickup.stopPointId = ct.pickupStopId
-JOIN coach_stop dropoff ON dropoff.stopPointId = ct.dropoffStopId
+    JOIN cargo_ticket ct ON ct.cargoTicketId = ctd.cargoTicketId
+    LEFT JOIN customer customer ON customer.customerId = ct.customerId
+    LEFT JOIN trip t ON t.tripId = ct.tripId
+    LEFT JOIN coach co ON co.coachId = t.coachId
+    LEFT JOIN staff driver ON driver.staffId = t.driverId AND driver.staffPosition = 'DRIVER'
+    JOIN staff seller ON seller.staffId = ct.soldBy
+    LEFT JOIN ticket_agency ta ON ta.ticketAgencyId = seller.ticketAgencyId
+    JOIN coach_stop pickup ON pickup.stopPointId = ct.pickupStopId
+    JOIN coach_stop dropoff ON dropoff.stopPointId = ct.dropoffStopId
 WHERE customer.accountId = @cargoHistoryAccountId
 ORDER BY ct.createdAt DESC, ctd.cargoTicketDetailId;
 
@@ -732,38 +738,43 @@ ORDER BY ct.createdAt DESC, ctd.cargoTicketDetailId;
 -- Detect impossible schedule continuity after auto-generation.
 -- A resource cannot run the same route twice in a row because the first trip
 -- ends at the opposite city; it must return on the opposite route first.
-WITH resource_trips AS (
-    SELECT 'DRIVER' AS resourceType, t.driverId AS resourceId, t.tripId,
-           t.routeId, r.routeName, t.departureTime
-    FROM trip t
-    JOIN route r ON r.routeId = t.routeId
-    WHERE t.driverId IS NOT NULL
-      AND t.[status] NOT IN ('CANCELED', 'CANCELLED')
-    UNION ALL
-    SELECT 'ATTENDANT' AS resourceType, t.attendantId AS resourceId, t.tripId,
-           t.routeId, r.routeName, t.departureTime
-    FROM trip t
-    JOIN route r ON r.routeId = t.routeId
-    WHERE t.attendantId IS NOT NULL
-      AND t.[status] NOT IN ('CANCELED', 'CANCELLED')
-    UNION ALL
-    SELECT 'COACH' AS resourceType, t.coachId AS resourceId, t.tripId,
-           t.routeId, r.routeName, t.departureTime
-    FROM trip t
-    JOIN route r ON r.routeId = t.routeId
-    WHERE t.coachId IS NOT NULL
-      AND t.[status] NOT IN ('CANCELED', 'CANCELLED')
-),
-ordered_trips AS (
-    SELECT *,
-           LAG(tripId) OVER (PARTITION BY resourceType, resourceId ORDER BY departureTime) AS previousTripId,
-           LAG(routeId) OVER (PARTITION BY resourceType, resourceId ORDER BY departureTime) AS previousRouteId,
-           LAG(routeName) OVER (PARTITION BY resourceType, resourceId ORDER BY departureTime) AS previousRouteName,
-           LAG(departureTime) OVER (PARTITION BY resourceType, resourceId ORDER BY departureTime) AS previousDepartureTime
-    FROM resource_trips
-)
+WITH
+    resource_trips
+    AS
+    (
+                            SELECT 'DRIVER' AS resourceType, t.driverId AS resourceId, t.tripId,
+                t.routeId, r.routeName, t.departureTime
+            FROM trip t
+                JOIN route r ON r.routeId = t.routeId
+            WHERE t.driverId IS NOT NULL
+                AND t.[status] NOT IN ('CANCELED', 'CANCELLED')
+        UNION ALL
+            SELECT 'ATTENDANT' AS resourceType, t.attendantId AS resourceId, t.tripId,
+                t.routeId, r.routeName, t.departureTime
+            FROM trip t
+                JOIN route r ON r.routeId = t.routeId
+            WHERE t.attendantId IS NOT NULL
+                AND t.[status] NOT IN ('CANCELED', 'CANCELLED')
+        UNION ALL
+            SELECT 'COACH' AS resourceType, t.coachId AS resourceId, t.tripId,
+                t.routeId, r.routeName, t.departureTime
+            FROM trip t
+                JOIN route r ON r.routeId = t.routeId
+            WHERE t.coachId IS NOT NULL
+                AND t.[status] NOT IN ('CANCELED', 'CANCELLED')
+    ),
+    ordered_trips
+    AS
+    (
+        SELECT *,
+            LAG(tripId) OVER (PARTITION BY resourceType, resourceId ORDER BY departureTime) AS previousTripId,
+            LAG(routeId) OVER (PARTITION BY resourceType, resourceId ORDER BY departureTime) AS previousRouteId,
+            LAG(routeName) OVER (PARTITION BY resourceType, resourceId ORDER BY departureTime) AS previousRouteName,
+            LAG(departureTime) OVER (PARTITION BY resourceType, resourceId ORDER BY departureTime) AS previousDepartureTime
+        FROM resource_trips
+    )
 SELECT resourceType, resourceId, previousTripId, previousRouteName, previousDepartureTime,
-       tripId, routeName, departureTime
+    tripId, routeName, departureTime
 FROM ordered_trips
 WHERE previousRouteId = routeId
 ORDER BY resourceType, resourceId, departureTime;
@@ -771,11 +782,94 @@ ORDER BY resourceType, resourceId, departureTime;
 USE VeXeDB;
 
 
-SELECT * FROM Account a JOIN Account_Role ar ON a.accountId = ar.accountId JOIN Role r on ar.roleId = r.roleId JOIN Staff s on s.accountId = a.accountId
+SELECT *
+FROM Account a JOIN Account_Role ar ON a.accountId = ar.accountId JOIN Role r on ar.roleId = r.roleId JOIN Staff s on s.accountId = a.accountId
 
 use VeXeDB;
-SELECT * FROM Voucher 
+SELECT *
+FROM Voucher
 
 USE VEXEDB;
-SELECT * FROM CARGO_TICKET_DETAIL
-SELECT * FROM CARGO_TICKET
+SELECT *
+FROM CARGO_TICKET_DETAIL
+SELECT *
+FROM CARGO_TICKET
+
+SELECT *
+FROM cargo_ticket_detail ctd JOIN cargo_ticket ct
+    ON ct.cargoTicketId = ctd.cargoTicketId
+    JOIN trip t ON t.tripId = ct.tripId
+    JOIN coach c ON c.coachId = t.coachId
+    JOIN staff s ON s.staffId = t.driverId
+    JOIN route r ON r.routeId = t.routeId
+    JOIN ticket_agency ta ON ta.ticketAgencyId = s.ticketAgencyId
+WHERE ct.cargoTicketId = 1
+
+
+
+
+
+SELECT ct.cargoTicketId, ct.codAmount, ctd.dimensionVol, r.routeName,
+c.licensePlate, s.staffName, ctd.calculatedPrice,ct.pickupStopId, ct.dropoffStopId
+FROM cargo_ticket_detail ctd JOIN cargo_ticket ct
+    ON ct.cargoTicketId = ctd.cargoTicketId
+    JOIN trip t ON t.tripId = ct.tripId
+    JOIN coach c ON c.coachId = t.coachId
+    JOIN staff s ON s.staffId = t.driverId
+    JOIN route r ON r.routeId = t.routeId
+WHERE t.departureTime BETWEEN '2026-01-01 00:00:00' AND '2026-01-02 00:00:00'
+
+
+-- Corrected staff cargo trace query.
+-- The original query above is intentionally retained for comparison.
+-- This version returns one row per cargo order, includes both assigned staff,
+-- names both stops, and aggregates every detail row without duplicating totals.
+DECLARE @cargoFrom DATETIME2 = '2026-01-01 00:00:00';
+DECLARE @cargoTo DATETIME2 = '2026-01-02 00:00:00';
+
+SELECT ct.cargoTicketId,
+       ct.ticketCode,
+       ct.[status] AS cargoStatus,
+       ct.senderName,
+       ct.senderPhone,
+       ct.receiverName,
+       ct.receiverPhone,
+       ct.codAmount,
+       ct.totalPrice,
+       t.tripId,
+       t.departureTime,
+       r.routeName,
+       c.licensePlate,
+       driver.staffName AS driverName,
+       driver.phone AS driverPhone,
+       driver.cccd AS driverCccd,
+       attendant.staffName AS attendantName,
+       attendant.phone AS attendantPhone,
+       attendant.cccd AS attendantCccd,
+       pickup.stopPointName AS pickupStopName,
+       dropoff.stopPointName AS dropoffStopName,
+       SUM(ctd.dimensionVol * ctd.quantity) AS occupiedVolumeM3,
+       SUM(ctd.calculatedPrice) AS calculatedCargoTotal,
+       CASE
+           WHEN SUM(ctd.dimensionVol * ctd.quantity) >= 2.5 THEN CAST(1 AS BIT)
+           ELSE CAST(0 AS BIT)
+       END AS isCargoFull
+FROM cargo_ticket ct
+JOIN cargo_ticket_detail ctd ON ctd.cargoTicketId = ct.cargoTicketId
+JOIN trip t ON t.tripId = ct.tripId
+JOIN route r ON r.routeId = t.routeId
+JOIN coach c ON c.coachId = t.coachId
+LEFT JOIN staff driver ON driver.staffId = t.driverId
+LEFT JOIN staff attendant ON attendant.staffId = t.attendantId
+JOIN coach_stop pickup ON pickup.stopPointId = ct.pickupStopId
+JOIN coach_stop dropoff ON dropoff.stopPointId = ct.dropoffStopId
+WHERE t.departureTime >= @cargoFrom
+  AND t.departureTime < @cargoTo
+GROUP BY ct.cargoTicketId, ct.ticketCode, ct.[status],
+         ct.senderName, ct.senderPhone, ct.receiverName, ct.receiverPhone,
+         ct.codAmount, ct.totalPrice, t.tripId, t.departureTime,
+         r.routeName, c.licensePlate,
+         driver.staffName, driver.phone, driver.cccd,
+         attendant.staffName, attendant.phone, attendant.cccd,
+         pickup.stopPointName, dropoff.stopPointName
+ORDER BY t.departureTime, ct.cargoTicketId;

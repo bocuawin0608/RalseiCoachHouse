@@ -10,12 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.ralsei.model.CargoTicket;
-
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-
-import com.ralsei.model.CargoTicket;
+import com.ralsei.dto.projection.cargoticket.CargoResponsibilityProjection;
 
 /**
  * Provides persistence access for cargo ticket data.
@@ -30,6 +25,68 @@ public interface CargoTicketRepository extends JpaRepository<CargoTicket, Intege
 
     org.springframework.data.domain.Page<CargoTicket> findByStatusNot(String status, Pageable pageable);
 
+    org.springframework.data.domain.Page<CargoTicket> findByStatus(String status, Pageable pageable);
+
+    /** Returns only cargo for which the supplied agency is operationally responsible. */
+    @Query(value = """
+            SELECT cargo.*
+            FROM cargo_ticket cargo
+            JOIN staff seller ON seller.staffId = cargo.soldBy
+            LEFT JOIN ticket_agency destination
+                   ON destination.stopPointId = cargo.dropoffStopId
+                  AND destination.isActive = 1
+            WHERE cargo.[status] <> 'ABANDONED'
+              AND ((cargo.[status] IN ('ARRIVED', 'DELIVERED')
+                    AND destination.ticketAgencyId = :ticketAgencyId)
+                OR (cargo.[status] NOT IN ('ARRIVED', 'DELIVERED')
+                    AND seller.ticketAgencyId = :ticketAgencyId))
+            """, countQuery = """
+            SELECT COUNT(cargo.cargoTicketId)
+            FROM cargo_ticket cargo
+            JOIN staff seller ON seller.staffId = cargo.soldBy
+            LEFT JOIN ticket_agency destination
+                   ON destination.stopPointId = cargo.dropoffStopId
+                  AND destination.isActive = 1
+            WHERE cargo.[status] <> 'ABANDONED'
+              AND ((cargo.[status] IN ('ARRIVED', 'DELIVERED')
+                    AND destination.ticketAgencyId = :ticketAgencyId)
+                OR (cargo.[status] NOT IN ('ARRIVED', 'DELIVERED')
+                    AND seller.ticketAgencyId = :ticketAgencyId))
+            """, nativeQuery = true)
+    org.springframework.data.domain.Page<CargoTicket> findAllForAgency(
+            @Param("ticketAgencyId") int ticketAgencyId,
+            Pageable pageable);
+
+    /**
+     * Routes a staff queue to the correct office: waiting orders belong to the
+     * seller's office, while arrived orders belong to the drop-off office.
+     */
+    @Query(value = """
+            SELECT cargo.*
+            FROM cargo_ticket cargo
+            JOIN staff seller ON seller.staffId = cargo.soldBy
+            LEFT JOIN ticket_agency destination
+                   ON destination.stopPointId = cargo.dropoffStopId
+                  AND destination.isActive = 1
+            WHERE cargo.[status] = :status
+              AND ((:status = 'ARRIVED' AND destination.ticketAgencyId = :ticketAgencyId)
+                OR (:status <> 'ARRIVED' AND seller.ticketAgencyId = :ticketAgencyId))
+            """, countQuery = """
+            SELECT COUNT(cargo.cargoTicketId)
+            FROM cargo_ticket cargo
+            JOIN staff seller ON seller.staffId = cargo.soldBy
+            LEFT JOIN ticket_agency destination
+                   ON destination.stopPointId = cargo.dropoffStopId
+                  AND destination.isActive = 1
+            WHERE cargo.[status] = :status
+              AND ((:status = 'ARRIVED' AND destination.ticketAgencyId = :ticketAgencyId)
+                OR (:status <> 'ARRIVED' AND seller.ticketAgencyId = :ticketAgencyId))
+            """, nativeQuery = true)
+    org.springframework.data.domain.Page<CargoTicket> findStaffQueueByStatusAndAgency(
+            @Param("status") String status,
+            @Param("ticketAgencyId") int ticketAgencyId,
+            Pageable pageable);
+
     Optional<CargoTicket> findByCargoTicketIdAndStatusNot(int cargoTicketId, String status);
 
     // của duc
@@ -41,4 +98,26 @@ public interface CargoTicketRepository extends JpaRepository<CargoTicket, Intege
     // của duc
     @Query("SELECT ct FROM CargoTicket ct WHERE ct.tripId = :tripId AND ct.status IN :statuses ORDER BY ct.cargoTicketId ASC")
     List<CargoTicket> findByTripIdAndStatusIn(@Param("tripId") int tripId, @Param("statuses") List<String> statuses);
+
+    /**
+     * Resolves the complete responsibility chain for a cargo ticket without
+     * serializing lazy JPA relationships into the API response.
+     */
+    @Query(value = """
+            SELECT r.routeName AS routeName, c.licensePlate AS licensePlate,
+                   destination.ticketAgencyName AS destinationAgencyName,
+                   driver.staffName AS driverName, driver.phone AS driverPhone,
+                   driver.cccd AS driverCccd, attendant.staffName AS attendantName,
+                   attendant.phone AS attendantPhone, attendant.cccd AS attendantCccd
+            FROM cargo_ticket cargo
+            LEFT JOIN trip t ON t.tripId = cargo.tripId
+            LEFT JOIN route r ON r.routeId = t.routeId
+            LEFT JOIN coach c ON c.coachId = t.coachId
+            LEFT JOIN staff driver ON driver.staffId = t.driverId
+            LEFT JOIN staff attendant ON attendant.staffId = t.attendantId
+            LEFT JOIN ticket_agency destination ON destination.stopPointId = cargo.dropoffStopId
+            WHERE cargo.cargoTicketId = :cargoTicketId
+            """, nativeQuery = true)
+    Optional<CargoResponsibilityProjection> findResponsibilityByCargoTicketId(
+            @Param("cargoTicketId") int cargoTicketId);
 }
