@@ -65,22 +65,22 @@ public interface CargoTicketRepository extends JpaRepository<CargoTicket, Intege
             SELECT cargo.*
             FROM cargo_ticket cargo
             JOIN staff seller ON seller.staffId = cargo.soldBy
-            LEFT JOIN ticket_agency destination
+            INNER JOIN ticket_agency destination
                    ON destination.stopPointId = cargo.dropoffStopId
                   AND destination.isActive = 1
             WHERE cargo.[status] = :status
-              AND ((:status = 'ARRIVED' AND destination.ticketAgencyId = :ticketAgencyId)
-                OR (:status <> 'ARRIVED' AND seller.ticketAgencyId = :ticketAgencyId))
+              AND ((:status IN ('ARRIVED', 'DELIVERED') AND destination.ticketAgencyId = :ticketAgencyId)
+                OR (:status NOT IN ('ARRIVED', 'DELIVERED') AND seller.ticketAgencyId = :ticketAgencyId))
             """, countQuery = """
             SELECT COUNT(cargo.cargoTicketId)
             FROM cargo_ticket cargo
             JOIN staff seller ON seller.staffId = cargo.soldBy
-            LEFT JOIN ticket_agency destination
+            INNER JOIN ticket_agency destination
                    ON destination.stopPointId = cargo.dropoffStopId
                   AND destination.isActive = 1
             WHERE cargo.[status] = :status
-              AND ((:status = 'ARRIVED' AND destination.ticketAgencyId = :ticketAgencyId)
-                OR (:status <> 'ARRIVED' AND seller.ticketAgencyId = :ticketAgencyId))
+              AND ((:status IN ('ARRIVED', 'DELIVERED') AND destination.ticketAgencyId = :ticketAgencyId)
+                OR (:status NOT IN ('ARRIVED', 'DELIVERED') AND seller.ticketAgencyId = :ticketAgencyId))
             """, nativeQuery = true)
     org.springframework.data.domain.Page<CargoTicket> findStaffQueueByStatusAndAgency(
             @Param("status") String status,

@@ -652,6 +652,12 @@ public class CargoTicketServiceImpl implements CargoTicketService {
         }
         requireStop(request.getPickupStopId());
         requireStop(request.getDropoffStopId());
+        if (!ticketAgencyRepository.existsByStopPointIdAndIsActiveTrue(request.getPickupStopId())) {
+            throw new BusinessRuleException("Điểm nhận hàng không có văn phòng vé đang hoạt động.");
+        }
+        if (!ticketAgencyRepository.existsByStopPointIdAndIsActiveTrue(request.getDropoffStopId())) {
+            throw new BusinessRuleException("Điểm trả hàng không có văn phòng vé đang hoạt động.");
+        }
         requireStaff(request.getSoldBy());
         requireStaff(request.getLoadedBy());
         requireStaff(request.getUnloadedBy());
@@ -742,6 +748,10 @@ public class CargoTicketServiceImpl implements CargoTicketService {
         if (!"RECEIVED".equals(ticket.getStatus())) {
             throw new BusinessRuleException(message);
         }
+    }
+
+    void newCargoTicketValidation_onlyForTest(CargoTicketRequest request, Staff currentStaff) {
+        validateReferences(request, currentStaff);
     }
 
     /**

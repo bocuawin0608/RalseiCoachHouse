@@ -22,7 +22,12 @@ public interface CoachStopRepository extends JpaRepository<CoachStop, Integer> {
              rs.routeId AS routeId, cs.city AS city
       FROM coach_stop cs
       LEFT JOIN route_stop rs ON cs.stopPointId = rs.stopPointId
-      WHERE cs.isActive = 1 ORDER BY cs.stopPointName
+      WHERE cs.isActive = 1
+        AND EXISTS (
+          SELECT 1 FROM ticket_agency ta
+          WHERE ta.stopPointId = cs.stopPointId AND ta.isActive = 1
+        )
+      ORDER BY cs.stopPointName
       """, nativeQuery = true)
   java.util.List<CargoTicketStopOptionProjection> findCargoTicketStopOptions();
 
