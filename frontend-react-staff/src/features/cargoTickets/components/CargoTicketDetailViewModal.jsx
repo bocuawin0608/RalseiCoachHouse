@@ -6,7 +6,8 @@ import { useCargoTypes } from '../../cargo/hooks/useCargoTypes';
 import { formatCurrency } from '../../../utils/formatters';
 import CargoTicketDetailSection from './CargoTicketDetailSection';
 
-export default function CargoTicketDetailViewModal({ ticket, onClose }) {
+/** Shows current cargo detail rows; mutation is available only for pending orders. */
+export default function CargoTicketDetailViewModal({ ticket, onClose, readOnly = false }) {
     const [details, setDetails] = useState([]);
     const [loadingDetails, setLoadingDetails] = useState(true);
     const { cargoTypes, setPageInfo } = useCargoTypes();
@@ -32,7 +33,10 @@ export default function CargoTicketDetailViewModal({ ticket, onClose }) {
     };
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (ticket) fetchDetails();
+        // The modal is remounted for each ticket; fetchDetails is intentionally local.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [ticket]);
 
     const handleEnableDraftMode = () => {
@@ -120,18 +124,18 @@ export default function CargoTicketDetailViewModal({ ticket, onClose }) {
             </Modal.Header>
             <Modal.Body className="p-4">
                 <div className="d-flex justify-content-end mb-3 gap-2">
-                    {!isDraftMode ? (
+                    {!isDraftMode && !readOnly ? (
                         <Button variant="primary" className="fw-medium d-flex align-items-center custom-btn-general" onClick={handleEnableDraftMode}>
                             <BsPencilFill className="me-2" /> Chỉnh sửa tất cả
                         </Button>
-                    ) : (
+                    ) : isDraftMode ? (
                         <>
                             <Button variant="outline-secondary" className='fw-medium' onClick={handleCancelDraftMode} disabled={saving}>Hủy bỏ</Button>
                             <Button variant="success" className='fw-medium' onClick={handleSaveDraft} disabled={saving}>
                                 {saving ? <Spinner size="sm" /> : 'Lưu thay đổi'}
                             </Button>
                         </>
-                    )}
+                    ) : null}
                 </div>
 
                 {isDraftMode ? (

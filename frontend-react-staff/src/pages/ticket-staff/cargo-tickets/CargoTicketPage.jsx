@@ -1,61 +1,31 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Alert, Button, Card, Container } from 'react-bootstrap';
-import { BsExclamationTriangleFill } from 'react-icons/bs';
-import Pagination from '../../../components/common/Pagination';
-import { cargoTicketApi } from '../../../features/cargoTickets/api/cargoTicketApi';
-import CargoTicketFilter from '../../../features/cargoTickets/components/CargoTicketFilter';
-import CargoTicketTable from '../../../features/cargoTickets/components/CargoTicketTable';
-import CargoTicketUpdateModal from '../../../features/cargoTickets/components/CargoTicketUpdateModal';
-import CargoTicketDetailViewModal from '../../../features/cargoTickets/components/CargoTicketDetailViewModal';
-import { useCargoTickets } from '../../../features/cargoTickets/hooks/useCargoTickets';
+import { BsBoxSeam, BsClipboardCheck } from 'react-icons/bs';
+import '../../../features/cargoTickets/styles/CargoOperations.css';
 
+/** Entry screen that separates order creation from destination verification. */
 export default function CargoTicketPage() {
     const navigate = useNavigate();
-    const [selectedTicket, setSelectedTicket] = useState(null);
-    const [viewTicket, setViewTicket] = useState(null);
-    const { tickets, loading, error, filters, pageInfo, setPageInfo, handleFilterChange, handleReset, refetch } = useCargoTickets();
-
-    const handleDisable = async (ticket) => {
-        if (!window.confirm(`Bạn có chắc muốn vô hiệu hóa vé ${ticket.ticketCode}?`)) return;
-        try {
-            await cargoTicketApi.disableCargoTicket(ticket.cargoTicketId);
-            await refetch();
-        } catch (err) {
-            window.alert(err.response?.data?.message || 'Vô hiệu hóa đơn gửi hàng thất bại.');
-        }
-    };
-
-    const handleCompletePayment = async (ticket) => {
-        try {
-            await cargoTicketApi.completePayment(ticket.cargoTicketId);
-            await refetch();
-        } catch (err) {
-            window.alert(err.response?.data?.message || 'Hoàn thành thanh toán thất bại.');
-        }
-    };
 
     return (
-        <Container fluid className="py-4" style={{ maxWidth: '1400px' }}>
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <h2 className="m-0 fw-bold text-dark">Quản lý đơn gửi hàng</h2>
-                <Button className="fw-medium shadow-sm custom-btn-general" onClick={() => navigate('/staff/cargo-tickets/create')}>
-                    + Thêm đơn gửi hàng
-                </Button>
-            </div>
+        <main className="cargo-operations-page">
+            <header className="cargo-page-heading">
+                <p className="cargo-eyebrow">Vận hành hàng hóa</p>
+                <h1>Quản lý đơn hàng</h1>
+                <p>Chọn đúng nghiệp vụ để xem chuyến xe, người chịu trách nhiệm và trạng thái kiện hàng.</p>
+            </header>
 
-            <CargoTicketFilter filters={filters} onFilterChange={handleFilterChange} onReset={handleReset} />
-            {error && <Alert variant="danger" className="d-flex align-items-center gap-2 border-0"><BsExclamationTriangleFill />{error}</Alert>}
-
-            <Card className="shadow-sm border-0">
-                <Card.Body className="p-0">
-                    <CargoTicketTable data={tickets} loading={loading} onEdit={setSelectedTicket} onView={setViewTicket} onDisable={handleDisable} onCompletePayment={handleCompletePayment} onPaymentSuccess={refetch} />
-                    <div className="d-flex justify-content-center py-3 border-top"><Pagination pageInfo={pageInfo} onPageChange={setPageInfo} /></div>
-                </Card.Body>
-            </Card>
-
-            {selectedTicket && <CargoTicketUpdateModal key={selectedTicket.cargoTicketId} data={selectedTicket} onClose={() => { setSelectedTicket(null); refetch(); }} onSuccess={refetch} />}
-            {viewTicket && <CargoTicketDetailViewModal key={`view-${viewTicket.cargoTicketId}`} ticket={viewTicket} onClose={() => { setViewTicket(null); refetch(); }} />}
-        </Container>
+            <section className="cargo-feature-grid" aria-label="Chức năng quản lý đơn hàng">
+                <button type="button" className="cargo-feature-card" onClick={() => navigate('/staff/cargo-tickets/send')}>
+                    <span className="cargo-feature-icon"><BsBoxSeam /></span>
+                    <span><strong>Gửi hàng</strong><small>Chọn chuyến xe còn chỗ và lập đơn mới</small></span>
+                    <span className="cargo-feature-arrow">→</span>
+                </button>
+                <button type="button" className="cargo-feature-card" onClick={() => navigate('/staff/cargo-tickets/check')}>
+                    <span className="cargo-feature-icon"><BsClipboardCheck /></span>
+                    <span><strong>Kiểm tra hàng</strong><small>Xem hàng đã đến và xác nhận người nhận</small></span>
+                    <span className="cargo-feature-arrow">→</span>
+                </button>
+            </section>
+        </main>
     );
 }

@@ -194,7 +194,7 @@ export default function Sidebar() {
                             </NavLink>
                             <NavLink to="/staff/cargo-tickets" className={navLinkClass} end>
                                 <BsReceipt size={20} className="flex-shrink-0" />
-                                <span>Đơn gửi hàng</span>
+                                <span>Đơn hàng</span>
                             </NavLink>
                         </>
                     )}

@@ -37,6 +37,18 @@ public class CargoTicketResponse {
     private int dropoffStopId;
     private String dropoffStopName;
     private String status;
+    /** Route and vehicle identify where this package physically belongs. */
+    private String routeName;
+    private String licensePlate;
+    private String destinationAgencyName;
+    /** Driver identity and contact data used when tracing a missing package. */
+    private String driverName;
+    private String driverPhone;
+    private String driverCccd;
+    /** Attendant identity and contact data used for load/unload accountability. */
+    private String attendantName;
+    private String attendantPhone;
+    private String attendantCccd;
     private Staff soldBy;
     private Staff loadedBy;
     private Staff unloadedBy;
