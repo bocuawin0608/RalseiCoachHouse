@@ -5,6 +5,7 @@ const BASE_URL = '/v1/ticket-staff/cargo-tickets';
 export const cargoTicketApi = {
     getCargoTickets: (params) => axiosClient.get(BASE_URL, { params }),
     getUpcomingTrips: (params) => axiosClient.get(`${BASE_URL}/upcoming-trips`, { params }),
+    getReceivingTrips: (params) => axiosClient.get(`${BASE_URL}/receiving-trips`, { params }),
     getFormOptions: (params) => axiosClient.get(`${BASE_URL}/form-options`, { params }),
     getCargoTicket: (id) => axiosClient.get(`${BASE_URL}/${id}`),
     getCargoTicketDetails: (id) => axiosClient.get(`${BASE_URL}/${id}/details`),

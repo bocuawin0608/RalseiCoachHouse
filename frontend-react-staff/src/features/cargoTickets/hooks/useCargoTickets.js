@@ -3,7 +3,7 @@ import { useDebounce } from '../../../hooks/useDebounce';
 import { cargoTicketApi } from '../api/cargoTicketApi';
 
 /** Loads one server-side cargo queue and applies the shared local search filter. */
-export function useCargoTickets(queueStatus = '') {
+export function useCargoTickets(queueStatus = '', tripId = null) {
     const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -23,7 +23,8 @@ export function useCargoTickets(queueStatus = '') {
             const response = await cargoTicketApi.getCargoTickets({
                 page: pageInfo.page,
                 size: pageInfo.size,
-                status: queueStatus || undefined
+                status: queueStatus || undefined,
+                tripId: tripId || undefined
             });
             setTickets(response.content || []);
             setPageInfo((previous) => ({
@@ -37,7 +38,7 @@ export function useCargoTickets(queueStatus = '') {
         } finally {
             setLoading(false);
         }
-    }, [pageInfo.page, pageInfo.size, queueStatus]);
+    }, [pageInfo.page, pageInfo.size, queueStatus, tripId]);
 
     useEffect(() => {
         // Fetching on pagination changes intentionally starts the hook's loading state.
