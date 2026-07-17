@@ -873,3 +873,86 @@ GROUP BY ct.cargoTicketId, ct.ticketCode, ct.[status],
          attendant.staffName, attendant.phone, attendant.cccd,
          pickup.stopPointName, dropoff.stopPointName
 ORDER BY t.departureTime, ct.cargoTicketId;
+
+
+-- Debug queue "Đơn hàng đã đến" for one destination ticket agency.
+-- DELIVERED rows remain actionable only while destination staff has not yet
+-- been recorded in deliveredBy.
+DECLARE @receivingAgencyId INT = 1;
+
+SELECT cargo.cargoTicketId,
+       cargo.ticketCode,
+       cargo.[status],
+       cargo.dropoffStopId,
+       cargo.unloadedBy,
+       cargo.deliveredBy,
+       cargo.updatedAt,
+       destination.ticketAgencyName
+FROM cargo_ticket cargo
+JOIN ticket_agency destination
+  ON destination.stopPointId = cargo.dropoffStopId
+ AND destination.isActive = 1
+WHERE destination.ticketAgencyId = @receivingAgencyId
+  AND (cargo.[status] = 'ARRIVED'
+       OR (cargo.[status] = 'DELIVERED' AND NOT EXISTS (
+           SELECT 1
+           FROM staff receiptStaff
+           WHERE receiptStaff.staffId = cargo.deliveredBy
+             AND receiptStaff.staffPosition = 'TICKET_STAFF'
+       )))
+ORDER BY cargo.updatedAt DESC, cargo.cargoTicketId DESC;
+
+
+-- Debug the first step of the receiving screen: one row per unloaded coach.
+-- Replace the agency ID before running this read-only query.
+DECLARE @coachReceivingAgencyId INT = 1;
+
+SELECT trip.tripId,
+       coach.licensePlate,
+       coachType.coachTypeName,
+       route.routeName,
+       MAX(cargo.updatedAt) AS lastCargoUpdateAt,
+       COUNT(cargo.cargoTicketId) AS waitingOrderCount
+FROM cargo_ticket cargo
+JOIN trip trip ON trip.tripId = cargo.tripId
+JOIN route route ON route.routeId = trip.routeId
+JOIN coach coach ON coach.coachId = trip.coachId
+JOIN coach_type coachType ON coachType.coachTypeId = coach.coachTypeId
+JOIN ticket_agency destination
+  ON destination.stopPointId = cargo.dropoffStopId
+ AND destination.ticketAgencyId = @coachReceivingAgencyId
+ AND destination.isActive = 1
+WHERE (cargo.[status] = 'ARRIVED'
+       OR (cargo.[status] = 'DELIVERED' AND NOT EXISTS (
+           SELECT 1
+           FROM staff receiptStaff
+           WHERE receiptStaff.staffId = cargo.deliveredBy
+             AND receiptStaff.staffPosition = 'TICKET_STAFF'
+       )))
+GROUP BY trip.tripId,
+         coach.licensePlate,
+         coachType.coachTypeName,
+         route.routeName
+ORDER BY lastCargoUpdateAt DESC, trip.tripId DESC;
+
+
+-- Debug read-only receipt history for one destination agency.
+DECLARE @receiptHistoryAgencyId INT = 1;
+
+SELECT cargo.cargoTicketId,
+       cargo.ticketCode,
+       cargo.[status],
+       cargo.updatedAt AS receivedAt,
+       receiptStaff.staffId AS receivedByStaffId,
+       receiptStaff.staffName AS receivedByStaffName,
+       destination.ticketAgencyName
+FROM cargo_ticket cargo
+JOIN ticket_agency destination
+  ON destination.stopPointId = cargo.dropoffStopId
+ AND destination.ticketAgencyId = @receiptHistoryAgencyId
+ AND destination.isActive = 1
+JOIN staff receiptStaff
+  ON receiptStaff.staffId = cargo.deliveredBy
+ AND receiptStaff.staffPosition = 'TICKET_STAFF'
+WHERE cargo.[status] = 'DELIVERED'
+ORDER BY cargo.updatedAt DESC, cargo.cargoTicketId DESC;

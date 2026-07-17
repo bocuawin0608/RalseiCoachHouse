@@ -24,6 +24,7 @@ import com.ralsei.dto.request.cargoticket.TripByStopRequest;
 import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.dto.response.cargoticket.CargoTicketResponse;
 import com.ralsei.dto.response.cargoticket.CargoOperationalTripPageResponse;
+import com.ralsei.dto.response.cargoticket.CargoReceivingTripPageResponse;
 import com.ralsei.dto.response.cargoticket.CargoTicketFormOptionsResponse;
 import com.ralsei.dto.response.cargoticket.CustomerContactResponse;
 import com.ralsei.dto.response.cargoticket.TripByStopResponse;
@@ -69,10 +70,11 @@ public class CargoTicketController {
     public ResponseEntity<PagedResponse<CargoTicketResponse>> getCargoTickets(
             @RequestHeader("Authorization") String authorizationHeader,
             @RequestParam(required = false) String status,
+            @RequestParam(required = false) @Min(1) Integer tripId,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size) {
         return ResponseEntity.ok(cargoTicketService.getAllCargoTickets(
-                status, jwtService.extractAccountId(authorizationHeader), page, size));
+                status, tripId, jwtService.extractAccountId(authorizationHeader), page, size));
     }
 
     /** Lists coaches that have not departed and can still accept cargo. */
@@ -82,6 +84,16 @@ public class CargoTicketController {
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "6") @Min(1) @Max(50) int size) {
         return ResponseEntity.ok(cargoTicketService.getUpcomingOperationalTrips(
+                jwtService.extractAccountId(authorizationHeader), page, size));
+    }
+
+    /** Lists unloaded coaches with orders awaiting this destination office. */
+    @GetMapping("/receiving-trips")
+    public ResponseEntity<CargoReceivingTripPageResponse> getReceivingTrips(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "6") @Min(1) @Max(50) int size) {
+        return ResponseEntity.ok(cargoTicketService.getReceivingTrips(
                 jwtService.extractAccountId(authorizationHeader), page, size));
     }
 
@@ -154,10 +166,12 @@ public class CargoTicketController {
         return ResponseEntity.noContent().build();
     }
 
-    /** Confirms receiver hand-over for a package in ARRIVED state. */
+    /** Confirms destination-office receipt for an arrived or provisional delivered order. */
     @PutMapping("/{id:\\d+}/confirm-received")
-    public ResponseEntity<Void> confirmReceived(@PathVariable @Min(1) int id) {
-        cargoTicketService.confirmReceived(id);
+    public ResponseEntity<Void> confirmReceived(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable @Min(1) int id) {
+        cargoTicketService.confirmReceived(id, jwtService.extractAccountId(authorizationHeader));
         return ResponseEntity.noContent().build();
     }
 

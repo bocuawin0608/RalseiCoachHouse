@@ -58,8 +58,12 @@ public interface CargoTicketRepository extends JpaRepository<CargoTicket, Intege
             Pageable pageable);
 
     /**
-     * Routes a staff queue to the correct office: waiting orders belong to the
-     * seller's office, while arrived orders belong to the drop-off office.
+     * Routes a staff queue to the responsible office.
+     *
+     * <p>The receiving queue also includes legacy/provisional DELIVERED rows
+     * that have not been acknowledged by a TICKET_STAFF member. Trip staff can
+     * complete their hand-off before destination staff confirms receipt;
+     * requiring only ARRIVED made those orders disappear between workflows.</p>
      */
     @Query(value = """
             SELECT cargo.*
@@ -68,7 +72,24 @@ public interface CargoTicketRepository extends JpaRepository<CargoTicket, Intege
             INNER JOIN ticket_agency destination
                    ON destination.stopPointId = cargo.dropoffStopId
                   AND destination.isActive = 1
-            WHERE cargo.[status] = :status
+            WHERE ((:status = 'ARRIVED'
+                    AND (cargo.[status] = 'ARRIVED'
+                         OR (cargo.[status] = 'DELIVERED' AND NOT EXISTS (
+                             SELECT 1
+                             FROM staff receiptStaff
+                             WHERE receiptStaff.staffId = cargo.deliveredBy
+                               AND receiptStaff.staffPosition = 'TICKET_STAFF'
+                         ))))
+                OR (:status = 'DELIVERED'
+                    AND cargo.[status] = 'DELIVERED'
+                    AND EXISTS (
+                        SELECT 1
+                        FROM staff receiptStaff
+                        WHERE receiptStaff.staffId = cargo.deliveredBy
+                          AND receiptStaff.staffPosition = 'TICKET_STAFF'
+                    ))
+                OR (:status NOT IN ('ARRIVED', 'DELIVERED') AND cargo.[status] = :status))
+              AND (:tripId IS NULL OR cargo.tripId = :tripId)
               AND ((:status IN ('ARRIVED', 'DELIVERED') AND destination.ticketAgencyId = :ticketAgencyId)
                 OR (:status NOT IN ('ARRIVED', 'DELIVERED') AND seller.ticketAgencyId = :ticketAgencyId))
             """, countQuery = """
@@ -78,14 +99,41 @@ public interface CargoTicketRepository extends JpaRepository<CargoTicket, Intege
             INNER JOIN ticket_agency destination
                    ON destination.stopPointId = cargo.dropoffStopId
                   AND destination.isActive = 1
-            WHERE cargo.[status] = :status
+            WHERE ((:status = 'ARRIVED'
+                    AND (cargo.[status] = 'ARRIVED'
+                         OR (cargo.[status] = 'DELIVERED' AND NOT EXISTS (
+                             SELECT 1
+                             FROM staff receiptStaff
+                             WHERE receiptStaff.staffId = cargo.deliveredBy
+                               AND receiptStaff.staffPosition = 'TICKET_STAFF'
+                         ))))
+                OR (:status = 'DELIVERED'
+                    AND cargo.[status] = 'DELIVERED'
+                    AND EXISTS (
+                        SELECT 1
+                        FROM staff receiptStaff
+                        WHERE receiptStaff.staffId = cargo.deliveredBy
+                          AND receiptStaff.staffPosition = 'TICKET_STAFF'
+                    ))
+                OR (:status NOT IN ('ARRIVED', 'DELIVERED') AND cargo.[status] = :status))
+              AND (:tripId IS NULL OR cargo.tripId = :tripId)
               AND ((:status IN ('ARRIVED', 'DELIVERED') AND destination.ticketAgencyId = :ticketAgencyId)
                 OR (:status NOT IN ('ARRIVED', 'DELIVERED') AND seller.ticketAgencyId = :ticketAgencyId))
             """, nativeQuery = true)
     org.springframework.data.domain.Page<CargoTicket> findStaffQueueByStatusAndAgency(
             @Param("status") String status,
             @Param("ticketAgencyId") int ticketAgencyId,
+            @Param("tripId") Integer tripId,
             Pageable pageable);
+
+    /**
+     * Preserves the existing unfiltered queue contract for callers that do not
+     * select a coach first.
+     */
+    default org.springframework.data.domain.Page<CargoTicket> findStaffQueueByStatusAndAgency(
+            String status, int ticketAgencyId, Pageable pageable) {
+        return findStaffQueueByStatusAndAgency(status, ticketAgencyId, null, pageable);
+    }
 
     Optional<CargoTicket> findByCargoTicketIdAndStatusNot(int cargoTicketId, String status);
 

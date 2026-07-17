@@ -8,6 +8,7 @@ import com.ralsei.dto.response.cargoticket.CargoTicketFormOptionsResponse;
 import com.ralsei.dto.response.cargoticket.CargoTicketResponse;
 import com.ralsei.dto.response.cargoticket.CargoOperationalTripResponse;
 import com.ralsei.dto.response.cargoticket.CargoOperationalTripPageResponse;
+import com.ralsei.dto.response.cargoticket.CargoReceivingTripPageResponse;
 import com.ralsei.dto.response.cargoticket.CustomerContactResponse;
 import com.ralsei.dto.request.cargoticketdetail.CargoTicketDetailRequest;
 import com.ralsei.dto.response.cargoticket.TripByStopResponse;
@@ -20,12 +21,19 @@ import java.util.List;
  * Provides the business service contract for cargo ticket.
  */
 public interface CargoTicketService {
-    /** Returns cargo tickets, optionally restricted to one operational status. */
-    PagedResponse<CargoTicketResponse> getAllCargoTickets(String status, Integer accountId, int page, int size);
+    /**
+     * Returns cargo tickets for the authenticated office, optionally restricted
+     * to one operational status and one selected trip.
+     */
+    PagedResponse<CargoTicketResponse> getAllCargoTickets(
+            String status, Integer tripId, Integer accountId, int page, int size);
 
     /** Returns future coaches that are available for new cargo orders. */
     CargoOperationalTripPageResponse getUpcomingOperationalTrips(
             Integer accountId, int page, int size);
+
+    /** Returns unloaded coaches with cargo awaiting this destination office. */
+    CargoReceivingTripPageResponse getReceivingTrips(Integer accountId, int page, int size);
 
     CargoTicketFormOptionsResponse getFormOptions(Integer pickupStopId, Integer dropoffStopId);
 
@@ -50,8 +58,11 @@ public interface CargoTicketService {
 
     void disable(int id);
 
-    /** Confirms that an arrived package was handed to its receiver. */
-    void confirmReceived(int id);
+    /**
+     * Confirms destination-office receipt and records the authenticated ticket
+     * staff member who completed the hand-off.
+     */
+    void confirmReceived(int id, Integer accountId);
 
     List<CustomerContactResponse> searchContacts(String phone);
 
