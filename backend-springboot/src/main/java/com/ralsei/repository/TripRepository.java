@@ -17,6 +17,7 @@ import org.springframework.data.repository.query.Param;
 import com.ralsei.dto.projection.cargoticket.CargoTicketTripOptionProjection;
 import com.ralsei.dto.projection.cargoticket.CargoTicketTripOptionWithCoachTypeProjection;
 import com.ralsei.dto.projection.cargoticket.CargoOperationalTripProjection;
+import com.ralsei.dto.projection.cargoticket.CargoReceivingTripProjection;
 import com.ralsei.dto.projection.coach.CoachUpcomingTripCountProjection;
 import com.ralsei.dto.projection.staffpassengerticket.StaffPassengerTransferCandidateProjection;
 import com.ralsei.dto.projection.trip.StaffTripInfoProjection;
@@ -40,6 +41,69 @@ import jakarta.transaction.Transactional;
  * Provides persistence access for trip data.
  */
 public interface TripRepository extends JpaRepository<Trip, Integer> {
+
+    /**
+     * Lists only coaches that have unloaded at least one order which still
+     * requires acknowledgement by the supplied destination ticket agency.
+     * Status is authoritative; nullable legacy audit fields do not hide rows.
+     */
+    @Query(value = """
+            SELECT t.tripId AS tripId,
+                   r.routeName AS routeName,
+                   t.departureTime AS departureTime,
+                   t.[status] AS tripStatus,
+                   coach.licensePlate AS licensePlate,
+                   coachType.coachTypeName AS coachTypeName,
+                   driver.staffName AS driverName,
+                   driver.phone AS driverPhone,
+                   driver.cccd AS driverCccd,
+                   attendant.staffName AS attendantName,
+                   attendant.phone AS attendantPhone,
+                   attendant.cccd AS attendantCccd,
+                   MAX(cargo.updatedAt) AS lastCargoUpdateAt,
+                   COUNT(cargo.cargoTicketId) AS waitingOrderCount
+            FROM cargo_ticket cargo
+            JOIN trip t ON t.tripId = cargo.tripId
+            JOIN route r ON r.routeId = t.routeId
+            JOIN coach coach ON coach.coachId = t.coachId
+            JOIN coach_type coachType ON coachType.coachTypeId = coach.coachTypeId
+            JOIN ticket_agency destination
+              ON destination.stopPointId = cargo.dropoffStopId
+             AND destination.ticketAgencyId = :ticketAgencyId
+             AND destination.isActive = 1
+            LEFT JOIN staff driver ON driver.staffId = t.driverId
+            LEFT JOIN staff attendant ON attendant.staffId = t.attendantId
+            WHERE (cargo.[status] = 'ARRIVED'
+                   OR (cargo.[status] = 'DELIVERED' AND NOT EXISTS (
+                       SELECT 1
+                       FROM staff receiptStaff
+                       WHERE receiptStaff.staffId = cargo.deliveredBy
+                         AND receiptStaff.staffPosition = 'TICKET_STAFF'
+                   )))
+            GROUP BY t.tripId, r.routeName, t.departureTime, t.[status],
+                     coach.licensePlate, coachType.coachTypeName,
+                     driver.staffName, driver.phone, driver.cccd,
+                     attendant.staffName, attendant.phone, attendant.cccd
+            ORDER BY MAX(cargo.updatedAt) DESC, t.tripId DESC
+            """, countQuery = """
+            SELECT COUNT(DISTINCT t.tripId)
+            FROM cargo_ticket cargo
+            JOIN trip t ON t.tripId = cargo.tripId
+            JOIN ticket_agency destination
+              ON destination.stopPointId = cargo.dropoffStopId
+             AND destination.ticketAgencyId = :ticketAgencyId
+             AND destination.isActive = 1
+            WHERE (cargo.[status] = 'ARRIVED'
+                   OR (cargo.[status] = 'DELIVERED' AND NOT EXISTS (
+                       SELECT 1
+                       FROM staff receiptStaff
+                       WHERE receiptStaff.staffId = cargo.deliveredBy
+                         AND receiptStaff.staffPosition = 'TICKET_STAFF'
+                   )))
+            """, nativeQuery = true)
+    Page<CargoReceivingTripProjection> findCargoReceivingTrips(
+            @Param("ticketAgencyId") int ticketAgencyId,
+            Pageable pageable);
 
     /**
      * Lists today's coaches which will call at the authenticated staff member's

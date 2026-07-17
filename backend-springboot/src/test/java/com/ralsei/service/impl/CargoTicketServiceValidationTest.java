@@ -2,14 +2,17 @@ package com.ralsei.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,7 +26,10 @@ import org.mockito.quality.Strictness;
 
 import com.ralsei.dto.request.cargoticket.CargoTicketRequest;
 import com.ralsei.exception.BusinessRuleException;
+import com.ralsei.model.CargoTicket;
 import com.ralsei.model.Staff;
+import com.ralsei.model.TicketAgency;
+import com.ralsei.repository.CargoTicketRepository;
 import com.ralsei.repository.CoachStopRepository;
 import com.ralsei.repository.CustomerRepository;
 import com.ralsei.repository.StaffRepository;
@@ -39,6 +45,7 @@ class CargoTicketServiceValidationTest {
     @Mock private CustomerRepository customerRepository;
     @Mock private StaffRepository staffRepository;
     @Mock private TicketAgencyRepository ticketAgencyRepository;
+    @Mock private CargoTicketRepository cargoTicketRepository;
 
     @InjectMocks
     private CargoTicketServiceImpl cargoTicketService;
@@ -143,5 +150,37 @@ class CargoTicketServiceValidationTest {
         assertDoesNotThrow(() -> {
             cargoTicketService.newCargoTicketValidation_onlyForTest(request, currentStaff);
         });
+    }
+
+    /**
+     * Verifies that a trip-staff-completed row remains receivable until a
+     * destination ticket staff member is recorded in deliveredBy.
+     */
+    @Test
+    @DisplayName("DELIVERED without deliveredBy can be acknowledged by destination ticket staff")
+    void confirmsProvisionalDeliveredCargoAtDestinationAgency() {
+        TicketAgency destinationAgency = TicketAgency.builder()
+                .ticketAgencyId(2)
+                .stopPointId(8)
+                .ticketAgencyName("Destination")
+                .isActive(true)
+                .build();
+        CargoTicket ticket = CargoTicket.builder()
+                .cargoTicketId(99)
+                .dropoffStopId(8)
+                .status("DELIVERED")
+                .build();
+
+        when(staffRepository.findByAccountId(123)).thenReturn(Optional.of(currentStaff));
+        when(ticketAgencyRepository.findByTicketAgencyIdAndIsActiveTrue(2))
+                .thenReturn(Optional.of(destinationAgency));
+        when(cargoTicketRepository.findByCargoTicketIdAndStatusNot(99, "ABANDONED"))
+                .thenReturn(Optional.of(ticket));
+
+        cargoTicketService.confirmReceived(99, 123);
+
+        assertEquals("DELIVERED", ticket.getStatus());
+        assertSame(currentStaff, ticket.getDeliveredBy());
+        verify(cargoTicketRepository).save(ticket);
     }
 }

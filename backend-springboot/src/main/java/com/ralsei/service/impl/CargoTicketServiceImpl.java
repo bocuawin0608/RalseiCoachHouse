@@ -12,6 +12,8 @@ import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.dto.response.cargoticket.CargoTicketResponse;
 import com.ralsei.dto.response.cargoticket.CargoOperationalTripResponse;
 import com.ralsei.dto.response.cargoticket.CargoOperationalTripPageResponse;
+import com.ralsei.dto.response.cargoticket.CargoReceivingTripPageResponse;
+import com.ralsei.dto.response.cargoticket.CargoReceivingTripResponse;
 import com.ralsei.dto.response.cargoticket.CargoTicketFormOptionsResponse;
 import com.ralsei.dto.response.cargoticket.CustomerContactResponse;
 import com.ralsei.dto.response.cargoticketdetail.CargoTicketDetailResponse;
@@ -81,7 +83,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
      * @return the all cargo tickets
      */
     public PagedResponse<CargoTicketResponse> getAllCargoTickets(
-            String status, Integer accountId, int page, int size) {
+            String status, Integer tripId, Integer accountId, int page, int size) {
         var pageable = PageRequest.of(page, size, Sort.by("cargoTicketId").descending());
         Staff currentStaff = requireAgencyStaff(accountId);
         Page<CargoTicket> result;
@@ -89,7 +91,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
             result = cargoTicketRepository.findAllForAgency(currentStaff.getTicketAgencyId(), pageable);
         } else {
             result = cargoTicketRepository.findStaffQueueByStatusAndAgency(
-                    status.trim().toUpperCase(), currentStaff.getTicketAgencyId(), pageable);
+                    status.trim().toUpperCase(), currentStaff.getTicketAgencyId(), tripId, pageable);
         }
         return new PagedResponse<>(
                 result.map(this::mapToResponse).getContent(),
@@ -140,6 +142,55 @@ public class CargoTicketServiceImpl implements CargoTicketService {
                 tripPage.getContent(), tripPage.getNumber(), tripPage.getSize(),
                 tripPage.getTotalElements(), tripPage.getTotalPages(), tripPage.isLast());
         return CargoOperationalTripPageResponse.builder()
+                .ticketAgencyId(agency.getTicketAgencyId())
+                .ticketAgencyName(agency.getTicketAgencyName())
+                .stopPointId(agencyStop.getStopPointId())
+                .stopPointName(agencyStop.getStopPointName())
+                .city(agencyStop.getCity())
+                .trips(trips)
+                .build();
+    }
+
+    @Override
+    /**
+     * Returns coaches that have unloaded cargo awaiting acknowledgement at the
+     * authenticated ticket staff member's destination office.
+     *
+     * @param accountId authenticated ticket-staff account
+     * @param page zero-based page number
+     * @param size requested page size
+     * @return office context and a page of receiving coaches
+     */
+    public CargoReceivingTripPageResponse getReceivingTrips(
+            Integer accountId, int page, int size) {
+        Staff currentStaff = requireAgencyStaff(accountId);
+        TicketAgency agency = ticketAgencyRepository
+                .findByTicketAgencyIdAndIsActiveTrue(currentStaff.getTicketAgencyId())
+                .orElseThrow(() -> new BusinessRuleException("Văn phòng vé của nhân viên không hoạt động."));
+        var agencyStop = coachStopRepository.findById(agency.getStopPointId())
+                .orElseThrow(() -> new BusinessRuleException("Văn phòng vé chưa được gán cho điểm dừng hợp lệ."));
+        Page<CargoReceivingTripResponse> tripPage = tripRepository
+                .findCargoReceivingTrips(agency.getTicketAgencyId(), PageRequest.of(page, size))
+                .map(trip -> CargoReceivingTripResponse.builder()
+                        .tripId(trip.getTripId())
+                        .routeName(trip.getRouteName())
+                        .departureTime(trip.getDepartureTime())
+                        .tripStatus(trip.getTripStatus())
+                        .licensePlate(trip.getLicensePlate())
+                        .coachTypeName(trip.getCoachTypeName())
+                        .driverName(trip.getDriverName())
+                        .driverPhone(trip.getDriverPhone())
+                        .driverCccd(trip.getDriverCccd())
+                        .attendantName(trip.getAttendantName())
+                        .attendantPhone(trip.getAttendantPhone())
+                        .attendantCccd(trip.getAttendantCccd())
+                        .lastCargoUpdateAt(trip.getLastCargoUpdateAt())
+                        .waitingOrderCount(trip.getWaitingOrderCount())
+                        .build());
+        PagedResponse<CargoReceivingTripResponse> trips = new PagedResponse<>(
+                tripPage.getContent(), tripPage.getNumber(), tripPage.getSize(),
+                tripPage.getTotalElements(), tripPage.getTotalPages(), tripPage.isLast());
+        return CargoReceivingTripPageResponse.builder()
                 .ticketAgencyId(agency.getTicketAgencyId())
                 .ticketAgencyName(agency.getTicketAgencyName())
                 .stopPointId(agencyStop.getStopPointId())
@@ -526,12 +577,33 @@ public class CargoTicketServiceImpl implements CargoTicketService {
 
     @Override
     @Transactional
-    public void confirmReceived(int id) {
+    /**
+     * Completes the destination ticket-office hand-off.
+     *
+     * <p>A DELIVERED row not yet attributed to TICKET_STAFF represents a
+     * trip-staff completion awaiting destination-office acknowledgement.</p>
+     *
+     * @param id cargo ticket identifier
+     * @param accountId authenticated destination ticket-staff account
+     */
+    public void confirmReceived(int id, Integer accountId) {
+        Staff currentStaff = requireAgencyStaff(accountId);
+        TicketAgency agency = ticketAgencyRepository
+                .findByTicketAgencyIdAndIsActiveTrue(currentStaff.getTicketAgencyId())
+                .orElseThrow(() -> new BusinessRuleException("Văn phòng vé của nhân viên không hoạt động."));
         CargoTicket ticket = findByIdOrThrow(id);
-        if (!"ARRIVED".equals(ticket.getStatus())) {
+        if (agency.getStopPointId() != ticket.getDropoffStopId()) {
+            throw new BusinessRuleException("Đơn hàng không thuộc văn phòng nhận của nhân viên.");
+        }
+        boolean awaitingReceipt = "ARRIVED".equals(ticket.getStatus())
+                || ("DELIVERED".equals(ticket.getStatus())
+                    && (ticket.getDeliveredBy() == null
+                        || !"TICKET_STAFF".equals(ticket.getDeliveredBy().getStaffPosition())));
+        if (!awaitingReceipt) {
             throw new BusinessRuleException("Chỉ đơn đã đến nơi mới có thể xác nhận nhận hàng.");
         }
         ticket.setStatus("DELIVERED");
+        ticket.setDeliveredBy(currentStaff);
         cargoTicketRepository.save(ticket);
     }
 
