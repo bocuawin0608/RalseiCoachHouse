@@ -730,8 +730,8 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
                 WHERE s.isActive = 1
                 GROUP BY ts.tripId
             ) seat_counts ON seat_counts.tripId = t.tripId
-            WHERE t.departureTime >= :dayStart
-              AND t.departureTime < :nextDayStart
+            WHERE t.departureTime >= CAST(:departureDate AS DATETIME2)
+              AND t.departureTime < CAST(:nextDepartureDate AS DATETIME2)
               AND (:city IS NULL OR city_info.departureCity = :city)
               AND (:timeFromMinute IS NULL OR DATEDIFF(MINUTE, CAST(t.departureTime AS DATE), t.departureTime) >= :timeFromMinute)
               AND (:timeToMinute IS NULL OR DATEDIFF(MINUTE, CAST(t.departureTime AS DATE), t.departureTime) <= :timeToMinute)
@@ -762,8 +762,8 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
                     ELSE LTRIM(RTRIM(r.routeName))
                 END AS departureCity
             ) city_info
-            WHERE t.departureTime >= :dayStart
-              AND t.departureTime < :nextDayStart
+            WHERE t.departureTime >= CAST(:departureDate AS DATETIME2)
+              AND t.departureTime < CAST(:nextDepartureDate AS DATETIME2)
               AND (:city IS NULL OR city_info.departureCity = :city)
               AND (:timeFromMinute IS NULL OR DATEDIFF(MINUTE, CAST(t.departureTime AS DATE), t.departureTime) >= :timeFromMinute)
               AND (:timeToMinute IS NULL OR DATEDIFF(MINUTE, CAST(t.departureTime AS DATE), t.departureTime) <= :timeToMinute)
@@ -777,8 +777,8 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
               AND (:driverName IS NULL OR LOWER(driver.staffName) LIKE LOWER(CONCAT('%', :driverName, '%')))
             """, nativeQuery = true)
     Page<StaffTripInfoProjection> findStaffTripInfos(
-            @Param("dayStart") LocalDateTime dayStart,
-            @Param("nextDayStart") LocalDateTime nextDayStart,
+            @Param("departureDate") LocalDate departureDate,
+            @Param("nextDepartureDate") LocalDate nextDepartureDate,
             @Param("city") String city,
             @Param("timeFromMinute") Integer timeFromMinute,
             @Param("timeToMinute") Integer timeToMinute,
