@@ -24,10 +24,13 @@ export const staffPassengerTicketApi = {
         return axiosClient.get(`/v1/trips/${tripId}/stops`);
     },
 
-    lockSeat(tripId, tripSeatId, holdToken) {
+    lockSeat(tripId, tripSeatId, holdToken, vacateTripSeatId = null) {
         return axiosClient.post(
             `/v1/staff/passenger-tickets/trips/${tripId}/seats/lock`,
-            { tripSeatIds: [tripSeatId] },
+            {
+                tripSeatIds: [tripSeatId],
+                vacateTripSeatId: vacateTripSeatId || undefined,
+            },
             { headers: { 'X-Staff-Seat-Session': holdToken, 'X-Staff-Seat-Lock-Mode': 'CHANGE_SEAT' } }
         );
     },
@@ -40,10 +43,15 @@ export const staffPassengerTicketApi = {
         );
     },
 
-    releaseSeats(tripId, tripSeatIds, holdToken) {
+    releaseSeats(tripId, tripSeatIds, holdToken, restoreVacatedTripSeatIds = null) {
         return axiosClient.post(
             `/v1/staff/passenger-tickets/trips/${tripId}/seats/release`,
-            { tripSeatIds },
+            {
+                tripSeatIds,
+                restoreVacatedTripSeatIds: restoreVacatedTripSeatIds?.length
+                    ? restoreVacatedTripSeatIds
+                    : undefined,
+            },
             { headers: { 'X-Staff-Seat-Session': holdToken } }
         );
     },

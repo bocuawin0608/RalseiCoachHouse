@@ -31,7 +31,7 @@ public interface StaffPassengerTicketChangeService {
 
     SeatLockResponse lockSeats(Integer tripId, SeatLockRequest request, String holdToken, String lockMode);
 
-    void releaseSeats(List<Integer> tripSeatIds, String holdToken);
+    void releaseSeats(List<Integer> tripSeatIds, String holdToken, List<Integer> restoreVacatedTripSeatIds);
 
     StaffPassengerTicketDetailResponse changeSeat(
         Integer accountId,

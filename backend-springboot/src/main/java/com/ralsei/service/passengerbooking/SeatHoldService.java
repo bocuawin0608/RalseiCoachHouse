@@ -13,4 +13,11 @@ public interface SeatHoldService {
     boolean extendLock(List<Integer> tripSeatIds, String holdToken, long newTtlSeconds);
 
     void forceReleaseSeatsByIds(List<Integer> tripSeatIds);
+
+    /** Marks trip seats as vacated within this hold session (same-ticket seat swaps). */
+    void markVacated(String holdToken, List<Integer> tripSeatIds, long ttlSeconds);
+
+    void clearVacated(String holdToken, List<Integer> tripSeatIds);
+
+    List<Integer> getVacatedSeatIdsByToken(String holdToken);
 }

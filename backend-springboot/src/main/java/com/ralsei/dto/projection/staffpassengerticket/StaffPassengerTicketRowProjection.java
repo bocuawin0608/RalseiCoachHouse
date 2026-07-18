@@ -26,6 +26,8 @@ public interface StaffPassengerTicketRowProjection {
     String getLicensePlate();
     String getVoucherCodeSnapshot();
     String getSoldByStaffName();
+    LocalDateTime getUpdatedAt();
+    String getUpdatedByStaffName();
     String getPaymentMethod();
     String getPaymentStatus();
     BigDecimal getPaymentAmount();

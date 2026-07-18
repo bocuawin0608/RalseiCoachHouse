@@ -184,7 +184,18 @@ export default function ChangeTicketSessionModal({
         view,
     ]);
 
-    /** Seats held by other passengers on this ticket (draft target or current seat). */
+    const activeDraft = activeSeatDetailId ? seatDrafts[activeSeatDetailId] : null;
+
+    /** Original seats vacated by any draft in this session (selectable again). */
+    const sessionAvailableTripSeatIds = useMemo(
+        () => confirmedSeats
+            .filter((seat) => seatDrafts[seat.ticketDetailId]?.newTripSeatId)
+            .map((seat) => seat.tripSeatId)
+            .filter(Boolean),
+        [confirmedSeats, seatDrafts]
+    );
+
+    /** Seats held by other passengers (draft target, or current if they have not moved). */
     const blockedTripSeatIds = useMemo(() => {
         const blocked = [];
         confirmedSeats.forEach((seat) => {
@@ -211,13 +222,44 @@ export default function ChangeTicketSessionModal({
         setError(null);
     };
 
+    const clearActiveSeatDraft = async (currentSeat, existingDraft) => {
+        await staffPassengerTicketApi.releaseSeats(
+            ticket.tripId,
+            [existingDraft.newTripSeatId],
+            seatHold.holdTokenRef.current,
+            currentSeat.tripSeatId ? [currentSeat.tripSeatId] : null
+        );
+        setSeatDrafts((prev) => {
+            const next = { ...prev };
+            delete next[activeSeatDetailId];
+            return next;
+        });
+    };
+
     const handleSameTripSeatClick = async (clickedSeat) => {
         if (!ticket?.tripId || !activeSeatDetailId || lockingSeat || submitting) return;
 
         const currentSeat = confirmedSeats.find((seat) => seat.ticketDetailId === activeSeatDetailId);
-        if (!currentSeat || clickedSeat.tripSeatId === currentSeat.tripSeatId) return;
+        if (!currentSeat) return;
 
         const existingDraft = seatDrafts[activeSeatDetailId];
+
+        // Click vacated original seat → cancel draft (do not keep old selection).
+        if (existingDraft && clickedSeat.tripSeatId === currentSeat.tripSeatId) {
+            setLockingSeat(true);
+            setError(null);
+            try {
+                await clearActiveSeatDraft(currentSeat, existingDraft);
+            } catch (requestError) {
+                setError(getErrorMessage(requestError, 'Không thể bỏ chọn ghế. Vui lòng thử lại.'));
+            } finally {
+                setLockingSeat(false);
+            }
+            return;
+        }
+
+        if (clickedSeat.tripSeatId === currentSeat.tripSeatId) return;
+
         const isDeselect = existingDraft?.newTripSeatId === clickedSeat.tripSeatId;
         if (!isDeselect && blockedTripSeatIds.includes(clickedSeat.tripSeatId)) return;
 
@@ -225,16 +267,7 @@ export default function ChangeTicketSessionModal({
         setError(null);
         try {
             if (isDeselect) {
-                await staffPassengerTicketApi.releaseSeats(
-                    ticket.tripId,
-                    [clickedSeat.tripSeatId],
-                    seatHold.holdTokenRef.current
-                );
-                setSeatDrafts((prev) => {
-                    const next = { ...prev };
-                    delete next[activeSeatDetailId];
-                    return next;
-                });
+                await clearActiveSeatDraft(currentSeat, existingDraft);
                 return;
             }
 
@@ -249,7 +282,8 @@ export default function ChangeTicketSessionModal({
             await staffPassengerTicketApi.lockSeat(
                 ticket.tripId,
                 clickedSeat.tripSeatId,
-                seatHold.holdTokenRef.current
+                seatHold.holdTokenRef.current,
+                currentSeat.tripSeatId
             );
 
             setSeatDrafts((prev) => ({
@@ -617,13 +651,12 @@ export default function ChangeTicketSessionModal({
                                 ) : (
                                     <TripSeatMapGrid
                                         layout={seatLayout}
-                                        currentTripSeatId={activeSeat?.tripSeatId}
+                                        currentTripSeatId={activeDraft ? null : activeSeat?.tripSeatId}
                                         selectedTripSeatIds={
-                                            activeSeatDetailId && seatDrafts[activeSeatDetailId]
-                                                ? [seatDrafts[activeSeatDetailId].newTripSeatId]
-                                                : []
+                                            activeDraft ? [activeDraft.newTripSeatId] : []
                                         }
                                         blockedTripSeatIds={blockedTripSeatIds}
+                                        sessionAvailableTripSeatIds={sessionAvailableTripSeatIds}
                                         onSeatClick={handleSameTripSeatClick}
                                     />
                                 )}

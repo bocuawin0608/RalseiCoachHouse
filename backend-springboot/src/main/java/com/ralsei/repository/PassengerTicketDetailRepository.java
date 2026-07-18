@@ -171,6 +171,8 @@ public interface PassengerTicketDetailRepository extends JpaRepository<Passenger
                co.licensePlate AS licensePlate,
                pt.voucherCodeSnapshot AS voucherCodeSnapshot,
                seller.staffName AS soldByStaffName,
+               pt.updatedAt AS updatedAt,
+               updater.staffName AS updatedByStaffName,
                pay.paymentMethod AS paymentMethod,
                pay.status AS paymentStatus,
                pay.amount AS paymentAmount,
@@ -192,6 +194,7 @@ public interface PassengerTicketDetailRepository extends JpaRepository<Passenger
         JOIN coach_type ct ON ct.coachTypeId = co.coachTypeId
         LEFT JOIN payment pay ON pay.passengerTicketId = pt.passengerTicketId
         LEFT JOIN staff seller ON seller.staffId = pt.soldBy
+        LEFT JOIN staff updater ON updater.accountId = pt.updatedBy
         LEFT JOIN accompanied_child ac ON ac.ticketDetailId = ptd.ticketDetailId
         WHERE pt.passengerTicketId IN (:passengerTicketIds)
         ORDER BY t.departureTime DESC, pt.passengerTicketId DESC, ptd.ticketDetailId ASC
@@ -217,6 +220,8 @@ public interface PassengerTicketDetailRepository extends JpaRepository<Passenger
                co.licensePlate AS licensePlate,
                pt.voucherCodeSnapshot AS voucherCodeSnapshot,
                seller.staffName AS soldByStaffName,
+               pt.updatedAt AS updatedAt,
+               updater.staffName AS updatedByStaffName,
                pay.paymentMethod AS paymentMethod,
                pay.status AS paymentStatus,
                pay.amount AS paymentAmount,
@@ -238,6 +243,7 @@ public interface PassengerTicketDetailRepository extends JpaRepository<Passenger
         JOIN coach_type ct ON ct.coachTypeId = co.coachTypeId
         LEFT JOIN payment pay ON pay.passengerTicketId = pt.passengerTicketId
         LEFT JOIN staff seller ON seller.staffId = pt.soldBy
+        LEFT JOIN staff updater ON updater.accountId = pt.updatedBy
         LEFT JOIN accompanied_child ac ON ac.ticketDetailId = ptd.ticketDetailId
         WHERE pt.ticketCode = :ticketCode
         ORDER BY ptd.ticketDetailId ASC

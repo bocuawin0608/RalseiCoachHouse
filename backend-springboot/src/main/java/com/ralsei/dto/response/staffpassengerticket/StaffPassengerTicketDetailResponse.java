@@ -25,6 +25,8 @@ public record StaffPassengerTicketDetailResponse(
     String voucherCodeSnapshot,
     String soldByStaffName,
     LocalDateTime bookedAt,
+    LocalDateTime updatedAt,
+    String updatedByStaffName,
     String paymentMethod,
     String paymentStatus,
     BigDecimal paymentAmount,
