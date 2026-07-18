@@ -166,9 +166,10 @@ public class StaffPassengerTicketChangeServiceImpl implements StaffPassengerTick
         List<Integer> availableSeatIds = tripSeatRepository.findTripSeatIdsByTripIdAndStatus(
             tripId, TripSeatStatus.AVAILABLE
         );
+        Set<Integer> vacatedSeatIds = new HashSet<>(seatHoldService.getVacatedSeatIdsByToken(holdToken));
 
         for (Integer tripSeatId : request.tripSeatIds()) {
-            if (!availableSeatIds.contains(tripSeatId)) {
+            if (!availableSeatIds.contains(tripSeatId) && !vacatedSeatIds.contains(tripSeatId)) {
                 throw new BusinessRuleException("Ghế đã được đặt hoặc không khả dụng. Vui lòng chọn ghế khác.");
             }
         }
@@ -176,6 +177,16 @@ public class StaffPassengerTicketChangeServiceImpl implements StaffPassengerTick
         if (!seatHoldService.lockSeats(request.tripSeatIds(), holdToken, STAFF_SEAT_HOLD_TTL_SECONDS)) {
             throw new BusinessRuleException("Ghế vừa được giữ bởi người khác. Vui lòng chọn ghế khác.");
         }
+
+        if (request.vacateTripSeatId() != null) {
+            seatHoldService.markVacated(
+                holdToken,
+                List.of(request.vacateTripSeatId()),
+                STAFF_SEAT_HOLD_TTL_SECONDS
+            );
+        }
+        // Newly locked seats are no longer "vacated" for other passengers in this session.
+        seatHoldService.clearVacated(holdToken, request.tripSeatIds());
 
         return new SeatLockResponse(
             request.tripSeatIds(),
@@ -186,17 +197,20 @@ public class StaffPassengerTicketChangeServiceImpl implements StaffPassengerTick
 
     @Override
     @Transactional
-    /**
-     * Executes the release seats operation.
-     *
-     * @param tripSeatIds the value supplied for this operation
-     * @param holdToken the value supplied for this operation
-     */
-    public void releaseSeats(List<Integer> tripSeatIds, String holdToken) {
-        if (holdToken == null || holdToken.isBlank() || tripSeatIds == null || tripSeatIds.isEmpty()) {
+    public void releaseSeats(
+        List<Integer> tripSeatIds,
+        String holdToken,
+        List<Integer> restoreVacatedTripSeatIds
+    ) {
+        if (holdToken == null || holdToken.isBlank()) {
             return;
         }
-        seatHoldService.releaseSeats(tripSeatIds, holdToken);
+        if (tripSeatIds != null && !tripSeatIds.isEmpty()) {
+            seatHoldService.releaseSeats(tripSeatIds, holdToken);
+        }
+        if (restoreVacatedTripSeatIds != null && !restoreVacatedTripSeatIds.isEmpty()) {
+            seatHoldService.clearVacated(holdToken, restoreVacatedTripSeatIds);
+        }
     }
 
     @Override
@@ -376,22 +390,8 @@ public class StaffPassengerTicketChangeServiceImpl implements StaffPassengerTick
 
         if (hasSeatChanges) {
             validateHoldSession(holdToken);
-            Set<Integer> newTripSeatIds = new HashSet<>();
-            for (StaffPassengerTicketSeatChangeItem seatChange : seatChanges) {
-                // Reload rows so seat ids stay consistent across multi-seat swaps.
-                rows = loadTicketRows(normalizedTicketCode);
-                StaffPassengerTicketRowProjection targetRow =
-                    requireDetailRow(rows, seatChange.ticketDetailId());
-                int newTripSeatId = applySeatChange(
-                    accountId,
-                    targetRow,
-                    seatChange.newTripSeatId(),
-                    holdToken
-                );
-                newTripSeatIds.add(newTripSeatId);
-                anyApplied = true;
-            }
-            seatHoldService.releaseSeats(new ArrayList<>(newTripSeatIds), holdToken);
+            applySameTripSeatChangesBatch(accountId, rows, seatChanges, holdToken);
+            anyApplied = true;
         }
 
         if (hasItineraryChange) {
@@ -427,6 +427,11 @@ public class StaffPassengerTicketChangeServiceImpl implements StaffPassengerTick
         if (!anyApplied) {
             return queryService.getDetail(normalizedTicketCode);
         }
+
+        PassengerTicket ticketForAudit = ticketRepository.findById(passengerTicketId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vé."));
+        ticketForAudit.setUpdatedBy(accountId);
+        ticketRepository.save(ticketForAudit);
 
         markTicketChangedIfNeeded(passengerTicketId, originalTicketStatus, accountId);
 
@@ -624,56 +629,106 @@ public class StaffPassengerTicketChangeServiceImpl implements StaffPassengerTick
         Integer newTripSeatId,
         String holdToken
     ) {
-        Trip trip = tripRepository.findById(targetRow.getTripId())
+        applySameTripSeatChangesBatch(
+            accountId,
+            List.of(targetRow),
+            List.of(new StaffPassengerTicketSeatChangeItem(targetRow.getTicketDetailId(), newTripSeatId)),
+            holdToken
+        );
+        return newTripSeatId;
+    }
+
+    /**
+     * Two-phase same-trip seat apply so passengers can swap into each other's vacated seats.
+     */
+    private void applySameTripSeatChangesBatch(
+        Integer accountId,
+        List<StaffPassengerTicketRowProjection> rows,
+        List<StaffPassengerTicketSeatChangeItem> seatChanges,
+        String holdToken
+    ) {
+        List<Integer> lockedSeatIds = seatHoldService.getTripSeatIdsByToken(holdToken);
+        Set<Integer> lockedSet = new HashSet<>(lockedSeatIds);
+        Set<Integer> requestedNewIds = new HashSet<>();
+        List<Integer> vacatedOldSeatIds = new ArrayList<>();
+        int tripId = rows.get(0).getTripId();
+
+        Trip trip = tripRepository.findById(tripId)
             .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyến xe."));
 
-        int currentTripSeatId = targetRow.getTripSeatId() != null ? targetRow.getTripSeatId() : 0;
+        record PendingSeatChange(
+            StaffPassengerTicketRowProjection row,
+            Integer newTripSeatId,
+            TripSeat newSeat
+        ) {}
 
-        policy.assertChangeSeatAllowed(
-            targetRow.getTicketStatus(),
-            targetRow.getDetailStatus(),
-            targetRow.getPaymentStatus(),
-            targetRow.getDepartureTime(),
-            trip.getStatus(),
-            currentTripSeatId,
-            newTripSeatId
-        );
+        List<PendingSeatChange> pending = new ArrayList<>();
+        for (StaffPassengerTicketSeatChangeItem seatChange : seatChanges) {
+            StaffPassengerTicketRowProjection targetRow =
+                requireDetailRow(rows, seatChange.ticketDetailId());
+            Integer newTripSeatId = seatChange.newTripSeatId();
+            int currentTripSeatId = targetRow.getTripSeatId() != null ? targetRow.getTripSeatId() : 0;
 
-        List<Integer> lockedSeatIds = seatHoldService.getTripSeatIdsByToken(holdToken);
-        if (!lockedSeatIds.contains(newTripSeatId)) {
-            throw new BusinessRuleException("Phiên giữ ghế không hợp lệ hoặc đã hết hạn. Vui lòng chọn lại ghế.");
+            policy.assertChangeSeatAllowed(
+                targetRow.getTicketStatus(),
+                targetRow.getDetailStatus(),
+                targetRow.getPaymentStatus(),
+                targetRow.getDepartureTime(),
+                trip.getStatus(),
+                currentTripSeatId,
+                newTripSeatId
+            );
+
+            if (!lockedSet.contains(newTripSeatId)) {
+                throw new BusinessRuleException(
+                    "Phiên giữ ghế không hợp lệ hoặc đã hết hạn. Vui lòng chọn lại ghế."
+                );
+            }
+            if (!requestedNewIds.add(newTripSeatId)) {
+                throw new BusinessRuleException("Không được chọn trùng ghế trong cùng một lần đổi.");
+            }
+            if (currentTripSeatId > 0) {
+                vacatedOldSeatIds.add(currentTripSeatId);
+            }
+
+            List<TripSeat> newSeats = tripSeatRepository.findByTripIdAndTripSeatIdInWithSeat(
+                tripId,
+                List.of(newTripSeatId)
+            );
+            if (newSeats.size() != 1) {
+                throw new BusinessRuleException("Ghế mới không thuộc chuyến xe này.");
+            }
+            pending.add(new PendingSeatChange(targetRow, newTripSeatId, newSeats.get(0)));
         }
 
-        List<TripSeat> newSeats = tripSeatRepository.findByTripIdAndTripSeatIdInWithSeat(
-            targetRow.getTripId(),
-            List.of(newTripSeatId)
-        );
-        if (newSeats.size() != 1) {
-            throw new BusinessRuleException("Ghế mới không thuộc chuyến xe này.");
+        Set<Integer> vacatedSet = new HashSet<>(vacatedOldSeatIds);
+        for (PendingSeatChange item : pending) {
+            TripSeatStatus status = item.newSeat().getStatus();
+            boolean ok = status == TripSeatStatus.AVAILABLE || vacatedSet.contains(item.newTripSeatId());
+            if (!ok) {
+                throw new BusinessRuleException("Ghế mới không còn trống. Vui lòng chọn ghế khác.");
+            }
         }
 
-        TripSeat newSeat = newSeats.get(0);
-        if (newSeat.getStatus() != TripSeatStatus.AVAILABLE) {
-            throw new BusinessRuleException("Ghế mới không còn trống. Vui lòng chọn ghế khác.");
+        if (!vacatedOldSeatIds.isEmpty()) {
+            tripSeatRepository.updateStatusByTripSeatIds(vacatedOldSeatIds, TripSeatStatus.AVAILABLE);
+            seatHoldService.forceReleaseSeatsByIds(vacatedOldSeatIds);
         }
 
-        PassengerTicketDetail detail = ticketDetailRepository.findById(targetRow.getTicketDetailId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ghế trong vé này."));
+        List<Integer> newIds = pending.stream().map(PendingSeatChange::newTripSeatId).toList();
+        tripSeatRepository.updateStatusByTripSeatIds(newIds, TripSeatStatus.SOLD);
 
-        int oldTripSeatId = detail.getTripSeatId();
-        if (oldTripSeatId > 0) {
-            tripSeatRepository.updateStatusByTripSeatIds(List.of(oldTripSeatId), TripSeatStatus.AVAILABLE);
-            seatHoldService.forceReleaseSeatsByIds(List.of(oldTripSeatId));
+        for (PendingSeatChange item : pending) {
+            PassengerTicketDetail detail = ticketDetailRepository.findById(item.row().getTicketDetailId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ghế trong vé này."));
+            detail.setTripSeatId(item.newTripSeatId());
+            detail.setSeatCodeSnapshot(item.newSeat().getSeat().getSeatCode());
+            detail.setUpdatedBy(accountId);
+            ticketDetailRepository.save(detail);
         }
 
-        tripSeatRepository.updateStatusByTripSeatIds(List.of(newTripSeatId), TripSeatStatus.SOLD);
-
-        detail.setTripSeatId(newTripSeatId);
-        detail.setSeatCodeSnapshot(newSeat.getSeat().getSeatCode());
-        detail.setUpdatedBy(accountId);
-        ticketDetailRepository.save(detail);
-
-        return newTripSeatId;
+        seatHoldService.releaseSeats(new ArrayList<>(newIds), holdToken);
+        seatHoldService.clearVacated(holdToken, vacatedOldSeatIds);
     }
 
     private void sendTicketUpdatedEmailAfterCommit(

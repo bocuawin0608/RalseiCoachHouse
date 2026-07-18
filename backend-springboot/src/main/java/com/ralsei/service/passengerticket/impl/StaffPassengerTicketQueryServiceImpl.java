@@ -288,6 +288,8 @@ public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicke
             first.getVoucherCodeSnapshot(),
             first.getSoldByStaffName(),
             first.getBookedAt(),
+            first.getUpdatedAt(),
+            first.getUpdatedByStaffName(),
             first.getPaymentMethod(),
             first.getPaymentStatus(),
             first.getPaymentAmount(),

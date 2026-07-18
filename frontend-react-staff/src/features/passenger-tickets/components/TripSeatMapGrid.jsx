@@ -5,15 +5,22 @@ function resolveDisplayStatus(
     currentTripSeatId,
     selectedTripSeatId,
     selectedTripSeatIds,
-    blockedTripSeatIds
+    blockedTripSeatIds,
+    sessionAvailableTripSeatIds
 ) {
     if (Array.isArray(selectedTripSeatIds) && selectedTripSeatIds.includes(seat.tripSeatId)) {
         return 'SELECTED';
     }
-    if (seat.tripSeatId === currentTripSeatId) return 'CURRENT';
     if (seat.tripSeatId === selectedTripSeatId) return 'SELECTED';
+    if (seat.tripSeatId === currentTripSeatId) return 'CURRENT';
     if (Array.isArray(blockedTripSeatIds) && blockedTripSeatIds.includes(seat.tripSeatId)) {
         return 'LOCKED';
+    }
+    if (
+        Array.isArray(sessionAvailableTripSeatIds)
+        && sessionAvailableTripSeatIds.includes(seat.tripSeatId)
+    ) {
+        return 'AVAILABLE';
     }
     return seat.status;
 }
@@ -54,11 +61,16 @@ export default function TripSeatMapGrid({
     selectedTripSeatId,
     selectedTripSeatIds,
     blockedTripSeatIds,
+    sessionAvailableTripSeatIds,
     maxSelectable,
     onSeatClick,
 }) {
     const multiSelectMode = Array.isArray(selectedTripSeatIds);
     const blockedIds = Array.isArray(blockedTripSeatIds) ? blockedTripSeatIds : [];
+    const sessionAvailableIds = Array.isArray(sessionAvailableTripSeatIds)
+        ? sessionAvailableTripSeatIds
+        : [];
+
     if (!layout?.floors?.length) {
         return <div className="text-muted text-center py-3">Không có sơ đồ ghế.</div>;
     }
@@ -88,18 +100,24 @@ export default function TripSeatMapGrid({
                                     currentTripSeatId,
                                     selectedTripSeatId,
                                     selectedTripSeatIds,
-                                    blockedIds
+                                    blockedIds,
+                                    sessionAvailableIds
                                 );
                                 const isSelected = multiSelectMode
                                     ? selectedTripSeatIds.includes(seat.tripSeatId)
                                     : seat.tripSeatId === selectedTripSeatId;
                                 const isBlocked = blockedIds.includes(seat.tripSeatId) && !isSelected;
+                                const isSessionAvailable = sessionAvailableIds.includes(seat.tripSeatId);
                                 const selectionFull = multiSelectMode
                                     && maxSelectable != null
                                     && selectedTripSeatIds.length >= maxSelectable
                                     && !isSelected;
                                 const isSelectable =
-                                    (seat.status === 'AVAILABLE' || isSelected)
+                                    (
+                                        seat.status === 'AVAILABLE'
+                                        || isSelected
+                                        || isSessionAvailable
+                                    )
                                     && seat.tripSeatId !== currentTripSeatId
                                     && !isBlocked
                                     && !selectionFull;
@@ -111,11 +129,12 @@ export default function TripSeatMapGrid({
                                         title={
                                             isBlocked
                                                 ? `Ghế ${seat.seatCode} (đã chọn cho hành khách khác)`
-                                                : `Ghế ${seat.seatCode}`
+                                                : isSessionAvailable
+                                                    ? `Ghế ${seat.seatCode} (trống trong phiên đổi vé)`
+                                                    : `Ghế ${seat.seatCode}`
                                         }
                                         style={{
                                             cursor: isSelectable ? 'pointer' : 'default',
-                                            opacity: displayStatus === 'CURRENT' ? 1 : undefined,
                                         }}
                                     >
                                         <SeatIcon

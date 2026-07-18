@@ -132,7 +132,11 @@ public class StaffPassengerTicketController {
         @Valid @RequestBody SeatLockRequest request,
         @RequestHeader("X-Staff-Seat-Session") @NotBlank String holdToken
     ) {
-        changeService.releaseSeats(request.tripSeatIds(), holdToken);
+        changeService.releaseSeats(
+            request.tripSeatIds(),
+            holdToken,
+            request.restoreVacatedTripSeatIds()
+        );
         return ResponseEntity.noContent().build();
     }
 

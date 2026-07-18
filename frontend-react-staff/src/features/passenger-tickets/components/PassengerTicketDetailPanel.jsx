@@ -92,6 +92,14 @@ export default function PassengerTicketDetailPanel({
                             <div className="text-muted small">Ngày đặt</div>
                             <div>{formatDateTime(ticket.bookedAt)}</div>
                         </Col>
+                        <Col md={6} lg={4}>
+                            <div className="text-muted small">Cập nhật lần cuối</div>
+                            <div>{formatDateTime(ticket.updatedAt)}</div>
+                        </Col>
+                        <Col md={6} lg={4}>
+                            <div className="text-muted small">Người cập nhật</div>
+                            <div>{ticket.updatedByStaffName || '—'}</div>
+                        </Col>
                     </Row>
 
                     <PassengerTicketActionsToolbar
