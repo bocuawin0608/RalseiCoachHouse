@@ -41,6 +41,7 @@ import com.ralsei.model.PassengerTicket;
 import com.ralsei.model.PassengerTicketDetail;
 import com.ralsei.model.Payment;
 import com.ralsei.model.RouteStop;
+import com.ralsei.model.Trip;
 import com.ralsei.model.TripSeat;
 import com.ralsei.model.Voucher;
 import com.ralsei.model.enums.PassengerTicketDetailStatus;
@@ -121,11 +122,8 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
      * @return the seat map
      */
     public List<TripSeatResponse> getSeatMap(Integer tripId) {
-        if(!tripRepo.existsById(tripId)) {
-            throw new ResourceNotFoundException("Không tìm thấy chuyến xe có ID là: " + tripId);
-        }
-        //TODO: check kỹ hơn tripId nào với status nào, departure time (now-8?) nào còn đc đặt vé
-        
+        assertTripBookable(tripId);
+
         List<TripSeatResponse> tripSeats = tripSeatRepo.getSeatMap(tripId);
         
         return tripSeats.stream().map(seat -> {
@@ -146,7 +144,7 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
      * @return the operation result
      */
     public SeatLockResponse lockSeats(Integer tripId, SeatLockRequest request, String holdToken) {
-        //TODO: check kỹ hơn tripId nào với status nào, departure time (now-8?) nào còn đc đặt vé
+        assertTripBookable(tripId);
 
         List<Integer> availableSeatIds = tripSeatRepo.findTripSeatIdsByTripIdAndStatus(tripId, TripSeatStatus.AVAILABLE);
         if(availableSeatIds.isEmpty() || !availableSeatIds.containsAll(request.tripSeatIds())) {
@@ -458,9 +456,8 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
         Integer tripId, String holdToken, Integer pickupStopId, 
         Integer dropoffStopId, Integer voucherId, String accessToken
     ) {
-        Integer routeId = tripRepo.findById(tripId).map(trip -> trip.getRouteId())
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyến xe có ID là: " + tripId));
-        //TODO: check kỹ hơn tripId nào với status nào, departure time (now-8?) nào còn đc đặt vé
+        Trip trip = assertTripBookable(tripId);
+        Integer routeId = trip.getRouteId();
 
         List<Integer> lockedSeatIds = seatHoldService.getTripSeatIdsByToken(holdToken);
         Map<Integer, TripSeat> tripSeatMap = validateAndFetchSeats(tripId, lockedSeatIds);
@@ -730,6 +727,23 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
                 throw new BusinessRuleException("Năm sinh của bé không thể > năm hiện tại!");
             }
         }
+    }
+
+    /**
+     * Customer booking is allowed only for SCHEDULED trips that have not departed yet.
+     * Aligns with customer trip search filters so deep-linked tripIds cannot bypass the list.
+     */
+    private Trip assertTripBookable(Integer tripId) {
+        Trip trip = tripRepo.findById(tripId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyến xe có ID là: " + tripId));
+
+        if (!"SCHEDULED".equals(trip.getStatus())) {
+            throw new BusinessRuleException("Chuyến xe này không còn mở để đặt vé!");
+        }
+        if (trip.getDepartureTime() == null || trip.getDepartureTime().isBefore(LocalDateTime.now())) {
+            throw new BusinessRuleException("Chuyến xe đã khởi hành hoặc đã quá giờ đặt vé!");
+        }
+        return trip;
     }
 
 }
