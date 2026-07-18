@@ -34,6 +34,10 @@ export const staffPassengerTicketApi = {
         return axiosClient.get(`/v1/staff/passenger-tickets/trips/${tripId}/seat-map`);
     },
 
+    getTripStops(tripId) {
+        return axiosClient.get(`/v1/trips/${tripId}/stops`);
+    },
+
     lockSeat(tripId, tripSeatId, holdToken) {
         return axiosClient.post(
             `/v1/staff/passenger-tickets/trips/${tripId}/seats/lock`,

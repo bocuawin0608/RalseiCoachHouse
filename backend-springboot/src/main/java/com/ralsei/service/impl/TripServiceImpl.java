@@ -280,9 +280,7 @@ public class TripServiceImpl implements TripService {
         if (departureDate.isBefore(today)) {
             throw new IllegalArgumentException("Không thể tra cứu chuyến xe trong quá khứ.");
         }
-        LocalDateTime selectedDayStart = departureDate.atStartOfDay();
-        LocalDateTime dayStart = selectedDayStart;
-        LocalDateTime nextDayStart = selectedDayStart.plusDays(1);
+        LocalDate nextDepartureDate = departureDate.plusDays(1);
 
         Integer timeFromMinute = parseOptionalTimeToMinute(timeFrom);
         Integer timeToMinute = parseOptionalTimeToMinute(timeTo);
@@ -304,8 +302,8 @@ public class TripServiceImpl implements TripService {
 
         Pageable pageable = PageRequest.of(Math.max(page, 0), Math.max(size, 1));
         Page<StaffTripInfoProjection> tripPage = tripRepository.findStaffTripInfos(
-                dayStart,
-                nextDayStart,
+                departureDate,
+                nextDepartureDate,
                 blankToNull(city),
                 timeFromMinute,
                 timeToMinute,

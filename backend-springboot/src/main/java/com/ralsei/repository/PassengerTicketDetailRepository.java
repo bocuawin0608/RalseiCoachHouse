@@ -39,7 +39,8 @@ public interface PassengerTicketDetailRepository extends JpaRepository<Passenger
     List<PassengerTicketDetail> findByPassengerTicketId(Integer passengerTicketId);
 
     /**
-     * Checks whether a phone number belongs to a fully paid, confirmed passenger.
+     * Checks whether a phone number belongs to a fully paid passenger
+     * ({@code CONFIRMED}/{@code CHANGED} ticket with {@code CONFIRMED}/{@code CHECKED_IN} detail).
      * Pending and failed payments must not bypass OTP verification.
      *
      * @param phone normalized local-format phone number
@@ -51,14 +52,15 @@ public interface PassengerTicketDetailRepository extends JpaRepository<Passenger
         JOIN PassengerTicket pt ON pt.passengerTicketId = ptd.passengerTicketId
         JOIN Payment p ON p.passengerTicketId = pt.passengerTicketId
         WHERE ptd.phone = :phone
-          AND pt.status = 'CONFIRMED'
-          AND ptd.status = 'CONFIRMED'
+          AND pt.status IN ('CONFIRMED', 'CHANGED')
+          AND ptd.status IN ('CONFIRMED', 'CHECKED_IN')
           AND p.status = 'COMPLETED'
     """)
     boolean existsConfirmedPaidByPhone(@Param("phone") String phone);
 
     /**
-     * Loads confirmed passenger profile snapshots with the latest payment first.
+     * Loads paid passenger profile snapshots ({@code CONFIRMED}/{@code CHANGED} +
+     * {@code CONFIRMED}/{@code CHECKED_IN}) with the latest payment first.
      * The caller supplies a one-row page when only the newest profile is needed.
      *
      * @param phone normalized local-format phone number
@@ -71,8 +73,8 @@ public interface PassengerTicketDetailRepository extends JpaRepository<Passenger
         JOIN PassengerTicket pt ON pt.passengerTicketId = ptd.passengerTicketId
         JOIN Payment p ON p.passengerTicketId = pt.passengerTicketId
         WHERE ptd.phone = :phone
-          AND pt.status = 'CONFIRMED'
-          AND ptd.status = 'CONFIRMED'
+          AND pt.status IN ('CONFIRMED', 'CHANGED')
+          AND ptd.status IN ('CONFIRMED', 'CHECKED_IN')
           AND p.status = 'COMPLETED'
         ORDER BY p.paymentTime DESC
     """)
