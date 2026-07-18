@@ -34,16 +34,18 @@ export default function CustomerHistoryPage() {
         }
     };
 
-    /** Cancellable after 24h from booking and until five hours before departure. */
-    const canCancel = (booking) => booking.status === 'CONFIRMED'
+    /** Active paid tickets (confirmed or staff-changed) after 24h booking age and >5h to departure. */
+    const isCancellableStatus = (status) => status === 'CONFIRMED' || status === 'CHANGED';
+
+    const canCancel = (booking) => isCancellableStatus(booking.status)
         && booking.bookedAt
         && pageOpenedAt >= new Date(booking.bookedAt).getTime() + CANCEL_MIN_AGE_MILLISECONDS
         && booking.departureTime
         && new Date(booking.departureTime).getTime() > pageOpenedAt + CANCELLATION_CUTOFF_MILLISECONDS;
 
     const cancelDisabledReason = (booking) => {
-        if (booking.status !== 'CONFIRMED') {
-            return 'Chỉ được hủy vé đã xác nhận';
+        if (!isCancellableStatus(booking.status)) {
+            return 'Chỉ được hủy vé đã thanh toán và chưa hủy';
         }
         if (!booking.bookedAt || pageOpenedAt < new Date(booking.bookedAt).getTime() + CANCEL_MIN_AGE_MILLISECONDS) {
             return 'Chỉ được hủy vé sau ít nhất 24 giờ kể từ thời điểm đặt vé';

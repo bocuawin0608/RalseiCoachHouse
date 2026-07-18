@@ -121,6 +121,8 @@ public class StaffPassengerTicketChangeServiceImpl implements StaffPassengerTick
 
         syncAccompaniedChild(ticketDetailId, accountId, request);
 
+        markTicketChangedIfNeeded(targetRow.getPassengerTicketId(), targetRow.getTicketStatus(), accountId);
+
         return queryService.getDetail(normalizedTicketCode);
     }
 
@@ -631,7 +633,7 @@ public class StaffPassengerTicketChangeServiceImpl implements StaffPassengerTick
                 context.pickupStop().getCoachStop().getStopPointId(),
                 context.dropoffStop().getCoachStop().getStopPointId(),
                 context.confirmedSeatCount(),
-                context.ticket().getVoucherId()
+                resolveReservedDiscountAmount(context)
             );
         } catch (BusinessRuleException ex) {
             return new StaffPassengerItineraryPreviewResponse(
@@ -658,6 +660,30 @@ public class StaffPassengerTicketChangeServiceImpl implements StaffPassengerTick
             !context.sameTrip(),
             context.sameTrip()
         );
+    }
+
+    /**
+     * Freezes the discount already granted at booking. Itinerary change must not
+     * re-check voucher window / min-order / usage against the new fare.
+     */
+    private BigDecimal resolveReservedDiscountAmount(ItineraryContext context) {
+        if (context.ticket().getVoucherId() == null) {
+            return BigDecimal.ZERO;
+        }
+
+        BigDecimal originalRaw = context.confirmedDetails().stream()
+            .map(PassengerTicketDetail::getPrice)
+            .filter(price -> price != null)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal originalNetPaid = context.header().getPaymentAmount() != null
+            ? context.header().getPaymentAmount()
+            : context.ticket().getTotalPrice();
+        if (originalNetPaid == null) {
+            return BigDecimal.ZERO;
+        }
+
+        return originalRaw.subtract(originalNetPaid).max(BigDecimal.ZERO);
     }
 
     private StaffPassengerTransferCandidateResponse toTransferCandidateResponse(
@@ -707,7 +733,7 @@ public class StaffPassengerTicketChangeServiceImpl implements StaffPassengerTick
         }
 
         if (!PassengerTicketStatus.CHANGED.name().equals(ticketStatus)) {
-            throw new BusinessRuleException("Trạng thái vé không hợp lệ để đổi ghế.");
+            throw new BusinessRuleException("Trạng thái vé không hợp lệ để cập nhật.");
         }
     }
 
