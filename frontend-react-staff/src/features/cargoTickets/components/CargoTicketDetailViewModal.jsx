@@ -150,20 +150,6 @@ export default function CargoTicketDetailViewModal({ ticket, onClose, readOnly =
                         </Button>
                     </div>
                 </div>
-                <div className="d-flex align-items-center ms-auto gap-2">
-                    {!isDraftMode ? (
-                        <Button variant="primary" className="fw-medium d-flex align-items-center custom-btn-general" onClick={handleEnableDraftMode}>
-                            <BsPencilFill className="me-2" /> Chế độ chỉnh sửa
-                        </Button>
-                    ) : isDraftMode ? (
-                        <>
-                            <Button variant="outline-secondary" className='fw-medium' onClick={handleCancelDraftMode} disabled={saving}>Hủy bỏ</Button>
-                            <Button variant="success" className='fw-medium' type="submit" form="draft-form" disabled={saving}>
-                                {saving ? <Spinner size="sm" /> : 'Lưu thay đổi'}
-                            </Button>
-                        </>
-                    ) : null}
-                </div>
             </Modal.Header>
             <Modal.Body className="p-4">
 
