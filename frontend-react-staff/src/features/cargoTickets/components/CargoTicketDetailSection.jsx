@@ -46,7 +46,11 @@ function DetailItem({ detail, index, cargoTypes, armedDeleteIndex, setArmedDelet
     };
 
     useEffect(() => {
-        if (!detail.cargoTypePriceId || detail.dimensionVol === undefined || detail.dimensionVol === '' || !detail.quantity) {
+        const vol = Number(detail.dimensionVol);
+        const weight = Number(detail.weightKg);
+        const qty = Number(detail.quantity);
+
+        if (!detail.cargoTypePriceId || !qty || vol <= 0 || weight <= 0) {
             if (detail.calculatedPrice !== undefined) {
                 onChange(index, 'calculatedPrice', undefined);
             }
@@ -56,8 +60,8 @@ function DetailItem({ detail, index, cargoTypes, armedDeleteIndex, setArmedDelet
         const timeoutId = setTimeout(() => {
             cargoTicketApi.calculatePrice({
                 cargoTypePriceId: Number(detail.cargoTypePriceId),
-                dimensionVol: Number(detail.dimensionVol),
-                quantity: Number(detail.quantity)
+                dimensionVol: vol,
+                quantity: qty
             }).then(res => {
                 if (detail.calculatedPrice !== res.calculatedPrice) {
                     onChange(index, 'calculatedPrice', res.calculatedPrice);
@@ -66,7 +70,7 @@ function DetailItem({ detail, index, cargoTypes, armedDeleteIndex, setArmedDelet
         }, 300);
 
         return () => clearTimeout(timeoutId);
-    }, [detail.cargoTypePriceId, detail.dimensionVol, detail.quantity, detail.calculatedPrice, index, onChange]);
+    }, [detail.cargoTypePriceId, detail.dimensionVol, detail.quantity, detail.calculatedPrice, detail.weightKg, index, onChange]);
 
     return (
         <div className="bg-light" style={{ borderRadius: '12px', padding: '1rem' }}>
@@ -202,7 +206,7 @@ export default function CargoTicketDetailSection({ draftDetails, onAdd, onChange
             <div className="d-flex justify-content-between align-items-center mb-3">
                 <h5 className="fw-bold mb-0">Chi tiết hàng hóa đính kèm</h5>
                 <Button className="d-flex align-items-center gap-2 custom-btn-general fw-medium" size="sm" onClick={onAdd}>
-                    <BsPlus size={18} /> Đính kèm thêm hàng hóa
+                    <BsPlus size={18} /> Đính kèm hàng hóa
                 </Button>
             </div>
 

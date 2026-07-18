@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Modal, Table, Spinner, Button } from 'react-bootstrap';
-import { BsPencilFill } from 'react-icons/bs';
+import { BsPencilFill, BsClipboard, BsCheck } from 'react-icons/bs';
 import { cargoTicketApi } from '../api/cargoTicketApi';
 import { useCargoTypes } from '../../cargo/hooks/useCargoTypes';
 import { formatCurrency } from '../../../utils/formatters';
@@ -115,36 +115,67 @@ export default function CargoTicketDetailViewModal({ ticket, onClose, readOnly =
         }
     };
 
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(ticket.ticketCode);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    const activeDetails = isDraftMode ? draftDetails : details;
+    const totalQuantity = activeDetails.reduce((sum, d) => sum + (Number(d.quantity) || 0), 0);
+    const totalWeightKg = activeDetails.reduce((sum, d) => sum + (Number(d.weightKg) || 0), 0);
+    const totalDimensionVol = activeDetails.reduce((sum, d) => sum + (Number(d.dimensionVol) || 0), 0);
+    const totalPrice = activeDetails.reduce((sum, d) => sum + (Number(d.calculatedPrice) || 0), 0);
+
     if (!ticket) return null;
 
     return (
-        <Modal show onHide={onClose} size="xl" centered backdrop="static">
-            <Modal.Header closeButton>
-                <Modal.Title>Chi tiết đơn gửi hàng: {ticket.ticketCode}</Modal.Title>
-            </Modal.Header>
-            <Modal.Body className="p-4">
-                <div className="d-flex justify-content-end mb-3 gap-2">
-                    {!isDraftMode && !readOnly ? (
+        <Modal show onHide={onClose} size="xl" centered backdrop="static" scrollable>
+            <Modal.Header>
+                <div>
+                    <Modal.Title className="fw-bold">Chi tiết đơn gửi hàng</Modal.Title>
+                    <div className="d-flex align-items-center gap-2 mt-1">
+                        <span className="text-primary fw-bold fs-16">{ticket.ticketCode}</span>
+                        <Button
+                            variant="light"
+                            size="sm"
+                            className="d-flex align-items-center justify-content-center p-1 text-muted shadow-sm"
+                            onClick={handleCopy}
+                            title="Sao chép mã đơn"
+                            style={{ width: '28px', height: '28px', borderRadius: '6px' }}
+                        >
+                            {copied ? <BsCheck size={18} className="text-success" /> : <BsClipboard size={16} />}
+                        </Button>
+                    </div>
+                </div>
+                <div className="d-flex align-items-center ms-auto gap-2">
+                    {!isDraftMode ? (
                         <Button variant="primary" className="fw-medium d-flex align-items-center custom-btn-general" onClick={handleEnableDraftMode}>
-                            <BsPencilFill className="me-2" /> Chỉnh sửa tất cả
+                            <BsPencilFill className="me-2" /> Chế độ chỉnh sửa
                         </Button>
                     ) : isDraftMode ? (
                         <>
                             <Button variant="outline-secondary" className='fw-medium' onClick={handleCancelDraftMode} disabled={saving}>Hủy bỏ</Button>
-                            <Button variant="success" className='fw-medium' onClick={handleSaveDraft} disabled={saving}>
+                            <Button variant="success" className='fw-medium' type="submit" form="draft-form" disabled={saving}>
                                 {saving ? <Spinner size="sm" /> : 'Lưu thay đổi'}
                             </Button>
                         </>
                     ) : null}
                 </div>
+            </Modal.Header>
+            <Modal.Body className="p-4">
 
                 {isDraftMode ? (
-                    <CargoTicketDetailSection
-                        draftDetails={draftDetails}
-                        onAdd={handleAddDetail}
-                        onChange={handleDetailChange}
-                        onRemove={handleRemoveDetail}
-                    />
+                    <form id="draft-form" onSubmit={(e) => { e.preventDefault(); handleSaveDraft(); }}>
+                        <CargoTicketDetailSection
+                            draftDetails={draftDetails}
+                            onAdd={handleAddDetail}
+                            onChange={handleDetailChange}
+                            onRemove={handleRemoveDetail}
+                        />
+                    </form>
                 ) : (
                     loadingDetails ? (
                         <div className="text-center p-5 text-secondary fw-medium">
@@ -153,38 +184,80 @@ export default function CargoTicketDetailViewModal({ ticket, onClose, readOnly =
                     ) : details.length === 0 ? (
                         <div className="text-center p-5 text-muted">Không có chi tiết hàng hóa nào.</div>
                     ) : (
-                        <Table responsive hover bordered className="align-middle">
-                            <thead className="table-light text-secondary">
-                                <tr>
-                                    <th>Loại hàng</th>
-                                    <th className="text-end">Số lượng</th>
-                                    <th className="text-end">Trọng lượng (kg)</th>
-                                    <th className="text-end">Thể tích (m3)</th>
-                                    <th className="text-end">Giá (VNĐ)</th>
-                                    <th>Mô tả</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {details.map((d) => {
-                                    const cargoType = cargoTypes.find(ct => ct.cargoTypePriceId === d.cargoTypePriceId);
-                                    const cargoTypeName = cargoType ? `${cargoType.cargoTypeName}` : `ID: ${d.cargoTypePriceId}`;
+                        <div className="d-flex flex-column" style={{ gap: '12px' }}>
+                            {details.map((d, index) => {
+                                const cargoType = cargoTypes.find(ct => ct.cargoTypePriceId === d.cargoTypePriceId);
+                                const cargoTypeName = cargoType ? `${cargoType.cargoTypeName}` : `ID: ${d.cargoTypePriceId}`;
 
-                                    return (
-                                        <tr key={d.cargoTicketDetailId}>
-                                            <td className="fw-medium">{cargoTypeName}</td>
-                                            <td className="text-end">{d.quantity}</td>
-                                            <td className="text-end">{d.weightKg}</td>
-                                            <td className="text-end">{d.dimensionVol}</td>
-                                            <td className="text-end fw-bold text-dark">{formatCurrency(d.calculatedPrice)}</td>
-                                            <td className="text-muted">{d.description || '-'}</td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </Table>
+                                return (
+                                    <div key={d.cargoTicketDetailId} className="bg-light" style={{ borderRadius: '12px', padding: '1rem' }}>
+                                        <div className="d-flex justify-content-between align-items-center mb-3">
+                                            <span className="fw-bold">Hàng hóa #{index + 1}</span>
+                                        </div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '16px', marginBottom: '16px' }}>
+                                            <div>
+                                                <div className="small text-muted fw-semibold mb-1">Loại hàng</div>
+                                                <div className="fw-medium text-dark bg-white border border-light" style={{ padding: '0.375rem 0.75rem', borderRadius: '0.375rem', minHeight: '38px', display: 'flex', alignItems: 'center' }}>
+                                                    {cargoTypeName}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className="small text-muted fw-semibold mb-1">Số lượng</div>
+                                                <div className="fw-medium text-dark bg-white border border-light" style={{ padding: '0.375rem 0.75rem', borderRadius: '0.375rem', minHeight: '38px', display: 'flex', alignItems: 'center' }}>
+                                                    {d.quantity}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className="small text-muted fw-semibold mb-1">Trọng lượng</div>
+                                                <div className="fw-medium text-dark bg-white border border-light position-relative" style={{ padding: '0.375rem 0.75rem', borderRadius: '0.375rem', minHeight: '38px', display: 'flex', alignItems: 'center' }}>
+                                                    {d.weightKg}
+                                                    <span className="position-absolute end-0 top-50 translate-middle-y me-3 text-muted small">kg</span>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className="small text-muted fw-semibold mb-1">Thể tích</div>
+                                                <div className="fw-medium text-dark bg-white border border-light position-relative" style={{ padding: '0.375rem 0.75rem', borderRadius: '0.375rem', minHeight: '38px', display: 'flex', alignItems: 'center' }}>
+                                                    {d.dimensionVol}
+                                                    <span className="position-absolute end-0 top-50 translate-middle-y me-3 text-muted small">m³</span>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className="small text-muted fw-semibold mb-1">Giá</div>
+                                                <div className="fw-bold text-dark bg-white border border-light position-relative" style={{ padding: '0.375rem 0.75rem', borderRadius: '0.375rem', minHeight: '38px', display: 'flex', alignItems: 'center' }}>
+                                                    {formatCurrency(d.calculatedPrice)}
+                                                    <span className="position-absolute end-0 top-50 translate-middle-y me-3 text-muted small"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {d.description && (
+                                            <div>
+                                                <div className="small text-muted fw-semibold mb-1">Mô tả</div>
+                                                <div className="fw-medium text-dark bg-white border border-light" style={{ padding: '0.375rem 0.75rem', borderRadius: '0.375rem', minHeight: '38px' }}>
+                                                    {d.description}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
                     )
                 )}
+
+                {!loadingDetails && activeDetails.length > 0 && (
+                    <div className="mt-3 d-flex justify-content-end align-items-center gap-3 small" style={{ padding: '0.5rem 1rem' }}>
+                        <span className="fw-bold text-dark">Tổng: {totalQuantity} kiện</span>
+                        <span className="text-muted fw-medium">{Number(totalWeightKg.toFixed(2))} kg</span>
+                        <span className="text-muted fw-medium">{Number(totalDimensionVol.toFixed(2))} m³</span>
+                        <span className="fw-bold text-success">{formatCurrency(totalPrice)}</span>
+                    </div>
+                )}
             </Modal.Body>
+            <Modal.Footer>
+                <Button variant="outline-secondary" className="fw-medium px-4" onClick={onClose} disabled={saving}>
+                    Đóng
+                </Button>
+            </Modal.Footer>
         </Modal>
     );
 }
