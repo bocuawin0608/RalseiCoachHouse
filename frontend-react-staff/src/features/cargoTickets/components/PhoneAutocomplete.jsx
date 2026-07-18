@@ -6,10 +6,12 @@ export default function PhoneAutocomplete({ label, prefix, data, onChange, setFo
     const [suggestions, setSuggestions] = useState([]);
     const [show, setShow] = useState(false);
     const skipSearch = useRef(false);
+    const hasFocused = useRef(false);
 
     const phone = data[`${prefix}Phone`];
 
     useEffect(() => {
+        if (!hasFocused.current) return;
         if (!phone || phone.length < 3) {
             setSuggestions([]);
             setShow(false);
@@ -58,7 +60,7 @@ export default function PhoneAutocomplete({ label, prefix, data, onChange, setFo
                 required
                 maxLength={20}
                 onBlur={() => setTimeout(() => setShow(false), 200)}
-                onFocus={() => { if (suggestions.length > 0) setShow(true) }}
+                onFocus={() => { hasFocused.current = true; if (suggestions.length > 0) setShow(true); }}
             />
             {show && suggestions.length > 0 && (
                 <div className="position-absolute w-100 bg-white border rounded shadow-sm mt-1 z-3" style={{ maxHeight: '200px', overflowY: 'auto' }}>
