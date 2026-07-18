@@ -7,30 +7,25 @@ import org.springframework.stereotype.Component;
 
 import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.exception.ResourceNotFoundException;
-import com.ralsei.model.Voucher;
-import com.ralsei.model.enums.VoucherType;
 import com.ralsei.repository.RouteStopRepository;
 import com.ralsei.repository.TripRepository;
 import com.ralsei.repository.TripSeatRepository;
-import com.ralsei.service.VoucherService;
 
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Prices a proposed itinerary change for an already-paid passenger ticket.
+ * Voucher eligibility is not re-evaluated here: the discount applied at booking
+ * is treated as a reserved amount and subtracted from the new raw fare.
+ */
 @Component
 @RequiredArgsConstructor
-/**
- * Provides the staff ticket itinerary price calculator component for the application.
- */
 public class StaffTicketItineraryPriceCalculator {
 
     private final TripRepository tripRepository;
     private final TripSeatRepository tripSeatRepository;
     private final RouteStopRepository routeStopRepository;
-    private final VoucherService voucherService;
 
-    /**
-     * Provides the price breakdown component for the application.
-     */
     public record PriceBreakdown(
         BigDecimal basePrice,
         BigDecimal surcharge,
@@ -44,7 +39,7 @@ public class StaffTicketItineraryPriceCalculator {
         Integer pickupStopId,
         Integer dropoffStopId,
         int seatCount,
-        Integer voucherId
+        BigDecimal reservedDiscountAmount
     ) {
         if (seatCount <= 0) {
             throw new BusinessRuleException("Vé không có ghế hợp lệ để tính giá.");
@@ -59,10 +54,17 @@ public class StaffTicketItineraryPriceCalculator {
 
         BigDecimal surcharge = calculateSurcharge(routeId, pickupStopId, dropoffStopId);
         BigDecimal totalRaw = basePrice.add(surcharge).multiply(BigDecimal.valueOf(seatCount));
-        BigDecimal discountAmount = calculateDiscount(voucherId, totalRaw);
+        BigDecimal discountAmount = resolveReservedDiscount(reservedDiscountAmount, totalRaw);
         BigDecimal netPaid = totalRaw.subtract(discountAmount).setScale(0, RoundingMode.HALF_UP).max(BigDecimal.ZERO);
 
         return new PriceBreakdown(basePrice, surcharge, totalRaw, discountAmount, netPaid);
+    }
+
+    private BigDecimal resolveReservedDiscount(BigDecimal reservedDiscountAmount, BigDecimal totalRaw) {
+        if (reservedDiscountAmount == null || reservedDiscountAmount.signum() <= 0) {
+            return BigDecimal.ZERO;
+        }
+        return reservedDiscountAmount.min(totalRaw);
     }
 
     private BigDecimal calculateSurcharge(Integer routeId, Integer pickupStopId, Integer dropoffStopId) {
@@ -90,26 +92,5 @@ public class StaffTicketItineraryPriceCalculator {
             surcharge = surcharge.add(dropoff.getCoachStop().getSurcharge());
         }
         return surcharge;
-    }
-
-    private BigDecimal calculateDiscount(Integer voucherId, BigDecimal totalRaw) {
-        if (voucherId == null) {
-            return BigDecimal.ZERO;
-        }
-
-        Voucher voucher = voucherService.getEligibleVoucher(voucherId, totalRaw);
-        if (voucher == null) {
-            throw new BusinessRuleException("Mã giảm giá không còn hợp lệ với giá vé mới.");
-        }
-
-        BigDecimal discount = VoucherType.FIXED.getValue().equals(voucher.getDiscountType())
-            ? voucher.getDiscountValue()
-            : totalRaw.multiply(voucher.getDiscountValue())
-                .divide(BigDecimal.valueOf(100), 0, RoundingMode.HALF_UP);
-
-        if (voucher.getMaxDiscountValue() != null) {
-            discount = discount.min(voucher.getMaxDiscountValue());
-        }
-        return discount.min(totalRaw);
     }
 }
