@@ -29,6 +29,7 @@ export const formatCustomerCurrency = (value) => new Intl.NumberFormat('vi-VN', 
  */
 export const formatCustomerTicketStatus = (status) => ({
     CONFIRMED: 'Đã thanh toán',
+    CHANGED: 'Đã thanh toán (có thay đổi)',
     PENDING: 'Chờ thanh toán',
     CANCELLED: 'Đã hủy',
     EXPIRED: 'Đã hết hạn',
