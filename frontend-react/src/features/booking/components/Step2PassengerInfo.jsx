@@ -17,6 +17,7 @@ import { bookingValidationRules, validateChildBirthYearValue } from '../utils/bo
 import { buildTripShellLabels, computePickupPresentBy, formatPickupPresentByLabel } from '../utils/tripInfo';
 import TripSummaryPanel from './TripSummaryPanel';
 import PhoneOtpModal from './PhoneOtpModal';
+import BookingTermsConsent from './BookingTermsConsent';
 
 export default function Step2PassengerInfo({ tripId }) {
     const dispatch = useDispatch();
@@ -51,6 +52,7 @@ export default function Step2PassengerInfo({ tripId }) {
             pickupStopId: '',
             dropoffStopId: '',
             voucherId: '',
+            acceptTerms: false,
             passengers: selectedSeats.map(seatObj => ({
                 tripSeatId: seatObj.tripSeatId,
                 seatCode: seatObj.seatCode,
@@ -408,6 +410,13 @@ export default function Step2PassengerInfo({ tripId }) {
                                 </Row>
                             </Card>
                         </div>
+
+                        <div className="mt-4 pt-2">
+                            <BookingTermsConsent
+                                register={register}
+                                error={errors.acceptTerms}
+                            />
+                        </div>
                     </Col>
 
                     {/* CỘT PHẢI: THÔNG TIN CHUYẾN + VOUCHER */}
@@ -551,8 +560,6 @@ export default function Step2PassengerInfo({ tripId }) {
                                     </div>
                                 )}
                             </div>
-
-                            <hr className="my-3" style={{ borderColor: '#e0e0e0' }} />
 
                             <div className="d-flex justify-content-center pt-2">
                                 <button
