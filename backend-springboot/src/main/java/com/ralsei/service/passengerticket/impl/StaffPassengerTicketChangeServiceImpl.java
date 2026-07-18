@@ -121,6 +121,8 @@ public class StaffPassengerTicketChangeServiceImpl implements StaffPassengerTick
 
         syncAccompaniedChild(ticketDetailId, accountId, request);
 
+        markTicketChangedIfNeeded(targetRow.getPassengerTicketId(), targetRow.getTicketStatus(), accountId);
+
         return queryService.getDetail(normalizedTicketCode);
     }
 
@@ -707,7 +709,7 @@ public class StaffPassengerTicketChangeServiceImpl implements StaffPassengerTick
         }
 
         if (!PassengerTicketStatus.CHANGED.name().equals(ticketStatus)) {
-            throw new BusinessRuleException("Trạng thái vé không hợp lệ để đổi ghế.");
+            throw new BusinessRuleException("Trạng thái vé không hợp lệ để cập nhật.");
         }
     }
 

@@ -7,6 +7,10 @@ const PHONE_PATTERN = /^0(3|5|7|8|9)[0-9]{8}$/;
 const EMAIL_PATTERN = /^[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}$/;
 const FULL_NAME_PATTERN = /^[\p{L}][\p{L}\s'.\-]{1,99}$/u;
 
+/** Aligned with passenger booking + AccompaniedChildDTO (0–6 years old). */
+const getChildBirthYearMax = () => new Date().getFullYear();
+const getChildBirthYearMin = () => getChildBirthYearMax() - 6;
+
 function buildInitialForm(seat) {
     const hasChild = Boolean(seat?.childFullname);
     return {
@@ -48,11 +52,12 @@ function validateForm(form) {
         }
 
         const birthYear = Number(form.childBirthYear);
-        const currentYear = new Date().getFullYear();
+        const minBirthYear = getChildBirthYearMin();
+        const maxBirthYear = getChildBirthYearMax();
         if (!form.childBirthYear) {
             errors.childBirthYear = 'Vui lòng nhập năm sinh của bé.';
-        } else if (!Number.isInteger(birthYear) || birthYear < 2010 || birthYear > currentYear) {
-            errors.childBirthYear = `Năm sinh phải từ 2010 đến ${currentYear}.`;
+        } else if (!Number.isInteger(birthYear) || birthYear < minBirthYear || birthYear > maxBirthYear) {
+            errors.childBirthYear = 'Trẻ em đi kèm phải từ 0 đến 6 tuổi.';
         }
     }
 
@@ -251,8 +256,8 @@ export default function ChangePassengerInfoModal({
                                 </Form.Label>
                                 <Form.Control
                                     type="number"
-                                    min={2010}
-                                    max={new Date().getFullYear()}
+                                    min={getChildBirthYearMin()}
+                                    max={getChildBirthYearMax()}
                                     value={form.childBirthYear}
                                     onChange={(e) => handleChange('childBirthYear', e.target.value)}
                                     className="py-2"
