@@ -1,26 +1,30 @@
 package com.ralsei.service.impl;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.time.LocalDateTime;
-import java.math.BigDecimal;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ralsei.dto.notification.PassengerTicketCancellationEmailPayload;
 import com.ralsei.dto.notification.PassengerTicketEmailPayload;
 import com.ralsei.dto.projection.customer.CustomerTicketHistoryProjection;
-import com.ralsei.dto.response.customer.CustomerTicketHistoryResponse;
-import com.ralsei.dto.response.customer.CustomerTicketHistoryResponse.CustomerTicketSeatResponse;
 import com.ralsei.dto.request.customer.CustomerTicketCancellationRequest;
 import com.ralsei.dto.response.customer.CustomerTicketCancellationResponse;
+import com.ralsei.dto.response.customer.CustomerTicketHistoryResponse;
+import com.ralsei.dto.response.customer.CustomerTicketHistoryResponse.CustomerTicketSeatResponse;
 import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.exception.ResourceNotFoundException;
+import com.ralsei.model.PassengerTicket;
+import com.ralsei.model.PassengerTicketDetail;
 import com.ralsei.model.Payment;
 import com.ralsei.model.Refund;
 import com.ralsei.model.enums.PassengerTicketDetailStatus;
@@ -36,8 +40,6 @@ import com.ralsei.service.notification.PassengerTicketEmailAssembler;
 import com.ralsei.service.notification.TicketEmailService;
 import com.ralsei.service.passengerbooking.SeatHoldService;
 import com.ralsei.util.QRCreateUitility;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -135,7 +137,9 @@ public class CustomerTicketHistoryServiceImpl implements CustomerTicketHistorySe
         validateAccountId(accountId);
 
         CustomerTicketHistoryResponse ownedTicket = getOwnedTicket(accountId, ticketCode);
-        if (!PassengerTicketStatus.CONFIRMED.name().equals(ownedTicket.status())) {
+        boolean ticketActive = PassengerTicketStatus.CONFIRMED.name().equals(ownedTicket.status())
+            || PassengerTicketStatus.CHANGED.name().equals(ownedTicket.status());
+        if (!ticketActive) {
             throw new BusinessRuleException("Chỉ vé đã thanh toán và chưa hủy mới có thể yêu cầu hoàn tiền.");
         }
         if (ownedTicket.bookedAt() == null
@@ -147,6 +151,22 @@ public class CustomerTicketHistoryServiceImpl implements CustomerTicketHistorySe
         LocalDateTime cancellationDeadline = LocalDateTime.now().plusHours(CANCELLATION_CUTOFF_HOURS);
         if (ownedTicket.departureTime() == null || !ownedTicket.departureTime().isAfter(cancellationDeadline)) {
             throw new BusinessRuleException("Chỉ có thể hủy vé trước giờ xuất bến ít nhất 5 tiếng.");
+        }
+
+        PassengerTicket ticketEntity = ticketRepository.findById(ownedTicket.passengerTicketId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vé trong tài khoản của bạn."));
+        if (ticketEntity.getMajorChangeType() != null) {
+            throw new BusinessRuleException(
+                "Vé đã sử dụng quyền đổi chuyến hoặc hủy vé. Không thể thực hiện thêm thao tác này."
+            );
+        }
+
+        List<PassengerTicketDetail> seatDetails =
+            ticketDetailRepository.findByPassengerTicketId(ownedTicket.passengerTicketId());
+        boolean hasCheckedInSeat = seatDetails.stream()
+            .anyMatch(detail -> PassengerTicketDetailStatus.CHECKED_IN.name().equals(detail.getStatus()));
+        if (hasCheckedInSeat) {
+            throw new BusinessRuleException("Không thể hủy vé khi có ghế đã check-in.");
         }
 
         Payment payment = paymentRepository.findByPassengerTicketId(ownedTicket.passengerTicketId())
@@ -163,6 +183,13 @@ public class CustomerTicketHistoryServiceImpl implements CustomerTicketHistorySe
             PassengerTicketStatus.CONFIRMED,
             PassengerTicketStatus.CANCELLED
         );
+        if (updatedTickets == 0) {
+            updatedTickets = ticketRepository.updateStatusIfCurrent(
+                ownedTicket.passengerTicketId(),
+                PassengerTicketStatus.CHANGED,
+                PassengerTicketStatus.CANCELLED
+            );
+        }
         if (updatedTickets != 1) {
             throw new BusinessRuleException("Trạng thái vé vừa thay đổi. Vui lòng tải lại lịch sử.");
         }
@@ -181,14 +208,16 @@ public class CustomerTicketHistoryServiceImpl implements CustomerTicketHistorySe
         payment.setRefundAmount(refundAmount);
         paymentRepository.save(payment);
 
-        Refund refund = refundRepository.save(Refund.builder()
+        Refund refund = Refund.builder()
             .paymentId(payment.getPaymentId())
             .amount(refundAmount)
             .reason(CUSTOMER_CANCELLATION_REASON)
             .refundMethod("BANK_TRANSFER")
             .status("PENDING")
             .callbackData(serializeBankDestination(request))
-            .build());
+            .build();
+        refund.setCreatedBy(accountId);
+        refundRepository.save(refund);
 
         PassengerTicketEmailPayload emailTicket =
             passengerTicketEmailAssembler.assemble(ownedTicket.passengerTicketId());
