@@ -1,11 +1,20 @@
 import SeatIcon from '../../../components/common/SeatIcon';
 
-function resolveDisplayStatus(seat, currentTripSeatId, selectedTripSeatId, selectedTripSeatIds) {
+function resolveDisplayStatus(
+    seat,
+    currentTripSeatId,
+    selectedTripSeatId,
+    selectedTripSeatIds,
+    blockedTripSeatIds
+) {
     if (Array.isArray(selectedTripSeatIds) && selectedTripSeatIds.includes(seat.tripSeatId)) {
         return 'SELECTED';
     }
     if (seat.tripSeatId === currentTripSeatId) return 'CURRENT';
     if (seat.tripSeatId === selectedTripSeatId) return 'SELECTED';
+    if (Array.isArray(blockedTripSeatIds) && blockedTripSeatIds.includes(seat.tripSeatId)) {
+        return 'LOCKED';
+    }
     return seat.status;
 }
 
@@ -44,10 +53,12 @@ export default function TripSeatMapGrid({
     currentTripSeatId,
     selectedTripSeatId,
     selectedTripSeatIds,
+    blockedTripSeatIds,
     maxSelectable,
     onSeatClick,
 }) {
     const multiSelectMode = Array.isArray(selectedTripSeatIds);
+    const blockedIds = Array.isArray(blockedTripSeatIds) ? blockedTripSeatIds : [];
     if (!layout?.floors?.length) {
         return <div className="text-muted text-center py-3">Không có sơ đồ ghế.</div>;
     }
@@ -76,11 +87,13 @@ export default function TripSeatMapGrid({
                                     seat,
                                     currentTripSeatId,
                                     selectedTripSeatId,
-                                    selectedTripSeatIds
+                                    selectedTripSeatIds,
+                                    blockedIds
                                 );
                                 const isSelected = multiSelectMode
                                     ? selectedTripSeatIds.includes(seat.tripSeatId)
                                     : seat.tripSeatId === selectedTripSeatId;
+                                const isBlocked = blockedIds.includes(seat.tripSeatId) && !isSelected;
                                 const selectionFull = multiSelectMode
                                     && maxSelectable != null
                                     && selectedTripSeatIds.length >= maxSelectable
@@ -88,13 +101,18 @@ export default function TripSeatMapGrid({
                                 const isSelectable =
                                     (seat.status === 'AVAILABLE' || isSelected)
                                     && seat.tripSeatId !== currentTripSeatId
+                                    && !isBlocked
                                     && !selectionFull;
 
                                 return (
                                     <div
                                         key={seat.tripSeatId}
                                         onClick={() => isSelectable && onSeatClick?.(seat)}
-                                        title={`Ghế ${seat.seatCode}`}
+                                        title={
+                                            isBlocked
+                                                ? `Ghế ${seat.seatCode} (đã chọn cho hành khách khác)`
+                                                : `Ghế ${seat.seatCode}`
+                                        }
                                         style={{
                                             cursor: isSelectable ? 'pointer' : 'default',
                                             opacity: displayStatus === 'CURRENT' ? 1 : undefined,

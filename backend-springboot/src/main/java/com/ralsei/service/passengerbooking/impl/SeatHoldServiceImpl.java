@@ -81,14 +81,27 @@ public class SeatHoldServiceImpl implements SeatHoldService {
      * @return the operation result
      */
     public boolean releaseSeats(List<Integer> tripSeatIds, String holdToken) {
-        for (Integer tripSeatId : tripSeatIds) {
-            String key = buildLockKey(tripSeatId);
-            if(holdToken.equals(redisTemplate.opsForValue().get(key))){
-                redisTemplate.delete(key);
-            }
+        if (holdToken == null || holdToken.isBlank() || tripSeatIds == null || tripSeatIds.isEmpty()) {
+            return true;
         }
 
-        redisTemplate.delete(buildSessionKey(holdToken));
+        String sessionKey = buildSessionKey(holdToken);
+        for (Integer tripSeatId : tripSeatIds) {
+            if (tripSeatId == null) {
+                continue;
+            }
+            String key = buildLockKey(tripSeatId);
+            if (holdToken.equals(redisTemplate.opsForValue().get(key))) {
+                redisTemplate.delete(key);
+            }
+            // Keep other held seats in the same session (multi-seat staff change).
+            redisTemplate.opsForSet().remove(sessionKey, String.valueOf(tripSeatId));
+        }
+
+        Long remaining = redisTemplate.opsForSet().size(sessionKey);
+        if (remaining == null || remaining == 0L) {
+            redisTemplate.delete(sessionKey);
+        }
 
         return true;
     }

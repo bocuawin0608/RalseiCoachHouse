@@ -17,12 +17,16 @@ function getErrorMessage(error, fallback) {
     return error.response?.data?.message || fallback;
 }
 
-export function useItineraryChangeWorkflow({ isOpen, mode, ticket, onClose, onSuccess }) {
+/** Draft workflow for same-trip stop change or transfer; confirm is owned by ChangeTicketSessionModal. */
+export function useItineraryChangeWorkflow({
+    isOpen,
+    mode,
+    ticket,
+}) {
     const isTransferMode = mode === 'transfer';
     const keepCurrentTrip = !isTransferMode;
     const [state, dispatch] = useReducer(itineraryChangeReducer, ITINERARY_CHANGE_INITIAL_STATE);
     const requestIdsRef = useRef({ candidates: 0, stops: 0, seats: 0, preview: 0 });
-    const closingRef = useRef(false);
     const {
         busy: locking,
         holdTokenRef,
@@ -105,7 +109,6 @@ export function useItineraryChangeWorkflow({ isOpen, mode, ticket, onClose, onSu
     useEffect(() => {
         if (!isOpen || !ticket) return undefined;
 
-        closingRef.current = false;
         beginSession();
         invalidateRequests();
         dispatch({
@@ -171,6 +174,18 @@ export function useItineraryChangeWorkflow({ isOpen, mode, ticket, onClose, onSu
         void loadSeatMap(state.selectedTripId);
     }, [isOpen, isTransferMode, loadSeatMap, loadStops, state.selectedTripId]);
 
+    /** Same-trip: no diff vs current stops (or stops not loaded yet). Transfer: untouched until a trip is chosen. */
+    const hasNoChanges = keepCurrentTrip
+        ? (
+            !state.pickupStopId
+            || !state.dropoffStopId
+            || (
+                Number(state.pickupStopId) === Number(ticket?.pickupStopId)
+                && Number(state.dropoffStopId) === Number(ticket?.dropoffStopId)
+            )
+        )
+        : !state.selectedTripId;
+
     useEffect(() => {
         const seatsReady = keepCurrentTrip
             || state.selectedTripSeatIds.length === confirmedSeatCount;
@@ -180,6 +195,7 @@ export function useItineraryChangeWorkflow({ isOpen, mode, ticket, onClose, onSu
             || !state.pickupStopId
             || !state.dropoffStopId
             || !seatsReady
+            || hasNoChanges
         ) {
             requestIdsRef.current.preview += 1;
             dispatch({ type: 'PREVIEW_CLEARED' });
@@ -217,6 +233,7 @@ export function useItineraryChangeWorkflow({ isOpen, mode, ticket, onClose, onSu
         return () => window.clearTimeout(timerId);
     }, [
         confirmedSeatCount,
+        hasNoChanges,
         isOpen,
         keepCurrentTrip,
         state.dropoffStopId,
@@ -255,7 +272,7 @@ export function useItineraryChangeWorkflow({ isOpen, mode, ticket, onClose, onSu
     }, [resetHeldSeats]);
 
     const handleSeatClick = useCallback(async (clickedSeat) => {
-        if (keepCurrentTrip || locking || state.submitting || clickedSeat.status !== 'AVAILABLE') return;
+        if (keepCurrentTrip || locking || clickedSeat.status !== 'AVAILABLE') return;
         const seatId = clickedSeat.tripSeatId;
         const isSelected = state.selectedTripSeatIds.includes(seatId);
 
@@ -295,16 +312,8 @@ export function useItineraryChangeWorkflow({ isOpen, mode, ticket, onClose, onSu
         releaseSeat,
         state.selectedTripId,
         state.selectedTripSeatIds,
-        state.submitting,
     ]);
 
-    const hasNoChanges = Boolean(
-        keepCurrentTrip
-        && ticket?.pickupStopId
-        && ticket?.dropoffStopId
-        && Number(state.pickupStopId) === Number(ticket.pickupStopId)
-        && Number(state.dropoffStopId) === Number(ticket.dropoffStopId)
-    );
     const canSubmit = Boolean(
         state.preview?.eligible
         && state.pickupStopId
@@ -316,50 +325,35 @@ export function useItineraryChangeWorkflow({ isOpen, mode, ticket, onClose, onSu
         ))
     );
 
-    const handleClose = useCallback(async () => {
-        if (state.submitting || closingRef.current) return;
-        closingRef.current = true;
-        invalidateRequests();
-        await rotateSession();
-        onClose();
-    }, [invalidateRequests, onClose, rotateSession, state.submitting]);
-
-    const handleSubmit = useCallback(async () => {
-        if (!ticket || !state.preview?.eligible || hasNoChanges || locking) return;
-        dispatch({ type: 'SUBMITTING' });
-        try {
-            const updatedTicket = await staffPassengerTicketApi.changeItinerary(
-                ticket.ticketCode,
-                createItineraryChangePayload({
-                    keepCurrentTrip,
-                    selectedTripId: state.selectedTripId,
-                    pickupStopId: state.pickupStopId,
-                    dropoffStopId: state.dropoffStopId,
-                    selectedTripSeatIds: state.selectedTripSeatIds,
-                }),
-                keepCurrentTrip ? undefined : holdTokenRef.current
-            );
-            forgetSession();
-            onSuccess?.(updatedTicket);
-            onClose();
-        } catch (error) {
-            dispatch({
-                type: 'ERROR_SET',
-                message: getErrorMessage(error, 'Không thể đổi hành trình.'),
-            });
-        } finally {
-            dispatch({ type: 'SUBMIT_FINISHED' });
+    const getDraft = useCallback(() => {
+        if (hasNoChanges || !canSubmit) {
+            return {
+                ready: false,
+                payload: null,
+                holdToken: null,
+            };
         }
+
+        return {
+            ready: true,
+            payload: createItineraryChangePayload({
+                keepCurrentTrip,
+                selectedTripId: state.selectedTripId,
+                pickupStopId: state.pickupStopId,
+                dropoffStopId: state.dropoffStopId,
+                selectedTripSeatIds: state.selectedTripSeatIds,
+            }),
+            holdToken: keepCurrentTrip ? null : holdTokenRef.current,
+        };
     }, [
-        forgetSession,
+        canSubmit,
         hasNoChanges,
         holdTokenRef,
         keepCurrentTrip,
-        locking,
-        onClose,
-        onSuccess,
-        state,
-        ticket,
+        state.dropoffStopId,
+        state.pickupStopId,
+        state.selectedTripId,
+        state.selectedTripSeatIds,
     ]);
 
     return {
@@ -367,7 +361,7 @@ export function useItineraryChangeWorkflow({ isOpen, mode, ticket, onClose, onSu
         isTransferMode,
         keepCurrentTrip,
         locking,
-        interactionDisabled: locking || state.submitting,
+        interactionDisabled: locking,
         routeOptions,
         loadingRoutes,
         confirmedSeatCount,
@@ -376,13 +370,13 @@ export function useItineraryChangeWorkflow({ isOpen, mode, ticket, onClose, onSu
         canSearchTransferTrips,
         hasNoChanges,
         canSubmit,
+        getDraft,
+        forgetSession,
         handleRouteChange,
         handleDepartureDateChange,
         handleTripChange,
         handlePickupChange: (stopId) => dispatch({ type: 'PICKUP_CHANGED', stopId }),
         handleDropoffChange: (stopId) => dispatch({ type: 'DROPOFF_CHANGED', stopId }),
         handleSeatClick,
-        handleClose,
-        handleSubmit,
     };
 }

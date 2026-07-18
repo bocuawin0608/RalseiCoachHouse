@@ -32,7 +32,6 @@ import com.ralsei.repository.TripRepository;
 import com.ralsei.service.passengerticket.PassengerTicketStaffPolicy;
 import com.ralsei.service.passengerticket.StaffPassengerTicketQueryService;
 import com.ralsei.util.PhoneNumberUtility;
-import com.ralsei.util.QRCreateUitility;
 
 import lombok.RequiredArgsConstructor;
 
@@ -52,7 +51,6 @@ public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicke
     private final RefundRepository refundRepository;
     private final TripRepository tripRepository;
     private final PassengerTicketStaffPolicy policy;
-    private final QRCreateUitility qrCreateUitility;
 
     @Override
     @Transactional(readOnly = true)
@@ -125,22 +123,6 @@ public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicke
         }
 
         return assembleDetail(rows, loadRefunds(rows.get(0).getPassengerTicketId()));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    /**
-     * Returns the seat qr image.
-     *
-     * @param ticketCode the value supplied for this operation
-     * @param ticketDetailId the value supplied for this operation
-     *
-     * @return the seat qr image
-     */
-    public byte[] getSeatQrImage(String ticketCode, Integer ticketDetailId) {
-        String token = ticketDetailRepository.findStaffQrToken(ticketCode, ticketDetailId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy mã QR của ghế."));
-        return qrCreateUitility.createPng(token);
     }
 
     private List<RefundItem> loadRefunds(Integer passengerTicketId) {

@@ -21,6 +21,4 @@ public interface StaffPassengerTicketQueryService {
     );
 
     StaffPassengerTicketDetailResponse getDetail(String ticketCode);
-
-    byte[] getSeatQrImage(String ticketCode, Integer ticketDetailId);
 }
