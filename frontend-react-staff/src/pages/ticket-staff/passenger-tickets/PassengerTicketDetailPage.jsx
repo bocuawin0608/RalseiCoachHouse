@@ -4,35 +4,22 @@ import { BsArrowLeft } from 'react-icons/bs';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
     CancelFullTicketModal,
-    ChangePassengerInfoModal,
-    ChangeSeatModal,
-    ItineraryChangeModal,
+    ChangeTicketSessionModal,
     PassengerTicketDetailPanel,
-    PassengerTicketSeatQrModal,
     usePassengerTicketDetail,
-    usePassengerTicketSeatQr,
 } from '../../../features/passenger-tickets';
 
 export default function PassengerTicketDetailPage() {
     const { ticketCode } = useParams();
     const navigate = useNavigate();
     const { data, loading, error, applyDetail, refetch } = usePassengerTicketDetail(ticketCode);
-    const { qrPreview, showQr, closeQr } = usePassengerTicketSeatQr(ticketCode);
-    const [editPassengerSeat, setEditPassengerSeat] = useState(null);
-    const [changeSeatTarget, setChangeSeatTarget] = useState(null);
-    const [itineraryChangeOpen, setItineraryChangeOpen] = useState(false);
-    const [itineraryModalMode, setItineraryModalMode] = useState('same-trip');
+    const [changeTicketOpen, setChangeTicketOpen] = useState(false);
     const [cancelOpen, setCancelOpen] = useState(false);
 
     const handleBack = () => {
-        closeQr();
-        setEditPassengerSeat(null);
-        setChangeSeatTarget(null);
-        setItineraryChangeOpen(false);
-        setItineraryModalMode('same-trip');
+        setChangeTicketOpen(false);
         setCancelOpen(false);
 
-        // Browser history already holds the search URL with filters from before detail.
         if (window.history.length > 1) {
             navigate(-1);
             return;
@@ -41,11 +28,7 @@ export default function PassengerTicketDetailPage() {
         navigate('/staff/passenger-tickets/search');
     };
 
-    const handleDetailUpdated = (updatedTicket) => {
-        applyDetail(updatedTicket);
-    };
-
-    const handleItinerarySuccess = async (updatedTicket) => {
+    const handleDetailUpdated = async (updatedTicket) => {
         applyDetail(updatedTicket);
         await refetch();
     };
@@ -78,51 +61,17 @@ export default function PassengerTicketDetailPage() {
             {!loading && !error && data && (
                 <PassengerTicketDetailPanel
                     ticket={data}
-                    onShowQr={showQr}
-                    onEditPassenger={setEditPassengerSeat}
-                    onChangeSeat={setChangeSeatTarget}
-                    onChangeItinerary={() => {
-                        setItineraryModalMode('same-trip');
-                        setItineraryChangeOpen(true);
-                    }}
-                    onTransferTrip={() => {
-                        setItineraryModalMode('transfer');
-                        setItineraryChangeOpen(true);
-                    }}
+                    onChangeTicket={() => setChangeTicketOpen(true)}
                     onCancelTicket={() => setCancelOpen(true)}
-                    suppressCancel={itineraryChangeOpen && itineraryModalMode === 'transfer'}
-                    activeQrDetailId={qrPreview?.ticketDetailId}
-                    qrLoading={Boolean(qrPreview?.loading)}
+                    suppressCancel={changeTicketOpen}
                 />
             )}
 
-            <PassengerTicketSeatQrModal preview={qrPreview} onClose={closeQr} />
-
-            <ChangePassengerInfoModal
-                isOpen={Boolean(editPassengerSeat)}
-                ticketCode={ticketCode}
-                seat={editPassengerSeat}
-                onClose={() => setEditPassengerSeat(null)}
-                onSuccess={handleDetailUpdated}
-            />
-
-            <ChangeSeatModal
-                isOpen={Boolean(changeSeatTarget)}
+            <ChangeTicketSessionModal
+                isOpen={changeTicketOpen}
                 ticket={data}
-                seat={changeSeatTarget}
-                onClose={() => setChangeSeatTarget(null)}
+                onClose={() => setChangeTicketOpen(false)}
                 onSuccess={handleDetailUpdated}
-            />
-
-            <ItineraryChangeModal
-                isOpen={itineraryChangeOpen}
-                mode={itineraryModalMode}
-                ticket={data}
-                onClose={() => {
-                    setItineraryChangeOpen(false);
-                    setItineraryModalMode('same-trip');
-                }}
-                onSuccess={handleItinerarySuccess}
             />
 
             <CancelFullTicketModal

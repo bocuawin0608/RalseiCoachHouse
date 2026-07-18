@@ -9,20 +9,6 @@ export const staffPassengerTicketApi = {
         return axiosClient.get(`/v1/staff/passenger-tickets/${encodeURIComponent(ticketCode)}`);
     },
 
-    getSeatQrBlob(ticketCode, ticketDetailId) {
-        return axiosClient.get(
-            `/v1/staff/passenger-tickets/${encodeURIComponent(ticketCode)}/details/${ticketDetailId}/qr`,
-            { responseType: 'blob' }
-        );
-    },
-
-    changePassengerInfo(ticketCode, ticketDetailId, payload) {
-        return axiosClient.patch(
-            `/v1/staff/passenger-tickets/${encodeURIComponent(ticketCode)}/details/${ticketDetailId}/passenger-info`,
-            payload
-        );
-    },
-
     cancelFull(ticketCode, payload) {
         return axiosClient.post(
             `/v1/staff/passenger-tickets/${encodeURIComponent(ticketCode)}/cancel`,
@@ -62,14 +48,6 @@ export const staffPassengerTicketApi = {
         );
     },
 
-    changeSeat(ticketCode, ticketDetailId, newTripSeatId, holdToken) {
-        return axiosClient.patch(
-            `/v1/staff/passenger-tickets/${encodeURIComponent(ticketCode)}/details/${ticketDetailId}/seat`,
-            { newTripSeatId },
-            { headers: { 'X-Staff-Seat-Session': holdToken } }
-        );
-    },
-
     getTransferCandidates(ticketCode, { departureDate, routeId, excludeCurrentTrip = true }) {
         return axiosClient.get(
             `/v1/staff/passenger-tickets/${encodeURIComponent(ticketCode)}/transfer-candidates`,
@@ -91,10 +69,10 @@ export const staffPassengerTicketApi = {
         );
     },
 
-    changeItinerary(ticketCode, payload, holdToken) {
+    confirmChanges(ticketCode, payload, holdToken) {
         const headers = holdToken ? { 'X-Staff-Seat-Session': holdToken } : undefined;
-        return axiosClient.patch(
-            `/v1/staff/passenger-tickets/${encodeURIComponent(ticketCode)}/itinerary`,
+        return axiosClient.post(
+            `/v1/staff/passenger-tickets/${encodeURIComponent(ticketCode)}/changes`,
             payload,
             headers ? { headers } : undefined
         );

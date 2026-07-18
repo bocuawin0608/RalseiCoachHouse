@@ -13,7 +13,6 @@ export const ITINERARY_CHANGE_INITIAL_STATE = {
     loadingStops: false,
     loadingSeats: false,
     previewing: false,
-    submitting: false,
     error: null,
 };
 
@@ -101,10 +100,6 @@ export function itineraryChangeReducer(state, action) {
             return { ...state, preview: action.preview, previewing: false };
         case 'PREVIEW_CLEARED':
             return { ...state, preview: null, previewing: false };
-        case 'SUBMITTING':
-            return { ...state, submitting: true, error: null };
-        case 'SUBMIT_FINISHED':
-            return { ...state, submitting: false };
         case 'REQUEST_FAILED':
             return {
                 ...state,

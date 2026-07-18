@@ -101,6 +101,57 @@ public class TicketEmailServiceImpl implements TicketEmailService {
     }
 
     /**
+     * Creates one readable update email after staff confirms ticket changes.
+     * Includes boarding QR codes for the current seat assignments.
+     *
+     * @param payload complete current ticket snapshot
+     */
+    @Override
+    public void sendTicketUpdated(PassengerTicketEmailPayload payload) {
+        validatePayload(payload);
+
+        Map<String, byte[]> inlineImages = new LinkedHashMap<>();
+        List<SeatEmailView> seatViews = new ArrayList<>();
+        for (int index = 0; index < payload.seats().size(); index++) {
+            PassengerSeatEmailItem seat = payload.seats().get(index);
+            String qrContentId = null;
+            if (seat.boardingToken() != null && !seat.boardingToken().isBlank()) {
+                qrContentId = "boarding-qr-" + index;
+                inlineImages.put(qrContentId, qrCreateUitility.createPng(seat.boardingToken()));
+            }
+            seatViews.add(new SeatEmailView(
+                seat.seatCode(),
+                seat.passengerName(),
+                seat.passengerPhone(),
+                qrContentId
+            ));
+        }
+
+        Context context = new Context(VIETNAMESE_LOCALE);
+        context.setVariable("ticket", payload);
+        context.setVariable("seats", seatViews);
+        context.setVariable("seatNumbers", payload.seats().stream()
+            .map(PassengerSeatEmailItem::seatCode)
+            .toList());
+        context.setVariable("coachNumber", extractLastFourDigits(payload.coachLicensePlate()));
+        context.setVariable("departureTime", formatDateTime(payload.departureTime()));
+        context.setVariable("arrivalTime", formatDateTime(payload.arrivalTime()));
+        context.setVariable("pickupTime", formatDateTime(payload.pickupPresentBy()));
+        context.setVariable("paidAt", formatDateTime(payload.paidAt()));
+        context.setVariable("formattedTotal", NumberFormat.getCurrencyInstance(VIETNAMESE_LOCALE)
+            .format(payload.totalPrice()));
+
+        String htmlBody = templateEngine.process("email/passenger-ticket-updated", context);
+        emailUtility.sendHtml(
+            payload.primaryEmail(),
+            "Vé đã được cập nhật " + payload.ticketCode() + " - Nhà xe Ralsei",
+            htmlBody,
+            inlineImages
+        );
+        log.info("Sent passenger ticket update for ticketCode={}", payload.ticketCode());
+    }
+
+    /**
      * Creates one readable cancellation email for the primary passenger. The
      * email intentionally omits boarding QR codes because cancelled boarding
      * tokens must not be presented as usable travel documents.

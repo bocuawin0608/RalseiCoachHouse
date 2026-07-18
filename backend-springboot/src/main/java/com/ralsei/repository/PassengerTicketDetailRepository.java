@@ -246,19 +246,4 @@ public interface PassengerTicketDetailRepository extends JpaRepository<Passenger
         @Param("ticketCode") String ticketCode
     );
 
-    /** Returns a boarding token for staff QR preview on confirmed seats. */
-    @Query(value = """
-        SELECT ptd.qrcode
-        FROM passenger_ticket_detail ptd
-        JOIN passenger_ticket pt ON pt.passengerTicketId = ptd.passengerTicketId
-        WHERE ptd.ticketDetailId = :ticketDetailId
-          AND pt.ticketCode = :ticketCode
-          AND pt.status IN ('CONFIRMED', 'CHANGED')
-          AND ptd.status IN ('CONFIRMED', 'CHECKED_IN')
-        """, nativeQuery = true)
-    java.util.Optional<String> findStaffQrToken(
-        @Param("ticketCode") String ticketCode,
-        @Param("ticketDetailId") Integer ticketDetailId
-    );
-
 }

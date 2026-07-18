@@ -3,8 +3,6 @@ package com.ralsei.controller;
 import java.time.LocalDate;
 
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.CacheControl;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
@@ -23,6 +21,7 @@ import com.ralsei.dto.request.staffpassengerticket.StaffPassengerChangePassenger
 import com.ralsei.dto.request.staffpassengerticket.StaffPassengerChangeSeatRequest;
 import com.ralsei.dto.request.staffpassengerticket.StaffPassengerItineraryChangeRequest;
 import com.ralsei.dto.request.staffpassengerticket.StaffPassengerTicketCancelRequest;
+import com.ralsei.dto.request.staffpassengerticket.StaffPassengerTicketChangesRequest;
 import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.dto.response.passengerbooking.SeatLockResponse;
 import com.ralsei.dto.response.passengerbooking.TripSeatResponse;
@@ -80,17 +79,6 @@ public class StaffPassengerTicketController {
         @PathVariable @Pattern(regexp = "[A-Za-z0-9_-]{3,64}") String ticketCode
     ) {
         return ResponseEntity.ok(queryService.getDetail(ticketCode));
-    }
-
-    @GetMapping(value = "/{ticketCode:[A-Za-z0-9_-]+}/details/{detailId}/qr", produces = MediaType.IMAGE_PNG_VALUE)
-    public ResponseEntity<byte[]> getSeatQr(
-        @PathVariable @Pattern(regexp = "[A-Za-z0-9_-]{3,64}") String ticketCode,
-        @PathVariable("detailId") @Min(1) Integer ticketDetailId
-    ) {
-        return ResponseEntity.ok()
-            .cacheControl(CacheControl.noStore())
-            .contentType(MediaType.IMAGE_PNG)
-            .body(queryService.getSeatQrImage(ticketCode, ticketDetailId));
     }
 
     @PatchMapping("/{ticketCode:[A-Za-z0-9_-]+}/details/{detailId}/passenger-info")
@@ -198,6 +186,21 @@ public class StaffPassengerTicketController {
         @Valid @RequestBody StaffPassengerItineraryChangeRequest request
     ) {
         return ResponseEntity.ok(changeService.changeItinerary(
+            jwtService.extractAccountId(authorizationHeader),
+            ticketCode,
+            request,
+            holdToken
+        ));
+    }
+
+    @PostMapping("/{ticketCode:[A-Za-z0-9_-]+}/changes")
+    public ResponseEntity<StaffPassengerTicketDetailResponse> confirmChanges(
+        @RequestHeader("Authorization") String authorizationHeader,
+        @RequestHeader(value = "X-Staff-Seat-Session", required = false) String holdToken,
+        @PathVariable @Pattern(regexp = "[A-Za-z0-9_-]{3,64}") String ticketCode,
+        @Valid @RequestBody StaffPassengerTicketChangesRequest request
+    ) {
+        return ResponseEntity.ok(changeService.confirmChanges(
             jwtService.extractAccountId(authorizationHeader),
             ticketCode,
             request,
