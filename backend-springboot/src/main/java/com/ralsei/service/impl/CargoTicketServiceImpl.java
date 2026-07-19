@@ -246,6 +246,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
      */
     public CargoTicketResponse createCargoTicket(CargoTicketRequest request, Integer accountId) {
         Staff currentStaff = requireAgencyStaff(accountId);
+        requireTripOpenForCargo(request.getTripId());
         applyCreateBusinessDefaults(request, currentStaff);
         String ticketCode = generateTicketCode();
         validateReferences(request, currentStaff);
@@ -756,6 +757,23 @@ public class CargoTicketServiceImpl implements CargoTicketService {
             throw new BusinessRuleException("Nhân viên chưa được gán cho văn phòng vé đang hoạt động.");
         }
         return staff;
+    }
+
+    /**
+     * Rejects every trip that has already started or otherwise left the scheduled
+     * state before any cargo ticket or payment row is created.
+     *
+     * @param tripId trip selected by ticket staff
+     */
+    private void requireTripOpenForCargo(Integer tripId) {
+        if (tripId == null) {
+            throw new BusinessRuleException("Đơn hàng phải được gán cho một chuyến xe.");
+        }
+        var trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyến đi có ID là: " + tripId));
+        if (!"SCHEDULED".equals(trip.getStatus())) {
+            throw new BusinessRuleException("Chuyến xe đã khởi hành hoặc không còn hoạt động, không thể nhận thêm hàng.");
+        }
     }
 
     /**
