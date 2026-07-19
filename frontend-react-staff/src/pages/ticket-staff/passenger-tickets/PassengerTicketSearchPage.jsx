@@ -20,6 +20,7 @@ export default function PassengerTicketSearchPage() {
         pageInfo,
         setPageInfo,
         handleFilterChange,
+        handleStatusCheckboxChange,
         handleReset,
         handleSearch,
     } = usePassengerTicketSearch();
@@ -45,6 +46,7 @@ export default function PassengerTicketSearchPage() {
             <PassengerTicketSearchFilters
                 filters={filters}
                 onFilterChange={handleFilterChange}
+                onStatusCheckboxChange={handleStatusCheckboxChange}
                 onReset={handleReset}
                 onSearch={handleSearch}
                 searching={loading}

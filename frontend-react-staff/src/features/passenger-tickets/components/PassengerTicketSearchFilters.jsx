@@ -1,17 +1,19 @@
 import { BsArrowClockwise } from 'react-icons/bs';
-import { Button, Card, Col, Form, Row } from 'react-bootstrap';
+import { Badge, Button, Card, Col, Dropdown, Form, Row } from 'react-bootstrap';
 import { useRouteDropdown } from '../../../hooks/useRouteDropdown';
-import { hasVisibleSearchFilter } from '../utils/passengerTicketFormatters';
+import { hasVisibleSearchFilter, TICKET_STATUS_LABELS } from '../utils/passengerTicketFormatters';
 
 export default function PassengerTicketSearchFilters({
     filters,
     onFilterChange,
+    onStatusCheckboxChange,
     onReset,
     onSearch,
     searching,
 }) {
     const { routes, loading: routesLoading } = useRouteDropdown(true);
     const canSearch = hasVisibleSearchFilter(filters);
+    const selectedStatuses = filters.statuses || [];
 
     const handleSubmit = (event) => {
         event.preventDefault();
@@ -47,13 +49,41 @@ export default function PassengerTicketSearchFilters({
 
                         <Col md={6} lg={2}>
                             <Form.Label className="small fw-semibold text-secondary">Trạng thái</Form.Label>
-                            <Form.Select name="status" value={filters.status} onChange={onFilterChange}>
-                                <option value="">Tất cả</option>
-                                <option value="PENDING">Đang xử lý</option>
-                                <option value="CONFIRMED">Đã xác nhận</option>
-                                <option value="CHANGED">Có thay đổi</option>
-                                <option value="CANCELLED">Đã hủy</option>
-                            </Form.Select>
+                            <Dropdown>
+                                <Dropdown.Toggle
+                                    variant="outline-secondary"
+                                    className="w-100 text-start d-flex justify-content-between align-items-center border"
+                                    style={{ backgroundColor: '#fff', color: '#495057' }}
+                                >
+                                    <span className="text-truncate">
+                                        {selectedStatuses.length === 0
+                                            ? 'Tất cả trạng thái'
+                                            : `Đã chọn (${selectedStatuses.length})`}
+                                    </span>
+                                </Dropdown.Toggle>
+                                <Dropdown.Menu
+                                    className="p-3 w-100 shadow-sm"
+                                    onClick={(event) => event.stopPropagation()}
+                                >
+                                    {Object.keys(TICKET_STATUS_LABELS).map((statusKey) => (
+                                        <Form.Check
+                                            key={statusKey}
+                                            type="checkbox"
+                                            id={`passenger-ticket-status-${statusKey}`}
+                                            label={(
+                                                <Badge bg={TICKET_STATUS_LABELS[statusKey].bg} className="ms-1">
+                                                    {TICKET_STATUS_LABELS[statusKey].text}
+                                                </Badge>
+                                            )}
+                                            name="statuses"
+                                            value={statusKey}
+                                            checked={selectedStatuses.includes(statusKey)}
+                                            onChange={onStatusCheckboxChange}
+                                            className="mb-2"
+                                        />
+                                    ))}
+                                </Dropdown.Menu>
+                            </Dropdown>
                         </Col>
 
                         <Col md={6} lg={2}>

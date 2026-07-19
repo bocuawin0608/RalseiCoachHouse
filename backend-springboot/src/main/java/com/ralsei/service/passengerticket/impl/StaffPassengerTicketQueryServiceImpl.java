@@ -57,18 +57,23 @@ public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicke
     public PagedResponse<StaffPassengerTicketListItemResponse> search(
         String phone,
         String ticketCode,
-        String status,
+        List<String> statuses,
         Integer routeId,
         Integer tripId,
         LocalDate departureDate,
         int page,
         int size
     ) {
-        SearchParams params = normalizeSearchParams(phone, ticketCode, status, routeId, tripId, departureDate);
+        SearchParams params = normalizeSearchParams(phone, ticketCode, statuses, routeId, tripId, departureDate);
         validateCoreFilter(params);
 
+        int hasStatusFilter = params.statuses().isEmpty() ? 0 : 1;
+        List<String> statusFilter = params.statuses().isEmpty()
+            ? List.of("__NONE__")
+            : params.statuses();
+
         long totalElements = ticketRepository.countStaffPassengerTickets(
-            params.phone(), params.ticketCode(), params.status(),
+            params.phone(), params.ticketCode(), hasStatusFilter, statusFilter,
             params.routeId(), params.tripId(), params.departureDate()
         );
 
@@ -78,7 +83,7 @@ public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicke
 
         int totalPages = (int) Math.ceil((double) totalElements / size);
         List<Integer> ticketIds = ticketRepository.findStaffPassengerTicketIds(
-            params.phone(), params.ticketCode(), params.status(),
+            params.phone(), params.ticketCode(), hasStatusFilter, statusFilter,
             params.routeId(), params.tripId(), params.departureDate(),
             page * size, size
         );
@@ -148,7 +153,7 @@ public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicke
     private SearchParams normalizeSearchParams(
         String phone,
         String ticketCode,
-        String status,
+        List<String> statuses,
         Integer routeId,
         Integer tripId,
         LocalDate departureDate
@@ -166,7 +171,7 @@ public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicke
             throw new IllegalArgumentException("Mã vé không hợp lệ.");
         }
 
-        PassengerTicketStatus parsedStatus = PassengerTicketStatus.parseSearchValue(trimToNull(status));
+        List<String> parsedStatuses = PassengerTicketStatus.parseSearchValues(statuses);
 
         if (routeId != null && routeId <= 0) {
             throw new IllegalArgumentException("Mã tuyến không hợp lệ.");
@@ -178,7 +183,7 @@ public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicke
         return new SearchParams(
             normalizedPhone,
             normalizedTicketCode,
-            parsedStatus != null ? parsedStatus.name() : null,
+            parsedStatuses,
             routeId != null && routeId > 0 ? routeId : null,
             tripId != null && tripId > 0 ? tripId : null,
             departureDate
@@ -317,7 +322,7 @@ public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicke
     private record SearchParams(
         String phone,
         String ticketCode,
-        String status,
+        List<String> statuses,
         Integer routeId,
         Integer tripId,
         LocalDate departureDate

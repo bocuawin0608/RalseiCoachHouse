@@ -517,7 +517,7 @@ export default function ChangeTicketSessionModal({
         >
             <Modal.Header closeButton={!operationBusy}>
                 <Modal.Title className="fs-5 fw-bold text-primary">
-                    Đổi vé — {ticket.ticketCode}
+                    Chỉnh sửa vé {ticket.ticketCode}
                 </Modal.Title>
             </Modal.Header>
 
