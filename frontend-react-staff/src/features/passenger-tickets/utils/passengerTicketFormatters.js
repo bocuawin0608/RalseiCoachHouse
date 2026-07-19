@@ -1,12 +1,17 @@
-const STATUS_LABELS = {
-    PENDING: 'Đang xử lý',
-    CONFIRMED: 'Đã xác nhận',
-    CHANGED: 'Có thay đổi',
-    CANCELLED: 'Đã hủy',
+export const TICKET_STATUS_LABELS = {
+    PENDING: { text: 'Đang xử lý', bg: 'primary' },
+    CONFIRMED: { text: 'Đã xác nhận', bg: 'success' },
+    CHANGED: { text: 'Có thay đổi', bg: 'warning' },
+    CANCELLED: { text: 'Đã hủy', bg: 'danger' },
 };
 
+const ALLOWED_STATUSES = Object.keys(TICKET_STATUS_LABELS);
+
+/** Default search statuses: active tickets only. */
+export const DEFAULT_SEARCH_STATUSES = ['CONFIRMED', 'CHANGED'];
+
 export function formatTicketStatus(status) {
-    return STATUS_LABELS[status] || status || '—';
+    return TICKET_STATUS_LABELS[status]?.text || status || '—';
 }
 
 export function formatDateTime(value) {
@@ -48,16 +53,31 @@ export function hasSearchTrigger(filters, hiddenTripId) {
 export const EMPTY_FILTERS = {
     phone: '',
     ticketCode: '',
-    status: '',
+    statuses: [...DEFAULT_SEARCH_STATUSES],
     routeId: '',
     departureDate: '',
 };
+
+function normalizeStatusesFromParams(searchParams) {
+    const fromMulti = searchParams.getAll('statuses').filter(Boolean);
+    if (fromMulti.length > 0) {
+        return fromMulti.filter((status) => ALLOWED_STATUSES.includes(status));
+    }
+
+    // Backward compat: single `status` query param
+    const legacy = searchParams.get('status');
+    if (legacy && ALLOWED_STATUSES.includes(legacy)) {
+        return [legacy];
+    }
+
+    return [...DEFAULT_SEARCH_STATUSES];
+}
 
 export function parseFiltersFromSearchParams(searchParams) {
     return {
         phone: searchParams.get('phone') || '',
         ticketCode: searchParams.get('ticketCode') || '',
-        status: searchParams.get('status') || '',
+        statuses: normalizeStatusesFromParams(searchParams),
         routeId: searchParams.get('routeId') || '',
         departureDate: searchParams.get('departureDate') || '',
     };
@@ -71,7 +91,11 @@ export function buildListQueryParams(filters, { tripId, page = 0, size = 20 } = 
     const ticketCode = filters.ticketCode?.trim();
     if (phone) params.set('phone', phone);
     if (ticketCode) params.set('ticketCode', ticketCode);
-    if (filters.status) params.set('status', filters.status);
+    (filters.statuses || []).forEach((status) => {
+        if (ALLOWED_STATUSES.includes(status)) {
+            params.append('statuses', status);
+        }
+    });
     if (filters.routeId) params.set('routeId', String(filters.routeId));
     if (filters.departureDate) params.set('departureDate', filters.departureDate);
     if (tripId) params.set('tripId', String(tripId));
@@ -91,7 +115,9 @@ export function buildSearchParams(filters, hiddenTripId, pageInfo) {
     const ticketCode = filters.ticketCode?.trim();
     if (phone) params.phone = phone;
     if (ticketCode) params.ticketCode = ticketCode;
-    if (filters.status) params.status = filters.status;
+    if (filters.statuses?.length) {
+        params.statuses = filters.statuses.filter((status) => ALLOWED_STATUSES.includes(status));
+    }
     const routeId = Number(filters.routeId);
     if (filters.routeId && Number.isInteger(routeId) && routeId > 0) {
         params.routeId = routeId;
@@ -137,8 +163,8 @@ export function validatePassengerTicketSearchFilters(filters, hiddenTripId) {
         return 'Mã vé phải gồm từ 3 đến 64 ký tự chữ, số, gạch dưới hoặc gạch ngang.';
     }
 
-    const allowedStatuses = ['', 'PENDING', 'CONFIRMED', 'CHANGED', 'CANCELLED'];
-    if (filters.status && !allowedStatuses.includes(filters.status)) {
+    const statuses = filters.statuses || [];
+    if (statuses.some((status) => !ALLOWED_STATUSES.includes(status))) {
         return 'Trạng thái vé không hợp lệ.';
     }
 

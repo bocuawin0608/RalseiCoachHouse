@@ -1,6 +1,7 @@
 package com.ralsei.controller;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -41,8 +42,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/v1/staff/passenger-tickets")
 @PreAuthorize("hasRole('TICKET_STAFF')")
@@ -62,7 +61,7 @@ public class StaffPassengerTicketController {
     public ResponseEntity<PagedResponse<StaffPassengerTicketListItemResponse>> search(
         @RequestParam(required = false) String phone,
         @RequestParam(required = false) String ticketCode,
-        @RequestParam(required = false) String status,
+        @RequestParam(required = false) List<String> statuses,
         @RequestParam(required = false) Integer routeId,
         @RequestParam(required = false) Integer tripId,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate departureDate,
@@ -70,7 +69,7 @@ public class StaffPassengerTicketController {
         @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size
     ) {
         return ResponseEntity.ok(queryService.search(
-            phone, ticketCode, status, routeId, tripId, departureDate, page, size
+            phone, ticketCode, statuses, routeId, tripId, departureDate, page, size
         ));
     }
 

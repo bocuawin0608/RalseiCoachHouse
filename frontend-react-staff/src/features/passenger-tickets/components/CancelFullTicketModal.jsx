@@ -189,7 +189,7 @@ export default function CancelFullTicketModal({ isOpen, ticket, onClose, onSucce
                         disabled={isSubmitting || refundPreview == null}
                         className="px-4"
                     >
-                        {isSubmitting ? 'Đang xử lý...' : 'Tiếp tục — xác nhận OTP'}
+                        {isSubmitting ? 'Đang xử lý...' : 'Tiếp tục - xác nhận OTP'}
                     </Button>
                 </Modal.Footer>
             </Modal>
