@@ -6,6 +6,7 @@ import com.ralsei.dto.request.passengerbooking.SeatLockRequest;
 import com.ralsei.dto.request.staffpassengerticket.StaffPassengerChangePassengerRequest;
 import com.ralsei.dto.request.staffpassengerticket.StaffPassengerChangeSeatRequest;
 import com.ralsei.dto.request.staffpassengerticket.StaffPassengerItineraryChangeRequest;
+import com.ralsei.dto.request.staffpassengerticket.StaffPassengerTicketChangesRequest;
 import com.ralsei.dto.response.passengerbooking.SeatLockResponse;
 import com.ralsei.dto.response.passengerbooking.TripSeatResponse;
 import com.ralsei.dto.response.staffpassengerticket.StaffPassengerItineraryPreviewResponse;
@@ -30,7 +31,7 @@ public interface StaffPassengerTicketChangeService {
 
     SeatLockResponse lockSeats(Integer tripId, SeatLockRequest request, String holdToken, String lockMode);
 
-    void releaseSeats(List<Integer> tripSeatIds, String holdToken);
+    void releaseSeats(List<Integer> tripSeatIds, String holdToken, List<Integer> restoreVacatedTripSeatIds);
 
     StaffPassengerTicketDetailResponse changeSeat(
         Integer accountId,
@@ -59,6 +60,17 @@ public interface StaffPassengerTicketChangeService {
         Integer accountId,
         String ticketCode,
         StaffPassengerItineraryChangeRequest request,
+        String holdToken
+    );
+
+    /**
+     * Confirms one staff change session: passenger info, seat, and/or itinerary
+     * in a single transaction, then notifies the customer once.
+     */
+    StaffPassengerTicketDetailResponse confirmChanges(
+        Integer accountId,
+        String ticketCode,
+        StaffPassengerTicketChangesRequest request,
         String holdToken
     );
 }

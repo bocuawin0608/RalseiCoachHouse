@@ -6,8 +6,12 @@ import jakarta.validation.constraints.Size;
 
 /**
  * Represents the request payload for staff passenger ticket cancel operations.
+ * {@code firebaseIdToken} proves the customer phone consented via Firebase OTP.
  */
 public record StaffPassengerTicketCancelRequest(
+    @NotBlank(message = "Vui lòng xác thực OTP của khách hàng trước khi hủy vé.")
+    String firebaseIdToken,
+
     @NotBlank(message = "Vui lòng nhập tên ngân hàng.")
     @Size(max = 100, message = "Tên ngân hàng không được vượt quá 100 ký tự.")
     String bankName,

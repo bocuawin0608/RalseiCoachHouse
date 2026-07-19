@@ -1,7 +1,8 @@
 package com.ralsei.repository;
 
-import java.util.Set;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -22,7 +23,6 @@ public interface PassengerTicketRepository extends JpaRepository<PassengerTicket
 
     long countByVoucherId(int voucherId);
 
-    //TODO: maybe phải sửa query nhẹ nếu sau dùng relationship annotation bên PassengerTicket.java
     @Query(value = """
        SELECT DISTINCT pt.voucherId
        FROM PassengerTicket pt
@@ -77,7 +77,7 @@ public interface PassengerTicketRepository extends JpaRepository<PassengerTicket
         LEFT JOIN customer c ON c.customerId = pt.customerId
         WHERE (:phone IS NULL OR ptd.phone LIKE CONCAT('%', :phone, '%') OR c.phone LIKE CONCAT('%', :phone, '%'))
           AND (:ticketCode IS NULL OR pt.ticketCode LIKE CONCAT(:ticketCode, '%'))
-          AND (:status IS NULL OR pt.status = :status)
+          AND (:hasStatusFilter = 0 OR pt.status IN (:statuses))
           AND (:routeId IS NULL OR t.routeId = :routeId)
           AND (:tripId IS NULL OR pt.tripId = :tripId)
           AND (:departureDate IS NULL OR (
@@ -88,10 +88,11 @@ public interface PassengerTicketRepository extends JpaRepository<PassengerTicket
     long countStaffPassengerTickets(
         @Param("phone") String phone,
         @Param("ticketCode") String ticketCode,
-        @Param("status") String status,
+        @Param("hasStatusFilter") int hasStatusFilter,
+        @Param("statuses") List<String> statuses,
         @Param("routeId") Integer routeId,
         @Param("tripId") Integer tripId,
-        @Param("departureDate") java.time.LocalDate departureDate
+        @Param("departureDate") LocalDate departureDate
     );
 
     @Query(value = """
@@ -102,7 +103,7 @@ public interface PassengerTicketRepository extends JpaRepository<PassengerTicket
         LEFT JOIN customer c ON c.customerId = pt.customerId
         WHERE (:phone IS NULL OR ptd.phone LIKE CONCAT('%', :phone, '%') OR c.phone LIKE CONCAT('%', :phone, '%'))
           AND (:ticketCode IS NULL OR pt.ticketCode LIKE CONCAT(:ticketCode, '%'))
-          AND (:status IS NULL OR pt.status = :status)
+          AND (:hasStatusFilter = 0 OR pt.status IN (:statuses))
           AND (:routeId IS NULL OR t.routeId = :routeId)
           AND (:tripId IS NULL OR pt.tripId = :tripId)
           AND (:departureDate IS NULL OR (
@@ -116,10 +117,11 @@ public interface PassengerTicketRepository extends JpaRepository<PassengerTicket
     List<Integer> findStaffPassengerTicketIds(
         @Param("phone") String phone,
         @Param("ticketCode") String ticketCode,
-        @Param("status") String status,
+        @Param("hasStatusFilter") int hasStatusFilter,
+        @Param("statuses") List<String> statuses,
         @Param("routeId") Integer routeId,
         @Param("tripId") Integer tripId,
-        @Param("departureDate") java.time.LocalDate departureDate,
+        @Param("departureDate") LocalDate departureDate,
         @Param("offset") int offset,
         @Param("limit") int limit
     );

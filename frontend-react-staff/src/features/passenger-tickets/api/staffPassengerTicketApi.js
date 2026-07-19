@@ -9,20 +9,6 @@ export const staffPassengerTicketApi = {
         return axiosClient.get(`/v1/staff/passenger-tickets/${encodeURIComponent(ticketCode)}`);
     },
 
-    getSeatQrBlob(ticketCode, ticketDetailId) {
-        return axiosClient.get(
-            `/v1/staff/passenger-tickets/${encodeURIComponent(ticketCode)}/details/${ticketDetailId}/qr`,
-            { responseType: 'blob' }
-        );
-    },
-
-    changePassengerInfo(ticketCode, ticketDetailId, payload) {
-        return axiosClient.patch(
-            `/v1/staff/passenger-tickets/${encodeURIComponent(ticketCode)}/details/${ticketDetailId}/passenger-info`,
-            payload
-        );
-    },
-
     cancelFull(ticketCode, payload) {
         return axiosClient.post(
             `/v1/staff/passenger-tickets/${encodeURIComponent(ticketCode)}/cancel`,
@@ -38,10 +24,13 @@ export const staffPassengerTicketApi = {
         return axiosClient.get(`/v1/trips/${tripId}/stops`);
     },
 
-    lockSeat(tripId, tripSeatId, holdToken) {
+    lockSeat(tripId, tripSeatId, holdToken, vacateTripSeatId = null) {
         return axiosClient.post(
             `/v1/staff/passenger-tickets/trips/${tripId}/seats/lock`,
-            { tripSeatIds: [tripSeatId] },
+            {
+                tripSeatIds: [tripSeatId],
+                vacateTripSeatId: vacateTripSeatId || undefined,
+            },
             { headers: { 'X-Staff-Seat-Session': holdToken, 'X-Staff-Seat-Lock-Mode': 'CHANGE_SEAT' } }
         );
     },
@@ -54,18 +43,15 @@ export const staffPassengerTicketApi = {
         );
     },
 
-    releaseSeats(tripId, tripSeatIds, holdToken) {
+    releaseSeats(tripId, tripSeatIds, holdToken, restoreVacatedTripSeatIds = null) {
         return axiosClient.post(
             `/v1/staff/passenger-tickets/trips/${tripId}/seats/release`,
-            { tripSeatIds },
-            { headers: { 'X-Staff-Seat-Session': holdToken } }
-        );
-    },
-
-    changeSeat(ticketCode, ticketDetailId, newTripSeatId, holdToken) {
-        return axiosClient.patch(
-            `/v1/staff/passenger-tickets/${encodeURIComponent(ticketCode)}/details/${ticketDetailId}/seat`,
-            { newTripSeatId },
+            {
+                tripSeatIds,
+                restoreVacatedTripSeatIds: restoreVacatedTripSeatIds?.length
+                    ? restoreVacatedTripSeatIds
+                    : undefined,
+            },
             { headers: { 'X-Staff-Seat-Session': holdToken } }
         );
     },
@@ -91,10 +77,10 @@ export const staffPassengerTicketApi = {
         );
     },
 
-    changeItinerary(ticketCode, payload, holdToken) {
+    confirmChanges(ticketCode, payload, holdToken) {
         const headers = holdToken ? { 'X-Staff-Seat-Session': holdToken } : undefined;
-        return axiosClient.patch(
-            `/v1/staff/passenger-tickets/${encodeURIComponent(ticketCode)}/itinerary`,
+        return axiosClient.post(
+            `/v1/staff/passenger-tickets/${encodeURIComponent(ticketCode)}/changes`,
             payload,
             headers ? { headers } : undefined
         );

@@ -27,4 +27,11 @@ public interface TicketEmailService {
      * @param payload detached refund completion information assembled before transaction commit
      */
     void sendRefundCompleted(PassengerRefundCompletedEmailPayload payload);
+
+    /**
+     * Renders and sends a ticket-updated notice after staff confirms a change session.
+     *
+     * @param payload detached current ticket snapshot assembled before transaction commit
+     */
+    void sendTicketUpdated(PassengerTicketEmailPayload payload);
 }

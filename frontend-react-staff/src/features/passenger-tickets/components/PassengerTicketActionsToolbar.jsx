@@ -28,13 +28,11 @@ function DisabledActionButton({ disabled, tooltip, variant, onClick, children })
 }
 
 export default function PassengerTicketActionsToolbar({
-    canChangeItinerary,
-    canTransferTrip,
+    canChangeTicket,
     canCancelTicket,
+    changeDisabledTooltip = 'Không thể đổi vé này',
     cancelDisabledTooltip = 'Không thể hủy vé này',
-    transferDisabledTooltip = 'Không thể đổi chuyến cho vé này',
-    onChangeItinerary,
-    onTransferTrip,
+    onChangeTicket,
     onCancelTicket,
 }) {
     return (
@@ -43,20 +41,11 @@ export default function PassengerTicketActionsToolbar({
             <div className="d-flex flex-wrap justify-content-start gap-2">
                 <DisabledActionButton
                     variant="outline-primary"
-                    disabled={!canChangeItinerary}
-                    tooltip="Không thể đổi điểm đón/trả cho vé này"
-                    onClick={() => onChangeItinerary?.()}
+                    disabled={!canChangeTicket}
+                    tooltip={changeDisabledTooltip}
+                    onClick={() => onChangeTicket?.()}
                 >
-                    Đổi điểm đón/trả
-                </DisabledActionButton>
-
-                <DisabledActionButton
-                    variant="outline-primary"
-                    disabled={!canTransferTrip}
-                    tooltip={transferDisabledTooltip}
-                    onClick={() => onTransferTrip?.()}
-                >
-                    Đổi chuyến
+                    Đổi vé
                 </DisabledActionButton>
 
                 <DisabledActionButton
