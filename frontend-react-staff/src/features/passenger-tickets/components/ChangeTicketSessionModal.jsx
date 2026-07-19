@@ -21,8 +21,10 @@ import ItineraryStopSelection from './itinerary-change/ItineraryStopSelection';
 import TransferSeatSelection from './itinerary-change/TransferSeatSelection';
 import TransferTripSelection from './itinerary-change/TransferTripSelection';
 import PassengerInfoFields from './PassengerInfoFields';
+import CustomerPhoneOtpModal from './CustomerPhoneOtpModal';
 import TripSeatMapGrid, { buildSeatLayout } from './TripSeatMapGrid';
 import SeatIcon from '../../../components/common/SeatIcon';
+import { resolveTicketContactPhone } from '../utils/ticketContactPhone';
 
 /** Choose path → amend current trip (info/seat/stops) OR transfer (major). */
 const VIEW_CHOOSE = 'choose';
@@ -62,7 +64,11 @@ export default function ChangeTicketSessionModal({
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState(null);
     const [sessionKey, setSessionKey] = useState(0);
+    const [otpOpen, setOtpOpen] = useState(false);
+    const pendingConfirmRef = useRef(null);
     const seatDraftsRef = useRef({});
+
+    const contactPhone = useMemo(() => resolveTicketContactPhone(ticket), [ticket]);
 
     const seatHold = useSeatHoldSession();
     const seatLayout = useMemo(() => buildSeatLayout(seatList), [seatList]);
@@ -395,8 +401,43 @@ export default function ChangeTicketSessionModal({
         setSessionKey((value) => value + 1);
     };
 
-    const handleConfirm = async () => {
+    const submitConfirmWithOtp = async (firebaseIdToken) => {
+        const pending = pendingConfirmRef.current;
+        if (!ticket || !pending) return;
+
+        setSubmitting(true);
+        setError(null);
+        try {
+            const updatedTicket = await staffPassengerTicketApi.confirmChanges(
+                ticket.ticketCode,
+                {
+                    firebaseIdToken,
+                    ...pending.payload,
+                },
+                pending.holdToken
+            );
+            seatHold.forgetSession();
+            stopsWorkflow.forgetSession?.();
+            transferWorkflow.forgetSession?.();
+            pendingConfirmRef.current = null;
+            setOtpOpen(false);
+            onSuccess?.(updatedTicket);
+            onClose?.();
+        } catch (requestError) {
+            setError(getErrorMessage(requestError, 'Không thể lưu thay đổi vé.'));
+            setOtpOpen(false);
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const handleConfirm = () => {
         if (!ticket || submitting || !canConfirm) return;
+
+        if (!contactPhone) {
+            setError('Vé không có số điện thoại hành khách để xác thực OTP.');
+            return;
+        }
 
         if (view === VIEW_AMEND) {
             const { updates, errorsBySeat } = buildPassengerUpdates();
@@ -412,49 +453,27 @@ export default function ChangeTicketSessionModal({
             const itineraryChange = stopsDraft?.ready ? stopsDraft.payload : undefined;
             if (updates.length === 0 && seatChanges.length === 0 && !itineraryChange) return;
 
-            setSubmitting(true);
+            pendingConfirmRef.current = {
+                payload: {
+                    passengerUpdates: updates.length ? updates : undefined,
+                    seatChanges: seatChanges.length ? seatChanges : undefined,
+                    itineraryChange,
+                },
+                holdToken: seatChanges.length ? seatHold.holdTokenRef.current : undefined,
+            };
             setError(null);
-            try {
-                const updatedTicket = await staffPassengerTicketApi.confirmChanges(
-                    ticket.ticketCode,
-                    {
-                        passengerUpdates: updates.length ? updates : undefined,
-                        seatChanges: seatChanges.length ? seatChanges : undefined,
-                        itineraryChange,
-                    },
-                    seatChanges.length ? seatHold.holdTokenRef.current : undefined
-                );
-                seatHold.forgetSession();
-                stopsWorkflow.forgetSession?.();
-                onSuccess?.(updatedTicket);
-                onClose?.();
-            } catch (requestError) {
-                setError(getErrorMessage(requestError, 'Không thể lưu thay đổi vé.'));
-            } finally {
-                setSubmitting(false);
-            }
+            setOtpOpen(true);
             return;
         }
 
         if (view === VIEW_TRANSFER) {
             if (!transferDraft?.ready || !transferDraft?.payload) return;
-
-            setSubmitting(true);
+            pendingConfirmRef.current = {
+                payload: { itineraryChange: transferDraft.payload },
+                holdToken: transferDraft.holdToken,
+            };
             setError(null);
-            try {
-                const updatedTicket = await staffPassengerTicketApi.confirmChanges(
-                    ticket.ticketCode,
-                    { itineraryChange: transferDraft.payload },
-                    transferDraft.holdToken
-                );
-                transferWorkflow.forgetSession?.();
-                onSuccess?.(updatedTicket);
-                onClose?.();
-            } catch (requestError) {
-                setError(getErrorMessage(requestError, 'Không thể lưu thay đổi vé.'));
-            } finally {
-                setSubmitting(false);
-            }
+            setOtpOpen(true);
         }
     };
 
@@ -487,6 +506,7 @@ export default function ChangeTicketSessionModal({
     const showBackToChoose = canAmend && canTransferTrip && view !== VIEW_CHOOSE;
 
     return (
+        <>
         <Modal
             show={isOpen}
             onHide={handleClose}
@@ -737,10 +757,31 @@ export default function ChangeTicketSessionModal({
                         onClick={handleConfirm}
                         disabled={operationBusy || !canConfirm}
                     >
-                        {submitting ? 'Đang lưu...' : 'Xác nhận & gửi mail'}
+                        {submitting ? 'Đang lưu...' : 'Xác nhận OTP & gửi mail'}
                     </Button>
                 )}
             </Modal.Footer>
+
         </Modal>
+
+        <CustomerPhoneOtpModal
+            show={otpOpen}
+            phone={contactPhone}
+            title="Xác nhận OTP trước khi đổi vé"
+            description={(
+                <>
+                    Nhờ khách hàng cung cấp OTP gửi tới số <strong>{contactPhone}</strong> để đồng ý
+                    thay đổi vé.
+                </>
+            )}
+            onClose={() => {
+                if (!submitting) {
+                    setOtpOpen(false);
+                    pendingConfirmRef.current = null;
+                }
+            }}
+            onVerified={({ idToken }) => submitConfirmWithOtp(idToken)}
+        />
+        </>
     );
 }
