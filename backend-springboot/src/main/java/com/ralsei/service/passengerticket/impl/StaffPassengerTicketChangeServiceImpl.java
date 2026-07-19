@@ -52,11 +52,13 @@ import com.ralsei.repository.TripRepository;
 import com.ralsei.repository.TripSeatRepository;
 import com.ralsei.service.notification.PassengerTicketEmailAssembler;
 import com.ralsei.service.notification.TicketEmailService;
+import com.ralsei.service.passengerbooking.PassengerPhoneVerificationService;
 import com.ralsei.service.passengerbooking.SeatHoldService;
 import com.ralsei.service.passengerticket.PassengerTicketStaffPolicy;
 import com.ralsei.service.passengerticket.StaffPassengerTicketChangeService;
 import com.ralsei.service.passengerticket.StaffPassengerTicketQueryService;
 import com.ralsei.service.passengerticket.StaffTicketItineraryPriceCalculator;
+import com.ralsei.util.PhoneNumberUtility;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -81,6 +83,7 @@ public class StaffPassengerTicketChangeServiceImpl implements StaffPassengerTick
     private final RouteStopRepository routeStopRepository;
     private final StaffRepository staffRepository;
     private final SeatHoldService seatHoldService;
+    private final PassengerPhoneVerificationService passengerPhoneVerificationService;
     private final PassengerTicketStaffPolicy policy;
     private final StaffPassengerTicketQueryService queryService;
     private final StaffTicketItineraryPriceCalculator itineraryPriceCalculator;
@@ -376,6 +379,7 @@ public class StaffPassengerTicketChangeServiceImpl implements StaffPassengerTick
 
         String normalizedTicketCode = ticketCode == null ? "" : ticketCode.trim();
         List<StaffPassengerTicketRowProjection> rows = loadTicketRows(normalizedTicketCode);
+        requireCustomerPhoneOtp(rows, request.firebaseIdToken());
         StaffPassengerTicketRowProjection header = rows.get(0);
         Integer passengerTicketId = header.getPassengerTicketId();
         String originalTicketStatus = header.getTicketStatus();
@@ -576,6 +580,27 @@ public class StaffPassengerTicketChangeServiceImpl implements StaffPassengerTick
             throw new ResourceNotFoundException("Không tìm thấy vé.");
         }
         return rows;
+    }
+
+    /**
+     * OTP must match the contact phone currently on the ticket (first CONFIRMED seat).
+     */
+    private void requireCustomerPhoneOtp(
+        List<StaffPassengerTicketRowProjection> rows,
+        String firebaseIdToken
+    ) {
+        String contactPhone = rows.stream()
+            .filter(row -> PassengerTicketDetailStatus.CONFIRMED.name().equals(row.getDetailStatus()))
+            .sorted(Comparator.comparing(StaffPassengerTicketRowProjection::getTicketDetailId))
+            .map(StaffPassengerTicketRowProjection::getPhone)
+            .filter(phone -> phone != null && !phone.isBlank())
+            .map(PhoneNumberUtility::normalizeToLocalFormat)
+            .findFirst()
+            .orElseThrow(() -> new BusinessRuleException(
+                "Vé không có số điện thoại hành khách để xác thực OTP."
+            ));
+
+        passengerPhoneVerificationService.verifyFirebasePhoneToken(contactPhone, firebaseIdToken);
     }
 
     private StaffPassengerTicketRowProjection requireDetailRow(
