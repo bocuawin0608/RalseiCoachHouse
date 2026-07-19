@@ -30,6 +30,10 @@ public class SeatHoldServiceImpl implements SeatHoldService {
         return "session:seats:" + holdToken;
     }
 
+    private String buildVacatedKey(String holdToken) {
+        return "session:vacated:" + holdToken;
+    }
+
     @Override
     /**
      * Returns whether the seat locked is active.
@@ -81,14 +85,28 @@ public class SeatHoldServiceImpl implements SeatHoldService {
      * @return the operation result
      */
     public boolean releaseSeats(List<Integer> tripSeatIds, String holdToken) {
-        for (Integer tripSeatId : tripSeatIds) {
-            String key = buildLockKey(tripSeatId);
-            if(holdToken.equals(redisTemplate.opsForValue().get(key))){
-                redisTemplate.delete(key);
-            }
+        if (holdToken == null || holdToken.isBlank() || tripSeatIds == null || tripSeatIds.isEmpty()) {
+            return true;
         }
 
-        redisTemplate.delete(buildSessionKey(holdToken));
+        String sessionKey = buildSessionKey(holdToken);
+        for (Integer tripSeatId : tripSeatIds) {
+            if (tripSeatId == null) {
+                continue;
+            }
+            String key = buildLockKey(tripSeatId);
+            if (holdToken.equals(redisTemplate.opsForValue().get(key))) {
+                redisTemplate.delete(key);
+            }
+            // Keep other held seats in the same session (multi-seat staff change).
+            redisTemplate.opsForSet().remove(sessionKey, String.valueOf(tripSeatId));
+        }
+
+        Long remaining = redisTemplate.opsForSet().size(sessionKey);
+        if (remaining == null || remaining == 0L) {
+            redisTemplate.delete(sessionKey);
+            redisTemplate.delete(buildVacatedKey(holdToken));
+        }
 
         return true;
     }
@@ -102,11 +120,7 @@ public class SeatHoldServiceImpl implements SeatHoldService {
      * @return the trip seat ids by token
      */
     public List<Integer> getTripSeatIdsByToken(String holdToken) {
-        Set<String> members = redisTemplate.opsForSet().members(buildSessionKey(holdToken));
-        if(members == null || members.isEmpty()) {
-            return Collections.emptyList();
-        }
-        return members.stream().map(id -> Integer.valueOf(id)).toList();
+        return membersAsIntegers(buildSessionKey(holdToken));
     }
 
     @Override
@@ -126,10 +140,14 @@ public class SeatHoldServiceImpl implements SeatHoldService {
                 redisTemplate.expire(lockKey, Duration.ofSeconds(newTtlSeconds));
             }
         }
-        
+
         String sessionKey = buildSessionKey(holdToken);
         if (Boolean.TRUE.equals(redisTemplate.hasKey(sessionKey))) {
             redisTemplate.expire(sessionKey, Duration.ofSeconds(newTtlSeconds));
+        }
+        String vacatedKey = buildVacatedKey(holdToken);
+        if (Boolean.TRUE.equals(redisTemplate.hasKey(vacatedKey))) {
+            redisTemplate.expire(vacatedKey, Duration.ofSeconds(newTtlSeconds));
         }
         return true;
     }
@@ -147,5 +165,52 @@ public class SeatHoldServiceImpl implements SeatHoldService {
         for (Integer tripSeatId : tripSeatIds) {
             redisTemplate.delete(buildLockKey(tripSeatId));
         }
+    }
+
+    @Override
+    public void markVacated(String holdToken, List<Integer> tripSeatIds, long ttlSeconds) {
+        if (holdToken == null || holdToken.isBlank() || tripSeatIds == null || tripSeatIds.isEmpty()) {
+            return;
+        }
+        List<String> values = tripSeatIds.stream()
+            .filter(id -> id != null && id > 0)
+            .map(String::valueOf)
+            .toList();
+        if (values.isEmpty()) {
+            return;
+        }
+        String vacatedKey = buildVacatedKey(holdToken);
+        redisTemplate.opsForSet().add(vacatedKey, values.toArray(String[]::new));
+        redisTemplate.expire(vacatedKey, Duration.ofSeconds(ttlSeconds));
+    }
+
+    @Override
+    public void clearVacated(String holdToken, List<Integer> tripSeatIds) {
+        if (holdToken == null || holdToken.isBlank() || tripSeatIds == null || tripSeatIds.isEmpty()) {
+            return;
+        }
+        String vacatedKey = buildVacatedKey(holdToken);
+        for (Integer tripSeatId : tripSeatIds) {
+            if (tripSeatId != null) {
+                redisTemplate.opsForSet().remove(vacatedKey, String.valueOf(tripSeatId));
+            }
+        }
+        Long remaining = redisTemplate.opsForSet().size(vacatedKey);
+        if (remaining == null || remaining == 0L) {
+            redisTemplate.delete(vacatedKey);
+        }
+    }
+
+    @Override
+    public List<Integer> getVacatedSeatIdsByToken(String holdToken) {
+        return membersAsIntegers(buildVacatedKey(holdToken));
+    }
+
+    private List<Integer> membersAsIntegers(String key) {
+        Set<String> members = redisTemplate.opsForSet().members(key);
+        if (members == null || members.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return members.stream().map(Integer::valueOf).toList();
     }
 }

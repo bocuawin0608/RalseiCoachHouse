@@ -32,7 +32,6 @@ import com.ralsei.repository.TripRepository;
 import com.ralsei.service.passengerticket.PassengerTicketStaffPolicy;
 import com.ralsei.service.passengerticket.StaffPassengerTicketQueryService;
 import com.ralsei.util.PhoneNumberUtility;
-import com.ralsei.util.QRCreateUitility;
 
 import lombok.RequiredArgsConstructor;
 
@@ -52,25 +51,29 @@ public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicke
     private final RefundRepository refundRepository;
     private final TripRepository tripRepository;
     private final PassengerTicketStaffPolicy policy;
-    private final QRCreateUitility qrCreateUitility;
 
     @Override
     @Transactional(readOnly = true)
     public PagedResponse<StaffPassengerTicketListItemResponse> search(
         String phone,
         String ticketCode,
-        String status,
+        List<String> statuses,
         Integer routeId,
         Integer tripId,
         LocalDate departureDate,
         int page,
         int size
     ) {
-        SearchParams params = normalizeSearchParams(phone, ticketCode, status, routeId, tripId, departureDate);
+        SearchParams params = normalizeSearchParams(phone, ticketCode, statuses, routeId, tripId, departureDate);
         validateCoreFilter(params);
 
+        int hasStatusFilter = params.statuses().isEmpty() ? 0 : 1;
+        List<String> statusFilter = params.statuses().isEmpty()
+            ? List.of("__NONE__")
+            : params.statuses();
+
         long totalElements = ticketRepository.countStaffPassengerTickets(
-            params.phone(), params.ticketCode(), params.status(),
+            params.phone(), params.ticketCode(), hasStatusFilter, statusFilter,
             params.routeId(), params.tripId(), params.departureDate()
         );
 
@@ -80,7 +83,7 @@ public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicke
 
         int totalPages = (int) Math.ceil((double) totalElements / size);
         List<Integer> ticketIds = ticketRepository.findStaffPassengerTicketIds(
-            params.phone(), params.ticketCode(), params.status(),
+            params.phone(), params.ticketCode(), hasStatusFilter, statusFilter,
             params.routeId(), params.tripId(), params.departureDate(),
             page * size, size
         );
@@ -127,22 +130,6 @@ public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicke
         return assembleDetail(rows, loadRefunds(rows.get(0).getPassengerTicketId()));
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    /**
-     * Returns the seat qr image.
-     *
-     * @param ticketCode the value supplied for this operation
-     * @param ticketDetailId the value supplied for this operation
-     *
-     * @return the seat qr image
-     */
-    public byte[] getSeatQrImage(String ticketCode, Integer ticketDetailId) {
-        String token = ticketDetailRepository.findStaffQrToken(ticketCode, ticketDetailId)
-            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy mã QR của ghế."));
-        return qrCreateUitility.createPng(token);
-    }
-
     private List<RefundItem> loadRefunds(Integer passengerTicketId) {
         return paymentRepository.findByPassengerTicketId(passengerTicketId)
             .map(Payment::getPaymentId)
@@ -166,7 +153,7 @@ public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicke
     private SearchParams normalizeSearchParams(
         String phone,
         String ticketCode,
-        String status,
+        List<String> statuses,
         Integer routeId,
         Integer tripId,
         LocalDate departureDate
@@ -184,7 +171,7 @@ public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicke
             throw new IllegalArgumentException("Mã vé không hợp lệ.");
         }
 
-        PassengerTicketStatus parsedStatus = PassengerTicketStatus.parseSearchValue(trimToNull(status));
+        List<String> parsedStatuses = PassengerTicketStatus.parseSearchValues(statuses);
 
         if (routeId != null && routeId <= 0) {
             throw new IllegalArgumentException("Mã tuyến không hợp lệ.");
@@ -196,7 +183,7 @@ public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicke
         return new SearchParams(
             normalizedPhone,
             normalizedTicketCode,
-            parsedStatus != null ? parsedStatus.name() : null,
+            parsedStatuses,
             routeId != null && routeId > 0 ? routeId : null,
             tripId != null && tripId > 0 ? tripId : null,
             departureDate
@@ -306,6 +293,8 @@ public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicke
             first.getVoucherCodeSnapshot(),
             first.getSoldByStaffName(),
             first.getBookedAt(),
+            first.getUpdatedAt(),
+            first.getUpdatedByStaffName(),
             first.getPaymentMethod(),
             first.getPaymentStatus(),
             first.getPaymentAmount(),
@@ -333,7 +322,7 @@ public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicke
     private record SearchParams(
         String phone,
         String ticketCode,
-        String status,
+        List<String> statuses,
         Integer routeId,
         Integer tripId,
         LocalDate departureDate

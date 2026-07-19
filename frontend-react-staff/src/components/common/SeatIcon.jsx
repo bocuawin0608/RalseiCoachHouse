@@ -15,6 +15,10 @@ export default function SeatIcon({ status, code }) {
         fillColor = '#0d6efd';
         strokeColor = '#0d6efd';
         textColor = '#FFFFFF';
+    } else if (status === 'LOCKED') {
+        fillColor = '#94a3b8';
+        strokeColor = '#64748b';
+        textColor = '#FFFFFF';
     }
 
     return (

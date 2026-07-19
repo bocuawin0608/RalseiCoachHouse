@@ -2,6 +2,7 @@ package com.ralsei.service.passengerticket.impl;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -35,10 +36,12 @@ import com.ralsei.repository.TripRepository;
 import com.ralsei.repository.TripSeatRepository;
 import com.ralsei.service.notification.PassengerTicketEmailAssembler;
 import com.ralsei.service.notification.TicketEmailService;
+import com.ralsei.service.passengerbooking.PassengerPhoneVerificationService;
 import com.ralsei.service.passengerbooking.SeatHoldService;
 import com.ralsei.service.passengerticket.PassengerTicketStaffPolicy;
 import com.ralsei.service.passengerticket.StaffPassengerTicketCancelService;
 import com.ralsei.service.passengerticket.StaffPassengerTicketQueryService;
+import com.ralsei.util.PhoneNumberUtility;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -59,6 +62,7 @@ public class StaffPassengerTicketCancelServiceImpl implements StaffPassengerTick
     private final TripRepository tripRepository;
     private final StaffRepository staffRepository;
     private final SeatHoldService seatHoldService;
+    private final PassengerPhoneVerificationService passengerPhoneVerificationService;
     private final PassengerTicketStaffPolicy policy;
     private final StaffPassengerTicketQueryService queryService;
     private final ObjectMapper objectMapper;
@@ -82,6 +86,8 @@ public class StaffPassengerTicketCancelServiceImpl implements StaffPassengerTick
         if (rows.isEmpty()) {
             throw new ResourceNotFoundException("Không tìm thấy vé.");
         }
+
+        requireCustomerPhoneOtp(rows, request.firebaseIdToken());
 
         StaffPassengerTicketRowProjection first = rows.get(0);
         PassengerTicket ticketEntity = ticketRepository.findById(first.getPassengerTicketId())
@@ -215,5 +221,23 @@ public class StaffPassengerTicketCancelServiceImpl implements StaffPassengerTick
         } catch (JsonProcessingException exception) {
             throw new IllegalStateException("Không thể lưu thông tin nhận tiền hoàn.", exception);
         }
+    }
+
+    private void requireCustomerPhoneOtp(
+        List<StaffPassengerTicketRowProjection> rows,
+        String firebaseIdToken
+    ) {
+        String contactPhone = rows.stream()
+            .filter(row -> PassengerTicketDetailStatus.CONFIRMED.name().equals(row.getDetailStatus()))
+            .sorted(Comparator.comparing(StaffPassengerTicketRowProjection::getTicketDetailId))
+            .map(StaffPassengerTicketRowProjection::getPhone)
+            .filter(phone -> phone != null && !phone.isBlank())
+            .map(PhoneNumberUtility::normalizeToLocalFormat)
+            .findFirst()
+            .orElseThrow(() -> new BusinessRuleException(
+                "Vé không có số điện thoại hành khách để xác thực OTP."
+            ));
+
+        passengerPhoneVerificationService.verifyFirebasePhoneToken(contactPhone, firebaseIdToken);
     }
 }

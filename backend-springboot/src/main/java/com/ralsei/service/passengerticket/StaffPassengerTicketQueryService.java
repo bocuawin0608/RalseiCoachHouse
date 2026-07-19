@@ -1,5 +1,7 @@
 package com.ralsei.service.passengerticket;
 
+import java.util.List;
+
 import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.dto.response.staffpassengerticket.StaffPassengerTicketDetailResponse;
 import com.ralsei.dto.response.staffpassengerticket.StaffPassengerTicketListItemResponse;
@@ -12,7 +14,7 @@ public interface StaffPassengerTicketQueryService {
     PagedResponse<StaffPassengerTicketListItemResponse> search(
         String phone,
         String ticketCode,
-        String status,
+        List<String> statuses,
         Integer routeId,
         Integer tripId,
         java.time.LocalDate departureDate,
@@ -21,6 +23,4 @@ public interface StaffPassengerTicketQueryService {
     );
 
     StaffPassengerTicketDetailResponse getDetail(String ticketCode);
-
-    byte[] getSeatQrImage(String ticketCode, Integer ticketDetailId);
 }

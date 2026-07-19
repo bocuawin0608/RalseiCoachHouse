@@ -97,8 +97,19 @@ export function usePassengerTicketSearch() {
         setFilters((current) => ({ ...current, [name]: value }));
     };
 
+    const handleStatusCheckboxChange = (event) => {
+        const { value, checked } = event.target;
+        setFilters((current) => {
+            const currentStatuses = current.statuses || [];
+            const nextStatuses = checked
+                ? [...currentStatuses, value]
+                : currentStatuses.filter((status) => status !== value);
+            return { ...current, statuses: nextStatuses };
+        });
+    };
+
     const handleReset = () => {
-        setFilters(EMPTY_FILTERS);
+        setFilters({ ...EMPTY_FILTERS, statuses: [...EMPTY_FILTERS.statuses] });
         setSearchParams({}, { replace: true });
     };
 
@@ -140,6 +151,7 @@ export function usePassengerTicketSearch() {
         pageInfo,
         setPageInfo: handlePageChange,
         handleFilterChange,
+        handleStatusCheckboxChange,
         handleReset,
         handleSearch,
     };

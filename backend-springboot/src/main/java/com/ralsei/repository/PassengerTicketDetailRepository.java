@@ -171,6 +171,8 @@ public interface PassengerTicketDetailRepository extends JpaRepository<Passenger
                co.licensePlate AS licensePlate,
                pt.voucherCodeSnapshot AS voucherCodeSnapshot,
                seller.staffName AS soldByStaffName,
+               pt.updatedAt AS updatedAt,
+               updater.staffName AS updatedByStaffName,
                pay.paymentMethod AS paymentMethod,
                pay.status AS paymentStatus,
                pay.amount AS paymentAmount,
@@ -192,6 +194,7 @@ public interface PassengerTicketDetailRepository extends JpaRepository<Passenger
         JOIN coach_type ct ON ct.coachTypeId = co.coachTypeId
         LEFT JOIN payment pay ON pay.passengerTicketId = pt.passengerTicketId
         LEFT JOIN staff seller ON seller.staffId = pt.soldBy
+        LEFT JOIN staff updater ON updater.accountId = pt.updatedBy
         LEFT JOIN accompanied_child ac ON ac.ticketDetailId = ptd.ticketDetailId
         WHERE pt.passengerTicketId IN (:passengerTicketIds)
         ORDER BY t.departureTime DESC, pt.passengerTicketId DESC, ptd.ticketDetailId ASC
@@ -217,6 +220,8 @@ public interface PassengerTicketDetailRepository extends JpaRepository<Passenger
                co.licensePlate AS licensePlate,
                pt.voucherCodeSnapshot AS voucherCodeSnapshot,
                seller.staffName AS soldByStaffName,
+               pt.updatedAt AS updatedAt,
+               updater.staffName AS updatedByStaffName,
                pay.paymentMethod AS paymentMethod,
                pay.status AS paymentStatus,
                pay.amount AS paymentAmount,
@@ -238,27 +243,13 @@ public interface PassengerTicketDetailRepository extends JpaRepository<Passenger
         JOIN coach_type ct ON ct.coachTypeId = co.coachTypeId
         LEFT JOIN payment pay ON pay.passengerTicketId = pt.passengerTicketId
         LEFT JOIN staff seller ON seller.staffId = pt.soldBy
+        LEFT JOIN staff updater ON updater.accountId = pt.updatedBy
         LEFT JOIN accompanied_child ac ON ac.ticketDetailId = ptd.ticketDetailId
         WHERE pt.ticketCode = :ticketCode
         ORDER BY ptd.ticketDetailId ASC
         """, nativeQuery = true)
     List<StaffPassengerTicketRowProjection> findStaffTicketRowsByTicketCode(
         @Param("ticketCode") String ticketCode
-    );
-
-    /** Returns a boarding token for staff QR preview on confirmed seats. */
-    @Query(value = """
-        SELECT ptd.qrcode
-        FROM passenger_ticket_detail ptd
-        JOIN passenger_ticket pt ON pt.passengerTicketId = ptd.passengerTicketId
-        WHERE ptd.ticketDetailId = :ticketDetailId
-          AND pt.ticketCode = :ticketCode
-          AND pt.status IN ('CONFIRMED', 'CHANGED')
-          AND ptd.status IN ('CONFIRMED', 'CHECKED_IN')
-        """, nativeQuery = true)
-    java.util.Optional<String> findStaffQrToken(
-        @Param("ticketCode") String ticketCode,
-        @Param("ticketDetailId") Integer ticketDetailId
     );
 
 }
