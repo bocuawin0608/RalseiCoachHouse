@@ -23,8 +23,9 @@ export default function CargoSendPage() {
         totalPages: 0
     });
 
-    const loadTrips = useCallback(async () => {
-        setLoading(true);
+    /** Refreshes eligible coaches; silent refreshes avoid flashing the page spinner. */
+    const loadTrips = useCallback(async (silent = false) => {
+        if (!silent) setLoading(true);
         setError('');
         try {
             const response = await cargoTicketApi.getUpcomingTrips({
@@ -48,7 +49,7 @@ export default function CargoSendPage() {
         } catch (requestError) {
             setError(requestError.response?.data?.message || 'Không thể tải danh sách chuyến xe sắp chạy.');
         } finally {
-            setLoading(false);
+            if (!silent) setLoading(false);
         }
     }, [pageInfo.page, pageInfo.size]);
 
@@ -61,6 +62,21 @@ export default function CargoSendPage() {
         const timerId = window.setInterval(() => setNow(new Date()), 1000);
         return () => window.clearInterval(timerId);
     }, []);
+
+    useEffect(() => {
+        /** Removes completed trips without requiring ticket staff to reload manually. */
+        const refreshEligibleTrips = () => {
+            if (document.visibilityState === 'visible') loadTrips(true);
+        };
+        const timerId = window.setInterval(refreshEligibleTrips, 5000);
+        window.addEventListener('focus', refreshEligibleTrips);
+        document.addEventListener('visibilitychange', refreshEligibleTrips);
+        return () => {
+            window.clearInterval(timerId);
+            window.removeEventListener('focus', refreshEligibleTrips);
+            document.removeEventListener('visibilitychange', refreshEligibleTrips);
+        };
+    }, [loadTrips]);
 
     return (
         <main className="cargo-operations-page">
@@ -104,11 +120,17 @@ function TripCard({ trip, onSelect }) {
     const used = Number(trip.usedCargoVolume || 0);
     const capacity = Number(trip.cargoCapacity || 2);
     const percent = Math.min(100, capacity ? (used / capacity) * 100 : 100);
+    const hasStarted = trip.tripStatus === 'IN_PROGRESS';
+    const isUnavailable = trip.full || hasStarted;
+    const availabilityLabel = hasStarted ? 'Đã khởi hành' : trip.full ? 'Đã đầy' : 'Còn chỗ';
+    const actionLabel = hasStarted
+        ? 'Chuyến đã khởi hành'
+        : trip.full ? 'Chuyến đã đầy' : 'Chọn chuyến và thêm hàng';
     return (
-        <article className={`cargo-trip-card ${trip.full ? 'is-full' : ''}`}>
+        <article className={`cargo-trip-card ${isUnavailable ? 'is-unavailable' : ''}`}>
             <div className="cargo-trip-top">
                 <div><h2>{trip.routeName}</h2></div>
-                <Badge bg={trip.full ? 'danger' : 'success'}>{trip.full ? 'Đã đầy' : 'Còn chỗ'}</Badge>
+                <Badge bg={hasStarted ? 'secondary' : trip.full ? 'danger' : 'success'}>{availabilityLabel}</Badge>
             </div>
             <div className="cargo-coach-line"><BsBusFront /><strong>{trip.licensePlate}</strong><span>{trip.coachTypeName}</span><time>{formatDateTime(trip.pickupTime)}</time></div>
             <p className="cargo-stops"><strong>Nhận tại:</strong> {trip.pickupStopName} ({trip.pickupCity})</p>
@@ -118,7 +140,7 @@ function TripCard({ trip, onSelect }) {
                 <StaffBlock label="Phụ xe" name={trip.attendantName} phone={trip.attendantPhone} cccd={trip.attendantCccd} />
             </div>
             <div className="cargo-capacity"><div><span>Khoang hàng</span><strong>{used.toFixed(2)} / {capacity.toFixed(2)} m³</strong></div><div className="cargo-capacity-track"><span style={{ width: `${percent}%` }} /></div></div>
-            <Button className="cargo-primary-button w-100" disabled={trip.full} onClick={onSelect}>{trip.full ? 'Chuyến đã đầy' : 'Chọn chuyến và thêm hàng'}</Button>
+            <Button className="cargo-primary-button w-100" disabled={isUnavailable} onClick={onSelect}>{actionLabel}</Button>
         </article>
     );
 }

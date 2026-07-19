@@ -39,7 +39,7 @@
 .cargo-primary-button:hover { border-color: var(--cargo-green-dark) !important; background: var(--cargo-green-dark) !important; }
 .cargo-trip-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px; }
 .cargo-trip-card { padding: 22px; border: 1px solid var(--cargo-line); border-radius: 16px; background: rgba(255,255,255,.94); box-shadow: 0 8px 28px rgba(23,61,45,.07); }
-.cargo-trip-card.is-full { opacity: .78; }
+.cargo-trip-card.is-unavailable { opacity: .78; }
 .cargo-trip-top, .cargo-capacity > div:first-child { display: flex; justify-content: space-between; gap: 12px; }
 .cargo-trip-top h2 { margin: 4px 0 0; font-size: 1.15rem; }
 .cargo-coach-line { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin: 18px 0 12px; }

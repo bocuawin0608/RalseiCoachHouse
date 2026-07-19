@@ -29,6 +29,7 @@ import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.model.CargoTicket;
 import com.ralsei.model.Staff;
 import com.ralsei.model.TicketAgency;
+import com.ralsei.model.Trip;
 import com.ralsei.repository.CargoTicketRepository;
 import com.ralsei.repository.CoachStopRepository;
 import com.ralsei.repository.CustomerRepository;
@@ -150,6 +151,31 @@ class CargoTicketServiceValidationTest {
         assertDoesNotThrow(() -> {
             cargoTicketService.newCargoTicketValidation_onlyForTest(request, currentStaff);
         });
+    }
+
+    /**
+     * Verifies that the create workflow rejects a stale selection as soon as its
+     * trip changes from SCHEDULED to IN_PROGRESS.
+     */
+    @Test
+    @DisplayName("Cargo creation is rejected after the selected trip starts")
+    void rejectsCargoCreationAfterTripStarts() {
+        request.setTripId(77);
+        Trip startedTrip = Trip.builder()
+                .tripId(77)
+                .status("IN_PROGRESS")
+                .build();
+
+        when(staffRepository.findByAccountId(123)).thenReturn(Optional.of(currentStaff));
+        when(tripRepository.findById(77)).thenReturn(Optional.of(startedTrip));
+
+        var exception = assertThrows(
+                BusinessRuleException.class,
+                () -> cargoTicketService.createCargoTicket(request, 123));
+
+        assertEquals(
+                "Chuyến xe đã khởi hành hoặc không còn hoạt động, không thể nhận thêm hàng.",
+                exception.getMessage());
     }
 
     /**

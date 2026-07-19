@@ -219,7 +219,7 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
     @Query(value = """
             SELECT CASE WHEN EXISTS (
                 SELECT 1
-                FROM trip t
+                FROM trip t WITH (UPDLOCK, HOLDLOCK)
                 JOIN route_stop pickup ON pickup.routeId = t.routeId
                 JOIN ticket_agency agency ON agency.stopPointId = pickup.stopPointId
                                          AND agency.ticketAgencyId = :ticketAgencyId
@@ -238,7 +238,7 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
                 WHERE t.tripId = :tripId
                   AND pickup.stopPointId = :pickupStopId
                   AND originStop.city = agencyStop.city
-                  AND t.[status] IN ('SCHEDULED', 'IN_PROGRESS')
+                  AND t.[status] = 'SCHEDULED'
                   AND DATEADD(MINUTE, pickup.minutesFromStart, t.departureTime) >= GETDATE()
                   AND CAST(DATEADD(MINUTE, pickup.minutesFromStart, t.departureTime) AS DATE)
                         = CAST(GETDATE() AS DATE)
@@ -271,7 +271,7 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
                 JOIN coach_stop selectedDropoff ON selectedDropoff.stopPointId = :dropoffStopId
                 WHERE pickupPoint.city = selectedPickup.city
                   AND dropoffPoint.city = selectedDropoff.city
-                  AND t.[status] IN ('SCHEDULED', 'IN_PROGRESS')
+                  AND t.[status] = 'SCHEDULED'
                 GROUP BY t.tripId, t.routeId, t.coachId, t.departureTime, t.[status]
             )
             SELECT e.tripId AS tripId, r.routeName AS routeName,
@@ -302,7 +302,7 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
                 JOIN coach_stop selectedDropoff ON selectedDropoff.stopPointId = :dropoffStopId
                 WHERE pickupPoint.city = selectedPickup.city
                   AND dropoffPoint.city = selectedDropoff.city
-                  AND t.[status] IN ('SCHEDULED', 'IN_PROGRESS')
+                  AND t.[status] = 'SCHEDULED'
                 GROUP BY t.tripId, t.routeId, t.coachId, t.departureTime, t.[status]
             )
             SELECT e.tripId AS tripId, r.routeName AS routeName,
@@ -336,7 +336,7 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
               AND pickupPoint.city = selectedPickup.city
               AND dropoffPoint.city = selectedDropoff.city
               AND DATEADD(MINUTE, pickup.minutesFromStart, t.departureTime) >= GETDATE()
-              AND t.[status] IN ('SCHEDULED', 'IN_PROGRESS')
+              AND t.[status] = 'SCHEDULED'
             ) THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END
             """, nativeQuery = true)
     boolean isEligibleForCargo(@Param("tripId") int tripId,
