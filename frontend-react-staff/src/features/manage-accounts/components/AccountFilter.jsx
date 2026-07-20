@@ -28,14 +28,14 @@ export default function AccountFilter({ filters, onFilterChange, onReset }) {
                             <BsSearch className="position-absolute top-50 end-0 translate-middle-y me-2 text-muted" />
                         </div>
                     </Col>
-                    <Col md={2}>
+                    {/* <Col md={2}>
                         <Form.Label className="fw-semibold small">Loại tài khoản</Form.Label>
                         <Form.Select name="authProvider" value={filters.authProvider} onChange={onFilterChange} size="sm">
                             <option value="">Tất cả</option>
                             <option value="local">Nội bộ</option>
                             <option value="firebase">Firebase</option>
                         </Form.Select>
-                    </Col>
+                    </Col> */}
                     <Col md={2}>
                         <Form.Label className="fw-semibold small">Vai trò</Form.Label>
                         <Form.Select name="role" value={filters.role} onChange={onFilterChange} size="sm">
