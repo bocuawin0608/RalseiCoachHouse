@@ -44,7 +44,7 @@ export default function AccountTable({ accounts, loading, error, onViewDetail, o
                 <thead className="table-light">
                     <tr>
                         <th>Username</th>
-                        <th>Loại</th>
+                        {/* <th>Loại</th> */}
                         <th>Liên kết tới</th>
                         <th>Vai trò</th>
                         <th>Lần đăng nhập cuối</th>
@@ -60,11 +60,11 @@ export default function AccountTable({ accounts, loading, error, onViewDetail, o
                         return (
                         <tr key={acc.accountId} className={!active ? 'table-danger' : ''}>
                             <td className="fw-medium">{acc.username}</td>
-                            <td>
+                            {/* <td>
                                 <Badge bg={isLocal(acc) ? 'secondary' : 'primary'} style={{ fontSize: '0.75rem' }}>
                                     {isLocal(acc) ? 'Nội bộ' : 'Firebase'}
                                 </Badge>
-                            </td>
+                            </td> */}
                             <td style={{ fontSize: '0.85rem' }}>
                                 {linkedName ? (
                                     <>{linkedName} <small className="text-muted">({linkedType})</small></>
@@ -95,9 +95,9 @@ export default function AccountTable({ accounts, loading, error, onViewDetail, o
                                     <Button variant="outline-primary" title="Xem chi tiết" onClick={() => onViewDetail(acc)}>
                                         <BsEye />
                                     </Button>
-                                    <Button variant="outline-warning" title="Gán vai trò" onClick={() => onAssignRoles(acc)}>
+                                    {/* <Button variant="outline-warning" title="Gán vai trò" onClick={() => onAssignRoles(acc)}>
                                         <BsShieldLock />
-                                    </Button>
+                                    </Button> */}
                                     <Button variant="outline-info" title="Đặt lại mật khẩu"
                                         disabled={!isLocal(acc)}
                                         onClick={() => onResetPassword(acc)}>
