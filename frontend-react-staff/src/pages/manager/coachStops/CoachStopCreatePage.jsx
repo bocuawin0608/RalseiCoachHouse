@@ -99,23 +99,11 @@ export default function CoachStopCreatePage() {
         setIsSubmitting(true);
 
         try {
-            // Call forward geocoding to get lat/lng from address
-            const fullAddress = `${formData.address}, ${formData.city}`;
-            const geocodeRes = await axiosClient.get(`/v2/goong/geocode?address=${encodeURIComponent(fullAddress)}`);
-
-            if (!geocodeRes || !geocodeRes.latitude || !geocodeRes.longitude) {
-                setErrorMsg('Không tìm thấy tọa độ cho địa chỉ này. Vui lòng kiểm tra lại địa chỉ.');
-                setIsSubmitting(false);
-                return;
-            }
-
             const payload = {
                 stopPointName: formData.stopPointName,
                 address: formData.address,
                 city: formData.city,
-                active: formData.active,
-                latitude: geocodeRes.latitude,
-                longitude: geocodeRes.longitude
+                active: formData.active
             };
 
             await coachStopApi.createCoachStop(payload);
