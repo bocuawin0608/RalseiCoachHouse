@@ -25,6 +25,7 @@ import com.ralsei.repository.CargoTypePriceRepository;
 import com.ralsei.repository.CoachStopRepository;
 import com.ralsei.repository.StaffRepository;
 import com.ralsei.service.JwtService;
+import com.ralsei.service.cargoticket.CargoTicketPaymentPolicy;
 import com.ralsei.service.tripstaff.TripStaffCargoService;
 
 import lombok.RequiredArgsConstructor;
@@ -42,6 +43,7 @@ public class TripStaffCargoServiceImpl implements TripStaffCargoService {
     private final CargoTicketDetailRepository cargoTicketDetailRepository;
     private final CargoTypePriceRepository cargoTypePriceRepository;
     private final CoachStopRepository coachStopRepository;
+    private final CargoTicketPaymentPolicy cargoTicketPaymentPolicy;
 
     @Override
     @Transactional(readOnly = true)
@@ -82,6 +84,7 @@ public class TripStaffCargoServiceImpl implements TripStaffCargoService {
             throw new BusinessRuleException(
                     "Hàng hóa đang ở trạng thái " + ticket.getStatus() + ", không thể xác nhận lên xe");
         }
+        cargoTicketPaymentPolicy.requireSenderPaidBeforeLoad(ticket);
 
         ticket.setStatus("LOADED");
         ticket.setLoadedBy(staff);

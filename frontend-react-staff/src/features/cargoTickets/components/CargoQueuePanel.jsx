@@ -1,18 +1,56 @@
 import { useState } from 'react';
 import { Alert, Badge, Button, Table } from 'react-bootstrap';
-import { BsEye, BsPencil, BsTelephone, BsTrash } from 'react-icons/bs';
+import { BsCashCoin, BsEye, BsPencil, BsTelephone, BsTrash } from 'react-icons/bs';
 import Pagination from '../../../components/common/Pagination';
 import { formatCurrency } from '../../../utils/formatters';
 import { useCargoTickets } from '../hooks/useCargoTickets';
 import { cargoTicketApi } from '../api/cargoTicketApi';
 import CargoTicketUpdateModal from './CargoTicketUpdateModal';
 import CargoTicketDetailViewModal from './CargoTicketDetailViewModal';
+import CargoConfirmModal from './CargoConfirmModal';
+import QrPaymentModal from './QrPaymentModal';
 
 const QUEUE_STATUS_PRESENTATION = {
     RECEIVED: { label: 'Đang chờ', badge: 'primary' },
     ARRIVED: { label: 'Chờ nhận hàng', badge: 'warning' },
     DELIVERED: { label: 'Đã nhận hàng', badge: 'success' }
 };
+
+const PAYMENT_STATUS_LABEL = {
+    PENDING: 'Chờ thanh toán',
+    COMPLETED: 'Đã thanh toán',
+    FAILED: 'Thất bại'
+};
+
+const PAYMENT_STATUS_BADGE = {
+    PENDING: 'warning',
+    COMPLETED: 'success',
+    FAILED: 'danger'
+};
+
+const FEE_PAYER_LABEL = {
+    SENDER: 'Người gửi trả',
+    RECEIVER: 'Người nhận trả'
+};
+
+function isPaymentPending(ticket) {
+    return ticket?.payment?.status === 'PENDING';
+}
+
+function isBankPending(ticket) {
+    return isPaymentPending(ticket) && ticket.payment?.paymentMethod === 'BANK_TRANSFER';
+}
+
+function isCashPending(ticket) {
+    return isPaymentPending(ticket) && ticket.payment?.paymentMethod === 'CASH';
+}
+
+function canConfirmDeliver(ticket) {
+    if (ticket.feePayer !== 'RECEIVER') return true;
+    if (!ticket.payment) return false;
+    if (ticket.payment.status === 'COMPLETED') return true;
+    return ticket.payment.paymentMethod === 'CASH';
+}
 
 /**
  * Shared operational queue. Pending orders expose update/cancel actions while
@@ -28,16 +66,16 @@ export default function CargoQueuePanel({
     const { tickets, loading, error, pageInfo, setPageInfo, refetch } = useCargoTickets(status, tripId);
     const [editTicket, setEditTicket] = useState(null);
     const [viewTicket, setViewTicket] = useState(null);
+    const [qrTicket, setQrTicket] = useState(null);
     const [actionId, setActionId] = useState(null);
+    const [confirmDialog, setConfirmDialog] = useState(null);
 
-    const cancelOrder = async ticket => {
-        if (!window.confirm(`Hủy đơn ${ticket.ticketCode}? Thao tác này không thể hoàn tác.`)) return;
-        await runAction(ticket.cargoTicketId, () => cargoTicketApi.disableCargoTicket(ticket.cargoTicketId));
-    };
+    const busy = actionId != null;
+    const qrOpenFor = (ticket) => qrTicket?.cargoTicketId === ticket.cargoTicketId;
 
-    const confirmOrder = async ticket => {
-        if (!window.confirm(`Xác nhận ${ticket.receiverName} đã nhận đơn ${ticket.ticketCode}?`)) return;
-        await runAction(ticket.cargoTicketId, () => cargoTicketApi.confirmReceived(ticket.cargoTicketId));
+    const closeConfirm = () => {
+        if (actionId != null) return;
+        setConfirmDialog(null);
     };
 
     const runAction = async (id, action) => {
@@ -46,6 +84,7 @@ export default function CargoQueuePanel({
             await action();
             await refetch();
             await onQueueChanged?.();
+            setConfirmDialog(null);
         } catch (requestError) {
             window.alert(requestError.response?.data?.message || 'Không thể cập nhật đơn hàng.');
         } finally {
@@ -53,46 +92,267 @@ export default function CargoQueuePanel({
         }
     };
 
+    const openQr = async ticket => {
+        try {
+            const full = await cargoTicketApi.getCargoTicket(ticket.cargoTicketId);
+            setQrTicket(full || ticket);
+        } catch {
+            setQrTicket(ticket);
+        }
+    };
+
+    const requestCancel = (ticket) => {
+        if (busy || qrOpenFor(ticket)) return;
+        const paidNote = ticket.payment?.status === 'COMPLETED'
+            ? '\nĐơn đã thanh toán sẽ tạo yêu cầu hoàn tiền.'
+            : '';
+        setConfirmDialog({
+            type: 'cancel',
+            ticket,
+            title: 'Hủy đơn gửi hàng',
+            message: `Bạn có chắc muốn hủy đơn ${ticket.ticketCode}?${paidNote}`,
+            confirmLabel: 'Hủy đơn',
+            confirmVariant: 'danger',
+        });
+    };
+
+    const requestDeliver = (ticket) => {
+        if (busy) return;
+        if (ticket.feePayer === 'RECEIVER' && isBankPending(ticket)) {
+            window.alert('Người nhận chưa chuyển khoản xong. Vui lòng mở QR và chờ thanh toán thành công trước.');
+            openQr(ticket);
+            return;
+        }
+        if (ticket.feePayer === 'RECEIVER' && isCashPending(ticket)) {
+            setConfirmDialog({
+                type: 'deliver-cash',
+                ticket,
+                title: 'Xác nhận thu tiền mặt',
+                message:
+                    `Xác nhận đã nhận đủ tiền mặt từ người nhận (${ticket.receiverName}) `
+                    + `cho đơn ${ticket.ticketCode}?\nSố tiền: ${formatCurrency(ticket.totalPrice)}\n`
+                    + 'Sau khi xác nhận, đơn sẽ được đánh dấu đã giao hàng.',
+                confirmLabel: 'Đã nhận tiền — giao hàng',
+                confirmVariant: 'success',
+            });
+            return;
+        }
+        setConfirmDialog({
+            type: 'deliver',
+            ticket,
+            title: 'Xác nhận giao hàng',
+            message: `Xác nhận ${ticket.receiverName} đã nhận đơn ${ticket.ticketCode}?`,
+            confirmLabel: 'Đã nhận hàng',
+            confirmVariant: 'success',
+        });
+    };
+
+    const requestCollectCash = (ticket) => {
+        if (busy) return;
+        setConfirmDialog({
+            type: 'collect-cash',
+            ticket,
+            title: 'Xác nhận thu tiền mặt',
+            message:
+                `Xác nhận đã nhận đủ tiền mặt cho đơn ${ticket.ticketCode}?\n`
+                + `Số tiền: ${formatCurrency(ticket.totalPrice)}`,
+            confirmLabel: 'Đã nhận tiền',
+            confirmVariant: 'success',
+        });
+    };
+
+    const handleConfirm = async () => {
+        if (!confirmDialog?.ticket) return;
+        const { type, ticket } = confirmDialog;
+        if (type === 'cancel') {
+            await runAction(ticket.cargoTicketId, () => cargoTicketApi.disableCargoTicket(ticket.cargoTicketId));
+            return;
+        }
+        if (type === 'deliver' || type === 'deliver-cash') {
+            await runAction(ticket.cargoTicketId, () => cargoTicketApi.confirmReceived(ticket.cargoTicketId));
+            return;
+        }
+        if (type === 'collect-cash') {
+            await runAction(ticket.cargoTicketId, () => cargoTicketApi.completePayment(ticket.cargoTicketId));
+        }
+    };
+
     if (loading) return <div className="cargo-loading">Đang tải đơn hàng...</div>;
     return <section className="cargo-queue-card">
         {error && <Alert variant="danger">{error}</Alert>}
         <Table responsive hover className="cargo-queue-table align-middle mb-0">
-            <thead><tr><th>Mã đơn</th><th>Người gửi / nhận</th><th>Hành trình</th><th>Chuyến xe</th><th>Trách nhiệm</th><th>Tiền hàng</th><th>Hành động</th></tr></thead>
+            <thead>
+                <tr>
+                    <th>Mã đơn</th>
+                    <th>Người gửi / nhận</th>
+                    <th>Hành trình</th>
+                    <th>Chuyến xe</th>
+                    <th>Trách nhiệm</th>
+                    <th>Tiền / thanh toán</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
             <tbody>
-                {tickets.length === 0 && <tr><td colSpan="7" className="cargo-empty">Không có đơn hàng trong trạng thái này.</td></tr>}
-                {tickets.map(ticket => <tr key={ticket.cargoTicketId}>
-                    <td>
-                        <strong>{ticket.ticketCode}</strong>
-                        <div>
-                            <Badge bg={(QUEUE_STATUS_PRESENTATION[ticket.status] || QUEUE_STATUS_PRESENTATION[status])?.badge || 'secondary'}>
-                                {(QUEUE_STATUS_PRESENTATION[ticket.status] || QUEUE_STATUS_PRESENTATION[status])?.label || ticket.status}
-                            </Badge>
-                        </div>
-                    </td>
-                    <td><Contact label="Gửi" name={ticket.senderName} phone={ticket.senderPhone} /><Contact label="Nhận" name={ticket.receiverName} phone={ticket.receiverPhone} /></td>
-                    <td><strong>{ticket.routeName || '—'}</strong><small>{ticket.pickupStopName} → {ticket.dropoffStopName}</small><small>Văn phòng nhận: {ticket.destinationAgencyName || 'Chưa gán'}</small></td>
-                    <td>
-                        <strong>{ticket.licensePlate || 'Chưa gán xe'}</strong>
-                        {editable && <small>Chuyến #{ticket.tripId || '—'}</small>}
-                    </td>
-                    <td><small>Tài xế: {ticket.driverName || '—'} · {ticket.driverPhone || '—'}</small><small>Phụ xe: {ticket.attendantName || '—'} · {ticket.attendantPhone || '—'}</small></td>
-                    <td><strong>{formatCurrency(ticket.totalPrice)}</strong><small>COD: {formatCurrency(ticket.codAmount)}</small></td>
-                    <td><div className="cargo-actions">
-                        <Button variant="outline-success" title="Xem đầy đủ" onClick={() => setViewTicket(ticket)}><BsEye /></Button>
-                        {editable && <Button variant="success" title="Cập nhật" onClick={() => setEditTicket(ticket)}><BsPencil /></Button>}
-                        {editable && <Button variant="outline-danger" title="Hủy đơn" disabled={actionId === ticket.cargoTicketId} onClick={() => cancelOrder(ticket)}><BsTrash /></Button>}
-                        {confirmable && <Button className="cargo-primary-button text-nowrap" disabled={actionId === ticket.cargoTicketId} onClick={() => confirmOrder(ticket)}>Đã nhận hàng</Button>}
-                    </div></td>
-                </tr>)}
+                {tickets.length === 0 && (
+                    <tr><td colSpan="7" className="cargo-empty">Không có đơn hàng trong trạng thái này.</td></tr>
+                )}
+                {tickets.map(ticket => (
+                    <tr key={ticket.cargoTicketId}>
+                        <td>
+                            <strong>{ticket.ticketCode}</strong>
+                            <div>
+                                <Badge bg={(QUEUE_STATUS_PRESENTATION[ticket.status] || QUEUE_STATUS_PRESENTATION[status])?.badge || 'secondary'}>
+                                    {(QUEUE_STATUS_PRESENTATION[ticket.status] || QUEUE_STATUS_PRESENTATION[status])?.label || ticket.status}
+                                </Badge>
+                            </div>
+                        </td>
+                        <td>
+                            <Contact label="Gửi" name={ticket.senderName} phone={ticket.senderPhone} />
+                            <Contact label="Nhận" name={ticket.receiverName} phone={ticket.receiverPhone} />
+                        </td>
+                        <td>
+                            <strong>{ticket.routeName || '—'}</strong>
+                            <small>{ticket.pickupStopName} → {ticket.dropoffStopName}</small>
+                            <small>Văn phòng nhận: {ticket.destinationAgencyName || 'Chưa gán'}</small>
+                        </td>
+                        <td>
+                            <strong>{ticket.licensePlate || 'Chưa gán xe'}</strong>
+                            {editable && <small>Chuyến #{ticket.tripId || '—'}</small>}
+                        </td>
+                        <td>
+                            <small>Tài xế: {ticket.driverName || '—'} · {ticket.driverPhone || '—'}</small>
+                            <small>Phụ xe: {ticket.attendantName || '—'} · {ticket.attendantPhone || '—'}</small>
+                        </td>
+                        <td>
+                            <strong>{formatCurrency(ticket.totalPrice)}</strong>
+                            <small>{FEE_PAYER_LABEL[ticket.feePayer] || ticket.feePayer}</small>
+                            {ticket.payment ? (
+                                <div>
+                                    <Badge bg={PAYMENT_STATUS_BADGE[ticket.payment.status] || 'secondary'}>
+                                        {PAYMENT_STATUS_LABEL[ticket.payment.status] || ticket.payment.status}
+                                    </Badge>
+                                    <small className="d-block">
+                                        {ticket.payment.paymentMethod === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản'}
+                                    </small>
+                                </div>
+                            ) : (
+                                <small>Chưa có thanh toán</small>
+                            )}
+                        </td>
+                        <td>
+                            <div className="cargo-actions">
+                                <Button variant="outline-success" title="Xem đầy đủ" onClick={() => setViewTicket(ticket)}>
+                                    <BsEye />
+                                </Button>
+                                {editable && (
+                                    <Button
+                                        variant="success"
+                                        title="Cập nhật"
+                                        disabled={busy || qrOpenFor(ticket)}
+                                        onClick={() => setEditTicket(ticket)}
+                                    >
+                                        <BsPencil />
+                                    </Button>
+                                )}
+                                {editable && isBankPending(ticket) && ticket.feePayer === 'SENDER' && (
+                                    <Button
+                                        variant="outline-primary"
+                                        title="Thanh toán QR"
+                                        disabled={busy}
+                                        onClick={() => openQr(ticket)}
+                                    >
+                                        <BsCashCoin />
+                                    </Button>
+                                )}
+                                {editable && isCashPending(ticket) && ticket.feePayer === 'SENDER' && (
+                                    <Button
+                                        variant="outline-primary"
+                                        title="Xác nhận tiền mặt"
+                                        disabled={busy}
+                                        onClick={() => requestCollectCash(ticket)}
+                                    >
+                                        <BsCashCoin />
+                                    </Button>
+                                )}
+                                {editable && (
+                                    <Button
+                                        variant="outline-danger"
+                                        title="Hủy đơn"
+                                        disabled={busy || qrOpenFor(ticket)}
+                                        onClick={() => requestCancel(ticket)}
+                                    >
+                                        <BsTrash />
+                                    </Button>
+                                )}
+                                {confirmable && isBankPending(ticket) && ticket.feePayer === 'RECEIVER' && (
+                                    <Button
+                                        variant="outline-primary"
+                                        title="QR người nhận"
+                                        disabled={busy}
+                                        onClick={() => openQr(ticket)}
+                                    >
+                                        <BsCashCoin />
+                                    </Button>
+                                )}
+                                {confirmable && (
+                                    <Button
+                                        className="cargo-primary-button text-nowrap"
+                                        disabled={busy || !canConfirmDeliver(ticket)}
+                                        onClick={() => requestDeliver(ticket)}
+                                    >
+                                        Đã nhận hàng
+                                    </Button>
+                                )}
+                            </div>
+                        </td>
+                    </tr>
+                ))}
             </tbody>
         </Table>
         <div className="cargo-pagination"><Pagination pageInfo={pageInfo} onPageChange={setPageInfo} /></div>
-        {editTicket && <CargoTicketUpdateModal key={editTicket.cargoTicketId} data={editTicket} onClose={() => { setEditTicket(null); refetch(); }} onSuccess={refetch} />}
-        {viewTicket && <CargoTicketDetailViewModal key={viewTicket.cargoTicketId} ticket={viewTicket} onClose={() => { setViewTicket(null); refetch(); }} readOnly={!editable} />}
+        {editTicket && (
+            <CargoTicketUpdateModal
+                key={editTicket.cargoTicketId}
+                data={editTicket}
+                onClose={() => { setEditTicket(null); refetch(); }}
+                onSuccess={refetch}
+            />
+        )}
+        {viewTicket && (
+            <CargoTicketDetailViewModal
+                key={viewTicket.cargoTicketId}
+                ticket={viewTicket}
+                onClose={() => { setViewTicket(null); refetch(); }}
+                readOnly={!editable}
+            />
+        )}
+        {qrTicket && (
+            <QrPaymentModal
+                ticket={qrTicket}
+                onClose={() => setQrTicket(null)}
+                onSuccess={() => { setQrTicket(null); refetch(); onQueueChanged?.(); }}
+            />
+        )}
+        <CargoConfirmModal
+            show={Boolean(confirmDialog)}
+            title={confirmDialog?.title || ''}
+            message={confirmDialog?.message || ''}
+            confirmLabel={confirmDialog?.confirmLabel}
+            confirmVariant={confirmDialog?.confirmVariant || 'primary'}
+            confirming={busy}
+            onConfirm={handleConfirm}
+            onCancel={closeConfirm}
+        />
     </section>;
 }
 
 /** Renders one party without hiding the phone number needed for hand-over. */
 function Contact({ label, name, phone }) {
-    return <div className="cargo-contact"><span>{label}</span><strong>{name}</strong><small><BsTelephone /> {phone}</small></div>;
+    return (
+        <div className="cargo-contact">
+            <span>{label}</span>
+            <strong>{name}</strong>
+            <small><BsTelephone /> {phone}</small>
+        </div>
+    );
 }

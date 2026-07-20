@@ -1,5 +1,6 @@
 package com.ralsei.service.impl;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -44,9 +45,12 @@ import com.ralsei.model.CargoTypePrice;
 import com.ralsei.model.TicketAgency;
 import com.ralsei.util.FreightCalculatorUtility;
 import com.ralsei.util.CargoVolumePolicy;
+import com.ralsei.service.cargoticket.CargoTicketPaymentPolicy;
 
 import lombok.RequiredArgsConstructor;
 import java.math.BigDecimal;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -72,6 +76,13 @@ public class CargoTicketServiceImpl implements CargoTicketService {
     private final TransactionIdGenerator transactionIdGenerator;
     private final RouteRepository routeRepository;
     private final TicketAgencyRepository ticketAgencyRepository;
+    private final CargoTicketPaymentPolicy cargoTicketPaymentPolicy;
+
+    @Value("${sepay.bank.account}")
+    private String sepayBankAccount;
+
+    @Value("${sepay.bank.name}")
+    private String sepayBankName;
 
     @Override
     /**
@@ -263,10 +274,11 @@ public class CargoTicketServiceImpl implements CargoTicketService {
                 .amount(savedTicket.getTotalPrice())
                 .paymentMethod(request.getPaymentMethod())
                 .transactionId(transactionIdGenerator.generateUniqueTransactionId())
-                .status("PENDING")
+                .status(CargoTicketPaymentPolicy.STATUS_PENDING)
                 .refundAmount(BigDecimal.ZERO)
                 .build();
         paymentRepository.save(payment);
+        cargoTicketPaymentPolicy.completeCashIfApplicableOnCreate(payment, savedTicket.getFeePayer());
 
         return mapToResponse(savedTicket);
     }
@@ -362,6 +374,9 @@ public class CargoTicketServiceImpl implements CargoTicketService {
     public CargoTicketResponse updateCargoTicket(int id, CargoTicketRequest request) {
         CargoTicket ticket = findByIdOrThrow(id);
         requirePending(ticket, "Chỉ đơn đang chờ mới được cập nhật.");
+        Payment payment = cargoTicketPaymentPolicy.findPayment(ticket);
+        guardPaidOrderMoneyFields(ticket, payment, request, ticket.getTotalPrice());
+
         BigDecimal existingTotal = ticket.getTotalPrice();
         String ticketCode = ticket.getTicketCode();
         validateReferences(request);
@@ -373,21 +388,25 @@ public class CargoTicketServiceImpl implements CargoTicketService {
         ticket.setStatus("RECEIVED");
         CargoTicket savedTicket = cargoTicketRepository.save(ticket);
 
-        Payment payment = paymentRepository.findByCargoTicket_CargoTicketId(savedTicket.getCargoTicketId())
-                .orElse(null);
-        if (payment != null && request.getPaymentMethod() != null) {
+        if (payment != null && request.getPaymentMethod() != null
+                && !cargoTicketPaymentPolicy.isCompleted(payment)) {
             payment.setPaymentMethod(request.getPaymentMethod());
             paymentRepository.save(payment);
+            if (CargoTicketPaymentPolicy.FEE_SENDER.equalsIgnoreCase(savedTicket.getFeePayer())
+                    && CargoTicketPaymentPolicy.METHOD_CASH.equals(payment.getPaymentMethod())) {
+                cargoTicketPaymentPolicy.completeCashIfApplicableOnCreate(payment, savedTicket.getFeePayer());
+            }
         } else if (payment == null && request.getPaymentMethod() != null) {
             payment = Payment.builder()
                     .cargoTicket(savedTicket)
                     .amount(savedTicket.getTotalPrice())
                     .paymentMethod(request.getPaymentMethod())
                     .transactionId(transactionIdGenerator.generateUniqueTransactionId())
-                    .status("PENDING")
+                    .status(CargoTicketPaymentPolicy.STATUS_PENDING)
                     .refundAmount(BigDecimal.ZERO)
                     .build();
             paymentRepository.save(payment);
+            cargoTicketPaymentPolicy.completeCashIfApplicableOnCreate(payment, savedTicket.getFeePayer());
         }
 
         return mapToResponse(savedTicket);
@@ -398,6 +417,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
     public CargoTicketResponse updateCargoTicketWithDetails(int id, CargoTicketWithDetailsRequest request) {
         CargoTicket ticket = findByIdOrThrow(id);
         requirePending(ticket, "Chỉ đơn đang chờ mới được cập nhật.");
+        Payment existingPayment = cargoTicketPaymentPolicy.findPayment(ticket);
         List<CargoTicketDetail> existing = cargoTicketDetailRepository
                 .findByCargoTicket_CargoTicketId(id);
         BigDecimal previousVolume = existing.stream().map(this::occupiedVolume)
@@ -406,6 +426,11 @@ public class CargoTicketServiceImpl implements CargoTicketService {
                 .map(detail -> CargoVolumePolicy.occupiedVolume(
                         detail.getDimensionVol(), detail.getQuantity()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal requestedTotal = request.getDetails().stream()
+                .map(detail -> calculateDetailPrice(
+                        detail.getCargoTypePriceId(), detail.getDimensionVol(), detail.getQuantity()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        guardPaidOrderMoneyFields(ticket, existingPayment, request, requestedTotal);
 
         CargoVolumePolicy.validateOrderVolume(requestedVolume);
         updateCargoTicket(id, request);
@@ -456,6 +481,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
         CargoTicket ticket = cargoTicketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn gửi hàng."));
         requirePending(ticket, "Chỉ đơn đang chờ mới được thêm hàng hóa.");
+        cargoTicketPaymentPolicy.rejectMoneyChangesWhenPaid(cargoTicketPaymentPolicy.findPayment(ticket));
         BigDecimal addedVolume = CargoVolumePolicy.occupiedVolume(
                 request.getDimensionVol(), request.getQuantity());
         BigDecimal nextOrderVolume = cargoTicketDetailRepository.sumVolumeByCargoTicketId(ticketId)
@@ -507,6 +533,8 @@ public class CargoTicketServiceImpl implements CargoTicketService {
         CargoTicketDetail detail = cargoTicketDetailRepository.findById(detailId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chi tiết đơn gửi hàng."));
         requirePending(detail.getCargoTicket(), "Chỉ đơn đang chờ mới được cập nhật hàng hóa.");
+        cargoTicketPaymentPolicy.rejectMoneyChangesWhenPaid(
+                cargoTicketPaymentPolicy.findPayment(detail.getCargoTicket()));
         BigDecimal previousVolume = occupiedVolume(detail);
         BigDecimal nextVolume = CargoVolumePolicy.occupiedVolume(
                 request.getDimensionVol(), request.getQuantity());
@@ -556,6 +584,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chi tiết đơn gửi hàng."));
         CargoTicket ticket = detail.getCargoTicket();
         requirePending(ticket, "Chỉ đơn đang chờ mới được xóa hàng hóa.");
+        cargoTicketPaymentPolicy.rejectMoneyChangesWhenPaid(cargoTicketPaymentPolicy.findPayment(ticket));
         cargoTicketDetailRepository.delete(detail);
 
         cargoTicketDetailRepository.flush();
@@ -572,6 +601,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
     public void disable(int id) {
         CargoTicket ticket = findByIdOrThrow(id);
         requirePending(ticket, "Chỉ đơn đang chờ mới được hủy.");
+        cargoTicketPaymentPolicy.applyCancelPaymentSideEffects(ticket);
         ticket.setStatus("CANCELLED");
         cargoTicketRepository.save(ticket);
     }
@@ -596,6 +626,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
         if (!"ARRIVED".equals(ticket.getStatus())) {
             throw new BusinessRuleException("Chỉ đơn đã đến nơi mới có thể xác nhận nhận hàng.");
         }
+        cargoTicketPaymentPolicy.settleReceiverPaymentBeforeDeliver(ticket);
         ticket.setStatus("DELIVERED");
         ticket.setDeliveredBy(currentStaff);
         cargoTicketRepository.save(ticket);
@@ -630,20 +661,9 @@ public class CargoTicketServiceImpl implements CargoTicketService {
      * @param cargoTicketId the value supplied for this operation
      */
     public void completePayment(int cargoTicketId) {
-        Payment payment = paymentRepository.findByCargoTicket_CargoTicketId(cargoTicketId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Không tìm thấy thanh toán cho đơn gửi hàng ID: " + cargoTicketId));
-
-        if (!"CASH".equals(payment.getPaymentMethod())) {
-            throw new BusinessRuleException("Chỉ có thể hoàn thành thanh toán tiền mặt.");
-        }
-        if (!"PENDING".equals(payment.getStatus())) {
-            throw new BusinessRuleException("Thanh toán đã được xử lý.");
-        }
-
-        payment.setStatus("COMPLETED");
-        payment.setPaymentTime(java.time.LocalDateTime.now());
-        paymentRepository.save(payment);
+        CargoTicket ticket = findByIdOrThrow(cargoTicketId);
+        Payment payment = cargoTicketPaymentPolicy.requirePayment(ticket);
+        cargoTicketPaymentPolicy.markCashCompleted(payment);
     }
 
     @Override
@@ -695,10 +715,25 @@ public class CargoTicketServiceImpl implements CargoTicketService {
         ticket.setTotalPrice(total);
         cargoTicketRepository.save(ticket);
 
-        Payment payment = paymentRepository.findByCargoTicket_CargoTicketId(ticket.getCargoTicketId()).orElse(null);
-        if (payment != null) {
-            payment.setAmount(total);
-            paymentRepository.save(payment);
+        Payment payment = cargoTicketPaymentPolicy.findPayment(ticket);
+        cargoTicketPaymentPolicy.syncAmountIfPending(payment, total);
+    }
+
+    private void guardPaidOrderMoneyFields(
+            CargoTicket ticket, Payment payment, CargoTicketRequest request, BigDecimal nextTotal) {
+        if (!cargoTicketPaymentPolicy.isCompleted(payment)) {
+            return;
+        }
+        if (request.getFeePayer() != null
+                && !request.getFeePayer().equalsIgnoreCase(ticket.getFeePayer())) {
+            cargoTicketPaymentPolicy.rejectMoneyChangesWhenPaid(payment);
+        }
+        if (request.getPaymentMethod() != null
+                && !request.getPaymentMethod().equalsIgnoreCase(payment.getPaymentMethod())) {
+            cargoTicketPaymentPolicy.rejectMoneyChangesWhenPaid(payment);
+        }
+        if (nextTotal != null && payment.getAmount().compareTo(nextTotal) != 0) {
+            cargoTicketPaymentPolicy.rejectMoneyChangesWhenPaid(payment);
         }
     }
 
@@ -948,8 +983,20 @@ public class CargoTicketServiceImpl implements CargoTicketService {
                 || !"PENDING".equals(payment.getStatus())) {
             return null;
         }
-        long amount = totalPrice.longValue();
-        return "https://vietqr.app/img?bank=Vietcombank&acc=SBSEPAYHCNTZK98PS6F&template=compact&amount=" + amount
-                + "&des=" + payment.getTransactionId();
+        if (sepayBankAccount == null || sepayBankAccount.isBlank()
+                || sepayBankName == null || sepayBankName.isBlank()
+                || totalPrice == null || payment.getTransactionId() == null) {
+            return null;
+        }
+        String amount = totalPrice.stripTrailingZeros().toPlainString();
+        return "https://qr.sepay.vn/img?bank=" + encodeQrParam(sepayBankName)
+                + "&acc=" + encodeQrParam(sepayBankAccount)
+                + "&template=compact"
+                + "&amount=" + encodeQrParam(amount)
+                + "&des=" + encodeQrParam(payment.getTransactionId());
+    }
+
+    private static String encodeQrParam(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 }
