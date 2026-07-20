@@ -69,7 +69,12 @@ export default function RouteUpdateInfoModal({ isOpen, data, onClose, onSuccess 
             onSuccess();
             onClose();
         } catch (error) {
-            setError(error.response?.data?.message || "Có lỗi xảy ra khi cập nhật.");
+            const errorMessage = error.response?.data?.message;
+            if (errorMessage && errorMessage.includes("chưa được kích hoạt")) {
+                setError("Không thể kích hoạt: Tuyến đường này có chứa điểm đầu hoặc điểm cuối đang bị vô hiệu hóa.");
+            } else {
+                setError(errorMessage || "Có lỗi xảy ra khi cập nhật.");
+            }
         } finally {
             setIsSubmitting(false);
         }

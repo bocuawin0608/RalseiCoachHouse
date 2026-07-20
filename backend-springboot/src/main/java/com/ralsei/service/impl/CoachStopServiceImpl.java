@@ -7,6 +7,11 @@ import com.ralsei.model.CoachStop;
 import com.ralsei.repository.CoachStopRepository;
 import com.ralsei.service.CoachStopService;
 import com.ralsei.exception.ResourceNotFoundException;
+import com.ralsei.service.GoongService;
+import com.ralsei.dto.response.goong.GeocodeResponse;
+import com.ralsei.repository.RouteRepository;
+import com.ralsei.model.RouteStop;
+import com.ralsei.model.Route;
 
 import java.util.List;
 import java.util.Objects;
@@ -27,6 +32,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class CoachStopServiceImpl implements CoachStopService {
 
     private final CoachStopRepository coachStopRepository;
+    private final GoongService goongService;
+    private final RouteRepository routeRepository;
 
     @Override
     @Transactional
@@ -43,12 +50,14 @@ public class CoachStopServiceImpl implements CoachStopService {
             throw new IllegalArgumentException("Đã tồn tại điểm dừng với địa chỉ và thành phố này.");
         }
 
+        GeocodeResponse geo = goongService.geocode(request.getAddress().trim() + ", " + request.getCity().trim());
+
         CoachStop coachStop = CoachStop.builder()
                 .stopPointName(request.getStopPointName().trim())
                 .address(request.getAddress().trim())
                 .city(request.getCity().trim())
-                .latitude(request.getLatitude())
-                .longitude(request.getLongitude())
+                .latitude(geo.getLatitude())
+                .longitude(geo.getLongitude())
                 .isActive(true)
                 .build();
         CoachStop saved = coachStopRepository.save(Objects.requireNonNull(coachStop));
@@ -78,6 +87,10 @@ public class CoachStopServiceImpl implements CoachStopService {
                     request.getCity().trim())) {
                 throw new IllegalArgumentException("Đã tồn tại điểm dừng với địa chỉ và thành phố này.");
             }
+            
+            GeocodeResponse geo = goongService.geocode(request.getAddress().trim() + ", " + request.getCity().trim());
+            coachStop.setLatitude(geo.getLatitude());
+            coachStop.setLongitude(geo.getLongitude());
         }
 
         coachStop.setStopPointName(request.getStopPointName().trim());
@@ -149,6 +162,16 @@ public class CoachStopServiceImpl implements CoachStopService {
         coachStop.setActive(false);
         coachStopRepository.save(coachStop);
 
+        // Check if this coach stop is mapped in a route that consists of only 2 items. If so, disable the route.
+        if (coachStop.getRouteStops() != null) {
+            for (RouteStop rs : coachStop.getRouteStops()) {
+                Route route = rs.getRoute();
+                if (route != null && route.isActive() && route.getRouteStops().size() == 2) {
+                    route.setActive(false);
+                    routeRepository.save(route);
+                }
+            }
+        }
     }
 
     @Override
@@ -178,6 +201,8 @@ public class CoachStopServiceImpl implements CoachStopService {
                 .address(coachStop.getAddress())
                 .city(coachStop.getCity())
                 .isActive(coachStop.isActive())
+                .latitude(coachStop.getLatitude())
+                .longitude(coachStop.getLongitude())
                 .build();
     }
 }
