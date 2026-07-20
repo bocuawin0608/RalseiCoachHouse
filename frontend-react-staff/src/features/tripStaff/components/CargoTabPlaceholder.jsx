@@ -28,8 +28,6 @@ const CARGO_STATUS_OPTIONS = [
     { value: 'RECEIVED', label: 'Mới nhận' },
     { value: 'LOADED', label: 'Đã lên xe' },
     { value: 'ARRIVED', label: 'Đã dỡ xuống' },
-    { value: 'DELIVERED', label: 'Đã giao' },
-    { value: 'CANCELLED', label: 'Đã hủy' },
 ];
 
 export default function CargoTabPlaceholder({ tripId }) {

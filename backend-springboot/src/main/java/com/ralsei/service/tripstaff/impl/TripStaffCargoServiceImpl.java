@@ -37,6 +37,13 @@ import lombok.RequiredArgsConstructor;
  */
 public class TripStaffCargoServiceImpl implements TripStaffCargoService {
 
+    /** Statuses trip staff still handles on the coach (load / unload / just unloaded). */
+    private static final List<String> TRIP_STAFF_CARGO_STATUSES = List.of(
+            "RECEIVED",
+            "LOADED",
+            "ARRIVED"
+    );
+
     private final JwtService jwtService;
     private final StaffRepository staffRepository;
     private final CargoTicketRepository cargoTicketRepository;
@@ -58,7 +65,8 @@ public class TripStaffCargoServiceImpl implements TripStaffCargoService {
     public TripStaffCargoResponse getCargoList(String authorizationHeader, int tripId) {
         resolveStaff(authorizationHeader);
 
-        List<CargoTicket> tickets = cargoTicketRepository.findByTripId(tripId);
+        List<CargoTicket> tickets = cargoTicketRepository.findByTripIdAndStatusIn(
+                tripId, TRIP_STAFF_CARGO_STATUSES);
 
         List<CargoItem> items = tickets.stream()
                 .map(this::mapToCargoItem)

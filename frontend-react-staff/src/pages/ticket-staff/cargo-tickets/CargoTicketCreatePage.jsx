@@ -135,7 +135,7 @@ export default function CargoTicketCreatePage() {
                 title="Xác nhận thu tiền mặt"
                 message={
                     pendingPayload
-                        ? `Xác nhận đã nhận đủ tiền mặt từ người gửi trước khi tạo đơn?\nSố tiền: ${formatCurrency(pendingPayload.totalPrice)}`
+                        ? `Xác nhận đã nhận đủ tiền mặt từ người gửi trước khi tạo đơn?\nSố tiền: ${formatCurrency(pendingPayload.totalPrice || 0)}`
                         : ''
                 }
                 confirmLabel="Đã nhận tiền — tạo đơn"

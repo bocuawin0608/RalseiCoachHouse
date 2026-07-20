@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useCargoTicketFormOptions } from '../hooks/useCargoTicketFormOptions';
 import { useAuth } from '../../auth/context/AuthContext';
 import { routeApi } from '../../routes/api/routeApi';
+import { formatCurrency } from '../../../utils/formatters';
 import PhoneAutocomplete from './PhoneAutocomplete';
 import CargoTicketDetailSection from './CargoTicketDetailSection';
 import '../styles/CargoTicketForm.css';
@@ -103,6 +104,11 @@ export default function CargoTicketForm({ initialData, lockedTrip, onSubmit, sub
         [formData, draftDetails, isCreateFlow]
     );
     const occupiedVolume = useMemo(() => calculateOccupiedVolume(draftDetails), [draftDetails]);
+    const estimatedTotal = useMemo(() => sumCalculatedPrices(draftDetails), [draftDetails]);
+    const pricesReady = useMemo(
+        () => draftDetails.length > 0 && draftDetails.every((d) => Number(d.calculatedPrice) > 0),
+        [draftDetails]
+    );
 
     const handleChange = (event) => {
         const { name, value } = event.target;
@@ -231,9 +237,21 @@ export default function CargoTicketForm({ initialData, lockedTrip, onSubmit, sub
                 </Alert>
             )}
 
-            <Button type="submit" disabled={!isFormComplete || submitting || optionsLoading || Boolean(optionsError)} className="px-4 py-2 d-flex align-items-center gap-2 custom-btn-general">
-                <BsCheckCircle />{submitting ? 'Đang lưu...' : submitLabel}
-            </Button>
+            <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+                <div className="fs-5 mb-0">
+                    Tổng cước:{' '}
+                    <strong className="text-success">
+                        {pricesReady ? formatCurrency(estimatedTotal) : 'Đang tính...'}
+                    </strong>
+                </div>
+                <Button
+                    type="submit"
+                    disabled={!isFormComplete || !pricesReady || submitting || optionsLoading || Boolean(optionsError)}
+                    className="px-4 py-2 d-flex align-items-center gap-2 custom-btn-general"
+                >
+                    <BsCheckCircle />{submitting ? 'Đang lưu...' : submitLabel}
+                </Button>
+            </div>
         </Form>
     );
 }
@@ -366,7 +384,12 @@ function formatVolume(value) {
     return Number(value).toLocaleString('vi-VN', { maximumFractionDigits: 6 });
 }
 
+function sumCalculatedPrices(details) {
+    return (details || []).reduce((sum, detail) => sum + (Number(detail.calculatedPrice) || 0), 0);
+}
+
 function buildCargoTicketRequest(form, draftDetails) {
+    const totalFromDetails = sumCalculatedPrices(draftDetails);
     return {
         tripId: optionalId(form.tripId),
         customerId: optionalId(form.customerId),
@@ -374,7 +397,8 @@ function buildCargoTicketRequest(form, draftDetails) {
         senderPhone: form.senderPhone.trim(),
         receiverName: form.receiverName.trim(),
         receiverPhone: form.receiverPhone.trim(),
-        totalPrice: Number(form.totalPrice),
+        // Prefer live line prices; form.totalPrice is unused on create and often empty → 0đ in UI.
+        totalPrice: totalFromDetails > 0 ? totalFromDetails : Number(form.totalPrice) || 0,
         description: optionalText(form.description),
         feePayer: form.feePayer,
         codAmount: Number(form.codAmount),
