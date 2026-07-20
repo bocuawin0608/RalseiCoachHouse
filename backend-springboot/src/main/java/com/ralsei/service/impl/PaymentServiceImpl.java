@@ -297,6 +297,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     private void completeCargoPaymentTarget(Payment payment) {
-        return;
+        // Cargo order status is driven by ticket-staff / trip-staff workflows.
+        // SePay only marks payment COMPLETED; feePayer gates enforce collection timing.
     }
 }

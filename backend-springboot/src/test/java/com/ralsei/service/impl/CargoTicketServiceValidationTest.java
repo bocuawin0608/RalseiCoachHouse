@@ -27,15 +27,21 @@ import org.mockito.quality.Strictness;
 import com.ralsei.dto.request.cargoticket.CargoTicketRequest;
 import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.model.CargoTicket;
+import com.ralsei.model.Payment;
 import com.ralsei.model.Staff;
 import com.ralsei.model.TicketAgency;
 import com.ralsei.model.Trip;
 import com.ralsei.repository.CargoTicketRepository;
 import com.ralsei.repository.CoachStopRepository;
 import com.ralsei.repository.CustomerRepository;
+import com.ralsei.repository.PaymentRepository;
+import com.ralsei.repository.RefundRepository;
 import com.ralsei.repository.StaffRepository;
 import com.ralsei.repository.TicketAgencyRepository;
 import com.ralsei.repository.TripRepository;
+import com.ralsei.service.cargoticket.CargoTicketPaymentPolicy;
+
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -47,6 +53,8 @@ class CargoTicketServiceValidationTest {
     @Mock private StaffRepository staffRepository;
     @Mock private TicketAgencyRepository ticketAgencyRepository;
     @Mock private CargoTicketRepository cargoTicketRepository;
+    @Mock private PaymentRepository paymentRepository;
+    @Mock private RefundRepository refundRepository;
 
     @InjectMocks
     private CargoTicketServiceImpl cargoTicketService;
@@ -56,6 +64,10 @@ class CargoTicketServiceValidationTest {
 
     @BeforeEach
     void setUp() {
+        CargoTicketPaymentPolicy paymentPolicy =
+                new CargoTicketPaymentPolicy(paymentRepository, refundRepository);
+        ReflectionTestUtils.setField(cargoTicketService, "cargoTicketPaymentPolicy", paymentPolicy);
+
         request = new CargoTicketRequest();
         request.setPickupStopId(1);
         request.setDropoffStopId(8);
@@ -193,7 +205,15 @@ class CargoTicketServiceValidationTest {
         CargoTicket ticket = CargoTicket.builder()
                 .cargoTicketId(99)
                 .dropoffStopId(8)
+                .feePayer("SENDER")
                 .status("ARRIVED")
+                .build();
+        Payment payment = Payment.builder()
+                .paymentId(1)
+                .paymentMethod("CASH")
+                .status("COMPLETED")
+                .amount(BigDecimal.TEN)
+                .refundAmount(BigDecimal.ZERO)
                 .build();
 
         when(staffRepository.findByAccountId(123)).thenReturn(Optional.of(currentStaff));
@@ -201,6 +221,7 @@ class CargoTicketServiceValidationTest {
                 .thenReturn(Optional.of(destinationAgency));
         when(cargoTicketRepository.findByCargoTicketIdAndStatusNot(99, "ABANDONED"))
                 .thenReturn(Optional.of(ticket));
+        when(paymentRepository.findByCargoTicket_CargoTicketId(99)).thenReturn(Optional.of(payment));
 
         cargoTicketService.confirmReceived(99, 123);
 

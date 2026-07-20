@@ -11,25 +11,29 @@ export default function QrPaymentModal({ ticket, onClose, onSuccess }) {
         if (!ticket) return;
 
         let timeoutId;
-        const intervalId = setInterval(async () => {
+        let cancelled = false;
+
+        const checkOnce = async () => {
             try {
                 const response = await cargoTicketApi.getCargoTicket(ticket.cargoTicketId);
+                if (cancelled) return;
                 if (response?.payment?.status === 'COMPLETED') {
                     setIsSuccess(true);
-                    clearInterval(intervalId);
-
-                    // Wait 2.5 seconds to show the success message, then exit and refresh
                     timeoutId = setTimeout(() => {
                         if (onSuccess) onSuccess();
                         onClose();
-                    }, 5000);
+                    }, 2500);
                 }
             } catch (error) {
-                console.error("Failed to check payment status", error);
+                console.error('Failed to check payment status', error);
             }
-        }, 5000); // Poll every 3 seconds
+        };
+
+        checkOnce();
+        const intervalId = setInterval(checkOnce, 3000);
 
         return () => {
+            cancelled = true;
             clearInterval(intervalId);
             if (timeoutId) clearTimeout(timeoutId);
         };
@@ -37,8 +41,13 @@ export default function QrPaymentModal({ ticket, onClose, onSuccess }) {
 
     if (!ticket) return null;
 
+    const qrSrc = ticket.qrUrl
+        || (ticket.payment?.status === 'PENDING' && ticket.payment?.paymentMethod === 'BANK_TRANSFER'
+            ? null
+            : ticket.qrUrl);
+
     return (
-        <Modal show onHide={onClose} centered backdrop={isSuccess ? "static" : true}>
+        <Modal show onHide={onClose} centered backdrop={isSuccess ? 'static' : true}>
             <Modal.Header closeButton={!isSuccess}>
                 <Modal.Title>Thanh toán chuyển khoản</Modal.Title>
             </Modal.Header>
@@ -51,15 +60,19 @@ export default function QrPaymentModal({ ticket, onClose, onSuccess }) {
                     </div>
                 ) : (
                     <>
-                        <p className="fw-semibold mb-1">Vé: {ticket.ticketCode}</p>
+                        <p className="fw-semibold mb-1">Đơn: {ticket.ticketCode}</p>
                         <p className="mb-1">Số tiền: <strong>{formatCurrency(ticket.totalPrice)}</strong></p>
                         <p className="mb-3 text-muted small">Mã giao dịch: {ticket.payment?.transactionId}</p>
-                        <img
-                            src={ticket.qrUrl}
-                            alt="SePay QR Code"
-                            style={{ maxWidth: '100%', width: '350px', borderRadius: '8px' }}
-                        />
-                        <p className="mt-3 text-muted small">Quét mã QR để thanh toán qua Vietcombank</p>
+                        {qrSrc ? (
+                            <img
+                                src={qrSrc}
+                                alt="SePay QR Code"
+                                style={{ maxWidth: '100%', width: '350px', borderRadius: '8px' }}
+                            />
+                        ) : (
+                            <p className="text-danger small">Không có mã QR. Tải lại đơn hàng và thử lại.</p>
+                        )}
+                        <p className="mt-3 text-muted small">Quét mã QR để thanh toán qua ngân hàng đã cấu hình SePay</p>
                         <div className="d-flex align-items-center justify-content-center mt-3">
                             <div className="spinner-border spinner-border-sm text-primary" role="status"></div>
                             <span className="ms-2 text-primary small fw-medium">Đang chờ thanh toán...</span>
@@ -68,7 +81,7 @@ export default function QrPaymentModal({ ticket, onClose, onSuccess }) {
                 )}
             </Modal.Body>
             <Modal.Footer>
-                <Button variant="secondary" onClick={onClose}>Đóng</Button>
+                <Button variant="secondary" onClick={onClose} disabled={isSuccess}>Đóng</Button>
             </Modal.Footer>
         </Modal>
     );

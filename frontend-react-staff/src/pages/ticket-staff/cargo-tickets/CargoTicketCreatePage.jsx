@@ -1,26 +1,121 @@
+import { useState } from 'react';
 import { Alert, Button, Container } from 'react-bootstrap';
 import { BsArrowLeft } from 'react-icons/bs';
 import { useLocation, useNavigate } from 'react-router-dom';
 import CargoTicketForm from '../../../features/cargoTickets/components/CargoTicketForm';
+import CargoConfirmModal from '../../../features/cargoTickets/components/CargoConfirmModal';
+import QrPaymentModal from '../../../features/cargoTickets/components/QrPaymentModal';
 import { cargoTicketApi } from '../../../features/cargoTickets/api/cargoTicketApi';
+import { formatCurrency } from '../../../utils/formatters';
 
 export default function CargoTicketCreatePage() {
     const navigate = useNavigate();
     const { state } = useLocation();
     const selectedTrip = state?.trip;
+    const [qrTicket, setQrTicket] = useState(null);
+    const [submitError, setSubmitError] = useState(null);
+    const [pendingPayload, setPendingPayload] = useState(null);
+    const [cashConfirmOpen, setCashConfirmOpen] = useState(false);
+    const [abandonConfirmOpen, setAbandonConfirmOpen] = useState(false);
+    const [abandonTicketId, setAbandonTicketId] = useState(null);
+    const [confirming, setConfirming] = useState(false);
+
+    const goToSend = () => navigate('/staff/cargo-tickets/send');
+
+    const createOrder = async (payload) => {
+        setConfirming(true);
+        setSubmitError(null);
+        try {
+            const created = await cargoTicketApi.createCargoTicket(payload);
+            const needsSenderBankQr =
+                payload.feePayer === 'SENDER'
+                && payload.paymentMethod === 'BANK_TRANSFER'
+                && created?.payment?.status === 'PENDING';
+
+            if (needsSenderBankQr) {
+                setQrTicket(created);
+                return;
+            }
+            goToSend();
+        } catch (err) {
+            setSubmitError(err.response?.data?.message || 'Không thể tạo đơn gửi hàng.');
+            throw err;
+        } finally {
+            setConfirming(false);
+            setCashConfirmOpen(false);
+            setPendingPayload(null);
+        }
+    };
+
     const handleSubmit = async (payload) => {
-        await cargoTicketApi.createCargoTicket(payload);
-        navigate('/staff/cargo-tickets/send');
+        setSubmitError(null);
+        if (payload.feePayer === 'SENDER' && payload.paymentMethod === 'CASH') {
+            setPendingPayload(payload);
+            setCashConfirmOpen(true);
+            return;
+        }
+        await createOrder(payload);
+    };
+
+    const handleCashConfirm = async () => {
+        if (!pendingPayload) return;
+        await createOrder(pendingPayload);
+    };
+
+    const handleQrClose = async () => {
+        if (!qrTicket) return;
+        const ticketId = qrTicket.cargoTicketId;
+        setQrTicket(null);
+        try {
+            const latest = await cargoTicketApi.getCargoTicket(ticketId);
+            if (latest?.payment?.status === 'COMPLETED') {
+                goToSend();
+                return;
+            }
+            setAbandonTicketId(ticketId);
+            setAbandonConfirmOpen(true);
+        } catch (err) {
+            setSubmitError(err.response?.data?.message || 'Không thể kiểm tra trạng thái thanh toán.');
+            goToSend();
+        }
+    };
+
+    const handleAbandonConfirm = async () => {
+        if (!abandonTicketId) return;
+        setConfirming(true);
+        try {
+            await cargoTicketApi.disableCargoTicket(abandonTicketId);
+        } catch (err) {
+            setSubmitError(err.response?.data?.message || 'Không thể hủy đơn nháp.');
+        } finally {
+            setConfirming(false);
+            setAbandonConfirmOpen(false);
+            setAbandonTicketId(null);
+            goToSend();
+        }
+    };
+
+    const handleAbandonCancel = () => {
+        setAbandonConfirmOpen(false);
+        setAbandonTicketId(null);
+        goToSend();
     };
 
     return (
         <Container fluid className="py-4" style={{ maxWidth: '1200px' }}>
-            <Button variant="link" className="text-decoration-none text-secondary p-0 mb-3 d-flex align-items-center gap-2" onClick={() => navigate('/staff/cargo-tickets/send')}>
+            <Button
+                variant="link"
+                className="text-decoration-none text-secondary p-0 mb-3 d-flex align-items-center gap-2"
+                onClick={goToSend}
+            >
                 <BsArrowLeft /> Quay lại danh sách chuyến
             </Button>
             <h2 className="mb-4 fw-bold text-dark">Thêm đơn gửi hàng</h2>
+            {submitError && <Alert variant="danger">{submitError}</Alert>}
             {!selectedTrip ? (
-                <Alert variant="warning">Bạn phải chọn một chuyến xe hợp lệ tại văn phòng của mình trước khi lập đơn.</Alert>
+                <Alert variant="warning">
+                    Bạn phải chọn một chuyến xe hợp lệ tại văn phòng của mình trước khi lập đơn.
+                </Alert>
             ) : (
                 <CargoTicketForm
                     initialData={{ tripId: selectedTrip.tripId, pickupStopId: selectedTrip.pickupStopId }}
@@ -28,6 +123,42 @@ export default function CargoTicketCreatePage() {
                     onSubmit={handleSubmit}
                 />
             )}
+            {qrTicket && (
+                <QrPaymentModal
+                    ticket={qrTicket}
+                    onClose={handleQrClose}
+                    onSuccess={goToSend}
+                />
+            )}
+            <CargoConfirmModal
+                show={cashConfirmOpen}
+                title="Xác nhận thu tiền mặt"
+                message={
+                    pendingPayload
+                        ? `Xác nhận đã nhận đủ tiền mặt từ người gửi trước khi tạo đơn?\nSố tiền: ${formatCurrency(pendingPayload.totalPrice)}`
+                        : ''
+                }
+                confirmLabel="Đã nhận tiền — tạo đơn"
+                confirmVariant="success"
+                confirming={confirming}
+                onConfirm={handleCashConfirm}
+                onCancel={() => {
+                    if (confirming) return;
+                    setCashConfirmOpen(false);
+                    setPendingPayload(null);
+                }}
+            />
+            <CargoConfirmModal
+                show={abandonConfirmOpen}
+                title="Hủy đơn chưa thanh toán"
+                message="Chưa thanh toán xong. Hủy đơn nháp này?"
+                confirmLabel="Hủy đơn"
+                cancelLabel="Giữ đơn"
+                confirmVariant="danger"
+                confirming={confirming}
+                onConfirm={handleAbandonConfirm}
+                onCancel={handleAbandonCancel}
+            />
         </Container>
     );
 }
