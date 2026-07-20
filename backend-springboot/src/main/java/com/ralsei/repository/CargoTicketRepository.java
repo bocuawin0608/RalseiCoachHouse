@@ -60,10 +60,9 @@ public interface CargoTicketRepository extends JpaRepository<CargoTicket, Intege
     /**
      * Routes a staff queue to the responsible office.
      *
-     * <p>The receiving queue also includes legacy/provisional DELIVERED rows
-     * that have not been acknowledged by a TICKET_STAFF member. Trip staff can
-     * complete their hand-off before destination staff confirms receipt;
-     * requiring only ARRIVED made those orders disappear between workflows.</p>
+     * <p>ARRIVED / DELIVERED queues belong to the destination agency.
+     * Other statuses (including RECEIVED) belong to the seller's origin agency.
+     * DELIVERED history only includes rows confirmed by TICKET_STAFF.</p>
      */
     @Query(value = """
             SELECT cargo.*
@@ -72,14 +71,7 @@ public interface CargoTicketRepository extends JpaRepository<CargoTicket, Intege
             INNER JOIN ticket_agency destination
                    ON destination.stopPointId = cargo.dropoffStopId
                   AND destination.isActive = 1
-            WHERE ((:status = 'ARRIVED'
-                    AND (cargo.[status] = 'ARRIVED'
-                         OR (cargo.[status] = 'DELIVERED' AND NOT EXISTS (
-                             SELECT 1
-                             FROM staff receiptStaff
-                             WHERE receiptStaff.staffId = cargo.deliveredBy
-                               AND receiptStaff.staffPosition = 'TICKET_STAFF'
-                         ))))
+            WHERE ((:status = 'ARRIVED' AND cargo.[status] = 'ARRIVED')
                 OR (:status = 'DELIVERED'
                     AND cargo.[status] = 'DELIVERED'
                     AND EXISTS (
@@ -99,14 +91,7 @@ public interface CargoTicketRepository extends JpaRepository<CargoTicket, Intege
             INNER JOIN ticket_agency destination
                    ON destination.stopPointId = cargo.dropoffStopId
                   AND destination.isActive = 1
-            WHERE ((:status = 'ARRIVED'
-                    AND (cargo.[status] = 'ARRIVED'
-                         OR (cargo.[status] = 'DELIVERED' AND NOT EXISTS (
-                             SELECT 1
-                             FROM staff receiptStaff
-                             WHERE receiptStaff.staffId = cargo.deliveredBy
-                               AND receiptStaff.staffPosition = 'TICKET_STAFF'
-                         ))))
+            WHERE ((:status = 'ARRIVED' AND cargo.[status] = 'ARRIVED')
                 OR (:status = 'DELIVERED'
                     AND cargo.[status] = 'DELIVERED'
                     AND EXISTS (

@@ -124,13 +124,4 @@ public class TripStaffController {
         tripStaffPassengerService.markNoShow(authorizationHeader, tripId, ticketDetailId);
         return ResponseEntity.ok().build();
     }
-
-    @PostMapping("/{tripId}/cargo/{cargoTicketId}/deliver")
-    public ResponseEntity<Void> deliverCargo(
-            @RequestHeader("Authorization") String authorizationHeader,
-            @PathVariable @Min(value = 1, message = "ID chuyến phải lớn hơn 0.") Integer tripId,
-            @PathVariable @Min(value = 1, message = "ID đơn hàng phải lớn hơn 0.") Integer cargoTicketId) {
-        tripStaffCargoService.markDelivered(authorizationHeader, tripId, cargoTicketId);
-        return ResponseEntity.ok().build();
-    }
 }
