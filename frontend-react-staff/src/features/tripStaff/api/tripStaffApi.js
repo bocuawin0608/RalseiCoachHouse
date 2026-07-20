@@ -21,9 +21,6 @@ export const tripStaffApi = {
     unloadCargo: (tripId, cargoTicketId) =>
         axiosClient.post(`${BASE}/${tripId}/cargo/${cargoTicketId}/unload`),
 
-    deliverCargo: (tripId, cargoTicketId) =>
-        axiosClient.post(`${BASE}/${tripId}/cargo/${cargoTicketId}/deliver`),
-
     startTrip: (tripId) => axiosClient.post(`${BASE}/${tripId}/start`),
 
     endTrip: (tripId) => axiosClient.post(`${BASE}/${tripId}/end`),

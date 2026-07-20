@@ -1,6 +1,7 @@
 /**
  * Service interface for trip staff cargo operations.
- * Manages the cargo lifecycle: load, unload, and mark as delivered.
+ * Manages on-coach cargo hand-off: load and unload only.
+ * Destination receipt (DELIVERED) belongs to ticket staff.
  */
 package com.ralsei.service.tripstaff;
 
@@ -16,6 +17,4 @@ public interface TripStaffCargoService {
     void loadCargo(String authorizationHeader, int tripId, int cargoTicketId);
 
     void unloadCargo(String authorizationHeader, int tripId, int cargoTicketId);
-
-    void markDelivered(String authorizationHeader, int tripId, int cargoTicketId);
 }

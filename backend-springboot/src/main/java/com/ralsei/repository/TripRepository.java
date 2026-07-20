@@ -73,13 +73,7 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
              AND destination.isActive = 1
             LEFT JOIN staff driver ON driver.staffId = t.driverId
             LEFT JOIN staff attendant ON attendant.staffId = t.attendantId
-            WHERE (cargo.[status] = 'ARRIVED'
-                   OR (cargo.[status] = 'DELIVERED' AND NOT EXISTS (
-                       SELECT 1
-                       FROM staff receiptStaff
-                       WHERE receiptStaff.staffId = cargo.deliveredBy
-                         AND receiptStaff.staffPosition = 'TICKET_STAFF'
-                   )))
+            WHERE cargo.[status] = 'ARRIVED'
             GROUP BY t.tripId, r.routeName, t.departureTime, t.[status],
                      coach.licensePlate, coachType.coachTypeName,
                      driver.staffName, driver.phone, driver.cccd,
@@ -93,13 +87,7 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
               ON destination.stopPointId = cargo.dropoffStopId
              AND destination.ticketAgencyId = :ticketAgencyId
              AND destination.isActive = 1
-            WHERE (cargo.[status] = 'ARRIVED'
-                   OR (cargo.[status] = 'DELIVERED' AND NOT EXISTS (
-                       SELECT 1
-                       FROM staff receiptStaff
-                       WHERE receiptStaff.staffId = cargo.deliveredBy
-                         AND receiptStaff.staffPosition = 'TICKET_STAFF'
-                   )))
+            WHERE cargo.[status] = 'ARRIVED'
             """, nativeQuery = true)
     Page<CargoReceivingTripProjection> findCargoReceivingTrips(
             @Param("ticketAgencyId") int ticketAgencyId,

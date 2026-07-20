@@ -179,12 +179,11 @@ class CargoTicketServiceValidationTest {
     }
 
     /**
-     * Verifies that a trip-staff-completed row remains receivable until a
-     * destination ticket staff member is recorded in deliveredBy.
+     * Destination ticket staff confirms customer hand-off from ARRIVED only.
      */
     @Test
-    @DisplayName("DELIVERED without deliveredBy can be acknowledged by destination ticket staff")
-    void confirmsProvisionalDeliveredCargoAtDestinationAgency() {
+    @DisplayName("ARRIVED cargo can be confirmed as DELIVERED by destination ticket staff")
+    void confirmsArrivedCargoAtDestinationAgency() {
         TicketAgency destinationAgency = TicketAgency.builder()
                 .ticketAgencyId(2)
                 .stopPointId(8)
@@ -194,7 +193,7 @@ class CargoTicketServiceValidationTest {
         CargoTicket ticket = CargoTicket.builder()
                 .cargoTicketId(99)
                 .dropoffStopId(8)
-                .status("DELIVERED")
+                .status("ARRIVED")
                 .build();
 
         when(staffRepository.findByAccountId(123)).thenReturn(Optional.of(currentStaff));

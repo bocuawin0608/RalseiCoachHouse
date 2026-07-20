@@ -1,6 +1,6 @@
 /**
- * Implementation of cargo lifecycle operations for trip staff.
- * Supports loading, unloading, and marking cargo as delivered.
+ * Implementation of on-coach cargo hand-off for trip staff.
+ * Supports loading and unloading only; destination receipt is ticket-staff owned.
  */
 package com.ralsei.service.tripstaff.impl;
 
@@ -108,28 +108,6 @@ public class TripStaffCargoServiceImpl implements TripStaffCargoService {
 
         ticket.setStatus("ARRIVED");
         ticket.setUnloadedBy(staff);
-        cargoTicketRepository.save(ticket);
-    }
-
-    @Override
-    @Transactional
-    /**
-     * Executes the mark delivered operation.
-     *
-     * @param authorizationHeader the value supplied for this operation
-     * @param tripId the value supplied for this operation
-     * @param cargoTicketId the value supplied for this operation
-     */
-    public void markDelivered(String authorizationHeader, int tripId, int cargoTicketId) {
-        resolveStaff(authorizationHeader);
-        CargoTicket ticket = findCargoForTrip(tripId, cargoTicketId);
-
-        if (!"ARRIVED".equals(ticket.getStatus())) {
-            throw new BusinessRuleException(
-                    "Hàng hóa chưa được dỡ xuống, không thể xác nhận đã giao");
-        }
-
-        ticket.setStatus("DELIVERED");
         cargoTicketRepository.save(ticket);
     }
 

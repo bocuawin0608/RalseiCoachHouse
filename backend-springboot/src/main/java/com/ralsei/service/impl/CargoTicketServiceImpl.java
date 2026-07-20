@@ -579,10 +579,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
     @Override
     @Transactional
     /**
-     * Completes the destination ticket-office hand-off.
-     *
-     * <p>A DELIVERED row not yet attributed to TICKET_STAFF represents a
-     * trip-staff completion awaiting destination-office acknowledgement.</p>
+     * Completes the destination ticket-office hand-off after trip staff unload.
      *
      * @param id cargo ticket identifier
      * @param accountId authenticated destination ticket-staff account
@@ -596,11 +593,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
         if (agency.getStopPointId() != ticket.getDropoffStopId()) {
             throw new BusinessRuleException("Đơn hàng không thuộc văn phòng nhận của nhân viên.");
         }
-        boolean awaitingReceipt = "ARRIVED".equals(ticket.getStatus())
-                || ("DELIVERED".equals(ticket.getStatus())
-                    && (ticket.getDeliveredBy() == null
-                        || !"TICKET_STAFF".equals(ticket.getDeliveredBy().getStaffPosition())));
-        if (!awaitingReceipt) {
+        if (!"ARRIVED".equals(ticket.getStatus())) {
             throw new BusinessRuleException("Chỉ đơn đã đến nơi mới có thể xác nhận nhận hàng.");
         }
         ticket.setStatus("DELIVERED");

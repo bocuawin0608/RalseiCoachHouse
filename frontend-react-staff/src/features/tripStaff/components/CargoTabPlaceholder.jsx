@@ -65,7 +65,6 @@ export default function CargoTabPlaceholder({ tripId }) {
         try {
             if (action === 'load') await tripStaffApi.loadCargo(tripId, cargoTicketId);
             else if (action === 'unload') await tripStaffApi.unloadCargo(tripId, cargoTicketId);
-            else if (action === 'deliver') await tripStaffApi.deliverCargo(tripId, cargoTicketId);
             await fetchCargo();
         } catch (err) {
             setError(err.response?.data?.message || 'Thao tác thất bại');
@@ -188,16 +187,6 @@ export default function CargoTabPlaceholder({ tripId }) {
                                     onClick={() => handleAction('unload', item.cargoTicketId)}
                                 >
                                     {actionLoading === item.cargoTicketId ? 'Đang xử lý...' : 'Dỡ hàng'}
-                                </Button>
-                            )}
-                            {item.status === 'ARRIVED' && (
-                                <Button
-                                    size="sm"
-                                    variant="success"
-                                    disabled={actionLoading === item.cargoTicketId}
-                                    onClick={() => handleAction('deliver', item.cargoTicketId)}
-                                >
-                                    {actionLoading === item.cargoTicketId ? 'Đang xử lý...' : 'Xác nhận đã giao'}
                                 </Button>
                             )}
                         </div>
