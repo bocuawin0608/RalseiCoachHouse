@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Alert, Badge, Button, Modal, Table } from 'react-bootstrap';
-import { BsCashCoin, BsEye, BsPencil, BsTelephone, BsTrash } from 'react-icons/bs';
+import { BsCashCoin, BsEye, BsPencil, BsPrinter, BsTelephone, BsTrash } from 'react-icons/bs';
 import Pagination from '../../../components/common/Pagination';
 import { formatCurrency } from '../../../utils/formatters';
 import { useCargoTickets } from '../hooks/useCargoTickets';
 import { cargoTicketApi } from '../api/cargoTicketApi';
+import { canPrintCargoTicket } from '../utils/canPrintCargoTicket';
+import { printCargoTicket } from '../utils/printCargoTicket';
 import CargoTicketUpdateModal from './CargoTicketUpdateModal';
 import CargoTicketDetailViewModal from './CargoTicketDetailViewModal';
 import CargoConfirmModal from './CargoConfirmModal';
@@ -66,6 +68,7 @@ export default function CargoQueuePanel({
     tripId = null,
     editable = false,
     confirmable = false,
+    agencyStopId = null,
     onQueueChanged
 }) {
     const { tickets, loading, error, pageInfo, setPageInfo, refetch } = useCargoTickets(status, tripId);
@@ -307,6 +310,16 @@ export default function CargoQueuePanel({
                                 <Button variant="outline-success" title="Xem đầy đủ" onClick={() => setViewTicket(ticket)}>
                                     <BsEye />
                                 </Button>
+                                {editable && canPrintCargoTicket(ticket, agencyStopId) && (
+                                    <Button
+                                        variant="outline-secondary"
+                                        title="In tem gửi hàng"
+                                        disabled={busy}
+                                        onClick={() => printCargoTicket(ticket)}
+                                    >
+                                        <BsPrinter />
+                                    </Button>
+                                )}
                                 {editable && (
                                     <Button
                                         variant="success"
@@ -397,6 +410,7 @@ export default function CargoQueuePanel({
                 ticket={viewTicket}
                 onClose={() => { setViewTicket(null); refetch(); }}
                 readOnly={!editable}
+                canPrint={editable && canPrintCargoTicket(viewTicket, agencyStopId)}
             />
         )}
         {qrTicket && (

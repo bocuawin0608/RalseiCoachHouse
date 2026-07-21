@@ -37,6 +37,7 @@ export default function CargoSendPage() {
             setAgency({
                 ticketAgencyId: response.ticketAgencyId,
                 ticketAgencyName: response.ticketAgencyName,
+                stopPointId: response.stopPointId,
                 stopPointName: response.stopPointName,
                 city: response.city
             });
@@ -107,7 +108,13 @@ export default function CargoSendPage() {
                 </div>
             </header>
 
-            {showPending ? <CargoQueuePanel status="RECEIVED" editable /> : (
+            {showPending ? (
+                <CargoQueuePanel
+                    status="RECEIVED"
+                    editable
+                    agencyStopId={agency?.stopPointId ?? null}
+                />
+            ) : (
                 <>
                     {error && <Alert variant="danger">{error}</Alert>}
                     {loading ? <div className="cargo-loading"><Spinner size="sm" /> Đang tải chuyến xe...</div> : (
