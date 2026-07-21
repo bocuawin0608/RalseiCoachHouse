@@ -1,0 +1,152 @@
+/*
+ * Compact sticker ~80mm wide, height fits content.
+ * Chrome Save as PDF has no custom mm — pick Paper size = A5 (smallest).
+ */
+
+.cargo-print-host {
+    position: fixed;
+    left: -10000px;
+    top: 0;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.cargo-print-label {
+    box-sizing: border-box;
+    width: 80mm;
+    height: auto;
+    padding: 4mm;
+    margin: 0;
+    font-family: "Segoe UI", Tahoma, sans-serif;
+    color: #111;
+    background: #fff;
+    border: 1px dashed #444;
+    overflow: visible;
+}
+
+.cargo-print-label * {
+    box-sizing: border-box;
+}
+
+.cargo-print-cut-hint {
+    font-size: 8px;
+    color: #666;
+    margin: 0 0 3px;
+    text-align: right;
+}
+
+.cargo-print-brand {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin: 0 0 3px;
+}
+
+.cargo-print-code {
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    margin: 0 0 5px;
+    word-break: break-all;
+    line-height: 1.15;
+}
+
+.cargo-print-section {
+    border-top: 1px solid #222;
+    padding: 4px 0;
+}
+
+.cargo-print-section:last-child {
+    border-bottom: 1px solid #222;
+    padding-bottom: 0;
+}
+
+.cargo-print-label-row {
+    display: flex;
+    gap: 4px;
+    margin: 0 0 2px;
+    font-size: 10px;
+    line-height: 1.25;
+}
+
+.cargo-print-label-row:last-child {
+    margin-bottom: 0;
+}
+
+.cargo-print-label-row .cargo-print-k {
+    flex: 0 0 56px;
+    font-weight: 600;
+    color: #333;
+}
+
+.cargo-print-label-row .cargo-print-v {
+    flex: 1;
+    font-weight: 500;
+}
+
+.cargo-print-party-name {
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.cargo-print-route {
+    font-size: 11px;
+    font-weight: 700;
+    margin: 0 0 2px;
+    line-height: 1.25;
+}
+
+.cargo-print-meta {
+    font-size: 9px;
+    color: #333;
+    margin: 0;
+}
+
+@media print {
+    @page {
+        size: A5 portrait;
+        margin: 5mm;
+    }
+
+    html,
+    body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+    }
+
+    body * {
+        visibility: hidden !important;
+    }
+
+    .cargo-print-host,
+    .cargo-print-host * {
+        visibility: visible !important;
+    }
+
+    .cargo-print-host {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 80mm !important;
+        height: auto !important;
+        overflow: visible !important;
+        pointer-events: auto !important;
+    }
+
+    .cargo-print-label {
+        width: 80mm;
+        height: auto;
+        padding: 4mm;
+        border: 1px dashed #444;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .cargo-print-cut-hint {
+        display: none;
+    }
+}

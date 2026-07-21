@@ -1,13 +1,19 @@
 import { useEffect, useState } from 'react';
-import { Modal, Table, Spinner, Button } from 'react-bootstrap';
-import { BsPencilFill, BsClipboard, BsCheck } from 'react-icons/bs';
+import { Modal, Spinner, Button } from 'react-bootstrap';
+import { BsPencilFill, BsClipboard, BsCheck, BsPrinter } from 'react-icons/bs';
 import { cargoTicketApi } from '../api/cargoTicketApi';
 import { useCargoTypes } from '../../cargo/hooks/useCargoTypes';
 import { formatCurrency } from '../../../utils/formatters';
+import { printCargoTicket } from '../utils/printCargoTicket';
 import CargoTicketDetailSection from './CargoTicketDetailSection';
 
 /** Shows current cargo detail rows; mutation is available only for pending orders. */
-export default function CargoTicketDetailViewModal({ ticket, onClose, readOnly = false }) {
+export default function CargoTicketDetailViewModal({
+    ticket,
+    onClose,
+    readOnly = false,
+    canPrint = false
+}) {
     const [details, setDetails] = useState([]);
     const [loadingDetails, setLoadingDetails] = useState(true);
     const { cargoTypes, setPageInfo } = useCargoTypes();
@@ -240,6 +246,19 @@ export default function CargoTicketDetailViewModal({ ticket, onClose, readOnly =
                 )}
             </Modal.Body>
             <Modal.Footer>
+                {canPrint && (
+                    <Button
+                        variant="outline-secondary"
+                        className="fw-medium px-3 me-auto"
+                        disabled={saving}
+                        onClick={() => printCargoTicket(ticket, {
+                            pieceCount: totalQuantity > 0 ? totalQuantity : null
+                        })}
+                    >
+                        <BsPrinter className="me-2" />
+                        In tem
+                    </Button>
+                )}
                 <Button variant="outline-secondary" className="fw-medium px-4" onClick={onClose} disabled={saving}>
                     Đóng
                 </Button>
