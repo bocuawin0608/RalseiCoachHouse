@@ -37,6 +37,8 @@ public class CargoTicketResponse {
     private int dropoffStopId;
     private String dropoffStopName;
     private String status;
+    /** Route used for form prefill (from trip or pickup→dropoff resolution). */
+    private Integer routeId;
     /** Route and vehicle identify where this package physically belongs. */
     private String routeName;
     private String licensePlate;
