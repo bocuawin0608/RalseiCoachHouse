@@ -33,7 +33,40 @@
 .cargo-feature-card small { color: var(--cargo-muted); }
 .cargo-feature-icon { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 16px; background: var(--cargo-green-soft); color: var(--cargo-green); font-size: 1.8rem; }
 .cargo-feature-arrow { color: var(--cargo-green); font-size: 1.8rem; }
-.cargo-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+.cargo-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; gap: 12px; }
+.cargo-toolbar-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.cargo-assign-trip-summary {
+    margin-bottom: 18px;
+    padding: 18px 20px;
+    border: 1px solid var(--cargo-line);
+    border-radius: 14px;
+    background: rgba(255,255,255,.95);
+    box-shadow: 0 8px 26px rgba(23,61,45,.07);
+}
+.cargo-assign-trip-summary .cargo-capacity { margin-top: 12px; }
+.cargo-assign-trip-summary .cargo-capacity small {
+    display: block;
+    margin-top: 8px;
+    color: var(--cargo-muted);
+}
+.cargo-assign-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    margin-top: 18px;
+}
+.cargo-assign-actions .cargo-primary-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.cargo-assign-row-selected { background: var(--cargo-green-soft); }
+.cargo-assign-hint {
+    margin-bottom: 16px;
+    color: var(--cargo-muted);
+    background: var(--cargo-green-soft) !important;
+}
 .cargo-back { display: inline-flex; align-items: center; gap: 8px; padding-left: 0 !important; color: var(--cargo-green-dark) !important; text-decoration: none !important; }
 .cargo-primary-button { border-color: var(--cargo-green) !important; background: var(--cargo-green) !important; }
 .cargo-primary-button:hover { border-color: var(--cargo-green-dark) !important; background: var(--cargo-green-dark) !important; }

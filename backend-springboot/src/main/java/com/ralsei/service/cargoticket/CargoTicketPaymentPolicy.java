@@ -97,6 +97,55 @@ public class CargoTicketPaymentPolicy {
     }
 
     /**
+     * Trip assignment reserves coach capacity. SENDER must already have paid
+     * (cash at counter or completed bank transfer). RECEIVER pays at destination,
+     * so pending receiver payment does not block assignment.
+     */
+    public void requireReadyForTripAssignment(CargoTicket ticket) {
+        if (isReceiver(ticket)) {
+            return;
+        }
+        Payment payment = findPayment(ticket);
+        if (payment == null) {
+            throw new BusinessRuleException(
+                    "Đơn " + ticket.getTicketCode()
+                            + " chưa có thanh toán, không thể gán chuyến.");
+        }
+        if (STATUS_FAILED.equals(payment.getStatus())) {
+            throw new BusinessRuleException(
+                    "Đơn " + ticket.getTicketCode()
+                            + " thanh toán thất bại, không thể gán chuyến.");
+        }
+        requireCompleted(payment,
+                "Người gửi chưa thanh toán xong (đơn " + ticket.getTicketCode()
+                        + "), không thể gán chuyến. Hoàn tất chuyển khoản hoặc thu tiền trước.");
+    }
+
+    /** Soft check used when building the assignable board. */
+    public boolean isReadyForTripAssignment(CargoTicket ticket) {
+        if (isReceiver(ticket)) {
+            return true;
+        }
+        Payment payment = findPayment(ticket);
+        return isCompleted(payment);
+    }
+
+    /**
+     * Create-with-trip cannot complete bank payment in the same request, so
+     * SENDER + BANK_TRANSFER must defer trip assignment until after QR success.
+     */
+    public void rejectSenderBankCreateWithTrip(Integer tripId, String feePayer, String paymentMethod) {
+        if (tripId == null) {
+            return;
+        }
+        if (FEE_SENDER.equalsIgnoreCase(feePayer) && METHOD_BANK.equals(paymentMethod)) {
+            throw new BusinessRuleException(
+                    "Người gửi thanh toán chuyển khoản: tạo đơn chưa gán chuyến, "
+                            + "thanh toán xong rồi gán chuyến sau.");
+        }
+    }
+
+    /**
      * Destination hand-off: RECEIVER must pay before DELIVERED.
      * Cash can be completed in the same confirm call; bank must already be paid.
      */
@@ -109,7 +158,11 @@ public class CargoTicketPaymentPolicy {
             }
             return;
         }
-        Payment payment = requirePayment(ticket);
+        Payment payment = findPayment(ticket);
+        if (payment == null) {
+            throw new BusinessRuleException(
+                    "Chưa chọn hình thức thanh toán của người nhận (tiền mặt hoặc chuyển khoản).");
+        }
         if (isCompleted(payment)) {
             return;
         }
@@ -122,6 +175,14 @@ public class CargoTicketPaymentPolicy {
                     "Người nhận chưa chuyển khoản xong. Vui lòng quét QR và chờ thanh toán thành công trước khi giao hàng.");
         }
         throw new BusinessRuleException("Người nhận chưa thanh toán, không thể xác nhận giao hàng.");
+    }
+
+    public void requireSenderPaymentMethodOnCreate(String feePayer, String paymentMethod) {
+        if (FEE_SENDER.equalsIgnoreCase(feePayer)
+                && (paymentMethod == null || paymentMethod.isBlank())) {
+            throw new BusinessRuleException(
+                    "Người gửi trả phí bắt buộc chọn phương thức thanh toán.");
+        }
     }
 
     public void rejectMoneyChangesWhenPaid(Payment payment) {

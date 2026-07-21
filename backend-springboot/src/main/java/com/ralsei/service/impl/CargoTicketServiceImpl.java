@@ -9,13 +9,19 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.ralsei.dto.request.cargoticket.CargoTicketRequest;
 import com.ralsei.dto.request.cargoticket.CargoTicketWithDetailsRequest;
+import com.ralsei.dto.request.cargoticket.CargoTripAssignRequest;
+import com.ralsei.dto.request.cargoticket.ConfirmReceivedRequest;
+import com.ralsei.dto.request.cargoticket.ReceiverPaymentMethodRequest;
 import com.ralsei.dto.response.PagedResponse;
+import com.ralsei.dto.response.cargoticket.CargoAssignableBoardResponse;
+import com.ralsei.dto.response.cargoticket.CargoAssignableTicketResponse;
 import com.ralsei.dto.response.cargoticket.CargoTicketResponse;
 import com.ralsei.dto.response.cargoticket.CargoOperationalTripResponse;
 import com.ralsei.dto.response.cargoticket.CargoOperationalTripPageResponse;
 import com.ralsei.dto.response.cargoticket.CargoReceivingTripPageResponse;
 import com.ralsei.dto.response.cargoticket.CargoReceivingTripResponse;
 import com.ralsei.dto.response.cargoticket.CargoTicketFormOptionsResponse;
+import com.ralsei.dto.response.cargoticket.CargoTripAssignResponse;
 import com.ralsei.dto.response.cargoticket.CustomerContactResponse;
 import com.ralsei.dto.response.cargoticketdetail.CargoTicketDetailResponse;
 import com.ralsei.exception.BusinessRuleException;
@@ -29,6 +35,7 @@ import com.ralsei.repository.CoachStopRepository;
 import com.ralsei.repository.CustomerRepository;
 import com.ralsei.repository.PaymentRepository;
 import com.ralsei.repository.RouteRepository;
+import com.ralsei.repository.RouteStopRepository;
 import com.ralsei.repository.StaffRepository;
 import com.ralsei.repository.TripRepository;
 import com.ralsei.repository.TicketAgencyRepository;
@@ -52,7 +59,10 @@ import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -75,6 +85,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
     private final CargoTypePriceRepository cargoTypePriceRepository;
     private final TransactionIdGenerator transactionIdGenerator;
     private final RouteRepository routeRepository;
+    private final RouteStopRepository routeStopRepository;
     private final TicketAgencyRepository ticketAgencyRepository;
     private final CargoTicketPaymentPolicy cargoTicketPaymentPolicy;
 
@@ -220,7 +231,24 @@ public class CargoTicketServiceImpl implements CargoTicketService {
      *
      * @return the form options
      */
-    public CargoTicketFormOptionsResponse getFormOptions(Integer pickupStopId, Integer dropoffStopId) {
+    public CargoTicketFormOptionsResponse getFormOptions(
+            Integer pickupStopId, Integer dropoffStopId, Integer accountId) {
+        Staff currentStaff = requireAgencyStaff(accountId);
+        TicketAgency agency = ticketAgencyRepository
+                .findByTicketAgencyIdAndIsActiveTrue(currentStaff.getTicketAgencyId())
+                .orElseThrow(() -> new BusinessRuleException("Văn phòng vé của nhân viên không hoạt động."));
+        var agencyStop = coachStopRepository.findById(agency.getStopPointId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Không tìm thấy điểm dừng của văn phòng vé."));
+        Integer defaultRouteId = routeStopRepository
+                .findDefaultCargoRouteIdForPickup(agency.getStopPointId());
+        String defaultRouteName = null;
+        if (defaultRouteId != null) {
+            defaultRouteName = routeRepository.findById(defaultRouteId)
+                    .map(route -> route.getRouteName())
+                    .orElse(null);
+        }
+
         return CargoTicketFormOptionsResponse.builder()
                 .routes(routeRepository.findRoutesForDropdown())
                 .trips(pickupStopId != null && dropoffStopId != null && !pickupStopId.equals(dropoffStopId)
@@ -231,6 +259,11 @@ public class CargoTicketServiceImpl implements CargoTicketService {
                 .sellers(staffRepository.findCargoTicketSellerOptionsWithUsername())
                 .handlers(staffRepository.findCargoTicketHandlerOptions())
                 .drivers(staffRepository.findCargoTicketDriverOptions())
+                .agencyPickupStopId(agency.getStopPointId())
+                .agencyPickupStopName(agencyStop.getStopPointName())
+                .agencyCity(agencyStop.getCity())
+                .defaultRouteId(defaultRouteId)
+                .defaultRouteName(defaultRouteName)
                 .build();
     }
 
@@ -257,6 +290,10 @@ public class CargoTicketServiceImpl implements CargoTicketService {
      */
     public CargoTicketResponse createCargoTicket(CargoTicketRequest request, Integer accountId) {
         Staff currentStaff = requireAgencyStaff(accountId);
+        cargoTicketPaymentPolicy.requireSenderPaymentMethodOnCreate(
+                request.getFeePayer(), request.getPaymentMethod());
+        cargoTicketPaymentPolicy.rejectSenderBankCreateWithTrip(
+                request.getTripId(), request.getFeePayer(), request.getPaymentMethod());
         requireTripOpenForCargo(request.getTripId());
         applyCreateBusinessDefaults(request, currentStaff);
         String ticketCode = generateTicketCode();
@@ -269,16 +306,19 @@ public class CargoTicketServiceImpl implements CargoTicketService {
         ticket.setStatus("RECEIVED");
         CargoTicket savedTicket = cargoTicketRepository.save(ticket);
 
-        Payment payment = Payment.builder()
-                .cargoTicket(savedTicket)
-                .amount(savedTicket.getTotalPrice())
-                .paymentMethod(request.getPaymentMethod())
-                .transactionId(transactionIdGenerator.generateUniqueTransactionId())
-                .status(CargoTicketPaymentPolicy.STATUS_PENDING)
-                .refundAmount(BigDecimal.ZERO)
-                .build();
-        paymentRepository.save(payment);
-        cargoTicketPaymentPolicy.completeCashIfApplicableOnCreate(payment, savedTicket.getFeePayer());
+        // RECEIVER pays at destination — method is chosen there, not at create time.
+        if (CargoTicketPaymentPolicy.FEE_SENDER.equalsIgnoreCase(savedTicket.getFeePayer())) {
+            Payment payment = Payment.builder()
+                    .cargoTicket(savedTicket)
+                    .amount(savedTicket.getTotalPrice())
+                    .paymentMethod(request.getPaymentMethod())
+                    .transactionId(transactionIdGenerator.generateUniqueTransactionId())
+                    .status(CargoTicketPaymentPolicy.STATUS_PENDING)
+                    .refundAmount(BigDecimal.ZERO)
+                    .build();
+            paymentRepository.save(payment);
+            cargoTicketPaymentPolicy.completeCashIfApplicableOnCreate(payment, savedTicket.getFeePayer());
+        }
 
         return mapToResponse(savedTicket);
     }
@@ -295,6 +335,10 @@ public class CargoTicketServiceImpl implements CargoTicketService {
     public CargoTicketResponse createCargoTicketWithDetails(
             CargoTicketWithDetailsRequest request, Integer accountId) {
         requireAgencyStaff(accountId);
+        cargoTicketPaymentPolicy.requireSenderPaymentMethodOnCreate(
+                request.getFeePayer(), request.getPaymentMethod());
+        cargoTicketPaymentPolicy.rejectSenderBankCreateWithTrip(
+                request.getTripId(), request.getFeePayer(), request.getPaymentMethod());
         // Calculate the prices first to satisfy the Payment DB constraint (> 0)
         List<CargoTicketDetail> mappedDetails = new java.util.ArrayList<>();
         BigDecimal preCalculatedTotal = BigDecimal.ZERO;
@@ -379,6 +423,13 @@ public class CargoTicketServiceImpl implements CargoTicketService {
 
         BigDecimal existingTotal = ticket.getTotalPrice();
         String ticketCode = ticket.getTicketCode();
+        // Pickup stays at the origin office that created the order.
+        request.setPickupStopId(ticket.getPickupStopId());
+        requireTripOpenForCargo(request.getTripId());
+        if (request.getTripId() != null
+                && (ticket.getTripId() == null || !request.getTripId().equals(ticket.getTripId()))) {
+            cargoTicketPaymentPolicy.requireReadyForTripAssignment(ticket);
+        }
         validateReferences(request);
 
         copyRequest(request, ticket, ticketCode);
@@ -388,25 +439,28 @@ public class CargoTicketServiceImpl implements CargoTicketService {
         ticket.setStatus("RECEIVED");
         CargoTicket savedTicket = cargoTicketRepository.save(ticket);
 
-        if (payment != null && request.getPaymentMethod() != null
-                && !cargoTicketPaymentPolicy.isCompleted(payment)) {
-            payment.setPaymentMethod(request.getPaymentMethod());
-            paymentRepository.save(payment);
-            if (CargoTicketPaymentPolicy.FEE_SENDER.equalsIgnoreCase(savedTicket.getFeePayer())
-                    && CargoTicketPaymentPolicy.METHOD_CASH.equals(payment.getPaymentMethod())) {
-                cargoTicketPaymentPolicy.completeCashIfApplicableOnCreate(payment, savedTicket.getFeePayer());
+        if (CargoTicketPaymentPolicy.FEE_SENDER.equalsIgnoreCase(savedTicket.getFeePayer())) {
+            cargoTicketPaymentPolicy.requireSenderPaymentMethodOnCreate(
+                    savedTicket.getFeePayer(), request.getPaymentMethod());
+            if (payment != null && request.getPaymentMethod() != null
+                    && !cargoTicketPaymentPolicy.isCompleted(payment)) {
+                payment.setPaymentMethod(request.getPaymentMethod());
+                paymentRepository.save(payment);
+                cargoTicketPaymentPolicy.completeCashIfApplicableOnCreate(
+                        payment, savedTicket.getFeePayer());
+            } else if (payment == null && request.getPaymentMethod() != null) {
+                payment = Payment.builder()
+                        .cargoTicket(savedTicket)
+                        .amount(savedTicket.getTotalPrice())
+                        .paymentMethod(request.getPaymentMethod())
+                        .transactionId(transactionIdGenerator.generateUniqueTransactionId())
+                        .status(CargoTicketPaymentPolicy.STATUS_PENDING)
+                        .refundAmount(BigDecimal.ZERO)
+                        .build();
+                paymentRepository.save(payment);
+                cargoTicketPaymentPolicy.completeCashIfApplicableOnCreate(
+                        payment, savedTicket.getFeePayer());
             }
-        } else if (payment == null && request.getPaymentMethod() != null) {
-            payment = Payment.builder()
-                    .cargoTicket(savedTicket)
-                    .amount(savedTicket.getTotalPrice())
-                    .paymentMethod(request.getPaymentMethod())
-                    .transactionId(transactionIdGenerator.generateUniqueTransactionId())
-                    .status(CargoTicketPaymentPolicy.STATUS_PENDING)
-                    .refundAmount(BigDecimal.ZERO)
-                    .build();
-            paymentRepository.save(payment);
-            cargoTicketPaymentPolicy.completeCashIfApplicableOnCreate(payment, savedTicket.getFeePayer());
         }
 
         return mapToResponse(savedTicket);
@@ -614,8 +668,38 @@ public class CargoTicketServiceImpl implements CargoTicketService {
      * @param id cargo ticket identifier
      * @param accountId authenticated destination ticket-staff account
      */
-    public void confirmReceived(int id, Integer accountId) {
+    public void confirmReceived(int id, Integer accountId, ConfirmReceivedRequest request) {
         Staff currentStaff = requireAgencyStaff(accountId);
+        CargoTicket ticket = requireDestinationArrivedTicket(id, currentStaff);
+        String paymentMethod = request != null ? request.getPaymentMethod() : null;
+        if (CargoTicketPaymentPolicy.FEE_RECEIVER.equalsIgnoreCase(ticket.getFeePayer())
+                && paymentMethod != null) {
+            ensureReceiverPayment(ticket, paymentMethod);
+        }
+        cargoTicketPaymentPolicy.settleReceiverPaymentBeforeDeliver(ticket);
+        ticket.setStatus("DELIVERED");
+        ticket.setDeliveredBy(currentStaff);
+        cargoTicketRepository.save(ticket);
+    }
+
+    @Override
+    @Transactional
+    public CargoTicketResponse chooseReceiverPaymentMethod(
+            int id, ReceiverPaymentMethodRequest request, Integer accountId) {
+        Staff currentStaff = requireAgencyStaff(accountId);
+        CargoTicket ticket = requireDestinationArrivedTicket(id, currentStaff);
+        if (!CargoTicketPaymentPolicy.FEE_RECEIVER.equalsIgnoreCase(ticket.getFeePayer())) {
+            throw new BusinessRuleException("Chỉ đơn người nhận trả phí mới chọn hình thức tại văn phòng đích.");
+        }
+        Payment payment = ensureReceiverPayment(ticket, request.getPaymentMethod());
+        if (CargoTicketPaymentPolicy.METHOD_CASH.equals(payment.getPaymentMethod())
+                && CargoTicketPaymentPolicy.STATUS_PENDING.equals(payment.getStatus())) {
+            // Cash is completed together with confirm-received, not here.
+        }
+        return mapToResponse(ticket);
+    }
+
+    private CargoTicket requireDestinationArrivedTicket(int id, Staff currentStaff) {
         TicketAgency agency = ticketAgencyRepository
                 .findByTicketAgencyIdAndIsActiveTrue(currentStaff.getTicketAgencyId())
                 .orElseThrow(() -> new BusinessRuleException("Văn phòng vé của nhân viên không hoạt động."));
@@ -626,10 +710,30 @@ public class CargoTicketServiceImpl implements CargoTicketService {
         if (!"ARRIVED".equals(ticket.getStatus())) {
             throw new BusinessRuleException("Chỉ đơn đã đến nơi mới có thể xác nhận nhận hàng.");
         }
-        cargoTicketPaymentPolicy.settleReceiverPaymentBeforeDeliver(ticket);
-        ticket.setStatus("DELIVERED");
-        ticket.setDeliveredBy(currentStaff);
-        cargoTicketRepository.save(ticket);
+        return ticket;
+    }
+
+    private Payment ensureReceiverPayment(CargoTicket ticket, String paymentMethod) {
+        if (paymentMethod == null || paymentMethod.isBlank()) {
+            throw new BusinessRuleException("Phải chọn tiền mặt hoặc chuyển khoản.");
+        }
+        Payment payment = cargoTicketPaymentPolicy.findPayment(ticket);
+        if (payment != null && cargoTicketPaymentPolicy.isCompleted(payment)) {
+            return payment;
+        }
+        if (payment == null) {
+            payment = Payment.builder()
+                    .cargoTicket(ticket)
+                    .amount(ticket.getTotalPrice())
+                    .paymentMethod(paymentMethod)
+                    .transactionId(transactionIdGenerator.generateUniqueTransactionId())
+                    .status(CargoTicketPaymentPolicy.STATUS_PENDING)
+                    .refundAmount(BigDecimal.ZERO)
+                    .build();
+        } else {
+            payment.setPaymentMethod(paymentMethod);
+        }
+        return paymentRepository.save(payment);
     }
 
     @Override
@@ -696,6 +800,139 @@ public class CargoTicketServiceImpl implements CargoTicketService {
         BigDecimal price = calculateDetailPrice(request.getCargoTypePriceId(), request.getDimensionVol(),
                 request.getQuantity());
         return new com.ralsei.dto.response.cargoticketdetail.CargoTicketDetailPriceResponse(price);
+    }
+
+    @Override
+    public CargoAssignableBoardResponse getAssignableCargo(int tripId, Integer accountId) {
+        Staff currentStaff = requireAgencyStaff(accountId);
+        requireTripOpenForCargo(tripId);
+
+        BigDecimal used = cargoTicketDetailRepository.sumActiveVolumeByTripId(tripId);
+        if (used == null) {
+            used = BigDecimal.ZERO;
+        }
+
+        List<CargoAssignableTicketResponse> tickets = cargoTicketRepository
+                .findUnassignedReceivedByAgency(currentStaff.getTicketAgencyId())
+                .stream()
+                .filter(ticket -> isAssignableToTrip(tripId, ticket, currentStaff.getTicketAgencyId()))
+                .filter(cargoTicketPaymentPolicy::isReadyForTripAssignment)
+                .filter(this::hasPositiveCargoVolume)
+                .map(this::mapToAssignableResponse)
+                .toList();
+
+        return CargoAssignableBoardResponse.builder()
+                .tripId(tripId)
+                .usedCargoVolume(used)
+                .cargoCapacity(CARGO_CAPACITY_M3)
+                .tickets(tickets)
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public CargoTripAssignResponse assignCargoToTrip(
+            int tripId, CargoTripAssignRequest request, Integer accountId) {
+        Staff currentStaff = requireAgencyStaff(accountId);
+        requireTripOpenForCargo(tripId);
+
+        Set<Integer> uniqueIds = new LinkedHashSet<>(request.getCargoTicketIds());
+        List<CargoTicket> selected = new ArrayList<>();
+        BigDecimal selectedVolume = BigDecimal.ZERO;
+
+        for (Integer cargoTicketId : uniqueIds) {
+            CargoTicket ticket = findByIdOrThrow(cargoTicketId);
+            requirePending(ticket, "Chỉ đơn đang chờ mới được gán chuyến.");
+            if (ticket.getTripId() != null) {
+                throw new BusinessRuleException(
+                        "Đơn " + ticket.getTicketCode() + " đã được gán cho một chuyến xe.");
+            }
+            requireSellerAgency(ticket, currentStaff.getTicketAgencyId());
+            if (!isAssignableToTrip(tripId, ticket, currentStaff.getTicketAgencyId())) {
+                throw new BusinessRuleException(
+                        "Đơn " + ticket.getTicketCode() + " không phù hợp với chuyến xe đã chọn.");
+            }
+            cargoTicketPaymentPolicy.requireReadyForTripAssignment(ticket);
+            BigDecimal volume = cargoTicketDetailRepository.sumVolumeByCargoTicketId(cargoTicketId);
+            if (volume == null) {
+                volume = BigDecimal.ZERO;
+            }
+            if (volume.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new BusinessRuleException(
+                        "Đơn " + ticket.getTicketCode() + " chưa có hàng hóa hợp lệ để gán chuyến.");
+            }
+            selectedVolume = selectedVolume.add(volume);
+            selected.add(ticket);
+        }
+
+        validateCapacity(tripId, selectedVolume, BigDecimal.ZERO);
+
+        for (CargoTicket ticket : selected) {
+            ticket.setTripId(tripId);
+        }
+        cargoTicketRepository.saveAll(selected);
+
+        BigDecimal used = cargoTicketDetailRepository.sumActiveVolumeByTripId(tripId);
+        if (used == null) {
+            used = BigDecimal.ZERO;
+        }
+
+        return CargoTripAssignResponse.builder()
+                .tripId(tripId)
+                .assignedCount(selected.size())
+                .usedCargoVolume(used)
+                .cargoCapacity(CARGO_CAPACITY_M3)
+                .assignedTickets(selected.stream().map(this::mapToResponse).toList())
+                .build();
+    }
+
+    private boolean isAssignableToTrip(int tripId, CargoTicket ticket, int ticketAgencyId) {
+        return tripRepository.isEligibleForAgencyCargo(
+                tripId, ticket.getPickupStopId(), ticket.getDropoffStopId(), ticketAgencyId);
+    }
+
+    private boolean hasPositiveCargoVolume(CargoTicket ticket) {
+        BigDecimal volume = cargoTicketDetailRepository.sumVolumeByCargoTicketId(ticket.getCargoTicketId());
+        return volume != null && volume.compareTo(BigDecimal.ZERO) > 0;
+    }
+
+    private void requireSellerAgency(CargoTicket ticket, int ticketAgencyId) {
+        Staff seller = ticket.getSoldBy();
+        if (seller == null || seller.getTicketAgencyId() == null
+                || seller.getTicketAgencyId() != ticketAgencyId) {
+            throw new BusinessRuleException(
+                    "Đơn " + ticket.getTicketCode() + " không thuộc văn phòng vé hiện tại.");
+        }
+    }
+
+    private CargoAssignableTicketResponse mapToAssignableResponse(CargoTicket ticket) {
+        BigDecimal volume = cargoTicketDetailRepository.sumVolumeByCargoTicketId(ticket.getCargoTicketId());
+        if (volume == null) {
+            volume = BigDecimal.ZERO;
+        }
+        String pickupStopName = coachStopRepository.findById(ticket.getPickupStopId())
+                .map(stop -> stop.getStopPointName()).orElse(null);
+        String dropoffStopName = coachStopRepository.findById(ticket.getDropoffStopId())
+                .map(stop -> stop.getStopPointName()).orElse(null);
+        Payment payment = cargoTicketPaymentPolicy.findPayment(ticket);
+        return CargoAssignableTicketResponse.builder()
+                .cargoTicketId(ticket.getCargoTicketId())
+                .ticketCode(ticket.getTicketCode())
+                .senderName(ticket.getSenderName())
+                .senderPhone(ticket.getSenderPhone())
+                .receiverName(ticket.getReceiverName())
+                .receiverPhone(ticket.getReceiverPhone())
+                .totalPrice(ticket.getTotalPrice())
+                .pickupStopId(ticket.getPickupStopId())
+                .pickupStopName(pickupStopName)
+                .dropoffStopId(ticket.getDropoffStopId())
+                .dropoffStopName(dropoffStopName)
+                .status(ticket.getStatus())
+                .feePayer(ticket.getFeePayer())
+                .paymentMethod(payment != null ? payment.getPaymentMethod() : null)
+                .paymentStatus(payment != null ? payment.getStatus() : null)
+                .occupiedVolume(volume)
+                .build();
     }
 
     private BigDecimal calculateDetailPrice(int cargoTypePriceId, BigDecimal dimensionVol, int quantity) {
@@ -788,14 +1025,15 @@ public class CargoTicketServiceImpl implements CargoTicketService {
     }
 
     /**
-     * Rejects every trip that has already started or otherwise left the scheduled
-     * state before any cargo ticket or payment row is created.
+     * When a trip is present, rejects every trip that has already started or
+     * otherwise left the scheduled state. Null tripId is allowed so staff can
+     * create (or keep) an order before assigning a coach.
      *
-     * @param tripId trip selected by ticket staff
+     * @param tripId trip selected by ticket staff, or null when deferred
      */
     private void requireTripOpenForCargo(Integer tripId) {
         if (tripId == null) {
-            throw new BusinessRuleException("Đơn hàng phải được gán cho một chuyến xe.");
+            return;
         }
         var trip = tripRepository.findById(tripId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyến đi có ID là: " + tripId));
@@ -875,10 +1113,11 @@ public class CargoTicketServiceImpl implements CargoTicketService {
     /**
      * Prevents a stale browser from overbooking a coach after its list was
      * loaded. The replacement volume is subtracted for detail updates.
+     * Orders without a trip skip capacity until a coach is assigned.
      */
     private void validateCapacity(Integer tripId, BigDecimal addedVolume, BigDecimal replacedVolume) {
         if (tripId == null) {
-            throw new BusinessRuleException("Đơn hàng phải được gán cho một chuyến xe.");
+            return;
         }
         BigDecimal occupied = cargoTicketDetailRepository.sumActiveVolumeByTripId(tripId);
         BigDecimal nextOccupied = (occupied == null ? BigDecimal.ZERO : occupied)
@@ -939,6 +1178,17 @@ public class CargoTicketServiceImpl implements CargoTicketService {
         Payment payment = paymentRepository.findByCargoTicket_CargoTicketId(ticket.getCargoTicketId()).orElse(null);
         var responsibility = cargoTicketRepository
                 .findResponsibilityByCargoTicketId(ticket.getCargoTicketId()).orElse(null);
+        Integer routeId = responsibility != null ? responsibility.getRouteId() : null;
+        String routeName = responsibility != null ? responsibility.getRouteName() : null;
+        if (routeId == null) {
+            routeId = routeStopRepository.findRouteIdForPickupAndDropoff(
+                    ticket.getPickupStopId(), ticket.getDropoffStopId());
+            if (routeId != null && routeName == null) {
+                routeName = routeRepository.findById(routeId)
+                        .map(route -> route.getRouteName())
+                        .orElse(null);
+            }
+        }
 
         return CargoTicketResponse.builder()
                 .cargoTicketId(ticket.getCargoTicketId())
@@ -958,7 +1208,8 @@ public class CargoTicketServiceImpl implements CargoTicketService {
                 .dropoffStopId(ticket.getDropoffStopId())
                 .dropoffStopName(dropoffStopName)
                 .status(ticket.getStatus())
-                .routeName(responsibility == null ? null : responsibility.getRouteName())
+                .routeId(routeId)
+                .routeName(routeName)
                 .licensePlate(responsibility == null ? null : responsibility.getLicensePlate())
                 .destinationAgencyName(responsibility == null ? null : responsibility.getDestinationAgencyName())
                 .driverName(responsibility == null ? null : responsibility.getDriverName())
