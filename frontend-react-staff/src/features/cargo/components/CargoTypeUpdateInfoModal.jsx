@@ -7,6 +7,7 @@ import {
     normalizeCargoPriceInput,
     validateCargoSurchargePrice
 } from '../utils/cargoPriceValidation';
+import CargoUnitSelect from './CargoUnitSelect';
 import '../styles/CargoTypeManagement.css';
 
 /**
@@ -122,15 +123,9 @@ export default function CargoTypeUpdateInfoModal({ isOpen, data, onClose, onSucc
                         <Form.Label className="fw-semibold text-secondary">
                             Đơn vị <span className="text-danger">*</span>
                         </Form.Label>
-                        <Form.Control
-                            type="text"
-                            name="unit"
+                        <CargoUnitSelect
                             value={formData.unit}
                             onChange={handleInputChange}
-                            required
-                            maxLength={50}
-                            placeholder="Ví dụ: kg, m3, kiện..."
-                            className="py-2"
                         />
                     </Form.Group>
 
