@@ -20,14 +20,19 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ralsei.dto.request.cargoticket.CargoTicketRequest;
 import com.ralsei.dto.request.cargoticket.CargoTicketWithDetailsRequest;
+import com.ralsei.dto.request.cargoticket.CargoTripAssignRequest;
+import com.ralsei.dto.request.cargoticket.ConfirmReceivedRequest;
+import com.ralsei.dto.request.cargoticket.ReceiverPaymentMethodRequest;
 import com.ralsei.dto.request.cargoticket.TripByStopRequest;
 import com.ralsei.dto.request.cargoticketdetail.CargoTicketDetailPriceRequest;
 import com.ralsei.dto.request.cargoticketdetail.CargoTicketDetailRequest;
 import com.ralsei.dto.response.PagedResponse;
+import com.ralsei.dto.response.cargoticket.CargoAssignableBoardResponse;
 import com.ralsei.dto.response.cargoticket.CargoOperationalTripPageResponse;
 import com.ralsei.dto.response.cargoticket.CargoReceivingTripPageResponse;
 import com.ralsei.dto.response.cargoticket.CargoTicketFormOptionsResponse;
 import com.ralsei.dto.response.cargoticket.CargoTicketResponse;
+import com.ralsei.dto.response.cargoticket.CargoTripAssignResponse;
 import com.ralsei.dto.response.cargoticket.CustomerContactResponse;
 import com.ralsei.dto.response.cargoticket.TripByStopResponse;
 import com.ralsei.dto.response.cargoticketdetail.CargoTicketDetailPriceResponse;
@@ -54,9 +59,11 @@ public class CargoTicketController {
 
     @GetMapping("/form-options")
     public ResponseEntity<CargoTicketFormOptionsResponse> getFormOptions(
+            @RequestHeader("Authorization") String authorizationHeader,
             @RequestParam(required = false) @Min(1) Integer pickupStopId,
             @RequestParam(required = false) @Min(1) Integer dropoffStopId) {
-        return ResponseEntity.ok(cargoTicketService.getFormOptions(pickupStopId, dropoffStopId));
+        return ResponseEntity.ok(cargoTicketService.getFormOptions(
+                pickupStopId, dropoffStopId, jwtService.extractAccountId(authorizationHeader)));
     }
 
     @GetMapping("/contacts/search")
@@ -94,6 +101,25 @@ public class CargoTicketController {
             @RequestParam(defaultValue = "6") @Min(1) @Max(50) int size) {
         return ResponseEntity.ok(cargoTicketService.getReceivingTrips(
                 jwtService.extractAccountId(authorizationHeader), page, size));
+    }
+
+    /** Waiting unassigned orders eligible for batch assignment onto one trip. */
+    @GetMapping("/trips/{tripId:\\d+}/assignable")
+    public ResponseEntity<CargoAssignableBoardResponse> getAssignableCargo(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable @Min(1) int tripId) {
+        return ResponseEntity.ok(cargoTicketService.getAssignableCargo(
+                tripId, jwtService.extractAccountId(authorizationHeader)));
+    }
+
+    /** Batch-assigns selected waiting orders to one SCHEDULED trip. */
+    @PostMapping("/trips/{tripId:\\d+}/assign")
+    public ResponseEntity<CargoTripAssignResponse> assignCargoToTrip(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable @Min(1) int tripId,
+            @Valid @RequestBody CargoTripAssignRequest request) {
+        return ResponseEntity.ok(cargoTicketService.assignCargoToTrip(
+                tripId, request, jwtService.extractAccountId(authorizationHeader)));
     }
 
     @GetMapping("/{id:\\d+}")
@@ -169,9 +195,21 @@ public class CargoTicketController {
     @PutMapping("/{id:\\d+}/confirm-received")
     public ResponseEntity<Void> confirmReceived(
             @RequestHeader("Authorization") String authorizationHeader,
-            @PathVariable @Min(1) int id) {
-        cargoTicketService.confirmReceived(id, jwtService.extractAccountId(authorizationHeader));
+            @PathVariable @Min(1) int id,
+            @Valid @RequestBody(required = false) ConfirmReceivedRequest request) {
+        cargoTicketService.confirmReceived(
+                id, jwtService.extractAccountId(authorizationHeader), request);
         return ResponseEntity.noContent().build();
+    }
+
+    /** Destination staff chooses cash vs bank transfer for RECEIVER-paid orders. */
+    @PutMapping("/{id:\\d+}/receiver-payment-method")
+    public ResponseEntity<CargoTicketResponse> chooseReceiverPaymentMethod(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable @Min(1) int id,
+            @Valid @RequestBody ReceiverPaymentMethodRequest request) {
+        return ResponseEntity.ok(cargoTicketService.chooseReceiverPaymentMethod(
+                id, request, jwtService.extractAccountId(authorizationHeader)));
     }
 
     @PutMapping("/{id:\\d+}/complete-payment")

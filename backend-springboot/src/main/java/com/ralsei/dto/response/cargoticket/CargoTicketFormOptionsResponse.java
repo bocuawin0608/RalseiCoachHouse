@@ -5,7 +5,6 @@ import java.util.List;
 import com.ralsei.dto.projection.cargoticket.CargoTicketCustomerOptionProjection;
 import com.ralsei.dto.projection.cargoticket.CargoTicketStaffOptionProjection;
 import com.ralsei.dto.projection.cargoticket.CargoTicketStopOptionProjection;
-import com.ralsei.dto.projection.cargoticket.CargoTicketTripOptionProjection;
 import com.ralsei.dto.projection.cargoticket.CargoTicketTripOptionWithCoachTypeProjection;
 import com.ralsei.dto.response.CoachAndRouteStop.RouteDropdownDTO;
 
@@ -25,4 +24,12 @@ public class CargoTicketFormOptionsResponse {
     private List<CargoTicketStaffOptionProjection> sellers;
     private List<CargoTicketStaffOptionProjection> handlers;
     private List<CargoTicketStaffOptionProjection> drivers;
+
+    /** Authenticated ticket office pickup stop — locked on create/update forms. */
+    private Integer agencyPickupStopId;
+    private String agencyPickupStopName;
+    private String agencyCity;
+    /** Outbound route from the agency city that still has later dropoff stops. */
+    private Integer defaultRouteId;
+    private String defaultRouteName;
 }

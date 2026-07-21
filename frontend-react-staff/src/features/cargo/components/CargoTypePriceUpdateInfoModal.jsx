@@ -2,6 +2,8 @@ import { Alert, Button, Form, Modal } from 'react-bootstrap';
 import { useState, useEffect } from 'react';
 import { cargoTypePriceApi } from '../api/cargoTypePriceApi';
 import { BsExclamationTriangleFill } from 'react-icons/bs';
+import CargoUnitSelect from './CargoUnitSelect';
+
 export default function CargoTypePriceUpdateInfoModal({ isOpen, data, cargoTypes, onClose, onSuccess }) {
     const [formData, setFormData] = useState({
         cargoTypeId: '',
@@ -94,16 +96,11 @@ export default function CargoTypePriceUpdateInfoModal({ isOpen, data, cargoTypes
 
                     <Form.Group className="mb-3">
                         <Form.Label className="fw-semibold text-secondary">
-                            Đơn Vị (VD: kg, m3) <span className="text-danger">*</span>
+                            Đơn vị <span className="text-danger">*</span>
                         </Form.Label>
-                        <Form.Control 
-                            type="text"
-                            name="unit"
-                            value={formData.unit} 
-                            onChange={handleInputChange} 
-                            required maxLength={50}
-                            placeholder="VD: kg"
-                            className="py-2"
+                        <CargoUnitSelect
+                            value={formData.unit}
+                            onChange={handleInputChange}
                         />
                     </Form.Group>
 

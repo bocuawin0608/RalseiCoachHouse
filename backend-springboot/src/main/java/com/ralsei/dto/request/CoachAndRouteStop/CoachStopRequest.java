@@ -25,17 +25,12 @@ public class CoachStopRequest {
 
     @NotBlank(message = "Address is required")
     @Size(max = 255, message = "Address must be less than 255 characters")
-    @Pattern(regexp = "^[^,]+(,\\s+[^,]+)+$", message = "Địa chỉ không hợp lệ.")
+    @Pattern(regexp = "^[\\p{L}\\p{N}\\s,.-]+$", message = "Địa chỉ không hợp lệ.")
     private String address;
 
     @NotBlank(message = "City is required")
     @Size(max = 255, message = "City must be less than 255 characters")
-    @Pattern(regexp = "^[\\p{L}\\s]+$", message = "Thành phố không hợp lệ. Vui lòng nhập theo định dạng: Chỉ chứa chữ cái và khoảng trắng.")
+    @Pattern(regexp = "^[\\p{L}\\p{N}\\s.-]+$", message = "Thành phố không hợp lệ. Vui lòng nhập theo định dạng: Chỉ chứa chữ cái, số, dấu chấm, gạch ngang và khoảng trắng.")
     private String city;
 
-    @NotNull(message = "Latitude is required")
-    private BigDecimal latitude;
-
-    @NotNull(message = "Longitude is required")
-    private BigDecimal longitude;
 }

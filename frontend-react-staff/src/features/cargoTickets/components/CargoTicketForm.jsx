@@ -1,5 +1,5 @@
 import { Alert, Button, Card, Col, Form, Row } from 'react-bootstrap';
-import { BsCheckCircle, BsExclamationTriangleFill } from 'react-icons/bs';
+import { BsCheckCircle, BsExclamationTriangleFill, BsGeoAltFill } from 'react-icons/bs';
 import { useMemo, useState, useEffect } from 'react';
 import { useCargoTicketFormOptions } from '../hooks/useCargoTicketFormOptions';
 import { useAuth } from '../../auth/context/AuthContext';
@@ -19,12 +19,25 @@ const EMPTY_FORM = {
 
 const MAX_CARGO_VOLUME_M3 = 2.5;
 
-/** One create/update form that always displays the current order information. */
-export default function CargoTicketForm({ initialData, lockedTrip, onSubmit, submitLabel = 'Lưu đơn gửi hàng' }) {
+/**
+ * Ticket-staff cargo form.
+ * Pickup is always the authenticated agency stop; staff only choose dropoff
+ * (and optionally a matching outbound trip).
+ */
+export default function CargoTicketForm({
+    initialData,
+    lockedTrip,
+    requireDimensions = false,
+    onSubmit,
+    submitLabel = 'Lưu đơn gửi hàng'
+}) {
     const [formData, setFormData] = useState(() => ({
         ...EMPTY_FORM,
         ...initialData,
-        soldBy: initialData?.soldBy?.staffId ?? initialData?.soldBy ?? EMPTY_FORM.soldBy
+        soldBy: initialData?.soldBy?.staffId ?? initialData?.soldBy ?? EMPTY_FORM.soldBy,
+        tripId: initialData?.tripId ?? EMPTY_FORM.tripId,
+        pickupStopId: initialData?.pickupStopId ?? lockedTrip?.pickupStopId ?? EMPTY_FORM.pickupStopId,
+        dropoffStopId: initialData?.dropoffStopId ?? EMPTY_FORM.dropoffStopId
     }));
     const [draftDetails, setDraftDetails] = useState(() =>
         initialData?.details ? structuredClone(initialData.details) : []
@@ -32,17 +45,80 @@ export default function CargoTicketForm({ initialData, lockedTrip, onSubmit, sub
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const { user } = useAuth();
-    const { trips, stops, sellers, routes, loading: optionsLoading, error: optionsError } = useCargoTicketFormOptions(
-        formData.pickupStopId,
-        formData.dropoffStopId
-    );
-    const [selectedRouteId, setSelectedRouteId] = useState(() => lockedTrip?.routeId ? String(lockedTrip.routeId) : '');
+    const {
+        trips,
+        stops,
+        sellers,
+        loading: optionsLoading,
+        error: optionsError,
+        agencyPickupStopId,
+        agencyPickupStopName,
+        agencyCity,
+        defaultRouteId,
+        defaultRouteName
+    } = useCargoTicketFormOptions(formData.pickupStopId, formData.dropoffStopId);
+
+    const [selectedRouteId, setSelectedRouteId] = useState(() => {
+        if (lockedTrip?.routeId) return String(lockedTrip.routeId);
+        if (initialData?.routeId) return String(initialData.routeId);
+        return '';
+    });
     const [routeDetail, setRouteDetail] = useState(null);
-    const isCreateFlow = Boolean(lockedTrip);
+    const [routeLabel, setRouteLabel] = useState(
+        () => lockedTrip?.routeName || initialData?.routeName || ''
+    );
+    const hasLockedTrip = Boolean(lockedTrip);
+    const isCreate = requireDimensions;
+
+    const lockedPickupStopId = lockedTrip?.pickupStopId
+        || agencyPickupStopId
+        || initialData?.pickupStopId
+        || '';
+    const lockedPickupName = lockedTrip?.pickupStopName
+        || agencyPickupStopName
+        || initialData?.pickupStopName
+        || '';
+    const lockedPickupCity = lockedTrip?.pickupCity || agencyCity || '';
+
+    // Lock pickup to agency / trip office as soon as context is known.
+    useEffect(() => {
+        if (!lockedPickupStopId) return;
+        setFormData((previous) => {
+            if (String(previous.pickupStopId) === String(lockedPickupStopId)) return previous;
+            return { ...previous, pickupStopId: lockedPickupStopId, tripId: previous.tripId && !isCreate ? previous.tripId : '' };
+        });
+    }, [lockedPickupStopId, isCreate]);
+
+    // Auto-select outbound route for create; keep update route from ticket/trip.
+    useEffect(() => {
+        if (hasLockedTrip && lockedTrip?.routeId) {
+            setSelectedRouteId(String(lockedTrip.routeId));
+            if (lockedTrip.routeName) setRouteLabel(lockedTrip.routeName);
+            return;
+        }
+        if (selectedRouteId) return;
+        if (initialData?.routeId) {
+            setSelectedRouteId(String(initialData.routeId));
+            if (initialData.routeName) setRouteLabel(initialData.routeName);
+            return;
+        }
+        if (defaultRouteId) {
+            setSelectedRouteId(String(defaultRouteId));
+            if (defaultRouteName) setRouteLabel(defaultRouteName);
+        }
+    }, [hasLockedTrip, lockedTrip, selectedRouteId, initialData, defaultRouteId, defaultRouteName]);
 
     useEffect(() => {
-        if (!selectedRouteId) return;
-        routeApi.getRouteDetail(selectedRouteId).then(r => setRouteDetail(r)).catch(() => setRouteDetail(null));
+        if (!selectedRouteId) {
+            setRouteDetail(null);
+            return;
+        }
+        routeApi.getRouteDetail(selectedRouteId)
+            .then((route) => {
+                setRouteDetail(route);
+                if (route?.routeName) setRouteLabel(route.routeName);
+            })
+            .catch(() => setRouteDetail(null));
     }, [selectedRouteId]);
 
     useEffect(() => {
@@ -60,6 +136,18 @@ export default function CargoTicketForm({ initialData, lockedTrip, onSubmit, sub
         [trips, stops, formData.pickupStopId, formData.dropoffStopId]
     );
 
+    // Keep selected trip if still eligible after options refresh (update prefill).
+    useEffect(() => {
+        if (!formData.tripId || optionsLoading) return;
+        if (eligibleTrips.length === 0) return;
+        const stillValid = eligibleTrips.some(
+            (trip) => String(trip.tripId) === String(formData.tripId)
+        );
+        if (!stillValid && !hasLockedTrip) {
+            setFormData((previous) => ({ ...previous, tripId: '' }));
+        }
+    }, [eligibleTrips, formData.tripId, optionsLoading, hasLockedTrip]);
+
     const stopsForRoute = useMemo(() => {
         if (!selectedRouteId || !routeDetail?.routeStops?.length) return [];
         return routeDetail.routeStops.map(rs => ({
@@ -70,38 +158,45 @@ export default function CargoTicketForm({ initialData, lockedTrip, onSubmit, sub
         })).sort((a, b) => a.stopOrder - b.stopOrder);
     }, [selectedRouteId, routeDetail]);
 
-    // Existing update forms retain their endpoint-city behaviour. New orders are
-    // locked to the authenticated staff member's exact agency stop.
-    const { originCity, destinationCity } = useMemo(() => {
-        const uniqueCities = [];
-        for (const s of stopsForRoute) {
-            if (s.city && !uniqueCities.includes(s.city)) uniqueCities.push(s.city);
-        }
-        if (uniqueCities.length < 2) return { originCity: null, destinationCity: null };
-        return { originCity: uniqueCities[0], destinationCity: uniqueCities[uniqueCities.length - 1] };
-    }, [stopsForRoute]);
-
-    const pickupStopOptions = useMemo(() => {
-        if (lockedTrip?.pickupStopId) {
-            return stopsForRoute.filter(s => String(s.stopPointId) === String(lockedTrip.pickupStopId));
-        }
-        const base = originCity ? stopsForRoute.filter(s => s.city === originCity) : stopsForRoute;
-        return excludeSelectedStop(base, formData.dropoffStopId);
-    }, [stopsForRoute, originCity, formData.dropoffStopId, lockedTrip]);
+    // Cách 2: chỉ điểm trả ở city đầu kia + có văn phòng vé (ẩn cùng city điểm nhận / điểm giữa).
+    const agencyStopIds = useMemo(
+        () => new Set((stops || []).map((stop) => String(stop.stopPointId))),
+        [stops]
+    );
 
     const dropoffStopOptions = useMemo(() => {
-        if (lockedTrip?.pickupStopId) {
-            const pickup = stopsForRoute.find(s => String(s.stopPointId) === String(lockedTrip.pickupStopId));
-            return pickup ? stopsForRoute.filter(s => s.stopOrder > pickup.stopOrder) : [];
-        }
-        const base = destinationCity ? stopsForRoute.filter(s => s.city === destinationCity) : stopsForRoute;
-        return excludeSelectedStop(base, formData.pickupStopId);
-    }, [stopsForRoute, destinationCity, formData.pickupStopId, lockedTrip]);
+        if (!formData.pickupStopId || !stopsForRoute.length) return [];
+        const pickup = stopsForRoute.find(
+            (stop) => String(stop.stopPointId) === String(formData.pickupStopId)
+        );
+        if (!pickup?.city) return [];
+        const pickupCity = String(pickup.city).trim().toLowerCase();
+        return stopsForRoute.filter((stop) => {
+            if (stop.stopOrder <= pickup.stopOrder) return false;
+            if (agencyStopIds.size > 0 && !agencyStopIds.has(String(stop.stopPointId))) return false;
+            const stopCity = String(stop.city ?? '').trim().toLowerCase();
+            return stopCity && stopCity !== pickupCity;
+        });
+    }, [stopsForRoute, formData.pickupStopId, agencyStopIds]);
 
-    /** Keeps the primary action unavailable until every required business input is valid. */
+    // Clear a previously selected mid-route / same-city dropoff once options load.
+    useEffect(() => {
+        if (!formData.dropoffStopId || dropoffStopOptions.length === 0) return;
+        const stillValid = dropoffStopOptions.some(
+            (stop) => String(stop.stopPointId) === String(formData.dropoffStopId)
+        );
+        if (!stillValid) {
+            setFormData((previous) => ({
+                ...previous,
+                dropoffStopId: '',
+                ...(hasLockedTrip ? {} : { tripId: '' })
+            }));
+        }
+    }, [dropoffStopOptions, formData.dropoffStopId, hasLockedTrip]);
+
     const isFormComplete = useMemo(
-        () => isCargoTicketFormComplete(formData, draftDetails, isCreateFlow),
-        [formData, draftDetails, isCreateFlow]
+        () => isCargoTicketFormComplete(formData, draftDetails, requireDimensions),
+        [formData, draftDetails, requireDimensions]
     );
     const occupiedVolume = useMemo(() => calculateOccupiedVolume(draftDetails), [draftDetails]);
     const estimatedTotal = useMemo(() => sumCalculatedPrices(draftDetails), [draftDetails]);
@@ -115,22 +210,22 @@ export default function CargoTicketForm({ initialData, lockedTrip, onSubmit, sub
         setFormData((previous) => ({
             ...previous,
             [name]: value,
-            ...((name === 'pickupStopId' || name === 'dropoffStopId') && !lockedTrip ? { tripId: '' } : {})
+            ...(name === 'dropoffStopId' && !hasLockedTrip ? { tripId: '' } : {}),
+            ...(name === 'feePayer' && value === 'RECEIVER' ? { paymentMethod: '' } : {}),
+            ...(name === 'feePayer' && value === 'SENDER' && !previous.paymentMethod
+                ? { paymentMethod: 'CASH' }
+                : {})
         }));
-        setError('');
-    };
-
-    const handleRouteChange = (event) => {
-        setSelectedRouteId(event.target.value);
-        setRouteDetail(null);
-        setFormData((previous) => ({ ...previous, pickupStopId: '', dropoffStopId: '', tripId: '' }));
         setError('');
     };
 
     const handleAddDetail = () => {
         setDraftDetails(prev => {
             const newDetails = structuredClone(prev);
-            newDetails.push({ cargoTypePriceId: '', description: '', quantity: 1, weightKg: '', length: '', width: '', height: '', dimensionVol: '' });
+            newDetails.push({
+                cargoTypePriceId: '', description: '', quantity: 1, weightKg: '',
+                length: '', width: '', height: '', dimensionVol: ''
+            });
             return newDetails;
         });
     };
@@ -165,13 +260,15 @@ export default function CargoTicketForm({ initialData, lockedTrip, onSubmit, sub
             setError('Điểm nhận và điểm trả hàng phải khác nhau.');
             return;
         }
-
         if (!initialData?.cargoTicketId && draftDetails.length === 0) {
             setError('Vui lòng thêm ít nhất một chi tiết hàng hóa.');
             return;
         }
 
-        const payload = buildCargoTicketRequest(formData, draftDetails);
+        const payload = buildCargoTicketRequest({
+            ...formData,
+            pickupStopId: lockedPickupStopId || formData.pickupStopId
+        }, draftDetails);
         setSubmitting(true);
         try {
             await onSubmit(payload);
@@ -188,7 +285,11 @@ export default function CargoTicketForm({ initialData, lockedTrip, onSubmit, sub
 
     return (
         <Form id="cargo-ticket-form" onSubmit={handleSubmit}>
-            {(error || optionsError) && <Alert variant="danger" className="d-flex align-items-center gap-2"><BsExclamationTriangleFill />{error || optionsError}</Alert>}
+            {(error || optionsError) && (
+                <Alert variant="danger" className="d-flex align-items-center gap-2">
+                    <BsExclamationTriangleFill />{error || optionsError}
+                </Alert>
+            )}
 
             <Row className="g-4 mb-4">
                 <Col lg={6}><PartyCard title="Người gửi" prefix="sender" data={formData} onChange={handleChange} setFormData={setFormData} /></Col>
@@ -196,30 +297,128 @@ export default function CargoTicketForm({ initialData, lockedTrip, onSubmit, sub
             </Row>
 
             <Card className="shadow-sm border-0 mb-4">
-                <Card.Header className="bg-white py-3"><h5 className="fw-bold mb-0">Thông tin vé và hành trình</h5></Card.Header>
+                <Card.Header className="bg-white py-3">
+                    <h5 className="fw-bold mb-0">Thông tin vé và hành trình</h5>
+                </Card.Header>
                 <Card.Body className="p-4">
                     <Row className="g-3">
-                        {!isCreateFlow && <>
-                            <Col md={4}><Dropdown label="Tuyến đường" name="routeId" value={selectedRouteId} onChange={handleRouteChange} loading={optionsLoading} options={routes} optionValue="routeId" renderOption={(item) => item.routeName} emptyLabel="-- Chọn tuyến --" /></Col>
-                            <Col md={4}><Dropdown label="Điểm nhận" name="pickupStopId" value={formData.pickupStopId} onChange={handleChange} loading={optionsLoading} options={pickupStopOptions} optionValue="stopPointId" renderOption={(item) => `${item.stopPointName} (${item.city})`} required disabled={!selectedRouteId} emptyLabel="-- Chọn tuyến trước --" /></Col>
-                        </>}
-                        <Col md={isCreateFlow ? 6 : 4}><Dropdown label="Điểm trả" name="dropoffStopId" value={formData.dropoffStopId} onChange={handleChange} loading={optionsLoading} options={dropoffStopOptions} optionValue="stopPointId" renderOption={(item) => `${item.stopPointName} (${item.city})`} required disabled={!selectedRouteId} emptyLabel="-- Chọn điểm trả --" /></Col>
-                        <Col md={isCreateFlow ? 6 : 8}>{isCreateFlow
-                            ? <CoachSummary lockedTrip={lockedTrip} />
-                            : <Dropdown label="Chuyến đi phù hợp" name="tripId" value={formData.tripId ?? ''} onChange={handleChange} loading={optionsLoading} options={eligibleTrips} optionValue="tripId" renderOption={tripLabel} disabled={!formData.pickupStopId || !formData.dropoffStopId} />}
+                        <Col md={hasLockedTrip ? 6 : 4}>
+                            <PickupSummary
+                                stopName={lockedPickupName}
+                                city={lockedPickupCity}
+                                routeName={routeLabel || defaultRouteName}
+                            />
                         </Col>
+                        <Col md={hasLockedTrip ? 6 : 4}>
+                            <Dropdown
+                                label="Điểm trả"
+                                name="dropoffStopId"
+                                value={formData.dropoffStopId ?? ''}
+                                onChange={handleChange}
+                                loading={optionsLoading || Boolean(selectedRouteId && !routeDetail)}
+                                options={dropoffStopOptions}
+                                optionValue="stopPointId"
+                                renderOption={(item) => `${item.stopPointName} (${item.city})`}
+                                required
+                                disabled={!selectedRouteId || !formData.pickupStopId}
+                                emptyLabel={!selectedRouteId ? '-- Đang chọn tuyến --' : '-- Chọn điểm trả --'}
+                            />
+                        </Col>
+                        {!hasLockedTrip && (
+                            <Col md={4}>
+                                <Dropdown
+                                    label="Chuyến đi phù hợp (có thể gán sau)"
+                                    name="tripId"
+                                    value={formData.tripId ?? ''}
+                                    onChange={handleChange}
+                                    loading={optionsLoading}
+                                    options={eligibleTrips}
+                                    optionValue="tripId"
+                                    renderOption={tripLabel}
+                                    disabled={!formData.pickupStopId || !formData.dropoffStopId}
+                                    emptyLabel="-- Gán chuyến sau --"
+                                />
+                            </Col>
+                        )}
+                        {hasLockedTrip && (
+                            <Col md={12}>
+                                <CoachSummary lockedTrip={lockedTrip} />
+                            </Col>
+                        )}
                     </Row>
                 </Card.Body>
             </Card>
 
             <Card className="shadow-sm border-0 mb-4">
-                <Card.Header className="bg-white py-3"><h5 className="fw-bold mb-0">Thanh toán và xử lý</h5></Card.Header>
+                <Card.Header className="bg-white py-3">
+                    <h5 className="fw-bold mb-0">Thanh toán và xử lý</h5>
+                </Card.Header>
                 <Card.Body className="p-4">
                     <Row className="g-3">
-                        {!isCreateFlow && <Col md={4}><Field label="Tiền thu hộ COD (VNĐ)" name="codAmount" type="number" value={formData.codAmount} onChange={handleChange} required min="0" /></Col>}
-                        <Col md={isCreateFlow ? 6 : 4}><Form.Group><Form.Label className="fw-semibold">Người trả phí *</Form.Label><Form.Select name="feePayer" value={formData.feePayer} onChange={handleChange}><option value="SENDER">Người gửi</option><option value="RECEIVER">Người nhận</option></Form.Select></Form.Group></Col>
-                        <Col md={isCreateFlow ? 6 : 4}><Form.Group><Form.Label className="fw-semibold">Phương thức thanh toán *</Form.Label><Form.Select name="paymentMethod" value={formData.paymentMethod} onChange={handleChange} required><option value="CASH">Tiền mặt</option><option value="BANK_TRANSFER">Chuyển khoản</option></Form.Select></Form.Group></Col>
-                        {!isCreateFlow && <Col xs={12}><Form.Group><Form.Label className="fw-semibold">Mô tả hàng hóa</Form.Label><Form.Control as="textarea" rows={3} name="description" value={formData.description || ''} onChange={handleChange} /></Form.Group></Col>}
+                        {!isCreate && (
+                            <Col md={4}>
+                                <Field
+                                    label="Tiền thu hộ COD (VNĐ)"
+                                    name="codAmount"
+                                    type="number"
+                                    value={formData.codAmount}
+                                    onChange={handleChange}
+                                    required
+                                    min="0"
+                                />
+                            </Col>
+                        )}
+                        <Col md={isCreate ? 6 : 4}>
+                            <Form.Group>
+                                <Form.Label className="fw-semibold">Người trả phí *</Form.Label>
+                                <Form.Select name="feePayer" value={formData.feePayer} onChange={handleChange}>
+                                    <option value="SENDER">Người gửi</option>
+                                    <option value="RECEIVER">Người nhận</option>
+                                </Form.Select>
+                            </Form.Group>
+                        </Col>
+                        <Col md={isCreate ? 6 : 4}>
+                            <Form.Group>
+                                <Form.Label className="fw-semibold">
+                                    Phương thức thanh toán{formData.feePayer === 'SENDER' ? ' *' : ''}
+                                </Form.Label>
+                                <Form.Select
+                                    name="paymentMethod"
+                                    value={formData.feePayer === 'RECEIVER' ? '' : formData.paymentMethod}
+                                    onChange={handleChange}
+                                    required={formData.feePayer === 'SENDER'}
+                                    disabled={formData.feePayer === 'RECEIVER'}
+                                >
+                                    {formData.feePayer === 'RECEIVER' ? (
+                                        <option value="">Chọn lúc nhận hàng ở văn phòng đích</option>
+                                    ) : (
+                                        <>
+                                            <option value="CASH">Tiền mặt</option>
+                                            <option value="BANK_TRANSFER">Chuyển khoản</option>
+                                        </>
+                                    )}
+                                </Form.Select>
+                                {formData.feePayer === 'RECEIVER' && (
+                                    <Form.Text className="text-muted">
+                                        Người nhận sẽ chọn tiền mặt hoặc chuyển khoản khi lấy hàng.
+                                    </Form.Text>
+                                )}
+                            </Form.Group>
+                        </Col>
+                        {!isCreate && (
+                            <Col xs={12}>
+                                <Form.Group>
+                                    <Form.Label className="fw-semibold">Mô tả hàng hóa</Form.Label>
+                                    <Form.Control
+                                        as="textarea"
+                                        rows={3}
+                                        name="description"
+                                        value={formData.description || ''}
+                                        onChange={handleChange}
+                                    />
+                                </Form.Group>
+                            </Col>
+                        )}
                     </Row>
                 </Card.Body>
             </Card>
@@ -256,7 +455,18 @@ export default function CargoTicketForm({ initialData, lockedTrip, onSubmit, sub
     );
 }
 
-/** Shows the selected vehicle without exposing an implementation-facing trip identifier. */
+function PickupSummary({ stopName, city, routeName }) {
+    return (
+        <div className="cargo-form-coach-summary" aria-label="Điểm nhận tại văn phòng">
+            <span><BsGeoAltFill /> Điểm nhận (văn phòng hiện tại)</span>
+            <strong>{stopName || 'Đang tải...'}</strong>
+            <small>
+                {[city, routeName ? `Tuyến: ${routeName}` : null].filter(Boolean).join(' · ') || 'Tự khóa theo văn phòng bán vé'}
+            </small>
+        </div>
+    );
+}
+
 function CoachSummary({ lockedTrip }) {
     return (
         <div className="cargo-form-coach-summary" aria-label={`Xe thực hiện ${lockedTrip.licensePlate || 'chưa có biển số'}`}>
@@ -268,17 +478,30 @@ function CoachSummary({ lockedTrip }) {
 }
 
 function PartyCard({ title, prefix, data, onChange, setFormData }) {
-    return <Card className="shadow-sm border-0 h-100"><Card.Header className="bg-white py-3"><h5 className="fw-bold mb-0">{title}</h5></Card.Header><Card.Body className="p-4 d-flex flex-column gap-3">
-        <PhoneAutocomplete label="Số điện thoại" prefix={prefix} data={data} onChange={onChange} setFormData={setFormData} />
-        <Field label="Họ tên" name={`${prefix}Name`} value={data[`${prefix}Name`]} onChange={onChange} required maxLength={100} />
-    </Card.Body></Card>;
+    return (
+        <Card className="shadow-sm border-0 h-100">
+            <Card.Header className="bg-white py-3"><h5 className="fw-bold mb-0">{title}</h5></Card.Header>
+            <Card.Body className="p-4 d-flex flex-column gap-3">
+                <PhoneAutocomplete label="Số điện thoại" prefix={prefix} data={data} onChange={onChange} setFormData={setFormData} />
+                <Field label="Họ tên" name={`${prefix}Name`} value={data[`${prefix}Name`]} onChange={onChange} required maxLength={100} />
+            </Card.Body>
+        </Card>
+    );
 }
 
 function Field({ label, ...props }) {
-    return <Form.Group><Form.Label className="fw-semibold">{label}{props.required ? ' *' : ''}</Form.Label><Form.Control {...props} /></Form.Group>;
+    return (
+        <Form.Group>
+            <Form.Label className="fw-semibold">{label}{props.required ? ' *' : ''}</Form.Label>
+            <Form.Control {...props} />
+        </Form.Group>
+    );
 }
 
-function Dropdown({ label, options, optionValue, renderOption, loading, emptyLabel = '-- Chọn --', required = false, disabled = false, ...props }) {
+function Dropdown({
+    label, options, optionValue, renderOption, loading,
+    emptyLabel = '-- Chọn --', required = false, disabled = false, ...props
+}) {
     return (
         <Form.Group>
             <Form.Label className="fw-semibold">{label}{required ? ' *' : ''}</Form.Label>
@@ -295,10 +518,10 @@ function Dropdown({ label, options, optionValue, renderOption, loading, emptyLab
 }
 
 const TRIP_STATUS_MAP = {
-    'SCHEDULED': 'Đã lên lịch',
-    'IN_PROGRESS': 'Đang chạy',
-    'COMPLETED': 'Hoàn thành',
-    'CANCELLED': 'Đã hủy'
+    SCHEDULED: 'Đã lên lịch',
+    IN_PROGRESS: 'Đang chạy',
+    COMPLETED: 'Hoàn thành',
+    CANCELLED: 'Đã hủy'
 };
 
 const tripLabel = (trip) => {
@@ -319,18 +542,15 @@ function formatDateTime(value) {
 function filterTripsForSelectedStops(trips, stops, pickupStopId, dropoffStopId) {
     const hasPickup = stops.some((stop) => String(stop.stopPointId) === String(pickupStopId));
     const hasDropoff = stops.some((stop) => String(stop.stopPointId) === String(dropoffStopId));
-    if (!hasPickup || !hasDropoff) return [];
+    if (!hasPickup || !hasDropoff) {
+        // Backend trips-by-stops already direction-filters; keep list while static stops lag.
+        return trips;
+    }
     return trips.filter((trip) => {
-        // Backend already filters by time and stops. 
-        // We only check this to prevent showing stale trips from a previous selection while loading.
         if (trip.pickupStopId !== undefined && String(trip.pickupStopId) !== String(pickupStopId)) return false;
         if (trip.dropoffStopId !== undefined && String(trip.dropoffStopId) !== String(dropoffStopId)) return false;
         return true;
     });
-}
-
-function excludeSelectedStop(stops, selectedStopId) {
-    return stops.filter((stop) => String(stop.stopPointId) !== String(selectedStopId));
 }
 
 function optionalId(value) {
@@ -342,17 +562,15 @@ function optionalText(value) {
     return normalized || null;
 }
 
-/** Validates all visible and system-owned fields before enabling form submission. */
 function isCargoTicketFormComplete(form, details, requireDimensions) {
     const requiredText = [form.senderName, form.senderPhone, form.receiverName, form.receiverPhone];
     const headerIsComplete = requiredText.every(value => String(value ?? '').trim())
-        && Number(form.tripId) > 0
         && Number(form.pickupStopId) > 0
         && Number(form.dropoffStopId) > 0
         && String(form.pickupStopId) !== String(form.dropoffStopId)
         && Number(form.soldBy) > 0
         && ['SENDER', 'RECEIVER'].includes(form.feePayer)
-        && ['CASH', 'BANK_TRANSFER'].includes(form.paymentMethod);
+        && (form.feePayer === 'RECEIVER' || ['CASH', 'BANK_TRANSFER'].includes(form.paymentMethod));
 
     const detailsAreComplete = details.length > 0 && details.every(detail => {
         const baseIsComplete = Number(detail.cargoTypePriceId) > 0
@@ -369,7 +587,6 @@ function isCargoTicketFormComplete(form, details, requireDimensions) {
         && calculateOccupiedVolume(details) <= MAX_CARGO_VOLUME_M3;
 }
 
-/** Calculates order volume using the backend business formula. */
 function calculateOccupiedVolume(details) {
     return details.reduce((total, detail) => {
         const dimensionVol = Number(detail.dimensionVol);
@@ -379,7 +596,6 @@ function calculateOccupiedVolume(details) {
     }, 0);
 }
 
-/** Formats cubic metres without exposing floating-point noise in the warning. */
 function formatVolume(value) {
     return Number(value).toLocaleString('vi-VN', { maximumFractionDigits: 6 });
 }
@@ -397,7 +613,6 @@ function buildCargoTicketRequest(form, draftDetails) {
         senderPhone: form.senderPhone.trim(),
         receiverName: form.receiverName.trim(),
         receiverPhone: form.receiverPhone.trim(),
-        // Prefer live line prices; form.totalPrice is unused on create and often empty → 0đ in UI.
         totalPrice: totalFromDetails > 0 ? totalFromDetails : Number(form.totalPrice) || 0,
         description: optionalText(form.description),
         feePayer: form.feePayer,
@@ -406,7 +621,7 @@ function buildCargoTicketRequest(form, draftDetails) {
         dropoffStopId: Number(form.dropoffStopId),
         status: form.status,
         soldBy: form.soldBy ? { staffId: Number(form.soldBy) } : null,
-        paymentMethod: form.paymentMethod,
+        paymentMethod: form.feePayer === 'RECEIVER' ? null : form.paymentMethod,
         details: (draftDetails || []).map(d => ({
             cargoTicketDetailId: d.cargoTicketDetailId,
             cargoTypePriceId: Number(d.cargoTypePriceId),
@@ -414,7 +629,6 @@ function buildCargoTicketRequest(form, draftDetails) {
             quantity: Number(d.quantity),
             weightKg: Number(d.weightKg),
             dimensionVol: Number(d.dimensionVol)
-
         }))
     };
 }

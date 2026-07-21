@@ -108,6 +108,14 @@ export default function Sidebar() {
                                     </NavLink>
                                 </div>
                             </Collapse>
+                            <Collapse in={openMenu === 'routes'}>
+                                <div className="ps-4 mt-1 d-flex flex-column gap-1">
+                                    <NavLink to="/management/coach-stops" className={navLinkClass}>
+                                        <BsSignpostSplit size={16} />
+                                        <span style={{ fontSize: '0.9rem' }}>Văn phòng</span>
+                                    </NavLink>
+                                </div>
+                            </Collapse>
                         </div>
                     )}
 

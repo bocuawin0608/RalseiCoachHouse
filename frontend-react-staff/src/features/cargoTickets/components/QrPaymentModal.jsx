@@ -19,9 +19,10 @@ export default function QrPaymentModal({ ticket, onClose, onSuccess }) {
                 if (cancelled) return;
                 if (response?.payment?.status === 'COMPLETED') {
                     setIsSuccess(true);
+                    // Auto-dismiss after a short success flash; user can also close manually.
                     timeoutId = setTimeout(() => {
                         if (onSuccess) onSuccess();
-                        onClose();
+                        else onClose();
                     }, 2500);
                 }
             } catch (error) {
@@ -46,9 +47,17 @@ export default function QrPaymentModal({ ticket, onClose, onSuccess }) {
             ? null
             : ticket.qrUrl);
 
+    const handleClose = () => {
+        if (isSuccess && onSuccess) {
+            onSuccess();
+            return;
+        }
+        onClose();
+    };
+
     return (
-        <Modal show onHide={onClose} centered backdrop={isSuccess ? 'static' : true}>
-            <Modal.Header closeButton={!isSuccess}>
+        <Modal show onHide={handleClose} centered backdrop={isSuccess ? true : 'static'}>
+            <Modal.Header closeButton>
                 <Modal.Title>Thanh toán chuyển khoản</Modal.Title>
             </Modal.Header>
             <Modal.Body className="text-center p-4">
@@ -56,7 +65,8 @@ export default function QrPaymentModal({ ticket, onClose, onSuccess }) {
                     <div className="py-4">
                         <BsCheckCircleFill className="text-success mb-3" size={60} />
                         <h4 className="fw-bold text-success mb-2">Thanh toán thành công!</h4>
-                        <p className="text-muted">Giao dịch đã được xác nhận bởi SePay.</p>
+                        <p className="text-muted mb-0">Giao dịch đã được xác nhận bởi SePay.</p>
+                        <p className="text-muted small mt-2">Bạn có thể đóng cửa sổ này ngay.</p>
                     </div>
                 ) : (
                     <>
@@ -81,7 +91,12 @@ export default function QrPaymentModal({ ticket, onClose, onSuccess }) {
                 )}
             </Modal.Body>
             <Modal.Footer>
-                <Button variant="secondary" onClick={onClose} disabled={isSuccess}>Đóng</Button>
+                <Button
+                    variant={isSuccess ? 'success' : 'secondary'}
+                    onClick={handleClose}
+                >
+                    {isSuccess ? 'Đóng' : 'Hủy'}
+                </Button>
             </Modal.Footer>
         </Modal>
     );

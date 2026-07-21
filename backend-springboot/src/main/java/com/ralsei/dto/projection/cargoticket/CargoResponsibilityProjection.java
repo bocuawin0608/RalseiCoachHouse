@@ -5,6 +5,7 @@ package com.ralsei.dto.projection.cargoticket;
  * This is operational trace data and must remain available after departure.
  */
 public interface CargoResponsibilityProjection {
+    Integer getRouteId();
     String getRouteName();
     String getLicensePlate();
     String getDestinationAgencyName();

@@ -18,7 +18,10 @@ export const cargoTicketApi = {
     disableCargoTicket: (id) => axiosClient.put(`${BASE_URL}/${id}/disable`),
     searchContacts: (phone) => axiosClient.get(`${BASE_URL}/contacts/search`, { params: { phone } }),
     completePayment: (id) => axiosClient.put(`${BASE_URL}/${id}/complete-payment`),
-    confirmReceived: (id) => axiosClient.put(`${BASE_URL}/${id}/confirm-received`),
+    confirmReceived: (id, data) => axiosClient.put(`${BASE_URL}/${id}/confirm-received`, data || {}),
+    chooseReceiverPaymentMethod: (id, data) => axiosClient.put(`${BASE_URL}/${id}/receiver-payment-method`, data),
     getTripsByStops: (params) => axiosClient.get(`${BASE_URL}/trips-by-stops`, { params }),
-    calculatePrice: (data) => axiosClient.post(`${BASE_URL}/calculate-price`, data)
+    calculatePrice: (data) => axiosClient.post(`${BASE_URL}/calculate-price`, data),
+    getAssignableCargo: (tripId) => axiosClient.get(`${BASE_URL}/trips/${tripId}/assignable`),
+    assignCargoToTrip: (tripId, data) => axiosClient.post(`${BASE_URL}/trips/${tripId}/assign`, data)
 };

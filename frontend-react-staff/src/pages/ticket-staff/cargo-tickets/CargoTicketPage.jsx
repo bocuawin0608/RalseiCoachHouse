@@ -17,7 +17,7 @@ export default function CargoTicketPage() {
             <section className="cargo-feature-grid" aria-label="Chức năng quản lý đơn hàng">
                 <button type="button" className="cargo-feature-card" onClick={() => navigate('/staff/cargo-tickets/send')}>
                     <span className="cargo-feature-icon"><BsBoxSeam /></span>
-                    <span><strong>Gửi hàng</strong><small>Chọn chuyến xe còn chỗ và lập đơn mới</small></span>
+                    <span><strong>Gửi hàng</strong><small>Lập đơn gửi hàng; gán chuyến sau nếu cần</small></span>
                     <span className="cargo-feature-arrow">→</span>
                 </button>
                 <button type="button" className="cargo-feature-card" onClick={() => navigate('/staff/cargo-tickets/check')}>

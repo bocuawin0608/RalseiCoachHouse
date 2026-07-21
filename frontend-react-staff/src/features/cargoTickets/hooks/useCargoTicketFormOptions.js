@@ -3,7 +3,20 @@ import { cargoTicketApi } from '../api/cargoTicketApi';
 import { routeApi } from '../../routes/api/routeApi';
 
 export function useCargoTicketFormOptions(pickupStopId, dropoffStopId) {
-    const [options, setOptions] = useState({ trips: [], customers: [], stops: [], sellers: [], handlers: [], drivers: [], routes: [] });
+    const [options, setOptions] = useState({
+        trips: [],
+        customers: [],
+        stops: [],
+        sellers: [],
+        handlers: [],
+        drivers: [],
+        routes: [],
+        agencyPickupStopId: null,
+        agencyPickupStopName: null,
+        agencyCity: null,
+        defaultRouteId: null,
+        defaultRouteName: null
+    });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const latestTripRequest = useRef(0);
@@ -25,7 +38,12 @@ export function useCargoTicketFormOptions(pickupStopId, dropoffStopId) {
                     sellers: data.sellers ?? [],
                     handlers: data.handlers ?? [],
                     drivers: data.drivers ?? [],
-                    routes: routesData ?? []
+                    routes: routesData ?? data.routes ?? [],
+                    agencyPickupStopId: data.agencyPickupStopId ?? null,
+                    agencyPickupStopName: data.agencyPickupStopName ?? null,
+                    agencyCity: data.agencyCity ?? null,
+                    defaultRouteId: data.defaultRouteId ?? null,
+                    defaultRouteName: data.defaultRouteName ?? null
                 }));
                 staticLoaded.current = true;
             }

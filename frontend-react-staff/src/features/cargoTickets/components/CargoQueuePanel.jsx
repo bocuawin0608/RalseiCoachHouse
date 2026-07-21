@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { Alert, Badge, Button, Table } from 'react-bootstrap';
-import { BsCashCoin, BsEye, BsPencil, BsTelephone, BsTrash } from 'react-icons/bs';
+import { Alert, Badge, Button, Modal, Table } from 'react-bootstrap';
+import { BsCashCoin, BsEye, BsPencil, BsPrinter, BsTelephone, BsTrash } from 'react-icons/bs';
 import Pagination from '../../../components/common/Pagination';
 import { formatCurrency } from '../../../utils/formatters';
 import { useCargoTickets } from '../hooks/useCargoTickets';
 import { cargoTicketApi } from '../api/cargoTicketApi';
+import { canPrintCargoTicket } from '../utils/canPrintCargoTicket';
+import { printCargoTicket } from '../utils/printCargoTicket';
 import CargoTicketUpdateModal from './CargoTicketUpdateModal';
 import CargoTicketDetailViewModal from './CargoTicketDetailViewModal';
 import CargoConfirmModal from './CargoConfirmModal';
@@ -45,9 +47,14 @@ function isCashPending(ticket) {
     return isPaymentPending(ticket) && ticket.payment?.paymentMethod === 'CASH';
 }
 
+function needsReceiverPaymentChoice(ticket) {
+    return ticket.feePayer === 'RECEIVER' && !ticket.payment;
+}
+
 function canConfirmDeliver(ticket) {
     if (ticket.feePayer !== 'RECEIVER') return true;
-    if (!ticket.payment) return false;
+    // Method not chosen yet — staff picks cash/bank at hand-off.
+    if (!ticket.payment) return true;
     if (ticket.payment.status === 'COMPLETED') return true;
     return ticket.payment.paymentMethod === 'CASH';
 }
@@ -61,6 +68,7 @@ export default function CargoQueuePanel({
     tripId = null,
     editable = false,
     confirmable = false,
+    agencyStopId = null,
     onQueueChanged
 }) {
     const { tickets, loading, error, pageInfo, setPageInfo, refetch } = useCargoTickets(status, tripId);
@@ -69,6 +77,7 @@ export default function CargoQueuePanel({
     const [qrTicket, setQrTicket] = useState(null);
     const [actionId, setActionId] = useState(null);
     const [confirmDialog, setConfirmDialog] = useState(null);
+    const [receiverPayTicket, setReceiverPayTicket] = useState(null);
 
     const busy = actionId != null;
     const qrOpenFor = (ticket) => qrTicket?.cargoTicketId === ticket.cargoTicketId;
@@ -76,6 +85,11 @@ export default function CargoQueuePanel({
     const closeConfirm = () => {
         if (actionId != null) return;
         setConfirmDialog(null);
+    };
+
+    const closeReceiverPay = () => {
+        if (actionId != null) return;
+        setReceiverPayTicket(null);
     };
 
     const runAction = async (id, action) => {
@@ -118,6 +132,10 @@ export default function CargoQueuePanel({
 
     const requestDeliver = (ticket) => {
         if (busy) return;
+        if (needsReceiverPaymentChoice(ticket)) {
+            setReceiverPayTicket(ticket);
+            return;
+        }
         if (ticket.feePayer === 'RECEIVER' && isBankPending(ticket)) {
             window.alert('Người nhận chưa chuyển khoản xong. Vui lòng mở QR và chờ thanh toán thành công trước.');
             openQr(ticket);
@@ -147,6 +165,44 @@ export default function CargoQueuePanel({
         });
     };
 
+    const chooseReceiverCash = () => {
+        if (!receiverPayTicket) return;
+        const ticket = receiverPayTicket;
+        setReceiverPayTicket(null);
+        setConfirmDialog({
+            type: 'deliver-cash',
+            ticket,
+            paymentMethod: 'CASH',
+            title: 'Xác nhận thu tiền mặt',
+            message:
+                `Xác nhận đã nhận đủ tiền mặt từ người nhận (${ticket.receiverName}) `
+                + `cho đơn ${ticket.ticketCode}?\nSố tiền: ${formatCurrency(ticket.totalPrice)}\n`
+                + 'Sau khi xác nhận, đơn sẽ được đánh dấu đã giao hàng.',
+            confirmLabel: 'Đã nhận tiền — giao hàng',
+            confirmVariant: 'success',
+        });
+    };
+
+    const chooseReceiverBank = async () => {
+        if (!receiverPayTicket) return;
+        const ticket = receiverPayTicket;
+        setActionId(ticket.cargoTicketId);
+        try {
+            const updated = await cargoTicketApi.chooseReceiverPaymentMethod(
+                ticket.cargoTicketId,
+                { paymentMethod: 'BANK_TRANSFER' }
+            );
+            setReceiverPayTicket(null);
+            await refetch();
+            await onQueueChanged?.();
+            setQrTicket(updated || ticket);
+        } catch (requestError) {
+            window.alert(requestError.response?.data?.message || 'Không thể chọn chuyển khoản.');
+        } finally {
+            setActionId(null);
+        }
+    };
+
     const requestCollectCash = (ticket) => {
         if (busy) return;
         setConfirmDialog({
@@ -169,7 +225,10 @@ export default function CargoQueuePanel({
             return;
         }
         if (type === 'deliver' || type === 'deliver-cash') {
-            await runAction(ticket.cargoTicketId, () => cargoTicketApi.confirmReceived(ticket.cargoTicketId));
+            const body = confirmDialog.paymentMethod
+                ? { paymentMethod: confirmDialog.paymentMethod }
+                : undefined;
+            await runAction(ticket.cargoTicketId, () => cargoTicketApi.confirmReceived(ticket.cargoTicketId, body));
             return;
         }
         if (type === 'collect-cash') {
@@ -218,6 +277,11 @@ export default function CargoQueuePanel({
                         <td>
                             <strong>{ticket.licensePlate || 'Chưa gán xe'}</strong>
                             {editable && <small>Chuyến #{ticket.tripId || '—'}</small>}
+                            {editable && !ticket.tripId && (
+                                <div>
+                                    <Badge bg="warning" text="dark">Chưa gán chuyến</Badge>
+                                </div>
+                            )}
                         </td>
                         <td>
                             <small>Tài xế: {ticket.driverName || '—'} · {ticket.driverPhone || '—'}</small>
@@ -235,6 +299,8 @@ export default function CargoQueuePanel({
                                         {ticket.payment.paymentMethod === 'CASH' ? 'Tiền mặt' : 'Chuyển khoản'}
                                     </small>
                                 </div>
+                            ) : ticket.feePayer === 'RECEIVER' ? (
+                                <small className="text-muted">Chọn lúc nhận hàng</small>
                             ) : (
                                 <small>Chưa có thanh toán</small>
                             )}
@@ -244,6 +310,16 @@ export default function CargoQueuePanel({
                                 <Button variant="outline-success" title="Xem đầy đủ" onClick={() => setViewTicket(ticket)}>
                                     <BsEye />
                                 </Button>
+                                {editable && canPrintCargoTicket(ticket, agencyStopId) && (
+                                    <Button
+                                        variant="outline-secondary"
+                                        title="In tem gửi hàng"
+                                        disabled={busy}
+                                        onClick={() => printCargoTicket(ticket)}
+                                    >
+                                        <BsPrinter />
+                                    </Button>
+                                )}
                                 {editable && (
                                     <Button
                                         variant="success"
@@ -284,6 +360,16 @@ export default function CargoQueuePanel({
                                         <BsTrash />
                                     </Button>
                                 )}
+                                {confirmable && needsReceiverPaymentChoice(ticket) && (
+                                    <Button
+                                        variant="outline-primary"
+                                        title="Chọn hình thức thanh toán người nhận"
+                                        disabled={busy}
+                                        onClick={() => setReceiverPayTicket(ticket)}
+                                    >
+                                        <BsCashCoin />
+                                    </Button>
+                                )}
                                 {confirmable && isBankPending(ticket) && ticket.feePayer === 'RECEIVER' && (
                                     <Button
                                         variant="outline-primary"
@@ -300,7 +386,7 @@ export default function CargoQueuePanel({
                                         disabled={busy || !canConfirmDeliver(ticket)}
                                         onClick={() => requestDeliver(ticket)}
                                     >
-                                        Đã nhận hàng
+                                        {needsReceiverPaymentChoice(ticket) ? 'Thu tiền / giao hàng' : 'Đã nhận hàng'}
                                     </Button>
                                 )}
                             </div>
@@ -324,6 +410,7 @@ export default function CargoQueuePanel({
                 ticket={viewTicket}
                 onClose={() => { setViewTicket(null); refetch(); }}
                 readOnly={!editable}
+                canPrint={editable && canPrintCargoTicket(viewTicket, agencyStopId)}
             />
         )}
         {qrTicket && (
@@ -343,6 +430,30 @@ export default function CargoQueuePanel({
             onConfirm={handleConfirm}
             onCancel={closeConfirm}
         />
+        <Modal show={Boolean(receiverPayTicket)} onHide={closeReceiverPay} centered backdrop="static">
+            <Modal.Header closeButton={!busy}>
+                <Modal.Title>Thanh toán người nhận</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                <p className="mb-2">
+                    Đơn <strong>{receiverPayTicket?.ticketCode}</strong> — người nhận trả phí.
+                </p>
+                <p className="mb-0 text-muted">
+                    Số tiền: {formatCurrency(receiverPayTicket?.totalPrice)}. Chọn hình thức thanh toán tại văn phòng đích.
+                </p>
+            </Modal.Body>
+            <Modal.Footer className="d-flex flex-wrap gap-2 justify-content-end">
+                <Button variant="secondary" onClick={closeReceiverPay} disabled={busy}>
+                    Đóng
+                </Button>
+                <Button variant="outline-primary" onClick={chooseReceiverBank} disabled={busy}>
+                    {busy ? 'Đang xử lý...' : 'Chuyển khoản (QR)'}
+                </Button>
+                <Button variant="success" onClick={chooseReceiverCash} disabled={busy}>
+                    Tiền mặt — giao hàng
+                </Button>
+            </Modal.Footer>
+        </Modal>
     </section>;
 }
 

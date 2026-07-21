@@ -1,5 +1,6 @@
 package com.ralsei.dto.response.CoachAndRouteStop;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,6 +20,8 @@ public class CoachStopResponse {
     private String address;
     private String city;
     private boolean isActive;
+    private BigDecimal latitude;
+    private BigDecimal longitude;
     private LocalDateTime createdAt;
     private Integer createdBy;
     private LocalDateTime updatedAt;
