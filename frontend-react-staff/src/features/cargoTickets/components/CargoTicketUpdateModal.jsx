@@ -4,13 +4,22 @@ import CargoTicketForm from './CargoTicketForm';
 import { cargoTicketApi } from '../api/cargoTicketApi';
 
 export default function CargoTicketUpdateModal({ data, onClose, onSuccess }) {
-    const [details, setDetails] = useState(null);
+    const [ticket, setTicket] = useState(null);
 
     useEffect(() => {
-        if (!data) return;
-        cargoTicketApi.getCargoTicketDetails(data.cargoTicketId)
-            .then(setDetails)
-            .catch(() => setDetails([]));
+        if (!data?.cargoTicketId) return;
+        let cancelled = false;
+        Promise.all([
+            cargoTicketApi.getCargoTicket(data.cargoTicketId),
+            cargoTicketApi.getCargoTicketDetails(data.cargoTicketId).catch(() => [])
+        ])
+            .then(([full, details]) => {
+                if (!cancelled) setTicket({ ...full, details });
+            })
+            .catch(() => {
+                if (!cancelled) setTicket({ ...data, details: [] });
+            });
+        return () => { cancelled = true; };
     }, [data]);
 
     if (!data) return null;
@@ -24,9 +33,9 @@ export default function CargoTicketUpdateModal({ data, onClose, onSuccess }) {
     return (
         <Modal show onHide={onClose} size="xl" centered backdrop="static">
             <Modal.Header closeButton><Modal.Title>Cập nhật đơn gửi hàng</Modal.Title></Modal.Header>
-            <Modal.Body className="p-4">{details === null
+            <Modal.Body className="p-4">{ticket === null
                 ? <div className="text-center p-5"><Spinner size="sm" /> Đang tải thông tin hiện tại...</div>
-                : <CargoTicketForm initialData={{ ...data, details }} onSubmit={handleSubmit} submitLabel="Lưu thay đổi" />}
+                : <CargoTicketForm initialData={ticket} onSubmit={handleSubmit} submitLabel="Lưu thay đổi" />}
             </Modal.Body>
         </Modal>
     );

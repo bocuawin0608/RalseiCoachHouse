@@ -108,21 +108,18 @@ export default function CargoTicketCreatePage() {
                 className="text-decoration-none text-secondary p-0 mb-3 d-flex align-items-center gap-2"
                 onClick={goToSend}
             >
-                <BsArrowLeft /> Quay lại danh sách chuyến
+                <BsArrowLeft /> Quay lại gửi hàng
             </Button>
             <h2 className="mb-4 fw-bold text-dark">Thêm đơn gửi hàng</h2>
             {submitError && <Alert variant="danger">{submitError}</Alert>}
-            {!selectedTrip ? (
-                <Alert variant="warning">
-                    Bạn phải chọn một chuyến xe hợp lệ tại văn phòng của mình trước khi lập đơn.
-                </Alert>
-            ) : (
-                <CargoTicketForm
-                    initialData={{ tripId: selectedTrip.tripId, pickupStopId: selectedTrip.pickupStopId }}
-                    lockedTrip={selectedTrip}
-                    onSubmit={handleSubmit}
-                />
-            )}
+            <CargoTicketForm
+                initialData={selectedTrip
+                    ? { tripId: selectedTrip.tripId, pickupStopId: selectedTrip.pickupStopId }
+                    : undefined}
+                lockedTrip={selectedTrip || undefined}
+                requireDimensions
+                onSubmit={handleSubmit}
+            />
             {qrTicket && (
                 <QrPaymentModal
                     ticket={qrTicket}
@@ -138,22 +135,20 @@ export default function CargoTicketCreatePage() {
                         ? `Xác nhận đã nhận đủ tiền mặt từ người gửi trước khi tạo đơn?\nSố tiền: ${formatCurrency(pendingPayload.totalPrice || 0)}`
                         : ''
                 }
-                confirmLabel="Đã nhận tiền — tạo đơn"
+                confirmLabel="Đã nhận tiền"
                 confirmVariant="success"
                 confirming={confirming}
                 onConfirm={handleCashConfirm}
                 onCancel={() => {
-                    if (confirming) return;
                     setCashConfirmOpen(false);
                     setPendingPayload(null);
                 }}
             />
             <CargoConfirmModal
                 show={abandonConfirmOpen}
-                title="Hủy đơn chưa thanh toán"
-                message="Chưa thanh toán xong. Hủy đơn nháp này?"
+                title="Hủy đơn nháp"
+                message="Thanh toán chuyển khoản chưa hoàn tất. Hủy đơn nháp này?"
                 confirmLabel="Hủy đơn"
-                cancelLabel="Giữ đơn"
                 confirmVariant="danger"
                 confirming={confirming}
                 onConfirm={handleAbandonConfirm}

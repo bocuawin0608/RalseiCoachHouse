@@ -165,7 +165,7 @@ class CargoTicketPaymentLifecycleTest {
                 .thenReturn(Optional.of(ticket));
         when(paymentRepository.findByCargoTicket_CargoTicketId(99)).thenReturn(Optional.of(payment));
 
-        cargoTicketService.confirmReceived(99, 123);
+        cargoTicketService.confirmReceived(99, 123, null);
 
         assertEquals("COMPLETED", payment.getStatus());
         assertEquals("DELIVERED", ticket.getStatus());
@@ -196,7 +196,7 @@ class CargoTicketPaymentLifecycleTest {
                 .thenReturn(Optional.of(ticket));
         when(paymentRepository.findByCargoTicket_CargoTicketId(99)).thenReturn(Optional.of(payment));
 
-        assertThrows(BusinessRuleException.class, () -> cargoTicketService.confirmReceived(99, 123));
+        assertThrows(BusinessRuleException.class, () -> cargoTicketService.confirmReceived(99, 123, null));
         assertEquals("ARRIVED", ticket.getStatus());
     }
 

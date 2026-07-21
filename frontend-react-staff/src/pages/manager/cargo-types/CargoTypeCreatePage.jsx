@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BsArrowLeft, BsCheckCircle, BsExclamationTriangleFill } from 'react-icons/bs';
 import { cargoTypeApi } from '../../../features/cargo';
+import CargoUnitSelect from '../../../features/cargo/components/CargoUnitSelect';
 import { Alert, Button, Card, Col, Container, Form, InputGroup, Row } from 'react-bootstrap';
 import { formatCurrency } from '../../../utils/formatters';
 import {
@@ -116,15 +117,9 @@ export default function CargoTypeCreatePage() {
 
                                 <Form.Group>
                                     <Form.Label className="fw-semibold text-secondary mb-1">Đơn vị <span className="text-danger">*</span></Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        name="unit"
-                                        required
-                                        maxLength={50}
-                                        placeholder="Ví dụ: kg, m3, kiện..."
+                                    <CargoUnitSelect
                                         value={formData.unit}
                                         onChange={handleInputChange}
-                                        className="py-2"
                                     />
                                 </Form.Group>
 

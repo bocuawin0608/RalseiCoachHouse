@@ -137,7 +137,7 @@ public interface CargoTicketRepository extends JpaRepository<CargoTicket, Intege
      * serializing lazy JPA relationships into the API response.
      */
     @Query(value = """
-            SELECT r.routeName AS routeName, c.licensePlate AS licensePlate,
+            SELECT r.routeId AS routeId, r.routeName AS routeName, c.licensePlate AS licensePlate,
                    destination.ticketAgencyName AS destinationAgencyName,
                    driver.staffName AS driverName, driver.phone AS driverPhone,
                    driver.cccd AS driverCccd, attendant.staffName AS attendantName,
@@ -153,4 +153,17 @@ public interface CargoTicketRepository extends JpaRepository<CargoTicket, Intege
             """, nativeQuery = true)
     Optional<CargoResponsibilityProjection> findResponsibilityByCargoTicketId(
             @Param("cargoTicketId") int cargoTicketId);
+
+    /**
+     * Waiting orders at one origin agency that have not yet been attached to a trip.
+     */
+    @Query("""
+            SELECT ct FROM CargoTicket ct
+            JOIN FETCH ct.soldBy seller
+            WHERE ct.status = 'RECEIVED'
+              AND ct.tripId IS NULL
+              AND seller.ticketAgencyId = :ticketAgencyId
+            ORDER BY ct.cargoTicketId ASC
+            """)
+    List<CargoTicket> findUnassignedReceivedByAgency(@Param("ticketAgencyId") int ticketAgencyId);
 }

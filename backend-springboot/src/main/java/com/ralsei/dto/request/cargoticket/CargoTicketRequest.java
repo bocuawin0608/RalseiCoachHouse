@@ -80,7 +80,7 @@ public class CargoTicketRequest {
     private Staff unloadedBy;
     private Staff deliveredBy;
 
-    @NotBlank(message = "Payment method is required")
+    /** Required for SENDER; omitted for RECEIVER until destination hand-off. */
     @Pattern(regexp = "CASH|BANK_TRANSFER", message = "Payment method must be CASH or BANK_TRANSFER")
     private String paymentMethod;
 }

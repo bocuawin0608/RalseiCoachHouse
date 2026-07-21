@@ -222,6 +222,14 @@ public class RouteServiceImpl implements RouteService {
         Route route = routeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Route not found with ID: " + id));
 
+        if (route.getRouteStops() != null && route.getRouteStops().size() == 2) {
+            boolean anyInactive = route.getRouteStops().stream()
+                    .anyMatch(rs -> rs.getCoachStop() != null && !rs.getCoachStop().isActive());
+            if (anyInactive) {
+                throw new IllegalArgumentException("Không thể kích hoạt tuyến đường này vì có điểm dừng chưa được kích hoạt.");
+            }
+        }
+
         // Restore the route itself
         route.setActive(true);
         routeRepository.save(route);

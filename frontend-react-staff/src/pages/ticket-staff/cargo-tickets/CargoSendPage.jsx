@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Alert, Badge, Button, Spinner } from 'react-bootstrap';
 import { BsArrowLeft, BsBusFront, BsClock, BsGeoAltFill, BsPeople, BsTelephone, BsPersonVcard } from 'react-icons/bs';
 import { cargoTicketApi } from '../../../features/cargoTickets/api/cargoTicketApi';
@@ -7,13 +7,14 @@ import CargoQueuePanel from '../../../features/cargoTickets/components/CargoQueu
 import Pagination from '../../../components/common/Pagination';
 import '../../../features/cargoTickets/styles/CargoOperations.css';
 
-/** Lists upcoming coaches before staff attach a new cargo order to a trip. */
+/** Pending queue first; trip list is for capacity and batch assignment. */
 export default function CargoSendPage() {
     const navigate = useNavigate();
+    const { state } = useLocation();
     const [trips, setTrips] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [showPending, setShowPending] = useState(false);
+    const [showPending, setShowPending] = useState(() => !state?.showTrips);
     const [agency, setAgency] = useState(null);
     const [now, setNow] = useState(() => new Date());
     const [pageInfo, setPageInfo] = useState({
@@ -36,6 +37,7 @@ export default function CargoSendPage() {
             setAgency({
                 ticketAgencyId: response.ticketAgencyId,
                 ticketAgencyName: response.ticketAgencyName,
+                stopPointId: response.stopPointId,
                 stopPointName: response.stopPointName,
                 city: response.city
             });
@@ -82,14 +84,21 @@ export default function CargoSendPage() {
         <main className="cargo-operations-page">
             <div className="cargo-toolbar">
                 <Button variant="link" className="cargo-back" onClick={() => navigate('/staff/cargo-tickets')}><BsArrowLeft /> Đơn hàng</Button>
-                <Button className="cargo-primary-button" onClick={() => setShowPending(value => !value)}>
-                    {showPending ? 'Xem chuyến xe' : 'Xem đơn đang chờ'}
-                </Button>
+                <div className="cargo-toolbar-actions">
+                    <Button className="cargo-primary-button" onClick={() => navigate('/staff/cargo-tickets/create')}>
+                        Tạo đơn mới
+                    </Button>
+                    <Button variant="outline-success" onClick={() => setShowPending(value => !value)}>
+                        {showPending ? 'Xem chuyến xe' : 'Xem đơn đang chờ'}
+                    </Button>
+                </div>
             </div>
             <header className="cargo-page-heading compact">
                 <p className="cargo-eyebrow">Gửi hàng</p>
                 <h1>{showPending ? 'Đơn hàng đang chờ' : 'Chuyến xe có thể nhận hàng'}</h1>
-                <p>{showPending ? 'Chỉ các đơn ở trạng thái chờ mới được sửa hoặc hủy.' : 'Chọn chuyến để xem trách nhiệm, lộ trình và sức chứa trước khi lập đơn.'}</p>
+                <p>{showPending
+                    ? 'Lập đơn trước, gán chuyến sau khi biết xe. Chỉ đơn đang chờ mới được sửa hoặc hủy.'
+                    : 'Chọn chuyến để xem sức chứa và gán hàng đang chờ lên xe.'}</p>
                 <div className="cargo-context-row">
                     {agency && <div className="cargo-agency-context"><BsGeoAltFill /><span><small>Văn phòng hiện tại</small><strong>{agency.ticketAgencyName}</strong><em>{agency.stopPointName} · {agency.city}</em></span></div>}
                     <div className="cargo-current-time" aria-live="off">
@@ -99,13 +108,25 @@ export default function CargoSendPage() {
                 </div>
             </header>
 
-            {showPending ? <CargoQueuePanel status="RECEIVED" editable /> : (
+            {showPending ? (
+                <CargoQueuePanel
+                    status="RECEIVED"
+                    editable
+                    agencyStopId={agency?.stopPointId ?? null}
+                />
+            ) : (
                 <>
                     {error && <Alert variant="danger">{error}</Alert>}
                     {loading ? <div className="cargo-loading"><Spinner size="sm" /> Đang tải chuyến xe...</div> : (
                         <section className="cargo-trip-grid">
                             {trips.length === 0 && <div className="cargo-empty">Hôm nay không còn chuyến nào ghé văn phòng của bạn và còn chỗ.</div>}
-                            {trips.map(trip => <TripCard key={trip.tripId} trip={trip} onSelect={() => navigate('/staff/cargo-tickets/create', { state: { trip } })} />)}
+                            {trips.map(trip => (
+                                <TripCard
+                                    key={trip.tripId}
+                                    trip={trip}
+                                    onSelect={() => navigate(`/staff/cargo-tickets/send/assign/${trip.tripId}`, { state: { trip } })}
+                                />
+                            ))}
                         </section>
                     )}
                     {!loading && <div className="cargo-pagination"><Pagination pageInfo={pageInfo} onPageChange={setPageInfo} /></div>}
@@ -125,7 +146,7 @@ function TripCard({ trip, onSelect }) {
     const availabilityLabel = hasStarted ? 'Đã khởi hành' : trip.full ? 'Đã đầy' : 'Còn chỗ';
     const actionLabel = hasStarted
         ? 'Chuyến đã khởi hành'
-        : trip.full ? 'Chuyến đã đầy' : 'Chọn chuyến và thêm hàng';
+        : trip.full ? 'Chuyến đã đầy' : 'Gán hàng';
     return (
         <article className={`cargo-trip-card ${isUnavailable ? 'is-unavailable' : ''}`}>
             <div className="cargo-trip-top">
