@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Alert, Button, Form, Spinner } from 'react-bootstrap';
-import { BsPlayFill, BsStopFill, BsQrCodeScan } from 'react-icons/bs';
+import { Alert, Button, Form, Modal, Spinner } from 'react-bootstrap';
+import { BsExclamationOctagonFill, BsPlayFill, BsStopFill, BsQrCodeScan } from 'react-icons/bs';
 import CargoTabPlaceholder from '../../features/tripStaff/components/CargoTabPlaceholder';
 import CheckInResultModal from '../../features/tripStaff/components/CheckInResultModal';
 import PassengerCard from '../../features/tripStaff/components/PassengerCard';
@@ -22,6 +22,8 @@ export default function TripDashboardPage() {
     const [checkingId, setCheckingId] = useState(null);
     const [modal, setModal] = useState({ show: false, variant: 'success', message: '', result: null });
     const [tripActionLoading, setTripActionLoading] = useState(false);
+    const [incidentStep, setIncidentStep] = useState(0);
+    const [incidentSubmitting, setIncidentSubmitting] = useState(false);
 
     const handleStartTrip = useCallback(async () => {
         setTripActionLoading(true);
@@ -46,6 +48,24 @@ export default function TripDashboardPage() {
             setTripActionLoading(false);
         }
     }, [tripId, refetch]);
+
+    const handleIncidentConfirmation = async () => {
+        if (incidentStep < 3) {
+            setIncidentStep(step => step + 1);
+            return;
+        }
+        setIncidentSubmitting(true);
+        try {
+            await tripStaffApi.reportIncident(tripId);
+            setIncidentStep(0);
+            await refetch();
+        } catch (err) {
+            setIncidentStep(0);
+            setModal({ show: true, variant: 'error', message: err.response?.data?.message || 'Không thể báo sự cố', result: null });
+        } finally {
+            setIncidentSubmitting(false);
+        }
+    };
 
     const passengers = useMemo(() => {
         const list = dashboard?.passengers || [];
@@ -93,9 +113,17 @@ export default function TripDashboardPage() {
     }
 
     const summary = dashboard.tripSummary;
+    const hasIncident = summary.coachStatus === 'HAVE_INCIDENT';
 
     return (
-        <div className="trip-staff-page">
+        <div className={`trip-staff-page${hasIncident ? ' is-incident' : ''}`}>
+            {hasIncident && (
+                <div className="trip-staff-emergency" role="alert">
+                    <BsExclamationOctagonFill />
+                    <strong>XE {summary.licensePlate} ĐÃ GẶP SỰ CỐ KHÔNG THỂ KHẮC PHỤC</strong>
+                    <span>Chuyến đi đã bị khóa hoàn thành. Quản lý đã được cảnh báo.</span>
+                </div>
+            )}
             <div className="mb-3">
                 <h5 className="fw-bold mb-1">{summary.routeName}</h5>
                 <p className="text-muted mb-1" style={{ fontSize: '14px' }}>
@@ -111,8 +139,13 @@ export default function TripDashboardPage() {
                         </Button>
                     )}
                     {summary.tripStatus === 'IN_PROGRESS' && (
-                        <Button size="sm" variant="danger" onClick={handleEndTrip} disabled={tripActionLoading}>
+                        <Button size="sm" variant="success" onClick={handleEndTrip} disabled={tripActionLoading || hasIncident} title={hasIncident ? 'Xe gặp sự cố nên không thể hoàn thành chuyến' : ''}>
                             <BsStopFill className="me-1" />Kết thúc chuyến
+                        </Button>
+                    )}
+                    {summary.tripStatus === 'IN_PROGRESS' && (
+                        <Button size="sm" className="trip-incident-button" onClick={() => setIncidentStep(1)} disabled={tripActionLoading || incidentSubmitting || hasIncident}>
+                            <BsExclamationOctagonFill className="me-1" />{hasIncident ? 'Đã báo sự cố' : 'Xảy ra sự cố'}
                         </Button>
                     )}
                 </div>
@@ -179,6 +212,31 @@ export default function TripDashboardPage() {
                 autoCloseMs={null}
                 onClose={() => setModal((m) => ({ ...m, show: false }))}
             />
+
+            <Modal
+                show={incidentStep > 0}
+                onHide={() => !incidentSubmitting && setIncidentStep(0)}
+                centered
+                backdrop="static"
+                keyboard={false}
+                className="trip-incident-modal"
+            >
+                <Modal.Header>
+                    <Modal.Title><BsExclamationOctagonFill /> Cảnh báo sự cố · {incidentStep}/3</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <strong>{incidentStep === 1 && 'Xe thực sự gặp sự cố không thể tiếp tục hành trình?'}</strong>
+                    <strong>{incidentStep === 2 && 'Xác nhận lần hai: sự cố này KHÔNG THỂ khắc phục tại chỗ?'}</strong>
+                    <strong>{incidentStep === 3 && `CẢNH BÁO CUỐI: Xe ${summary.licensePlate} sẽ bị khóa và chuyến không thể hoàn thành.`}</strong>
+                    <p>Hành động này sẽ báo khẩn cấp đến quản lý và không thể hoàn tác từ màn hình chuyến đi.</p>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="light" onClick={() => setIncidentStep(0)} disabled={incidentSubmitting}>Quay lại</Button>
+                    <Button className="trip-incident-confirm" onClick={handleIncidentConfirmation} disabled={incidentSubmitting}>
+                        {incidentSubmitting ? 'Đang gửi cảnh báo…' : incidentStep < 3 ? 'Tôi xác nhận — tiếp tục' : 'BẠN KHÔNG THỂ QUAY LẠI BƯỚC NÀY'}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
         </div>
     );
 }

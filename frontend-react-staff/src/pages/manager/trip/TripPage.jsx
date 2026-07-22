@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Alert, Button, Card, Container, Modal } from 'react-bootstrap';
-import { BsExclamationTriangleFill } from 'react-icons/bs';
+import { Alert, Button, Modal } from 'react-bootstrap';
+import { BsBoxSeam, BsBusFront, BsCalendar3, BsClock, BsExclamationTriangleFill, BsPeople, BsPlusLg } from 'react-icons/bs';
 import {
     useTrips,
     TripTable,
@@ -19,7 +19,7 @@ export default function TripPage() {
     const { routes } = useRouteDropdown(true);
 
     const {
-        trips, loading, pageInfo, setPageInfo, refetch,
+        trips, incidents, loading, pageInfo, setPageInfo, refetch,
         filters, handleFilterChange, handleReset, error
     } = useTrips();
 
@@ -27,6 +27,28 @@ export default function TripPage() {
     const [modalState, setModalState] = useState({ type: null, data: null });
     const [deleteError, setDeleteError] = useState('');
     const [isDeleting, setIsDeleting] = useState(false);
+    const [now, setNow] = useState(() => new Date());
+
+    useEffect(() => {
+        const timerId = window.setInterval(() => setNow(new Date()), 1000);
+        return () => window.clearInterval(timerId);
+    }, []);
+
+    const overview = useMemo(() => {
+        const activeStatuses = new Set(['BOARDING', 'DEPARTED', 'IN_PROGRESS', 'INPROGRESS']);
+        return trips.reduce((result, trip) => {
+            const status = String(trip.tripStatus || '').toUpperCase();
+            const cargoPercent = (Number(trip.usedCargoVolume) || 0) / (Number(trip.cargoCapacity) || 2.5);
+            result.active += activeStatuses.has(status) ? 1 : 0;
+            result.missingCrew += (!trip.driverName || !trip.attendantName) ? 1 : 0;
+            result.cargoAlert += cargoPercent >= .9 ? 1 : 0;
+            return result;
+        }, { active: 0, missingCrew: 0, cargoAlert: 0 });
+    }, [trips]);
+
+    const selectedDate = filters.date
+        ? new Date(`${filters.date}T00:00:00`).toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })
+        : '';
 
     /** Close any open modal and clear selected row */
     const closeModal = () => setModalState({ type: null, data: null });
@@ -46,18 +68,57 @@ export default function TripPage() {
     };
 
     return (
-        <Container fluid className="py-4" style={{ maxWidth: '1200px' }}>
+        <main className="trip-page-shell">
 
-            {/* Page header */}
-            <div className="trip-page-header">
-                <h2 className="trip-page-title">Quản lý chuyến xe</h2>
+            <div className="trip-page-toolbar">
+                <span />
                 <Button
-                    className="fw-medium shadow-sm custom-btn-general"
+                    className="trip-page-create custom-btn-general"
                     onClick={() => navigate('/management/trips/create')}
                 >
-                    + Thêm chuyến xe mới
+                    <BsPlusLg /> Tạo chuyến mới
                 </Button>
             </div>
+
+            <header className="trip-page-heading">
+                <p className="trip-page-eyebrow">Vận hành chuyến xe</p>
+                <h1>Quản lý chuyến xe</h1>
+                <p>Theo dõi lịch chạy, phương tiện, tổ lái và mức tải trước khi xe rời bến.</p>
+
+                <div className="trip-context-row">
+                    <div className="trip-date-context">
+                        <BsCalendar3 />
+                        <span>
+                            <small>Ngày vận hành</small>
+                            <strong>{selectedDate}</strong>
+                            <em>{pageInfo.totalElements} chuyến theo bộ lọc</em>
+                        </span>
+                    </div>
+                    <div className="trip-current-time" aria-live="off">
+                        <BsClock />
+                        <span>
+                            <small>Thời gian hiện tại</small>
+                            <strong>{now.toLocaleTimeString('vi-VN', { hour12: false })}</strong>
+                            <em>{now.toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })}</em>
+                        </span>
+                    </div>
+                </div>
+            </header>
+
+            <section className="trip-overview" aria-label="Tổng quan trang hiện tại">
+                <div><i className="is-green"><BsBusFront /></i><span><strong>{overview.active}</strong><small>Đang vận hành</small></span></div>
+                <div><i className={overview.missingCrew ? 'is-amber' : 'is-green'}><BsPeople /></i><span><strong>{overview.missingCrew}</strong><small>Thiếu nhân sự</small></span></div>
+                <div><i className={overview.cargoAlert ? 'is-red' : 'is-green'}><BsBoxSeam /></i><span><strong>{overview.cargoAlert}</strong><small>Khoang hàng ≥ 90%</small></span></div>
+                <small className="trip-overview-scope">Chỉ số trên trang hiện tại</small>
+            </section>
+
+            {incidents.map(trip => (
+                <div className="trip-manager-emergency" role="alert" key={trip.tripId}>
+                    <BsExclamationTriangleFill />
+                    <strong>KHẨN CẤP: XE CÓ BIỂN SỐ {trip.licensePlate} GẶP SỰ CỐ KHÔNG THỂ KHẮC PHỤC!!!</strong>
+                    <span>Chuyến #{trip.tripId} · {String(trip.routeName || '').replace(/\s*-\s*/, ' → ')}</span>
+                </div>
+            ))}
 
             {/* Filter bar */}
             <TripFilter
@@ -75,21 +136,16 @@ export default function TripPage() {
                 </Alert>
             )}
 
-            {/* Data table + pagination */}
-            <Card className="trip-page-card">
-                <Card.Body className="trip-page-card-body">
-                    <TripTable
-                        data={trips}
-                        loading={loading}
-                        onViewCrew={(row) => setModalState({ type: 'CREW', data: row })}
-                        onEditInfo={(row) => setModalState({ type: 'EDIT_INFO', data: row })}
-                        onDelete={(row) => setModalState({ type: 'DELETE', data: row })}
-                    />
-                    <div className="trip-page-pagination">
-                        <Pagination pageInfo={pageInfo} onPageChange={setPageInfo} />
-                    </div>
-                </Card.Body>
-            </Card>
+            <TripTable
+                data={trips}
+                loading={loading}
+                onViewCrew={(row) => setModalState({ type: 'CREW', data: row })}
+                onEditInfo={(row) => setModalState({ type: 'EDIT_INFO', data: row })}
+                onDelete={(row) => setModalState({ type: 'DELETE', data: row })}
+            />
+            <div className="trip-page-pagination">
+                <Pagination pageInfo={pageInfo} onPageChange={setPageInfo} />
+            </div>
 
             {/* Edit modal */}
             <TripUpdateInfoModal
@@ -117,6 +173,6 @@ export default function TripPage() {
                 <Modal.Footer><Button variant="outline-secondary" onClick={closeModal} disabled={isDeleting}>Giữ chuyến</Button><Button variant="danger" onClick={handleDelete} disabled={isDeleting}>{isDeleting ? 'Đang hủy…' : 'Xác nhận hủy chuyến'}</Button></Modal.Footer>
             </Modal>
 
-        </Container>
+        </main>
     );
 }

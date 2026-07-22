@@ -25,6 +25,8 @@ export const tripStaffApi = {
 
     endTrip: (tripId) => axiosClient.post(`${BASE}/${tripId}/end`),
 
+    reportIncident: (tripId) => axiosClient.post(`${BASE}/${tripId}/incident`),
+
     markNoShow: (tripId, ticketDetailId) =>
         axiosClient.post(`${BASE}/${tripId}/passengers/${ticketDetailId}/no-show`),
 };

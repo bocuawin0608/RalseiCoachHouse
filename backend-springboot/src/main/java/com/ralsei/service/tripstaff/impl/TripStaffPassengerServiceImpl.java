@@ -30,11 +30,16 @@ import com.ralsei.exception.BusinessRuleException;
 import com.ralsei.exception.ResourceNotFoundException;
 import com.ralsei.model.PassengerTicket;
 import com.ralsei.model.PassengerTicketDetail;
+import com.ralsei.model.Coach;
+import com.ralsei.model.CoachStatusLog;
 import com.ralsei.model.Route;
 import com.ralsei.model.Staff;
 import com.ralsei.model.Trip;
 import com.ralsei.model.enums.PassengerTicketDetailStatus;
+import com.ralsei.model.enums.CoachStatus;
 import com.ralsei.repository.AccompaniedChildRepository;
+import com.ralsei.repository.CoachRepository;
+import com.ralsei.repository.CoachStatusLogRepository;
 import com.ralsei.repository.PassengerTicketDetailRepository;
 import com.ralsei.repository.PassengerTicketRepository;
 import com.ralsei.repository.RouteRepository;
@@ -65,6 +70,8 @@ public class TripStaffPassengerServiceImpl implements TripStaffPassengerService 
     private final PassengerTicketDetailRepository passengerTicketDetailRepository;
     private final AccompaniedChildRepository accompaniedChildRepository;
     private final TripStaffCheckInPolicy checkInPolicy;
+    private final CoachRepository coachRepository;
+    private final CoachStatusLogRepository coachStatusLogRepository;
 
     private final Set<Integer> noShowTicketDetailIds = Collections.synchronizedSet(new HashSet<>());
 
@@ -123,6 +130,7 @@ public class TripStaffPassengerServiceImpl implements TripStaffPassengerService 
                 summary.getLicensePlate(),
                 summary.getCoachTypeName(),
                 summary.getTripStatus(),
+                summary.getCoachStatus(),
                 summary.getAssignedRole(),
                 summary.getCheckedInCount() != null ? summary.getCheckedInCount() : 0,
                 summary.getTotalPassengers() != null ? summary.getTotalPassengers() : 0);
@@ -331,8 +339,47 @@ public class TripStaffPassengerServiceImpl implements TripStaffPassengerService 
             throw new BusinessRuleException("Chỉ có thể kết thúc chuyến ở trạng thái IN_PROGRESS");
         }
 
+        Coach coach = coachRepository.findByIdForUpdate(trip.getCoachId())
+                .orElseThrow(() -> new ResourceNotFoundException("Xe của chuyến đi không tồn tại"));
+        if (coach.getStatus() == CoachStatus.HAVE_INCIDENT) {
+            throw new BusinessRuleException("Không thể hoàn thành chuyến: xe đã gặp sự cố không thể khắc phục");
+        }
+
         trip.setStatus("COMPLETED");
         tripRepository.save(trip);
+    }
+
+    @Override
+    @Transactional
+    public void reportUnrecoverableIncident(String authorizationHeader, Integer tripId) {
+        int staffId = resolveStaffId(authorizationHeader);
+        assertStaffCanAccessTrip(staffId, tripId);
+
+        Trip trip = tripRepository.findById(tripId)
+                .orElseThrow(() -> new ResourceNotFoundException("Chuyến đi không tồn tại"));
+        if (!"IN_PROGRESS".equals(trip.getStatus())) {
+            throw new BusinessRuleException("Chỉ có thể báo sự cố khi chuyến đang di chuyển");
+        }
+
+        Coach coach = coachRepository.findByIdForUpdate(trip.getCoachId())
+                .orElseThrow(() -> new ResourceNotFoundException("Xe của chuyến đi không tồn tại"));
+        if (coach.getStatus() == CoachStatus.HAVE_INCIDENT) {
+            return;
+        }
+        if (coach.getStatus() != CoachStatus.ACTIVE) {
+            throw new BusinessRuleException("Xe không ở trạng thái hoạt động để báo sự cố");
+        }
+
+        CoachStatus previousStatus = coach.getStatus();
+        coach.setStatus(CoachStatus.HAVE_INCIDENT);
+        coachStatusLogRepository.save(CoachStatusLog.builder()
+                .coach(coach)
+                .fromStatus(previousStatus)
+                .toStatus(CoachStatus.HAVE_INCIDENT)
+                .reason("Xe gặp sự cố không thể khắc phục trong chuyến #" + tripId)
+                .createdAt(LocalDateTime.now())
+                .createdBy(staffId)
+                .build());
     }
 
     @Override

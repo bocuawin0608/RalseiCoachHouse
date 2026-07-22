@@ -15,6 +15,10 @@
 }
 
 .trip-update-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.trip-update-grid.is-replacement { grid-template-columns: 1fr; }
 .trip-update-grid label { color: #52606d; font-weight: 600; }
 .trip-update-loading, .trip-update-alert { grid-column: 1 / -1; display: flex; align-items: center; gap: .5rem; }
+.trip-replacement-notice { display: flex; align-items: flex-start; gap: .65rem; font-size: .86rem; }
+.trip-replacement-notice > svg { flex: 0 0 auto; margin-top: .2rem; }
+.trip-replacement-notice strong { display: block; margin-bottom: .2rem; }
 @media (max-width: 768px) { .trip-update-grid { grid-template-columns: 1fr; } }
