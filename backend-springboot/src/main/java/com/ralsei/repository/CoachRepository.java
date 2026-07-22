@@ -10,6 +10,9 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.Lock;
+
+import jakarta.persistence.LockModeType;
 
 import com.ralsei.dto.projection.coach.CoachLicensePlateProjection;
 import com.ralsei.dto.request.coach.CoachFilterRequest;
@@ -21,6 +24,11 @@ import com.ralsei.model.enums.CoachStatus;
  * Provides persistence access for coach data.
  */
 public interface CoachRepository extends JpaRepository<Coach, Integer> {
+
+    /** Serializes irreversible operational status changes for one coach. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM Coach c WHERE c.coachId = :coachId")
+    Optional<Coach> findByIdForUpdate(@Param("coachId") Integer coachId);
 
     @Query(value = """
                 SELECT new com.ralsei.dto.response.coach.CoachResponse(

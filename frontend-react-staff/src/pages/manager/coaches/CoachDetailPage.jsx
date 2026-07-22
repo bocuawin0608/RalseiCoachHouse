@@ -18,12 +18,14 @@ import {
 
 const STATUS_LABELS = {
     ACTIVE: { text: 'Đang hoạt động', bg: 'success' },
+    HAVE_INCIDENT: { text: 'Gặp sự cố', bg: 'danger' },
     MAINTENANCE: { text: 'Đang bảo trì', bg: 'warning' },
-    RETIRED: { text: 'Ngừng hoạt động', bg: 'danger' },
+    RETIRED: { text: 'Ngừng hoạt động', bg: 'secondary' },
 };
 
 const LOG_STATUS_LABELS = {
     ACTIVE: 'Đang hoạt động',
+    HAVE_INCIDENT: 'Gặp sự cố',
     MAINTENANCE: 'Đang bảo trì',
     RETIRED: 'Ngừng hoạt động',
 };
@@ -324,6 +326,9 @@ export default function CoachDetailPage() {
                             <Button variant="danger" onClick={() => openAction('retire', 'RETIRED')}>
                                 Ngừng sử dụng
                             </Button>
+                        )}
+                        {status === 'HAVE_INCIDENT' && (
+                            <span className="text-muted align-self-center">Xe đang khóa sau sự cố: đưa bảo trì để sửa rồi mở lại, hoặc ngừng sử dụng.</span>
                         )}
                         {status === 'RETIRED' && (
                             <span className="text-muted align-self-center">Xe đã ngừng hoạt động, không có hành động khả dụng.</span>

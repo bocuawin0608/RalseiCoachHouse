@@ -23,6 +23,8 @@ public interface AssignedTripProjection {
 
     String getTripStatus();
 
+    String getCoachStatus();
+
     String getAssignedRole();
 
     Integer getTotalPassengers();

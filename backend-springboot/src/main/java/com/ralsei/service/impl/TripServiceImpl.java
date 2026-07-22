@@ -9,10 +9,13 @@ import com.ralsei.dto.projection.trip.TripSummaryProjection;
 import com.ralsei.dto.projection.trip.TripStopProjection;
 import com.ralsei.dto.projection.trip.TripResourceProjection;
 import com.ralsei.dto.request.trip.TripCreateRequest;
+import com.ralsei.dto.request.trip.TripIncidentReplacementRequest;
 import com.ralsei.dto.request.trip.TripUpdateRequest;
 import com.ralsei.dto.response.PagedResponse;
+import com.ralsei.dto.response.trip.ManagerTripIncidentResponse;
 import com.ralsei.dto.response.CoachAndRouteStop.RouteDropdownDTO;
 import com.ralsei.model.Trip;
+import com.ralsei.model.enums.CoachStatus;
 import com.ralsei.repository.RouteRepository;
 import com.ralsei.repository.StaffRepository;
 import com.ralsei.repository.TripRepository;
@@ -237,13 +240,14 @@ public class TripServiceImpl implements TripService {
     @Override
     @Transactional(readOnly = true)
     public PagedResponse<TripSummaryProjection> getAllTripSummaries(
-            LocalDate date, Integer routeId, String period, int page, int size) {
+            LocalDate date, Integer routeId, String period, String status, int page, int size) {
         LocalDate targetDate = (date != null) ? date : LocalDate.now(BUSINESS_TIME_ZONE);
         String departureDateStr = targetDate.toString();
         Pageable pageable = PageRequest.of(page, size);
         String normalizedPeriod = (period == null || period.isBlank()) ? null : period.toUpperCase();
+        String normalizedStatus = (status == null || status.isBlank()) ? null : status.toUpperCase();
         Page<TripSummaryProjection> summaryPage = tripRepository.viewAllTripSummaries(
-                departureDateStr, currentMinute(), routeId, normalizedPeriod, pageable);
+                departureDateStr, routeId, normalizedPeriod, normalizedStatus, pageable);
 
         return new PagedResponse<>(
                 summaryPage.getContent(),
@@ -252,6 +256,23 @@ public class TripServiceImpl implements TripService {
                 summaryPage.getTotalElements(),
                 summaryPage.getTotalPages(),
                 summaryPage.isLast());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ManagerTripIncidentResponse> getManagerTripIncidents(LocalDate date) {
+        LocalDate targetDate = date != null ? date : LocalDate.now(BUSINESS_TIME_ZONE);
+        return tripRepository.findIncidentTrips(
+                        CoachStatus.HAVE_INCIDENT,
+                        targetDate.atStartOfDay(),
+                        targetDate.plusDays(1).atStartOfDay())
+                .stream()
+                .map(trip -> new ManagerTripIncidentResponse(
+                        trip.getTripId(),
+                        trip.getRoute().getRouteName(),
+                        trip.getCoach().getLicensePlate(),
+                        trip.getDepartureTime()))
+                .toList();
     }
 
     /**
@@ -492,6 +513,82 @@ public class TripServiceImpl implements TripService {
         return tripRepository.findAvailableStaff("ATTENDANT", departureTime, excludeTripId);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<TripResourceProjection> getIncidentReplacementCoaches(Integer tripId, Integer routeId) {
+        requireUnresolvedIncidentTrip(tripId);
+        validateReplacementRoute(tripId, routeId);
+        int requiredSeats = tripRepository.countIncidentManifestPassengers(tripId);
+        return tripRepository.findIncidentReplacementCoaches(currentBusinessTime(), tripId, requiredSeats);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TripResourceProjection> getIncidentReplacementDrivers(Integer tripId) {
+        requireUnresolvedIncidentTrip(tripId);
+        return tripRepository.findAvailableStaff("DRIVER", currentBusinessTime(), tripId);
+    }
+
+    @Override
+    @Transactional
+    public String replaceIncidentTrip(Integer tripId, TripIncidentReplacementRequest request) {
+        requireUnresolvedIncidentTrip(tripId);
+        validateReplacementRoute(tripId, request.routeId());
+
+        LocalDateTime dispatchTime = currentBusinessTime();
+        int requiredSeats = tripRepository.countIncidentManifestPassengers(tripId);
+        boolean coachAvailable = tripRepository
+                .findIncidentReplacementCoaches(dispatchTime, tripId, requiredSeats)
+                .stream()
+                .anyMatch(option -> request.coachId().equals(option.getId()));
+        boolean driverAvailable = tripRepository
+                .findAvailableStaff("DRIVER", dispatchTime, tripId)
+                .stream()
+                .anyMatch(option -> request.driverId().equals(option.getId()));
+
+        if (!coachAvailable || !driverAvailable) {
+            throw new IllegalArgumentException(
+                    "Xe khách hoặc tài xế vừa được phân công cho chuyến khác. Vui lòng chọn lại.");
+        }
+
+        int updated = tripRepository.dispatchIncidentReplacement(
+                tripId, request.routeId(), request.coachId(), request.driverId(), dispatchTime);
+        if (updated != 1) {
+            throw new IllegalArgumentException(
+                    "Sự cố đã được xử lý ở một phiên khác. Vui lòng tải lại danh sách chuyến.");
+        }
+
+        LOGGER.warn("Dispatched incident replacement: tripId={}, routeId={}, coachId={}, driverId={}, departureTime={}",
+                tripId, request.routeId(), request.coachId(), request.driverId(), dispatchTime);
+        return "Đã điều xe thay thế và tiếp tục chuyến ngay lúc "
+                + dispatchTime.toLocalTime() + ". Toàn bộ hành khách và hàng hóa vẫn thuộc chuyến này.";
+    }
+
+    /** Loads only an in-progress trip whose currently assigned coach is incident-locked. */
+    private Trip requireUnresolvedIncidentTrip(Integer tripId) {
+        if (tripId == null || tripId < 1) {
+            throw new IllegalArgumentException("Mã chuyến gặp sự cố không hợp lệ.");
+        }
+        Trip trip = tripRepository.findByIdWithRouteAndCoach(tripId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chuyến xe #" + tripId + "."));
+        if (!"IN_PROGRESS".equals(trip.getStatus())
+                || trip.getCoach().getStatus() != CoachStatus.HAVE_INCIDENT) {
+            throw new IllegalArgumentException("Chuyến xe không còn sự cố chưa xử lý.");
+        }
+        return trip;
+    }
+
+    /** Protects existing passenger and cargo legs when the manager selects a route. */
+    private void validateReplacementRoute(Integer tripId, Integer routeId) {
+        if (routeId == null || routeRepository.findByRouteIdAndIsActiveTrue(routeId).isEmpty()) {
+            throw new IllegalArgumentException("Tuyến đường thay thế không tồn tại hoặc đã ngừng hoạt động.");
+        }
+        if (tripRepository.countManifestItemsOutsideRoute(tripId, routeId) > 0) {
+            throw new IllegalArgumentException(
+                    "Tuyến đường này không đi qua đầy đủ điểm đón/trả của hành khách hoặc hàng hóa hiện tại.");
+        }
+    }
+
     /** Ensures a resource lookup has enough data and never targets a past trip. */
     private void validateResourceRequest(Integer routeId, LocalDateTime departureTime) {
         if (routeId == null || departureTime == null
@@ -506,6 +603,11 @@ public class TripServiceImpl implements TripService {
      */
     private LocalDateTime currentMinute() {
         return LocalDateTime.now(BUSINESS_TIME_ZONE).truncatedTo(ChronoUnit.MINUTES);
+    }
+
+    /** Incident dispatch records the actual save instant instead of the old schedule minute. */
+    private LocalDateTime currentBusinessTime() {
+        return LocalDateTime.now(BUSINESS_TIME_ZONE).withNano(0);
     }
 
     /** Converts an optional HH:mm filter into minute-of-day for SQL comparison. */
