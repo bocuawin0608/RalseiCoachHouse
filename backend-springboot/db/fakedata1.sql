@@ -2,7 +2,10 @@ USE VeXeDB;
 GO
 
 SET NOCOUNT ON;
-PRINT N'=== BẮT ĐẦU SEED fakedata1 (ALIGNED) ===';
+PRINT N'=== BẮT ĐẦU SEED fakedata1 (BUSINESS-ALIGNED) ===';
+-- Trip density/rules align with sp_AutoGenerateWeeklySchedule_Final (Procedure.sql):
+-- 24 departures/day/direction, 720-min buffer, go-return route flip, 150 reserve coaches.
+-- Cargo: volume <= 2.5 m3/trip, assigned trip requires payment; plus lifecycle samples.
 
 -- ============================================================================
 -- CLEANUP (FK-safe order)
@@ -96,10 +99,13 @@ INSERT INTO [route] (routeName, totalKilometers, totalMinutes) VALUES
 (N'Hà Nội - Quảng Trị', 530.00, 640),
 (N'Quảng Trị - Hà Nội', 530.00, 640);
 
-INSERT INTO [coach_type] (coachTypeName, totalSeat) VALUES
-(N'Xe Limousine VIP 20 phòng', 20),
-(N'Xe Giường Nằm Luxury 32 chỗ', 32),
-(N'Xe Khách Truyền Thống 38 chỗ', 38);
+INSERT INTO [coach_type] (coachTypeName, totalSeat, seatLayout) VALUES
+(N'Xe Limousine VIP 20 phòng', 20,
+ N'{"totalFloors":2,"rows":5,"cols":2,"floors":[[["SEAT","SEAT"],["SEAT","SEAT"],["SEAT","SEAT"],["SEAT","SEAT"],["SEAT","SEAT"]],[["SEAT","SEAT"],["SEAT","SEAT"],["SEAT","SEAT"],["SEAT","SEAT"],["SEAT","SEAT"]]]}'),
+(N'Xe Giường Nằm Luxury 32 chỗ', 32,
+ N'{"totalFloors":2,"rows":6,"cols":3,"floors":[[["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["EMPTY","SEAT","EMPTY"]],[["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["EMPTY","SEAT","EMPTY"]]]}'),
+(N'Xe Khách Truyền Thống 38 chỗ', 38,
+ N'{"totalFloors":2,"rows":7,"cols":3,"floors":[[["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["EMPTY","SEAT","EMPTY"]],[["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["EMPTY","SEAT","EMPTY"]]]}');
 
 -- Cargo types: name only; surcharge lives in cargo_type_price (unit + pricePerUnit)
 INSERT INTO [cargo_type] (cargoTypeName) VALUES
@@ -264,7 +270,7 @@ VALUES ('0999999999', @StaffPwd, NULL, 'local', 1);
 SELECT TOP 1 @GeneratedId = Id FROM @IdOutput; DELETE FROM @IdOutput;
 INSERT INTO [account_role] (accountId, roleId) VALUES (@GeneratedId, 4);
 INSERT INTO [staff] (accountId, ticketAgencyId, staffName, phone, email, dob, cccd, staffPosition, hireDate, isActive)
-VALUES (@GeneratedId, 8, N'Tài Xế Nghỉ Việc', '0999999999', 'taixenghiviec@vexedb.vn', '1992-07-15', '030092000099', 'DRIVER', '2025-06-01', 0);
+VALUES (@GeneratedId, NULL, N'Tài Xế Nghỉ Việc', '0999999999', 'taixenghiviec@vexedb.vn', '1992-07-15', '030092000099', 'DRIVER', '2025-06-01', 0);
 
 -- ============================================================================
 -- LEVEL 2.5: ROUTE STOPS + PRICES
@@ -345,7 +351,7 @@ BEGIN
     SELECT @pickedBrand = Brand FROM @ManufacturerTable WHERE Id = ((@c % @TotalBrands) + 1);
     SET @TargetCoachTypeId = CASE WHEN @c % 3 = 0 THEN 1 WHEN @c % 3 = 1 THEN 2 ELSE 3 END;
 
-    -- Alternate preferred route assignment (still nullable-compatible)
+    -- Preferred corridor side; trip seed only assigns matching routeId or NULL coaches
     INSERT INTO [coach] (routeId, coachTypeId, licensePlate, [status], manufacturer, [year])
     VALUES (
         CASE WHEN @c % 5 = 0 THEN NULL WHEN @c % 2 = 0 THEN 1 ELSE 2 END,
@@ -436,105 +442,281 @@ WHERE c.[status] = 'MAINTENANCE'
 
 -- ============================================================================
 -- LEVEL 4: TRIPS + TRIP_SEATS
+-- Mirrors dbo.sp_AutoGenerateWeeklySchedule_Final (Procedure.sql):
+--   - 24 slots/day route 1 (00:00..23:00)
+--   - 24 slots/day route 2 (:30 offset)
+--   - @BufferMinutes = 720
+--   - last trip must be the opposite route (no teleport)
+--   - reserve TOP 150 ACTIVE coaches
 -- ============================================================================
-PRINT N'-> Sinh chuyến + trip_seat...';
+PRINT N'-> Sinh chuyến + trip_seat (Procedure-aligned 24x2/ngày, buffer 720)...';
 
-DECLARE @DriverTable TABLE (RowIdx INT IDENTITY(1,1), StaffId INT);
-DECLARE @AttendantTable TABLE (RowIdx INT IDENTITY(1,1), StaffId INT);
-DECLARE @ActiveCoachTable TABLE (RowIdx INT IDENTITY(1,1), CoachId INT);
-
-INSERT INTO @DriverTable (StaffId) SELECT staffId FROM [staff] WHERE staffPosition = 'DRIVER' AND isActive = 1 ORDER BY staffId ASC;
-INSERT INTO @AttendantTable (StaffId) SELECT staffId FROM [staff] WHERE staffPosition = 'ATTENDANT' AND isActive = 1 ORDER BY staffId ASC;
-INSERT INTO @ActiveCoachTable (CoachId) SELECT coachId FROM [coach] WHERE [status] = 'ACTIVE' ORDER BY coachId ASC;
-
-DECLARE @TotalDrivers INT = (SELECT COUNT(*) FROM @DriverTable);
-DECLARE @TotalAttendants INT = (SELECT COUNT(*) FROM @AttendantTable);
-DECLARE @TotalActiveCoaches INT = (SELECT COUNT(*) FROM @ActiveCoachTable);
-
-DECLARE @StartDate DATETIME = '2026-01-01';
-DECLARE @EndDate DATETIME = '2026-01-15';
-DECLARE @CurrentDate DATETIME = @StartDate;
+DECLARE @BufferMinutes INT = 720;
+DECLARE @StartDate DATE = DATEADD(day, -3, CAST(GETDATE() AS DATE));
+DECLARE @EndDate DATE = DATEADD(day, 6, @StartDate); -- 7 days like the weekly procedure
+DECLARE @CurrentDate DATE = @StartDate;
 DECLARE @TripCounter INT = 0;
+DECLARE @SkipCounter INT = 0;
 DECLARE @NewTripId INT;
+DECLARE @DepartureTime DATETIME;
+DECLARE @Slot INT;
+DECLARE @PickedCoachId INT;
+DECLARE @PickedDriverId INT;
+DECLARE @PickedAttendantId INT;
 
 WHILE @CurrentDate <= @EndDate
 BEGIN
-    DECLARE @Slot1 INT = 0;
-    WHILE @Slot1 < 24
+    ------------------------------------------------------------------
+    -- CHIỀU ĐI: route 1 — hourly 0h..23h
+    ------------------------------------------------------------------
+    SET @Slot = 0;
+    WHILE @Slot < 24
     BEGIN
-        DECLARE @DrvId1 INT, @AtnId1 INT, @CchId1 INT;
+        SET @DepartureTime = DATEADD(HOUR, @Slot, CAST(@CurrentDate AS DATETIME));
+        SET @PickedCoachId = NULL;
+        SET @PickedDriverId = NULL;
+        SET @PickedAttendantId = NULL;
 
-        IF (@TripCounter % 2 = 0)
+        SELECT TOP 1 @PickedCoachId = c.coachId
+        FROM [coach] c
+        WHERE c.[status] = 'ACTIVE'
+          AND c.coachId NOT IN (
+              SELECT TOP 150 coachId FROM [coach] WHERE [status] = 'ACTIVE' ORDER BY coachId ASC
+          )
+          AND NOT EXISTS (
+              SELECT 1 FROM [trip] t
+              WHERE t.coachId = c.coachId
+                AND t.[status] NOT IN ('CANCELED', 'CANCELLED')
+                AND t.departureTime BETWEEN DATEADD(MINUTE, -@BufferMinutes, @DepartureTime)
+                                        AND DATEADD(MINUTE, @BufferMinutes, @DepartureTime)
+          )
+          AND (
+              NOT EXISTS (
+                  SELECT 1 FROM [trip] lastTrip
+                  WHERE lastTrip.coachId = c.coachId
+                    AND lastTrip.departureTime < @DepartureTime
+                    AND lastTrip.[status] NOT IN ('CANCELED', 'CANCELLED')
+              )
+              OR (
+                  SELECT TOP 1 lastTrip.routeId
+                  FROM [trip] lastTrip
+                  WHERE lastTrip.coachId = c.coachId
+                    AND lastTrip.departureTime < @DepartureTime
+                    AND lastTrip.[status] NOT IN ('CANCELED', 'CANCELLED')
+                  ORDER BY lastTrip.departureTime DESC
+              ) = 2
+          )
+        ORDER BY NEWID();
+
+        SELECT TOP 1 @PickedDriverId = s.staffId
+        FROM [staff] s
+        WHERE s.staffPosition = 'DRIVER' AND s.isActive = 1
+          AND NOT EXISTS (
+              SELECT 1 FROM [trip] t
+              WHERE t.driverId = s.staffId
+                AND t.[status] NOT IN ('CANCELED', 'CANCELLED')
+                AND t.departureTime BETWEEN DATEADD(MINUTE, -@BufferMinutes, @DepartureTime)
+                                        AND DATEADD(MINUTE, @BufferMinutes, @DepartureTime)
+          )
+          AND (
+              NOT EXISTS (
+                  SELECT 1 FROM [trip] lastTrip
+                  WHERE lastTrip.driverId = s.staffId
+                    AND lastTrip.departureTime < @DepartureTime
+                    AND lastTrip.[status] NOT IN ('CANCELED', 'CANCELLED')
+              )
+              OR (
+                  SELECT TOP 1 lastTrip.routeId
+                  FROM [trip] lastTrip
+                  WHERE lastTrip.driverId = s.staffId
+                    AND lastTrip.departureTime < @DepartureTime
+                    AND lastTrip.[status] NOT IN ('CANCELED', 'CANCELLED')
+                  ORDER BY lastTrip.departureTime DESC
+              ) = 2
+          )
+        ORDER BY NEWID();
+
+        SELECT TOP 1 @PickedAttendantId = s.staffId
+        FROM [staff] s
+        WHERE s.staffPosition = 'ATTENDANT' AND s.isActive = 1
+          AND s.staffId <> ISNULL(@PickedDriverId, -1)
+          AND NOT EXISTS (
+              SELECT 1 FROM [trip] t
+              WHERE t.attendantId = s.staffId
+                AND t.[status] NOT IN ('CANCELED', 'CANCELLED')
+                AND t.departureTime BETWEEN DATEADD(MINUTE, -@BufferMinutes, @DepartureTime)
+                                        AND DATEADD(MINUTE, @BufferMinutes, @DepartureTime)
+          )
+          AND (
+              NOT EXISTS (
+                  SELECT 1 FROM [trip] lastTrip
+                  WHERE lastTrip.attendantId = s.staffId
+                    AND lastTrip.departureTime < @DepartureTime
+                    AND lastTrip.[status] NOT IN ('CANCELED', 'CANCELLED')
+              )
+              OR (
+                  SELECT TOP 1 lastTrip.routeId
+                  FROM [trip] lastTrip
+                  WHERE lastTrip.attendantId = s.staffId
+                    AND lastTrip.departureTime < @DepartureTime
+                    AND lastTrip.[status] NOT IN ('CANCELED', 'CANCELLED')
+                  ORDER BY lastTrip.departureTime DESC
+              ) = 2
+          )
+        ORDER BY NEWID();
+
+        IF @PickedCoachId IS NOT NULL AND @PickedDriverId IS NOT NULL AND @PickedAttendantId IS NOT NULL
         BEGIN
-            SELECT @DrvId1 = StaffId FROM @DriverTable WHERE RowIdx = ((@TripCounter % @TotalDrivers) + 1);
-            SELECT @AtnId1 = StaffId FROM @AttendantTable WHERE RowIdx = (((@TripCounter + 2) % @TotalAttendants) + 1);
+            INSERT INTO [trip] (routeId, coachId, departureTime, [status], driverId, attendantId)
+            VALUES (1, @PickedCoachId, @DepartureTime, 'SCHEDULED', @PickedDriverId, @PickedAttendantId);
+
+            SET @NewTripId = SCOPE_IDENTITY();
+
+            INSERT INTO [trip_seat] (tripId, seatId, price, [status])
+            SELECT @NewTripId, s.seatId, ctp.seatPrice, 'AVAILABLE'
+            FROM [seat] s
+            JOIN [coach] c ON s.coachId = c.coachId
+            JOIN [coach_type_price] ctp ON c.coachTypeId = ctp.coachTypeId
+            WHERE c.coachId = @PickedCoachId
+              AND @DepartureTime BETWEEN ctp.startEffectiveDate AND ctp.endEffectiveDate
+              AND s.isActive = 1;
+
+            SET @TripCounter = @TripCounter + 1;
         END
         ELSE
-        BEGIN
-            SELECT @DrvId1 = StaffId FROM @DriverTable WHERE RowIdx = (((@TripCounter + 5) % @TotalDrivers) + 1);
-            SELECT @AtnId1 = StaffId FROM @AttendantTable WHERE RowIdx = ((@TripCounter % @TotalAttendants) + 1);
-        END
+            SET @SkipCounter = @SkipCounter + 1;
 
-        SELECT @CchId1 = CoachId FROM @ActiveCoachTable WHERE RowIdx = ((@TripCounter % @TotalActiveCoaches) + 1);
-        DECLARE @Time1 DATETIME = DATEADD(hour, @Slot1, DATEADD(dd, DATEDIFF(dd, 0, @CurrentDate), 0));
-
-        INSERT INTO [trip] (routeId, coachId, departureTime, [status], driverId, attendantId)
-        VALUES (1, @CchId1, @Time1, 'SCHEDULED', @DrvId1, @AtnId1);
-
-        SET @NewTripId = SCOPE_IDENTITY();
-
-        INSERT INTO [trip_seat] (tripId, seatId, price, [status])
-        SELECT @NewTripId, s.seatId, ctp.seatPrice, 'AVAILABLE'
-        FROM [seat] s
-        JOIN [coach] c ON s.coachId = c.coachId
-        JOIN [coach_type_price] ctp ON c.coachTypeId = ctp.coachTypeId
-        WHERE c.coachId = @CchId1
-          AND @Time1 BETWEEN ctp.startEffectiveDate AND ctp.endEffectiveDate;
-
-        SET @TripCounter = @TripCounter + 1;
-        SET @Slot1 = @Slot1 + 1;
+        SET @Slot = @Slot + 1;
     END;
 
-    DECLARE @Slot2 INT = 0;
-    WHILE @Slot2 < 24
+    ------------------------------------------------------------------
+    -- CHIỀU VỀ: route 2 — hourly :30
+    ------------------------------------------------------------------
+    SET @Slot = 0;
+    WHILE @Slot < 24
     BEGIN
-        DECLARE @DrvId2 INT, @AtnId2 INT, @CchId2 INT;
+        SET @DepartureTime = DATEADD(MINUTE, (@Slot * 60) + 30, CAST(@CurrentDate AS DATETIME));
+        SET @PickedCoachId = NULL;
+        SET @PickedDriverId = NULL;
+        SET @PickedAttendantId = NULL;
 
-        IF (@TripCounter % 2 = 0)
+        SELECT TOP 1 @PickedCoachId = c.coachId
+        FROM [coach] c
+        WHERE c.[status] = 'ACTIVE'
+          AND c.coachId NOT IN (
+              SELECT TOP 150 coachId FROM [coach] WHERE [status] = 'ACTIVE' ORDER BY coachId ASC
+          )
+          AND NOT EXISTS (
+              SELECT 1 FROM [trip] t
+              WHERE t.coachId = c.coachId
+                AND t.[status] NOT IN ('CANCELED', 'CANCELLED')
+                AND t.departureTime BETWEEN DATEADD(MINUTE, -@BufferMinutes, @DepartureTime)
+                                        AND DATEADD(MINUTE, @BufferMinutes, @DepartureTime)
+          )
+          AND (
+              NOT EXISTS (
+                  SELECT 1 FROM [trip] lastTrip
+                  WHERE lastTrip.coachId = c.coachId
+                    AND lastTrip.departureTime < @DepartureTime
+                    AND lastTrip.[status] NOT IN ('CANCELED', 'CANCELLED')
+              )
+              OR (
+                  SELECT TOP 1 lastTrip.routeId
+                  FROM [trip] lastTrip
+                  WHERE lastTrip.coachId = c.coachId
+                    AND lastTrip.departureTime < @DepartureTime
+                    AND lastTrip.[status] NOT IN ('CANCELED', 'CANCELLED')
+                  ORDER BY lastTrip.departureTime DESC
+              ) = 1
+          )
+        ORDER BY NEWID();
+
+        SELECT TOP 1 @PickedDriverId = s.staffId
+        FROM [staff] s
+        WHERE s.staffPosition = 'DRIVER' AND s.isActive = 1
+          AND NOT EXISTS (
+              SELECT 1 FROM [trip] t
+              WHERE t.driverId = s.staffId
+                AND t.[status] NOT IN ('CANCELED', 'CANCELLED')
+                AND t.departureTime BETWEEN DATEADD(MINUTE, -@BufferMinutes, @DepartureTime)
+                                        AND DATEADD(MINUTE, @BufferMinutes, @DepartureTime)
+          )
+          AND (
+              NOT EXISTS (
+                  SELECT 1 FROM [trip] lastTrip
+                  WHERE lastTrip.driverId = s.staffId
+                    AND lastTrip.departureTime < @DepartureTime
+                    AND lastTrip.[status] NOT IN ('CANCELED', 'CANCELLED')
+              )
+              OR (
+                  SELECT TOP 1 lastTrip.routeId
+                  FROM [trip] lastTrip
+                  WHERE lastTrip.driverId = s.staffId
+                    AND lastTrip.departureTime < @DepartureTime
+                    AND lastTrip.[status] NOT IN ('CANCELED', 'CANCELLED')
+                  ORDER BY lastTrip.departureTime DESC
+              ) = 1
+          )
+        ORDER BY NEWID();
+
+        SELECT TOP 1 @PickedAttendantId = s.staffId
+        FROM [staff] s
+        WHERE s.staffPosition = 'ATTENDANT' AND s.isActive = 1
+          AND s.staffId <> ISNULL(@PickedDriverId, -1)
+          AND NOT EXISTS (
+              SELECT 1 FROM [trip] t
+              WHERE t.attendantId = s.staffId
+                AND t.[status] NOT IN ('CANCELED', 'CANCELLED')
+                AND t.departureTime BETWEEN DATEADD(MINUTE, -@BufferMinutes, @DepartureTime)
+                                        AND DATEADD(MINUTE, @BufferMinutes, @DepartureTime)
+          )
+          AND (
+              NOT EXISTS (
+                  SELECT 1 FROM [trip] lastTrip
+                  WHERE lastTrip.attendantId = s.staffId
+                    AND lastTrip.departureTime < @DepartureTime
+                    AND lastTrip.[status] NOT IN ('CANCELED', 'CANCELLED')
+              )
+              OR (
+                  SELECT TOP 1 lastTrip.routeId
+                  FROM [trip] lastTrip
+                  WHERE lastTrip.attendantId = s.staffId
+                    AND lastTrip.departureTime < @DepartureTime
+                    AND lastTrip.[status] NOT IN ('CANCELED', 'CANCELLED')
+                  ORDER BY lastTrip.departureTime DESC
+              ) = 1
+          )
+        ORDER BY NEWID();
+
+        IF @PickedCoachId IS NOT NULL AND @PickedDriverId IS NOT NULL AND @PickedAttendantId IS NOT NULL
         BEGIN
-            SELECT @DrvId2 = StaffId FROM @DriverTable WHERE RowIdx = ((@TripCounter % @TotalDrivers) + 1);
-            SELECT @AtnId2 = StaffId FROM @AttendantTable WHERE RowIdx = (((@TripCounter + 3) % @TotalAttendants) + 1);
+            INSERT INTO [trip] (routeId, coachId, departureTime, [status], driverId, attendantId)
+            VALUES (2, @PickedCoachId, @DepartureTime, 'SCHEDULED', @PickedDriverId, @PickedAttendantId);
+
+            SET @NewTripId = SCOPE_IDENTITY();
+
+            INSERT INTO [trip_seat] (tripId, seatId, price, [status])
+            SELECT @NewTripId, s.seatId, ctp.seatPrice, 'AVAILABLE'
+            FROM [seat] s
+            JOIN [coach] c ON s.coachId = c.coachId
+            JOIN [coach_type_price] ctp ON c.coachTypeId = ctp.coachTypeId
+            WHERE c.coachId = @PickedCoachId
+              AND @DepartureTime BETWEEN ctp.startEffectiveDate AND ctp.endEffectiveDate
+              AND s.isActive = 1;
+
+            SET @TripCounter = @TripCounter + 1;
         END
         ELSE
-        BEGIN
-            SELECT @DrvId2 = StaffId FROM @DriverTable WHERE RowIdx = (((@TripCounter + 7) % @TotalDrivers) + 1);
-            SELECT @AtnId2 = StaffId FROM @AttendantTable WHERE RowIdx = ((@TripCounter % @TotalAttendants) + 1);
-        END
+            SET @SkipCounter = @SkipCounter + 1;
 
-        SELECT @CchId2 = CoachId FROM @ActiveCoachTable WHERE RowIdx = ((@TripCounter % @TotalActiveCoaches) + 1);
-        DECLARE @Time2 DATETIME = DATEADD(minute, (@Slot2 * 60) + 30, DATEADD(dd, DATEDIFF(dd, 0, @CurrentDate), 0));
-
-        INSERT INTO [trip] (routeId, coachId, departureTime, [status], driverId, attendantId)
-        VALUES (2, @CchId2, @Time2, 'SCHEDULED', @DrvId2, @AtnId2);
-
-        SET @NewTripId = SCOPE_IDENTITY();
-
-        INSERT INTO [trip_seat] (tripId, seatId, price, [status])
-        SELECT @NewTripId, s.seatId, ctp.seatPrice, 'AVAILABLE'
-        FROM [seat] s
-        JOIN [coach] c ON s.coachId = c.coachId
-        JOIN [coach_type_price] ctp ON c.coachTypeId = ctp.coachTypeId
-        WHERE c.coachId = @CchId2
-          AND @Time2 BETWEEN ctp.startEffectiveDate AND ctp.endEffectiveDate;
-
-        SET @TripCounter = @TripCounter + 1;
-        SET @Slot2 = @Slot2 + 1;
+        SET @Slot = @Slot + 1;
     END;
 
     SET @CurrentDate = DATEADD(day, 1, @CurrentDate);
 END;
 
-PRINT N' -> Tổng số chuyến: ' + CAST(@TripCounter AS VARCHAR(10));
+PRINT N' -> Tổng số chuyến: ' + CAST(@TripCounter AS VARCHAR(10))
+    + N' | slot thiếu resource: ' + CAST(@SkipCounter AS VARCHAR(10));
 
 -- ============================================================================
 -- LEVEL 5.1: PASSENGER TICKETS (itinerary respects route_stop order)
@@ -558,6 +740,7 @@ DECLARE @SeatStatusUpdate VARCHAR(20);
 DECLARE @SeatCodeSnapshot VARCHAR(10);
 DECLARE @NewPId INT;
 DECLARE @TripRouteId INT;
+DECLARE @TripDeparture DATETIME;
 DECLARE @PickupStopId INT;
 DECLARE @DropoffStopId INT;
 DECLARE @PickupStopNameSnap NVARCHAR(255);
@@ -568,12 +751,13 @@ DECLARE @BaseSeatPrice DECIMAL(15,2);
 DECLARE @MaxStopOrder INT;
 DECLARE @PickupOrder INT;
 DECLARE @DropoffOrder INT;
+DECLARE @PassengerCreated INT = 0;
 
-WHILE @TicketIdx <= 500
+WHILE @TicketIdx <= 220 AND @MinNewTripId IS NOT NULL
 BEGIN
     SET @TargetTripId = @MinNewTripId + (@TicketIdx % (@MaxNewTripId - @MinNewTripId + 1));
 
-    SELECT @TripRouteId = t.routeId, @TargetCoachTypeId2 = c.coachTypeId
+    SELECT @TripRouteId = t.routeId, @TargetCoachTypeId2 = c.coachTypeId, @TripDeparture = t.departureTime
     FROM [trip] t
     JOIN [coach] c ON t.coachId = c.coachId
     WHERE t.tripId = @TargetTripId;
@@ -582,7 +766,6 @@ BEGIN
 
     SELECT @MaxStopOrder = MAX(stopOrder) FROM [route_stop] WHERE routeId = @TripRouteId;
 
-    -- Vary pickup among early stops, dropoff among late stops (always pickup.stopOrder < dropoff.stopOrder)
     SET @PickupOrder = 1 + (@TicketIdx % CASE WHEN @MaxStopOrder > 3 THEN 3 ELSE 1 END);
     SET @DropoffOrder = @MaxStopOrder - (@TicketIdx % CASE WHEN @MaxStopOrder > 3 THEN 3 ELSE 0 END);
     IF @DropoffOrder <= @PickupOrder SET @DropoffOrder = @MaxStopOrder;
@@ -599,7 +782,6 @@ BEGIN
 
     SET @CalculatedTicketPrice = @BaseSeatPrice + ISNULL(@PickupSurcharge, 0) + ISNULL(@DropoffSurcharge, 0);
 
-    -- ~1/4 tickets are counter walk-ins: no customer row; identity only on ticket detail
     SET @TargetCusId = CASE
         WHEN @TicketIdx % 4 = 0 THEN NULL
         ELSE @MinCusId + (@TicketIdx % (@MaxCusId - @MinCusId + 1))
@@ -624,15 +806,15 @@ BEGIN
 
         INSERT INTO [passenger_ticket] (
             customerId, tripId, voucherId, soldBy, ticketCode, totalPrice,
-            pickupStopId, dropoffStopId, pickupStopName, dropoffStopName, voucherCodeSnapshot, [status]
+            pickupStopId, dropoffStopId, pickupStopName, dropoffStopName,
+            voucherCodeSnapshot, refundPolicyDepartureTime, [status]
         )
         VALUES (
             @TargetCusId, @TargetTripId, NULL,
-            -- Walk-in / counter sales always have soldBy; online bookings may not
             CASE WHEN @TargetCusId IS NULL OR @TicketIdx % 3 = 0 THEN @TicketStaffId ELSE NULL END,
             'TK_SYS_' + RIGHT('0000' + CAST(@TicketIdx AS VARCHAR(4)), 4),
             @CalculatedTicketPrice, @PickupStopId, @DropoffStopId,
-            @PickupStopNameSnap, @DropoffStopNameSnap, NULL, @TicketStatus
+            @PickupStopNameSnap, @DropoffStopNameSnap, NULL, @TripDeparture, @TicketStatus
         );
 
         SET @NewPId = SCOPE_IDENTITY();
@@ -653,14 +835,20 @@ BEGIN
             CASE WHEN @TicketStatus = 'CONFIRMED' THEN 'COMPLETED' ELSE 'PENDING' END,
             CASE WHEN @TicketStatus = 'CONFIRMED' THEN GETDATE() ELSE NULL END
         );
+
+        SET @PassengerCreated = @PassengerCreated + 1;
     END
 
     SET @TicketIdx = @TicketIdx + 1;
 END;
 
+PRINT N' -> Vé HK tạo được: ' + CAST(@PassengerCreated AS VARCHAR(10));
+
 -- ============================================================================
--- LEVEL 5.2: CARGO TICKETS (FreightCalculatorUtility-aligned)
+-- LEVEL 5.2: CARGO TICKETS (FreightCalculatorUtility-aligned + capacity/payment rules)
 -- Formula: unitPrice = ROUND((V*300/1.2)*3000, 0) + surcharge; total = unitPrice * quantity
+-- Rules: trip cargo sum(dimensionVol*qty) <= 2.50; SENDER+tripId requires COMPLETED payment;
+--        unpaid / waiting orders keep tripId NULL.
 -- ============================================================================
 PRINT N'-> Sinh hóa đơn ký gửi...';
 
@@ -672,11 +860,19 @@ DECLARE @Quantity INT;
 DECLARE @DimVol DECIMAL(8,2);
 DECLARE @UnitCargoPrice DECIMAL(15,2);
 DECLARE @CargoTypeCount INT = (SELECT COUNT(*) FROM [cargo_type_price]);
+DECLARE @CargoVol DECIMAL(12,3);
+DECLARE @UsedVol DECIMAL(12,3);
+DECLARE @AssignTripId INT;
+DECLARE @FeePayer VARCHAR(20);
+DECLARE @CargoCreated INT = 0;
+DECLARE @CargoAssigned INT = 0;
+DECLARE @NewCargoId INT;
 
-WHILE @CargoIdx <= 300
+DECLARE @TripCargoVol TABLE (TripId INT PRIMARY KEY, UsedVol DECIMAL(12,3) NOT NULL);
+
+WHILE @CargoIdx <= 180 AND @MinNewTripId IS NOT NULL
 BEGIN
     SET @TargetTripId = @MinNewTripId + (@CargoIdx % (@MaxNewTripId - @MinNewTripId + 1));
-    -- Counter cargo often has no registered customer; sender/receiver live on cargo_ticket
     SET @TargetCusId = CASE
         WHEN @CargoIdx % 3 = 0 THEN NULL
         ELSE @MinCusId + (@CargoIdx % (@MaxCusId - @MinCusId + 1))
@@ -700,13 +896,41 @@ BEGIN
     SET @PickCargoTypePriceId = ((@CargoIdx - 1) % @CargoTypeCount) + 1;
     SELECT @PricePerUnit = pricePerUnit FROM [cargo_type_price] WHERE cargoTypePriceId = @PickCargoTypePriceId;
 
-    SET @Quantity = (@CargoIdx % 4) + 1;
-    -- Per-unit volume (service multiplies unitPrice by quantity)
-    SET @DimVol = 0.20 + ((@CargoIdx % 5) * 0.05);
+    SET @Quantity = (@CargoIdx % 3) + 1;
+    SET @DimVol = 0.20 + ((@CargoIdx % 4) * 0.05);
+    SET @CargoVol = CAST(@DimVol * @Quantity AS DECIMAL(12,3));
 
-    -- FreightCalculatorUtility.calculatePriceWithSurcharge
     SET @UnitCargoPrice = ROUND(((@DimVol * 300.0) / 1.2) * 3000.0, 0) + @PricePerUnit;
     SET @CalculatedCargoPrice = @UnitCargoPrice * @Quantity;
+    SET @FeePayer = CASE WHEN @CargoIdx % 2 = 0 THEN 'SENDER' ELSE 'RECEIVER' END;
+
+    SET @AssignTripId = NULL;
+    SET @UsedVol = 0;
+    IF (@CargoIdx % 3 <> 0 AND @CargoVol <= 2.50)
+    BEGIN
+        SELECT @UsedVol = UsedVol FROM @TripCargoVol WHERE TripId = @TargetTripId;
+        IF @UsedVol IS NULL SET @UsedVol = 0;
+
+        IF (@UsedVol + @CargoVol) <= 2.50
+        BEGIN
+            SET @AssignTripId = @TargetTripId;
+            IF EXISTS (SELECT 1 FROM @TripCargoVol WHERE TripId = @TargetTripId)
+                UPDATE @TripCargoVol SET UsedVol = UsedVol + @CargoVol WHERE TripId = @TargetTripId;
+            ELSE
+                INSERT INTO @TripCargoVol (TripId, UsedVol) VALUES (@TargetTripId, @CargoVol);
+        END
+    END
+
+    IF @AssignTripId IS NULL
+    BEGIN
+        SET @TripRouteId = 1;
+        SELECT @MaxStopOrder = MAX(stopOrder) FROM [route_stop] WHERE routeId = 1;
+        SET @PickupOrder = 1 + (@CargoIdx % 3);
+        SET @DropoffOrder = @MaxStopOrder - (@CargoIdx % 3);
+        IF @DropoffOrder <= @PickupOrder SET @DropoffOrder = @MaxStopOrder;
+        SELECT @PickupStopId = stopPointId FROM [route_stop] WHERE routeId = 1 AND stopOrder = @PickupOrder;
+        SELECT @DropoffStopId = stopPointId FROM [route_stop] WHERE routeId = 1 AND stopOrder = @DropoffOrder;
+    END
 
     INSERT INTO [cargo_ticket] (
         tripId, customerId, senderName, senderPhone,
@@ -714,16 +938,16 @@ BEGIN
         feePayer, codAmount, pickupStopId, dropoffStopId, [status], soldBy
     )
     VALUES (
-        @TargetTripId, @TargetCusId,
+        @AssignTripId, @TargetCusId,
         N'Người Gửi Số ' + CAST(@CargoIdx AS NVARCHAR(5)), '0912' + RIGHT('00000' + CAST(@CargoIdx AS VARCHAR(5)), 5),
         N'Người Nhận Số ' + CAST(@CargoIdx AS NVARCHAR(5)), '0978' + RIGHT('00000' + CAST(@CargoIdx AS VARCHAR(5)), 5),
         'CG_CODE_' + RIGHT('0000' + CAST(@CargoIdx AS VARCHAR(4)), 4), @CalculatedCargoPrice,
-        CASE WHEN @CargoIdx % 2 = 0 THEN 'SENDER' ELSE 'RECEIVER' END,
+        @FeePayer,
         CASE WHEN @CargoIdx % 5 = 0 THEN 200000.00 ELSE 0.00 END,
         @PickupStopId, @DropoffStopId, 'RECEIVED', @TicketStaffId
     );
 
-    DECLARE @NewCargoId INT = SCOPE_IDENTITY();
+    SET @NewCargoId = SCOPE_IDENTITY();
 
     INSERT INTO [cargo_ticket_detail] (cargoTicketId, cargoTypePriceId, description, quantity, weightKg, dimensionVol, calculatedPrice)
     VALUES (
@@ -732,8 +956,7 @@ BEGIN
         @Quantity, @Quantity * 5.5, @DimVol, @CalculatedCargoPrice
     );
 
-    -- Cargo payments: CASH | BANK_TRANSFER only (no SEPAY in cargo API)
-    IF (@CargoIdx % 2 = 0)
+    IF @AssignTripId IS NOT NULL
     BEGIN
         INSERT INTO [payment] (passengerTicketId, cargoTicketId, amount, paymentMethod, transactionId, [status], paymentTime)
         VALUES (
@@ -741,36 +964,162 @@ BEGIN
             CASE WHEN @CargoIdx % 4 = 0 THEN 'BANK_TRANSFER' ELSE 'CASH' END,
             'TXN_C_' + CAST(@CargoIdx AS VARCHAR(5)), 'COMPLETED', GETDATE()
         );
-    END;
+        SET @CargoAssigned = @CargoAssigned + 1;
+    END
+    ELSE IF @FeePayer = 'SENDER' AND (@CargoIdx % 4 = 0)
+    BEGIN
+        INSERT INTO [payment] (passengerTicketId, cargoTicketId, amount, paymentMethod, transactionId, [status], paymentTime)
+        VALUES (
+            NULL, @NewCargoId, @CalculatedCargoPrice, 'CASH',
+            'TXN_C_WAIT_' + CAST(@CargoIdx AS VARCHAR(5)), 'COMPLETED', GETDATE()
+        );
+    END
 
+    SET @CargoCreated = @CargoCreated + 1;
     SET @CargoIdx = @CargoIdx + 1;
 END;
 
+PRINT N' -> Cargo tạo: ' + CAST(@CargoCreated AS VARCHAR(10)) + N', đã gán chuyến: ' + CAST(@CargoAssigned AS VARCHAR(10));
+
 -- ============================================================================
--- LEVEL 6: SEAT LAYOUT JSON
+-- LEVEL 5.3: LIFECYCLE SAMPLES (in-progress, incident, cargo flow, check-in, refund)
 -- ============================================================================
-PRINT N'-> Đồng bộ seatLayout JSON...';
+PRINT N'-> Gắn sample lifecycle vận hành...';
 
-UPDATE [coach_type]
-SET [seatLayout] = '{"totalFloors":2,"rows":5,"cols":2,"floors":[
-    [["SEAT","SEAT"],["SEAT","SEAT"],["SEAT","SEAT"],["SEAT","SEAT"],["SEAT","SEAT"]],
-    [["SEAT","SEAT"],["SEAT","SEAT"],["SEAT","SEAT"],["SEAT","SEAT"],["SEAT","SEAT"]]
-]}'
-WHERE [coachTypeId] = 1;
+DECLARE @LifeTripId INT;
+DECLARE @LifeCoachId INT;
+DECLARE @LifeDriverId INT;
+DECLARE @LifeAttendantId INT;
+DECLARE @PastTripId INT;
+DECLARE @CancelTicketId INT;
+DECLARE @CancelPaymentId INT;
+DECLARE @CancelDetailId INT;
+DECLARE @CheckedTripId INT;
+DECLARE @IncidentTripId INT;
+DECLARE @IncidentCoachId INT;
 
-UPDATE [coach_type]
-SET [seatLayout] = '{"totalFloors":2,"rows":6,"cols":3,"floors":[
-    [["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["EMPTY","SEAT","EMPTY"]],
-    [["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["EMPTY","SEAT","EMPTY"]]
-]}'
-WHERE [coachTypeId] = 2;
+SELECT TOP 1 @LifeTripId = t.tripId, @LifeCoachId = t.coachId, @LifeDriverId = t.driverId, @LifeAttendantId = t.attendantId
+FROM [trip] t
+WHERE t.[status] = 'SCHEDULED'
+  AND t.departureTime <= DATEADD(hour, 2, GETDATE())
+  AND t.departureTime >= DATEADD(hour, -6, GETDATE())
+ORDER BY ABS(DATEDIFF(minute, t.departureTime, GETDATE()));
 
-UPDATE [coach_type]
-SET [seatLayout] = '{"totalFloors":2,"rows":7,"cols":3,"floors":[
-    [["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["EMPTY","SEAT","EMPTY"]],
-    [["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["SEAT","SEAT","SEAT"],["EMPTY","SEAT","EMPTY"]]
-]}'
-WHERE [coachTypeId] = 3;
+IF @LifeTripId IS NULL
+BEGIN
+    SELECT TOP 1 @LifeTripId = t.tripId, @LifeCoachId = t.coachId, @LifeDriverId = t.driverId, @LifeAttendantId = t.attendantId
+    FROM [trip] t
+    WHERE t.[status] = 'SCHEDULED'
+    ORDER BY ABS(DATEDIFF(minute, t.departureTime, GETDATE()));
+END
+
+IF @LifeTripId IS NOT NULL
+BEGIN
+    UPDATE [trip] SET [status] = 'IN_PROGRESS'
+    WHERE tripId = @LifeTripId;
+
+    UPDATE ptd
+    SET [status] = 'CHECKED_IN'
+    FROM [passenger_ticket_detail] ptd
+    JOIN [passenger_ticket] pt ON pt.passengerTicketId = ptd.passengerTicketId
+    WHERE pt.tripId = @LifeTripId AND pt.[status] = 'CONFIRMED' AND ptd.[status] = 'CONFIRMED';
+
+    UPDATE TOP (3) ct
+    SET [status] = 'LOADED', loadedBy = @LifeAttendantId
+    FROM [cargo_ticket] ct
+    WHERE ct.tripId = @LifeTripId AND ct.[status] = 'RECEIVED';
+
+    SET @CheckedTripId = @LifeTripId;
+END
+
+SELECT TOP 1 @PastTripId = t.tripId
+FROM [trip] t
+WHERE t.[status] = 'SCHEDULED'
+  AND t.departureTime < DATEADD(day, -1, GETDATE())
+  AND (@LifeTripId IS NULL OR t.tripId <> @LifeTripId)
+ORDER BY t.departureTime DESC;
+
+IF @PastTripId IS NOT NULL
+BEGIN
+    UPDATE [trip] SET [status] = 'COMPLETED' WHERE tripId = @PastTripId;
+
+    UPDATE ct
+    SET [status] = 'DELIVERED',
+        loadedBy = ISNULL(loadedBy, @TicketStaffId),
+        unloadedBy = @TicketStaffId,
+        deliveredBy = @TicketStaffId
+    FROM [cargo_ticket] ct
+    WHERE ct.tripId = @PastTripId AND ct.[status] IN ('RECEIVED', 'LOADED', 'ARRIVED');
+END
+
+SELECT TOP 1 @IncidentTripId = t.tripId, @IncidentCoachId = t.coachId
+FROM [trip] t
+WHERE t.[status] = 'SCHEDULED'
+  AND t.departureTime BETWEEN DATEADD(hour, -3, GETDATE()) AND DATEADD(hour, 6, GETDATE())
+  AND (@LifeTripId IS NULL OR t.tripId <> @LifeTripId)
+ORDER BY t.departureTime;
+
+IF @IncidentTripId IS NOT NULL
+BEGIN
+    UPDATE [trip]
+    SET [status] = 'IN_PROGRESS'
+    WHERE tripId = @IncidentTripId;
+
+    UPDATE [coach] SET [status] = 'HAVE_INCIDENT' WHERE coachId = @IncidentCoachId;
+
+    INSERT INTO [coach_status_log] (coachId, fromStatus, toStatus, reason, createdAt, createdBy)
+    VALUES (
+        @IncidentCoachId, 'ACTIVE', 'HAVE_INCIDENT',
+        N'Xe gặp sự cố không thể khắc phục trong chuyến #' + CAST(@IncidentTripId AS NVARCHAR(20)),
+        GETDATE(), @LifeDriverId
+    );
+END
+
+SELECT TOP 1
+    @CancelTicketId = pt.passengerTicketId,
+    @CancelPaymentId = p.paymentId,
+    @CancelDetailId = ptd.ticketDetailId
+FROM [passenger_ticket] pt
+JOIN [passenger_ticket_detail] ptd ON ptd.passengerTicketId = pt.passengerTicketId
+JOIN [payment] p ON p.passengerTicketId = pt.passengerTicketId
+WHERE pt.[status] = 'CONFIRMED'
+  AND p.[status] = 'COMPLETED'
+  AND ptd.[status] = 'CONFIRMED'
+  AND (@CheckedTripId IS NULL OR pt.tripId <> @CheckedTripId)
+  AND (@IncidentTripId IS NULL OR pt.tripId <> @IncidentTripId)
+ORDER BY pt.passengerTicketId;
+
+IF @CancelTicketId IS NOT NULL
+BEGIN
+    UPDATE [passenger_ticket] SET [status] = 'CANCELLED', majorChangeType = 'CANCEL_PARTIAL' WHERE passengerTicketId = @CancelTicketId;
+    UPDATE [passenger_ticket_detail] SET [status] = 'CANCELLED' WHERE passengerTicketId = @CancelTicketId;
+    UPDATE ts SET [status] = 'AVAILABLE'
+    FROM [trip_seat] ts
+    JOIN [passenger_ticket_detail] ptd ON ptd.tripSeatId = ts.tripSeatId
+    WHERE ptd.passengerTicketId = @CancelTicketId;
+
+    UPDATE [payment]
+    SET refundAmount = amount * 0.70
+    WHERE paymentId = @CancelPaymentId;
+
+    INSERT INTO [refund] (paymentId, amount, reason, refundMethod, transactionId, [status], refundTime)
+    VALUES (
+        @CancelPaymentId,
+        (SELECT amount * 0.70 FROM [payment] WHERE paymentId = @CancelPaymentId),
+        N'Khách hủy vé trước giờ khởi hành (seed)',
+        'SEPAY',
+        'RFND_' + CAST(@CancelTicketId AS VARCHAR(20)),
+        'COMPLETED',
+        GETDATE()
+    );
+END
+
+INSERT INTO [accompanied_child] (ticketDetailId, [fullname], birthYear)
+SELECT TOP 1 ptd.ticketDetailId, N'Em Bé Đi Kèm', YEAR(GETDATE()) - 5
+FROM [passenger_ticket_detail] ptd
+JOIN [passenger_ticket] pt ON pt.passengerTicketId = ptd.passengerTicketId
+WHERE pt.[status] = 'CONFIRMED' AND ptd.[status] IN ('CONFIRMED', 'CHECKED_IN')
+  AND NOT EXISTS (SELECT 1 FROM [accompanied_child] ac WHERE ac.ticketDetailId = ptd.ticketDetailId);
 
 PRINT N'=== SEED fakedata1 HOÀN TẤT ===';
 GO
@@ -785,8 +1134,12 @@ SELECT ct.cargoTypeName, ctp.unit, ctp.pricePerUnit
 FROM [cargo_type] ct
 JOIN [cargo_type_price] ctp ON ct.cargoTypeId = ctp.cargoTypeId;
 SELECT COUNT(*) AS agencies, (SELECT COUNT(*) FROM coach_stop) AS stops FROM [ticket_agency];
-
-
+SELECT [status], COUNT(*) AS trips FROM [trip] GROUP BY [status];
+SELECT [status], COUNT(*) AS coaches FROM [coach] GROUP BY [status];
+SELECT CASE WHEN tripId IS NULL THEN 'UNASSIGNED' ELSE 'ASSIGNED' END AS cargoAssign, COUNT(*) AS cnt
+FROM [cargo_ticket] GROUP BY CASE WHEN tripId IS NULL THEN 'UNASSIGNED' ELSE 'ASSIGNED' END;
+SELECT COUNT(*) AS refunds FROM [refund];
+SELECT COUNT(*) AS kids FROM [accompanied_child];
 
 -- RECHECK QUERY AFTER SEED
 SELECT * FROM [account];
