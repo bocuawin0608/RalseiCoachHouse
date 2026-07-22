@@ -125,6 +125,29 @@ export default function CoachCreateModal({isOpen, onClose, onSuccess}) {
                 <Form id="create-coach-form" onSubmit={handleSubmit}>
                     <Form.Group className="mb-4">
                         <Form.Label className="fw-semibold text-secondary">
+                            Loại xe <span className="text-danger">*</span>
+                        </Form.Label>
+                        <Form.Select
+                            value={formData.coachTypeId}
+                            name="coachTypeId"
+                            onChange={handleInputChange}
+                            required
+                            disabled={isDropdownLoading}
+                            isInvalid={!!fieldErrors.coachTypeId}
+                            className="py-2"
+                        >
+                            <option value="">-- Chọn loại xe --</option>
+                            {coachTypes.map(ct => (
+                                <option key={ct.coachTypeId} value={ct.coachTypeId}>{ct.coachTypeName}</option>
+                            ))}
+                        </Form.Select>
+                        <Form.Control.Feedback type="invalid">
+                            {fieldErrors.coachTypeId}
+                        </Form.Control.Feedback>
+                    </Form.Group>
+
+                    <Form.Group className="mb-4">
+                        <Form.Label className="fw-semibold text-secondary">
                             Biển số xe <span className="text-danger">*</span>
                         </Form.Label>
                         <Form.Control 
@@ -183,46 +206,22 @@ export default function CoachCreateModal({isOpen, onClose, onSuccess}) {
                             </Form.Control.Feedback>
                         </Form.Group>
                     </div>
-                    
-                    <div className="d-flex gap-3">
-                        <Form.Group className="mb-4 flex-fill">
-                            <Form.Label className="fw-semibold text-secondary">
-                                Loại xe <span className="text-danger">*</span>
-                            </Form.Label>
-                            <Form.Select
-                                value={formData.coachTypeId}
-                                name="coachTypeId"
-                                onChange={handleInputChange}
-                                required
-                                disabled={isDropdownLoading}
-                                isInvalid={!!fieldErrors.coachTypeId}
-                                className="py-2"
-                            >
-                                <option value="">-- Chọn loại xe --</option>
-                                {coachTypes.map(ct => (
-                                    <option key={ct.coachTypeId} value={ct.coachTypeId}>{ct.coachTypeName}</option>
-                                ))}
-                            </Form.Select>
-                            <Form.Control.Feedback type="invalid">
-                                {fieldErrors.coachTypeId}
-                            </Form.Control.Feedback>
-                        </Form.Group>
-                        <Form.Group className="mb-4 flex-fill">
-                            <Form.Label className="fw-semibold text-secondary">
-                                Tuyến (tùy chọn)
-                            </Form.Label>
-                            <Form.Select
-                                value={formData.routeId}
-                                name="routeId"
-                                onChange={handleInputChange}
-                                disabled={isDropdownLoading}
-                                className="py-2"
-                            >
-                                <option value="">-- Chọn tuyến xe --</option>
-                                {routes.map(r => <option key={r.routeId} value={r.routeId}>{r.routeName}</option>)}
-                            </Form.Select>
-                        </Form.Group>
-                    </div>
+
+                    <Form.Group className="mb-4">
+                        <Form.Label className="fw-semibold text-secondary">
+                            Tuyến (tùy chọn)
+                        </Form.Label>
+                        <Form.Select
+                            value={formData.routeId}
+                            name="routeId"
+                            onChange={handleInputChange}
+                            disabled={isDropdownLoading}
+                            className="py-2"
+                        >
+                            <option value="">-- Chọn tuyến xe --</option>
+                            {routes.map(r => <option key={r.routeId} value={r.routeId}>{r.routeName}</option>)}
+                        </Form.Select>
+                    </Form.Group>
 
                     {error && <Alert variant='danger' className="mb-3 py-2 px-3 border-0 d-flex align-items-center gap-2">
                         <BsExclamationTriangleFill />
