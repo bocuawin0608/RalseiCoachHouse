@@ -8,8 +8,9 @@ import { useCoachTypeDropdown } from '../../../hooks/useCoachTypeDropdown';
 
 const statusLabels = {
     ACTIVE: { text: 'Đang hoạt động', bg: 'success' },
+    HAVE_INCIDENT: { text: 'Gặp sự cố', bg: 'danger' },
     MAINTENANCE: { text: 'Đang bảo trì', bg: 'warning' },
-    RETIRED: { text: 'Ngừng hoạt động', bg: 'danger' }
+    RETIRED: { text: 'Ngừng hoạt động', bg: 'secondary' }
 };
 
 export default function CoachPage() {
