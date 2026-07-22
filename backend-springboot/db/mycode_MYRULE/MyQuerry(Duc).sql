@@ -784,7 +784,8 @@ USE VeXeDB;
 
 SELECT *
 FROM Account a JOIN Account_Role ar ON a.accountId = ar.accountId JOIN Role r on ar.roleId = r.roleId JOIN Staff s on s.accountId = a.accountId
-
+JOIN Ticket_Agency ta on ta.ticketAgencyId = s.ticketAgencyId
+WHERE r.roleName = 'TICKET_STAFF' AND s.staffPosition = 'TICKET_STAFF' AND ta.ticketAgencyId = 1
 use VeXeDB;
 SELECT *
 FROM Voucher

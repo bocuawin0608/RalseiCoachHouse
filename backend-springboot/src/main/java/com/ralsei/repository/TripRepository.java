@@ -27,6 +27,7 @@ import com.ralsei.dto.projection.trip.TripResourceProjection;
 import com.ralsei.dto.projection.trip.TripStopProjection;
 import com.ralsei.dto.projection.trip.TripSummaryProjection;
 import com.ralsei.model.Trip;
+import com.ralsei.model.enums.CoachStatus;
 
 import jakarta.transaction.Transactional;
 
@@ -41,6 +42,20 @@ import jakarta.transaction.Transactional;
  * Provides persistence access for trip data.
  */
 public interface TripRepository extends JpaRepository<Trip, Integer> {
+
+    @Query("""
+            SELECT t FROM Trip t
+            JOIN FETCH t.route
+            JOIN FETCH t.coach c
+            WHERE c.status = :coachStatus
+              AND t.departureTime >= :start
+              AND t.departureTime < :end
+            ORDER BY t.departureTime, t.tripId
+            """)
+    List<Trip> findIncidentTrips(
+            @Param("coachStatus") CoachStatus coachStatus,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
 
     /**
      * Lists only coaches that have unloaded at least one order which still
@@ -618,7 +633,9 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
                 CAST(t.departureTime AS DATE) AS departureDate,
                 CAST(t.departureTime AS TIME) AS departureTime,
                 COALESCE(seat_counts.availableSeats, 0) AS availableSeats,
-                COALESCE(seat_counts.totalSeats, 0) AS totalSeats
+                COALESCE(seat_counts.totalSeats, 0) AS totalSeats,
+                CAST(COALESCE(cargo_load.usedCargoVolume, 0) AS DECIMAL(12,3)) AS usedCargoVolume,
+                CAST(2.50 AS DECIMAL(12,3)) AS cargoCapacity
             FROM trip t
             LEFT JOIN route r ON t.routeId = r.routeId
             LEFT JOIN coach c ON t.coachId = c.coachId
@@ -635,30 +652,37 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
                 WHERE s.isActive = 1
                 GROUP BY ts.tripId
             ) seat_counts ON seat_counts.tripId = t.tripId
+            OUTER APPLY (
+                SELECT SUM(ctd.dimensionVol * ctd.quantity) AS usedCargoVolume
+                FROM cargo_ticket cargo
+                JOIN cargo_ticket_detail ctd ON ctd.cargoTicketId = cargo.cargoTicketId
+                WHERE cargo.tripId = t.tripId
+                  AND cargo.[status] NOT IN ('CANCELLED', 'REJECTED', 'ABANDONED')
+            ) cargo_load
             WHERE CAST(t.departureTime AS DATE) = :departureDate
-              AND t.departureTime >= :currentTime
-              AND t.[status] NOT IN ('CANCELED', 'CANCELLED')
               AND (:routeId IS NULL OR t.routeId = :routeId)
+              AND (:status IS NULL OR t.[status] = :status)
               AND (:period IS NULL
                    OR (:period = 'MORNING' AND CAST(t.departureTime AS TIME) < '12:00:00')
                    OR (:period = 'EVENING' AND CAST(t.departureTime AS TIME) >= '12:00:00'))
-            ORDER BY t.departureTime ASC
+            ORDER BY CASE WHEN c.[status] = 'HAVE_INCIDENT' THEN 0 ELSE 1 END,
+                     t.departureTime ASC,
+                     t.tripId ASC
             """, countQuery = """
             SELECT COUNT(*)
             FROM trip t
             WHERE CAST(t.departureTime AS DATE) = :departureDate
-              AND t.departureTime >= :currentTime
-              AND t.[status] NOT IN ('CANCELED', 'CANCELLED')
               AND (:routeId IS NULL OR t.routeId = :routeId)
+              AND (:status IS NULL OR t.[status] = :status)
               AND (:period IS NULL
                    OR (:period = 'MORNING' AND CAST(t.departureTime AS TIME) < '12:00:00')
                    OR (:period = 'EVENING' AND CAST(t.departureTime AS TIME) >= '12:00:00'))
             """, nativeQuery = true)
     Page<TripSummaryProjection> viewAllTripSummaries(
             @Param("departureDate") String departureDate,
-            @Param("currentTime") LocalDateTime currentTime,
             @Param("routeId") Integer routeId,
             @Param("period") String period,
+            @Param("status") String status,
             Pageable pageable);
 
     /**
@@ -807,6 +831,35 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             @Param("excludeTripId") Integer excludeTripId);
 
     /**
+     * Incident dispatch is not constrained by the coach's normal route. Every
+     * active, conflict-free vehicle with enough seats is a valid rescue coach.
+     */
+    @Query(value = """
+            SELECT c.coachId AS id, c.licensePlate AS displayName,
+                   CONCAT(c.manufacturer, ' - ', ct.coachTypeName, ' - ',
+                          (SELECT COUNT(*) FROM seat capacity
+                           WHERE capacity.coachId = c.coachId AND capacity.isActive = 1), N' chỗ') AS secondaryText
+            FROM coach c
+            JOIN coach_type ct ON ct.coachTypeId = c.coachTypeId
+            WHERE c.[status] = 'ACTIVE'
+              AND (SELECT COUNT(*) FROM seat capacity
+                   WHERE capacity.coachId = c.coachId AND capacity.isActive = 1) >= :requiredSeats
+              AND NOT EXISTS (
+                  SELECT 1 FROM trip busy
+                  WHERE busy.coachId = c.coachId
+                    AND busy.tripId <> :excludeTripId
+                    AND busy.[status] NOT IN ('CANCELED', 'CANCELLED')
+                    AND busy.departureTime < DATEADD(MINUTE, 432, :departureTime)
+                    AND DATEADD(MINUTE, 432, busy.departureTime) > :departureTime
+              )
+            ORDER BY c.licensePlate
+            """, nativeQuery = true)
+    List<TripResourceProjection> findIncidentReplacementCoaches(
+            @Param("departureTime") LocalDateTime departureTime,
+            @Param("excludeTripId") Integer excludeTripId,
+            @Param("requiredSeats") Integer requiredSeats);
+
+    /**
      * Finds active trip staff in the requested position with no overlapping trip.
      */
     @Query(value = """
@@ -828,6 +881,75 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             @Param("position") String position,
             @Param("departureTime") LocalDateTime departureTime,
             @Param("excludeTripId") Integer excludeTripId);
+
+    /** Counts every passenger who still belongs to the operational manifest. */
+    @Query(value = """
+            SELECT CAST(COUNT(*) AS INT)
+            FROM passenger_ticket ticket
+            JOIN passenger_ticket_detail detail
+              ON detail.passengerTicketId = ticket.passengerTicketId
+            WHERE ticket.tripId = :tripId
+              AND ticket.[status] <> 'CANCELLED'
+              AND detail.[status] IN ('PENDING', 'CONFIRMED', 'CHECKED_IN')
+            """, nativeQuery = true)
+    Integer countIncidentManifestPassengers(@Param("tripId") Integer tripId);
+
+    /**
+     * A replacement route must still contain every passenger and cargo leg in
+     * the same direction. Otherwise keeping the old manifest would be corrupt.
+     */
+    @Query(value = """
+            SELECT CAST(COUNT(*) AS INT)
+            FROM (
+                SELECT ticket.pickupStopId, ticket.dropoffStopId
+                FROM passenger_ticket ticket
+                WHERE ticket.tripId = :tripId
+                  AND ticket.[status] <> 'CANCELLED'
+                UNION ALL
+                SELECT cargo.pickupStopId, cargo.dropoffStopId
+                FROM cargo_ticket cargo
+                WHERE cargo.tripId = :tripId
+                  AND cargo.[status] NOT IN ('CANCELLED', 'REJECTED', 'ABANDONED')
+            ) manifest
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM route_stop pickup
+                JOIN route_stop dropoff
+                  ON dropoff.routeId = pickup.routeId
+                 AND dropoff.stopOrder > pickup.stopOrder
+                WHERE pickup.routeId = :routeId
+                  AND pickup.stopPointId = manifest.pickupStopId
+                  AND dropoff.stopPointId = manifest.dropoffStopId
+            )
+            """, nativeQuery = true)
+    Integer countManifestItemsOutsideRoute(
+            @Param("tripId") Integer tripId,
+            @Param("routeId") Integer routeId);
+
+    /** Resumes the same trip so its passenger and cargo manifests remain attached. */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = """
+            UPDATE trip
+            SET routeId = :routeId,
+                coachId = :coachId,
+                driverId = :driverId,
+                departureTime = :departureTime,
+                [status] = 'IN_PROGRESS',
+                updatedAt = GETDATE()
+            WHERE tripId = :tripId
+              AND [status] = 'IN_PROGRESS'
+              AND EXISTS (
+                  SELECT 1 FROM coach broken
+                  WHERE broken.coachId = trip.coachId
+                    AND broken.[status] = 'HAVE_INCIDENT'
+              )
+            """, nativeQuery = true)
+    int dispatchIncidentReplacement(
+            @Param("tripId") Integer tripId,
+            @Param("routeId") Integer routeId,
+            @Param("coachId") Integer coachId,
+            @Param("driverId") Integer driverId,
+            @Param("departureTime") LocalDateTime departureTime);
 
     /**
      * Counts available seats for one concrete trip from its trip_seat snapshot.

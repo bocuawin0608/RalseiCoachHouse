@@ -28,6 +28,7 @@ public interface TripStaffRepository extends JpaRepository<Trip, Integer> {
                 c.licensePlate AS licensePlate,
                 ct.coachTypeName AS coachTypeName,
                 t.[status] AS tripStatus,
+                c.[status] AS coachStatus,
                 CASE WHEN t.driverId = :staffId THEN 'DRIVER' ELSE 'ATTENDANT' END AS assignedRole,
                 (SELECT COUNT(*)
                  FROM passenger_ticket pt

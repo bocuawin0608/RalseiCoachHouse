@@ -6,9 +6,11 @@ import com.ralsei.dto.projection.trip.StaffTripInfoProjection;
 import com.ralsei.dto.projection.trip.TripDetailProjection;
 import com.ralsei.dto.projection.trip.TripFilterProjection;
 import com.ralsei.dto.projection.trip.TripSummaryProjection;
+import com.ralsei.dto.response.trip.ManagerTripIncidentResponse;
 import com.ralsei.dto.projection.trip.TripStopProjection;
 import com.ralsei.dto.projection.trip.TripResourceProjection;
 import com.ralsei.dto.request.trip.TripCreateRequest;
+import com.ralsei.dto.request.trip.TripIncidentReplacementRequest;
 import com.ralsei.dto.request.trip.TripUpdateRequest;
 import com.ralsei.dto.response.PagedResponse;
 import com.ralsei.dto.response.CoachAndRouteStop.RouteDropdownDTO;
@@ -61,7 +63,9 @@ public interface TripService {
                         int size);
 
         /** Returns staff trip summaries using user-facing date, route and period filters. */
-        PagedResponse<TripSummaryProjection> getAllTripSummaries(LocalDate date, Integer routeId, String period, int page, int size);
+        PagedResponse<TripSummaryProjection> getAllTripSummaries(LocalDate date, Integer routeId, String period, String status, int page, int size);
+
+        List<ManagerTripIncidentResponse> getManagerTripIncidents(LocalDate date);
 
         /**
          * Returns upcoming trip information for ticket staff.
@@ -98,6 +102,15 @@ public interface TripService {
 
         /** Returns attendants that can serve the requested trip window. */
         List<TripResourceProjection> getAvailableAttendants(LocalDateTime departureTime, Integer excludeTripId);
+
+        /** Returns active coaches free now and large enough for the incident manifest. */
+        List<TripResourceProjection> getIncidentReplacementCoaches(Integer tripId, Integer routeId);
+
+        /** Returns drivers free at the time an incident replacement would depart. */
+        List<TripResourceProjection> getIncidentReplacementDrivers(Integer tripId);
+
+        /** Atomically dispatches the selected replacement and resumes the existing trip. */
+        String replaceIncidentTrip(Integer tripId, TripIncidentReplacementRequest request);
 
         /**
          * Loads the ordered route timeline for a concrete customer trip.

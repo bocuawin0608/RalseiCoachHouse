@@ -116,6 +116,14 @@ public class TripStaffController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/{tripId}/incident")
+    public ResponseEntity<Void> reportUnrecoverableIncident(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @PathVariable @Min(value = 1, message = "ID chuyến phải lớn hơn 0.") Integer tripId) {
+        tripStaffPassengerService.reportUnrecoverableIncident(authorizationHeader, tripId);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/{tripId}/passengers/{ticketDetailId}/no-show")
     public ResponseEntity<Void> markNoShow(
             @RequestHeader("Authorization") String authorizationHeader,

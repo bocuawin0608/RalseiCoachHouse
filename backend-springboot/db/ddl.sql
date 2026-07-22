@@ -310,7 +310,7 @@ CREATE TABLE [coach] (
     FOREIGN KEY ([coachTypeId]) REFERENCES [coach_type] ([coachTypeId]),
     FOREIGN KEY ([routeId]) REFERENCES [route] ([routeId]),
 
-	CONSTRAINT CK_Coach_Status CHECK ([status] IN ('ACTIVE', 'MAINTENANCE', 'RETIRED'))
+	CONSTRAINT CK_Coach_Status CHECK ([status] IN ('ACTIVE', 'HAVE_INCIDENT', 'MAINTENANCE', 'RETIRED'))
 );
 
 CREATE TABLE [coach_status_log] (
@@ -323,7 +323,7 @@ CREATE TABLE [coach_status_log] (
     [createdAt] DATETIME DEFAULT GETDATE(),
     [createdBy] INT NULL,
     FOREIGN KEY ([coachId]) REFERENCES [coach]([coachId]),
-    CONSTRAINT CK_CoachStatusLog_ToStatus CHECK ([toStatus] IN ('ACTIVE', 'MAINTENANCE', 'RETIRED'))
+    CONSTRAINT CK_CoachStatusLog_ToStatus CHECK ([toStatus] IN ('ACTIVE', 'HAVE_INCIDENT', 'MAINTENANCE', 'RETIRED'))
 );
 
 CREATE TABLE [seat] (
