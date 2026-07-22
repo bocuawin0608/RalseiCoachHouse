@@ -1,32 +1,73 @@
-.trip-page-header {
-    display: flex;
-    justify-content: space-between;
+:root {
+    --trip-green: #2f7553;
+    --trip-green-dark: #173d2d;
+    --trip-green-soft: #eaf4ee;
+    --trip-ink: #1f2b25;
+    --trip-muted: #68766e;
+    --trip-line: #dce6df;
+}
+
+.trip-page-shell { max-width: 1420px; margin: 0 auto; padding: 32px; color: var(--trip-ink); }
+.trip-page-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.trip-page-create { display: inline-flex; align-items: center; gap: 8px; min-height: 39px; padding-inline: 14px; font-size: .84rem; }
+.trip-page-heading { margin-bottom: 20px; }
+.trip-page-eyebrow { margin: 0 0 6px; color: var(--trip-green); font-size: .78rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+.trip-page-heading h1 { margin: 0 0 8px; font-size: clamp(1.75rem, 3vw, 2.35rem); font-weight: 750; }
+.trip-page-heading > p:last-of-type { max-width: 760px; margin: 0; color: var(--trip-muted); }
+.trip-context-row { display: flex; align-items: stretch; justify-content: space-between; gap: 16px; margin-top: 16px; }
+.trip-date-context, .trip-current-time { display: inline-flex; align-items: center; gap: 12px; padding: 11px 15px; border-radius: 12px; color: var(--trip-green-dark); }
+.trip-date-context { border: 1px solid #cfe1d5; background: rgba(234, 244, 238, .9); }
+.trip-current-time { min-width: 265px; justify-content: flex-end; border: 1px solid var(--trip-line); background: rgba(255, 255, 255, .9); text-align: right; }
+.trip-date-context > svg, .trip-current-time > svg { flex: 0 0 auto; color: var(--trip-green); font-size: 1.3rem; }
+.trip-date-context > span, .trip-current-time > span { display: grid; grid-template-columns: auto auto; align-items: baseline; gap: 2px 10px; }
+.trip-date-context small, .trip-current-time small { grid-column: 1 / -1; color: var(--trip-green); font-size: .68rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.trip-date-context strong, .trip-current-time strong { font-size: .95rem; font-variant-numeric: tabular-nums; text-transform: capitalize; }
+.trip-date-context em, .trip-current-time em { color: var(--trip-muted); font-size: .78rem; font-style: normal; text-transform: capitalize; }
+
+.trip-overview { position: relative; display: grid; grid-template-columns: repeat(3, minmax(150px, 1fr)); margin-bottom: 14px; overflow: hidden; border: 1px solid var(--trip-line); border-radius: 12px; background: rgba(255,255,255,.92); box-shadow: 0 6px 20px rgba(23,61,45,.05); }
+.trip-overview > div { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 60px; padding: 9px 16px; border-right: 1px solid var(--trip-line); }
+.trip-overview > div:nth-child(3) { border-right: 0; }
+.trip-overview i { display: grid; width: 32px; height: 32px; flex: 0 0 auto; place-items: center; border-radius: 9px; font-style: normal; }
+.trip-overview i.is-green { color: #287451; background: #e8f4ee; }
+.trip-overview i.is-amber { color: #a5680f; background: #fff2dc; }
+.trip-overview i.is-red { color: #b44850; background: #fbeaec; }
+.trip-overview span { display: flex; flex-direction: column; }
+.trip-overview strong { font-size: 1rem; line-height: 1.05; }
+.trip-overview span small { margin-top: 2px; color: var(--trip-muted); font-size: .68rem; }
+.trip-overview-scope { position: absolute; right: 8px; bottom: 3px; color: #99a59f; font-size: .58rem; }
+.trip-manager-emergency {
+    display: grid;
+    grid-template-columns: auto 1fr;
     align-items: center;
-    margin-bottom: 1.5rem;
+    gap: 2px 10px;
+    margin-bottom: 14px;
+    padding: 13px 16px;
+    border: 2px solid #b91c1c;
+    border-radius: 12px;
+    background:
+        linear-gradient(rgba(254, 226, 226, .9), rgba(255, 241, 242, .94)),
+        url('/images/incident_wallpaper.jpg') center 56% / cover;
+    color: #991b1b;
+    box-shadow: 0 8px 25px rgba(127, 29, 29, .18);
 }
-
-.trip-page-title {
-    margin: 0;
-    font-weight: 700;
-    color: #212529;
-}
-
-.trip-page-card {
-    border: 0;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-}
-
-.trip-page-card-body {
-    padding: 0;
-}
-
-.trip-page-pagination {
-    display: flex;
-    justify-content: center;
-    padding: 1.5rem 0;
-    background-color: #fff;
-    border-top: 1px solid #dee2e6;
-}
-
+.trip-manager-emergency > svg { grid-row: 1 / 3; font-size: 1.55rem; }
+.trip-manager-emergency strong { font-size: .84rem; }
+.trip-manager-emergency span { color: #713131; font-size: .72rem; }
+.trip-page-pagination { display: flex; justify-content: center; padding: 12px 0 0; }
+.trip-page-pagination .mt-4 { margin-top: .5rem !important; }
 .trip-delete-detail { padding: .75rem; border-radius: .5rem; background: #f3f6f5; color: #18392d; }
 .trip-delete-warning { margin-bottom: 0; color: #9b2c2c; font-size: .925rem; }
+
+@media (max-width: 800px) {
+    .trip-page-shell { padding: 20px 14px; }
+    .trip-context-row { flex-direction: column; }
+    .trip-current-time { min-width: 0; justify-content: flex-start; text-align: left; }
+}
+@media (max-width: 560px) {
+    .trip-page-toolbar { margin-bottom: 20px; }
+    .trip-overview { grid-template-columns: 1fr; }
+    .trip-overview > div { justify-content: flex-start; border-right: 0; border-bottom: 1px solid var(--trip-line); }
+    .trip-overview > div:nth-child(3) { border-bottom: 0; }
+    .trip-overview-scope { display: none; }
+    .trip-page-pagination .text-muted { display: none; }
+}

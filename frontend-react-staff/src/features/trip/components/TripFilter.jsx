@@ -1,75 +1,64 @@
-import { BsArrowClockwise } from 'react-icons/bs';
-import { Button, Card, Form } from 'react-bootstrap';
+import { BsArrowClockwise, BsCalendar3, BsFilter, BsSignpostSplit } from 'react-icons/bs';
 import './TripFilter.css';
 
-/**
- * Filter bar for the Trip list page.
- * Renders clear, user-facing date, direction and time-of-day controls.
- */
-export default function TripFilter({ filters, routes, onFilterChange, onReset }) {
-    const today = new Date().toLocaleDateString('en-CA');
+const STATUS_OPTIONS = [
+    ['', 'Tất cả'],
+    ['SCHEDULED', 'Đã lên lịch'],
+    ['IN_PROGRESS', 'Đang chạy'],
+    ['COMPLETED', 'Hoàn tất'],
+    ['CANCELLED', 'Đã hủy']
+];
 
-    /** Prevent manually typed past years from ever reaching the trips endpoint. */
-    const handleDateChange = (event) => {
-        const value = event.target.value;
-        onFilterChange({
-            target: { name: 'date', value: value && value < today ? today : value }
-        });
-    };
+export default function TripFilter({ filters, routes, onFilterChange, onReset }) {
+    const emit = (name, value) => onFilterChange({ target: { name, value } });
 
     return (
-        <Card className="trip-filter-card">
-            <Card.Body className="trip-filter-body">
-                <Form className="trip-filter-form">
+        <section className="trip-filter-panel" aria-label="Bộ lọc chuyến xe">
+            <div className="trip-filter-fields">
+                <label className="trip-filter-field">
+                    <span><BsCalendar3 /> Ngày vận hành</span>
+                    <input type="date" name="date" value={filters.date || ''} onChange={onFilterChange} />
+                </label>
 
-                    <div className="trip-filter-today">
-                        <span>Ngày:</span>
-                        <strong>{filters.date ? new Date(`${filters.date}T00:00:00`).toLocaleDateString('vi-VN') : ''}</strong>
-                    </div>
-
-                    {/* Date filter - maps to ?date= query param */}
-                    <Form.Control
-                        type="date"
-                        name="date"
-                        value={filters.date || ''}
-                        onChange={handleDateChange}
-                        min={today}
-                        className="trip-filter-input"
-                    />
-
-                    <div className="trip-filter-choice-group" aria-label="Chiều tuyến">
+                <label className="trip-filter-field trip-filter-field--route">
+                    <span><BsSignpostSplit /> Tuyến đường</span>
+                    <select name="routeId" value={filters.routeId || ''} onChange={onFilterChange}>
+                        <option value="">Tất cả tuyến đường</option>
                         {routes.map((route) => (
-                            <Button key={route.routeId} name="routeId" value={route.routeId} onClick={onFilterChange}
-                                variant={filters.routeId === String(route.routeId) ? 'success' : 'outline-success'}>
+                            <option key={route.routeId} value={route.routeId}>
                                 {route.routeName.replace(/\s*-\s*/, ' → ')}
-                            </Button>
+                            </option>
                         ))}
-                    </div>
+                    </select>
+                </label>
 
-                    <div className="trip-filter-choice-group" aria-label="Buổi khởi hành">
-                        <Button name="period" value="MORNING" onClick={onFilterChange}
-                            variant={filters.period === 'MORNING' ? 'success' : 'outline-success'}>
-                            Chuyến Sáng
-                        </Button>
-                        <Button name="period" value="EVENING" onClick={onFilterChange}
-                            variant={filters.period === 'EVENING' ? 'success' : 'outline-success'}>
-                            Chuyến tối
-                        </Button>
-                    </div>
+                <label className="trip-filter-field">
+                    <span><BsFilter /> Thời gian</span>
+                    <select name="period" value={filters.period || ''} onChange={onFilterChange}>
+                        <option value="">Cả ngày</option>
+                        <option value="MORNING">Buổi sáng</option>
+                        <option value="EVENING">Buổi chiều / tối</option>
+                    </select>
+                </label>
 
-                    {/* Reset all filters */}
-                    <Button
-                        variant="outline-secondary"
-                        onClick={onReset}
-                        size="lg"
-                        className="trip-filter-reset-btn"
-                        title="Làm mới bộ lọc"
+                <button type="button" className="trip-filter-reset" onClick={onReset} title="Đặt lại bộ lọc">
+                    <BsArrowClockwise />
+                    <span>Đặt lại</span>
+                </button>
+            </div>
+
+            <div className="trip-status-filters" aria-label="Lọc trạng thái">
+                {STATUS_OPTIONS.map(([value, label]) => (
+                    <button
+                        key={value || 'all'}
+                        type="button"
+                        className={filters.status === value ? 'is-active' : ''}
+                        onClick={() => emit('status', value)}
                     >
-                        <BsArrowClockwise size={18} />
-                    </Button>
-
-                </Form>
-            </Card.Body>
-        </Card>
+                        {label}
+                    </button>
+                ))}
+            </div>
+        </section>
     );
 }

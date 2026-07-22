@@ -2,6 +2,7 @@ package com.ralsei.dto.projection.trip;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.math.BigDecimal;
 
 /**
  * Read-only staff trip row containing display values plus identifiers required
@@ -47,4 +48,8 @@ public interface TripSummaryProjection {
     Integer getAvailableSeats(); 
 
     Integer getTotalSeats(); 
+
+    BigDecimal getUsedCargoVolume();
+
+    BigDecimal getCargoCapacity();
 }

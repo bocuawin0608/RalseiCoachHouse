@@ -8,6 +8,7 @@ import lombok.Getter;
  */
 public enum CoachStatus {
     ACTIVE("Đang hoạt động"),
+    HAVE_INCIDENT("Gặp sự cố không thể khắc phục"),
     MAINTENANCE("Đang bảo trì"),
     RETIRED("Ngừng hoạt động");
 

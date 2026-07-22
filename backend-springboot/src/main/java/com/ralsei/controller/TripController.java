@@ -23,9 +23,11 @@ import com.ralsei.dto.projection.trip.TripSummaryProjection;
 import com.ralsei.dto.projection.trip.TripStopProjection;
 import com.ralsei.dto.request.trip.TripCreateRequest;
 import com.ralsei.dto.request.trip.TripFilterRequest;
+import com.ralsei.dto.request.trip.TripIncidentReplacementRequest;
 import com.ralsei.dto.request.trip.TripSearchRequest;
 import com.ralsei.dto.request.trip.TripUpdateRequest;
 import com.ralsei.dto.response.PagedResponse;
+import com.ralsei.dto.response.trip.ManagerTripIncidentResponse;
 import com.ralsei.service.TripService;
 import java.util.List;
 import java.util.Map;
@@ -157,11 +159,43 @@ public class TripController {
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) Integer routeId,
             @RequestParam(required = false) String period,
+            @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
 
-        PagedResponse<TripSummaryProjection> response = tripService.getAllTripSummaries(date, routeId, period, page, size);
+        PagedResponse<TripSummaryProjection> response = tripService.getAllTripSummaries(date, routeId, period, status, page, size);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/manager/trips/incidents")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    public ResponseEntity<List<ManagerTripIncidentResponse>> getManagerTripIncidents(
+            @RequestParam(required = false)
+            @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE)
+            LocalDate date) {
+        return ResponseEntity.ok(tripService.getManagerTripIncidents(date));
+    }
+
+    @GetMapping("/manager/trips/{tripId}/replacement-coaches")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    public ResponseEntity<?> getIncidentReplacementCoaches(
+            @PathVariable Integer tripId,
+            @RequestParam Integer routeId) {
+        return ResponseEntity.ok(tripService.getIncidentReplacementCoaches(tripId, routeId));
+    }
+
+    @GetMapping("/manager/trips/{tripId}/replacement-drivers")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    public ResponseEntity<?> getIncidentReplacementDrivers(@PathVariable Integer tripId) {
+        return ResponseEntity.ok(tripService.getIncidentReplacementDrivers(tripId));
+    }
+
+    @PutMapping("/manager/trips/{tripId}/replace-incident-coach")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    public ResponseEntity<Map<String, String>> replaceIncidentCoach(
+            @PathVariable Integer tripId,
+            @Valid @RequestBody TripIncidentReplacementRequest request) {
+        return ResponseEntity.ok(Map.of("message", tripService.replaceIncidentTrip(tripId, request)));
     }
 
     /**

@@ -16,6 +16,7 @@ public record TripStaffSummaryResponse(
         String licensePlate,
         String coachTypeName,
         String tripStatus,
+        String coachStatus,
         String assignedRole,
         int checkedInCount,
         int totalPassengers

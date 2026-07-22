@@ -29,5 +29,7 @@ public interface TripStaffPassengerService {
 
     void endTrip(String authorizationHeader, Integer tripId);
 
+    void reportUnrecoverableIncident(String authorizationHeader, Integer tripId);
+
     void markNoShow(String authorizationHeader, Integer tripId, Integer ticketDetailId);
 }
