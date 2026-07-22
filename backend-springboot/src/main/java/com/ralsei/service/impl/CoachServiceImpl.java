@@ -268,8 +268,8 @@ public class CoachServiceImpl implements CoachService {
      */
     public void reportMaintenance(Integer id, CoachReportMaintenanceRequest request) {
         Coach coach = findCoachOrThrow(id);
-        if (coach.getStatus() != CoachStatus.ACTIVE) {
-            throw new BusinessRuleException("Chỉ xe đang hoạt động mới có thể báo bảo trì!");
+        if (coach.getStatus() != CoachStatus.ACTIVE && coach.getStatus() != CoachStatus.HAVE_INCIDENT) {
+            throw new BusinessRuleException("Chỉ xe đang hoạt động hoặc gặp sự cố mới có thể báo bảo trì!");
         }
         assertNoUpcomingTrips(id);
         changeStatus(coach, CoachStatus.MAINTENANCE, request.reason().trim(), request.expectedEndAt());
@@ -450,9 +450,11 @@ public class CoachServiceImpl implements CoachService {
             activeSeatCount,
             seats,
             latestLog,
-            status == CoachStatus.ACTIVE,
+            status == CoachStatus.ACTIVE || status == CoachStatus.HAVE_INCIDENT,
             status == CoachStatus.MAINTENANCE,
-            status == CoachStatus.ACTIVE || status == CoachStatus.MAINTENANCE
+            status == CoachStatus.ACTIVE
+                || status == CoachStatus.MAINTENANCE
+                || status == CoachStatus.HAVE_INCIDENT
         );
     }
 
