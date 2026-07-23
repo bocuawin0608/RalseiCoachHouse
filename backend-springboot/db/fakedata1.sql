@@ -5,7 +5,7 @@ SET NOCOUNT ON;
 PRINT N'=== BẮT ĐẦU SEED fakedata1 (BUSINESS-ALIGNED) ===';
 -- Trip density/rules align with sp_AutoGenerateWeeklySchedule_Final (Procedure.sql):
 -- 24 departures/day/direction, 720-min buffer, go-return route flip, 150 reserve coaches.
--- Cargo: volume <= 2.5 m3/trip, assigned trip requires payment; plus lifecycle samples.
+-- Cargo orders (cargo_ticket) are intentionally not seeded — create via app flows.
 
 -- ============================================================================
 -- CLEANUP (FK-safe order)
@@ -845,151 +845,13 @@ END;
 PRINT N' -> Vé HK tạo được: ' + CAST(@PassengerCreated AS VARCHAR(10));
 
 -- ============================================================================
--- LEVEL 5.2: CARGO TICKETS (FreightCalculatorUtility-aligned + capacity/payment rules)
--- Formula: unitPrice = ROUND((V*300/1.2)*3000, 0) + surcharge; total = unitPrice * quantity
--- Rules: trip cargo sum(dimensionVol*qty) <= 2.50; SENDER+tripId requires COMPLETED payment;
---        unpaid / waiting orders keep tripId NULL.
--- ============================================================================
-PRINT N'-> Sinh hóa đơn ký gửi...';
-
-DECLARE @CargoIdx INT = 1;
-DECLARE @CalculatedCargoPrice DECIMAL(15,2);
-DECLARE @PickCargoTypePriceId INT;
-DECLARE @PricePerUnit DECIMAL(15,2);
-DECLARE @Quantity INT;
-DECLARE @DimVol DECIMAL(8,2);
-DECLARE @UnitCargoPrice DECIMAL(15,2);
-DECLARE @CargoTypeCount INT = (SELECT COUNT(*) FROM [cargo_type_price]);
-DECLARE @CargoVol DECIMAL(12,3);
-DECLARE @UsedVol DECIMAL(12,3);
-DECLARE @AssignTripId INT;
-DECLARE @FeePayer VARCHAR(20);
-DECLARE @CargoCreated INT = 0;
-DECLARE @CargoAssigned INT = 0;
-DECLARE @NewCargoId INT;
-
-DECLARE @TripCargoVol TABLE (TripId INT PRIMARY KEY, UsedVol DECIMAL(12,3) NOT NULL);
-
-WHILE @CargoIdx <= 180 AND @MinNewTripId IS NOT NULL
-BEGIN
-    SET @TargetTripId = @MinNewTripId + (@CargoIdx % (@MaxNewTripId - @MinNewTripId + 1));
-    SET @TargetCusId = CASE
-        WHEN @CargoIdx % 3 = 0 THEN NULL
-        ELSE @MinCusId + (@CargoIdx % (@MaxCusId - @MinCusId + 1))
-    END;
-
-    SELECT @TripRouteId = routeId FROM [trip] WHERE tripId = @TargetTripId;
-    SELECT @MaxStopOrder = MAX(stopOrder) FROM [route_stop] WHERE routeId = @TripRouteId;
-
-    SET @PickupOrder = 1 + (@CargoIdx % CASE WHEN @MaxStopOrder > 3 THEN 3 ELSE 1 END);
-    SET @DropoffOrder = @MaxStopOrder - (@CargoIdx % CASE WHEN @MaxStopOrder > 3 THEN 3 ELSE 0 END);
-    IF @DropoffOrder <= @PickupOrder SET @DropoffOrder = @MaxStopOrder;
-
-    SELECT @PickupStopId = rs.stopPointId
-    FROM [route_stop] rs
-    WHERE rs.routeId = @TripRouteId AND rs.stopOrder = @PickupOrder;
-
-    SELECT @DropoffStopId = rs.stopPointId
-    FROM [route_stop] rs
-    WHERE rs.routeId = @TripRouteId AND rs.stopOrder = @DropoffOrder;
-
-    SET @PickCargoTypePriceId = ((@CargoIdx - 1) % @CargoTypeCount) + 1;
-    SELECT @PricePerUnit = pricePerUnit FROM [cargo_type_price] WHERE cargoTypePriceId = @PickCargoTypePriceId;
-
-    SET @Quantity = (@CargoIdx % 3) + 1;
-    SET @DimVol = 0.20 + ((@CargoIdx % 4) * 0.05);
-    SET @CargoVol = CAST(@DimVol * @Quantity AS DECIMAL(12,3));
-
-    SET @UnitCargoPrice = ROUND(((@DimVol * 300.0) / 1.2) * 3000.0, 0) + @PricePerUnit;
-    SET @CalculatedCargoPrice = @UnitCargoPrice * @Quantity;
-    SET @FeePayer = CASE WHEN @CargoIdx % 2 = 0 THEN 'SENDER' ELSE 'RECEIVER' END;
-
-    SET @AssignTripId = NULL;
-    SET @UsedVol = 0;
-    IF (@CargoIdx % 3 <> 0 AND @CargoVol <= 2.50)
-    BEGIN
-        SELECT @UsedVol = UsedVol FROM @TripCargoVol WHERE TripId = @TargetTripId;
-        IF @UsedVol IS NULL SET @UsedVol = 0;
-
-        IF (@UsedVol + @CargoVol) <= 2.50
-        BEGIN
-            SET @AssignTripId = @TargetTripId;
-            IF EXISTS (SELECT 1 FROM @TripCargoVol WHERE TripId = @TargetTripId)
-                UPDATE @TripCargoVol SET UsedVol = UsedVol + @CargoVol WHERE TripId = @TargetTripId;
-            ELSE
-                INSERT INTO @TripCargoVol (TripId, UsedVol) VALUES (@TargetTripId, @CargoVol);
-        END
-    END
-
-    IF @AssignTripId IS NULL
-    BEGIN
-        SET @TripRouteId = 1;
-        SELECT @MaxStopOrder = MAX(stopOrder) FROM [route_stop] WHERE routeId = 1;
-        SET @PickupOrder = 1 + (@CargoIdx % 3);
-        SET @DropoffOrder = @MaxStopOrder - (@CargoIdx % 3);
-        IF @DropoffOrder <= @PickupOrder SET @DropoffOrder = @MaxStopOrder;
-        SELECT @PickupStopId = stopPointId FROM [route_stop] WHERE routeId = 1 AND stopOrder = @PickupOrder;
-        SELECT @DropoffStopId = stopPointId FROM [route_stop] WHERE routeId = 1 AND stopOrder = @DropoffOrder;
-    END
-
-    INSERT INTO [cargo_ticket] (
-        tripId, customerId, senderName, senderPhone,
-        receiverName, receiverPhone, ticketCode, totalPrice,
-        feePayer, codAmount, pickupStopId, dropoffStopId, [status], soldBy
-    )
-    VALUES (
-        @AssignTripId, @TargetCusId,
-        N'Người Gửi Số ' + CAST(@CargoIdx AS NVARCHAR(5)), '0912' + RIGHT('00000' + CAST(@CargoIdx AS VARCHAR(5)), 5),
-        N'Người Nhận Số ' + CAST(@CargoIdx AS NVARCHAR(5)), '0978' + RIGHT('00000' + CAST(@CargoIdx AS VARCHAR(5)), 5),
-        'CG_CODE_' + RIGHT('0000' + CAST(@CargoIdx AS VARCHAR(4)), 4), @CalculatedCargoPrice,
-        @FeePayer,
-        CASE WHEN @CargoIdx % 5 = 0 THEN 200000.00 ELSE 0.00 END,
-        @PickupStopId, @DropoffStopId, 'RECEIVED', @TicketStaffId
-    );
-
-    SET @NewCargoId = SCOPE_IDENTITY();
-
-    INSERT INTO [cargo_ticket_detail] (cargoTicketId, cargoTypePriceId, description, quantity, weightKg, dimensionVol, calculatedPrice)
-    VALUES (
-        @NewCargoId, @PickCargoTypePriceId,
-        N'Kiện bưu phẩm ký gửi mẫu số ' + CAST(@CargoIdx AS NVARCHAR(5)),
-        @Quantity, @Quantity * 5.5, @DimVol, @CalculatedCargoPrice
-    );
-
-    IF @AssignTripId IS NOT NULL
-    BEGIN
-        INSERT INTO [payment] (passengerTicketId, cargoTicketId, amount, paymentMethod, transactionId, [status], paymentTime)
-        VALUES (
-            NULL, @NewCargoId, @CalculatedCargoPrice,
-            CASE WHEN @CargoIdx % 4 = 0 THEN 'BANK_TRANSFER' ELSE 'CASH' END,
-            'TXN_C_' + CAST(@CargoIdx AS VARCHAR(5)), 'COMPLETED', GETDATE()
-        );
-        SET @CargoAssigned = @CargoAssigned + 1;
-    END
-    ELSE IF @FeePayer = 'SENDER' AND (@CargoIdx % 4 = 0)
-    BEGIN
-        INSERT INTO [payment] (passengerTicketId, cargoTicketId, amount, paymentMethod, transactionId, [status], paymentTime)
-        VALUES (
-            NULL, @NewCargoId, @CalculatedCargoPrice, 'CASH',
-            'TXN_C_WAIT_' + CAST(@CargoIdx AS VARCHAR(5)), 'COMPLETED', GETDATE()
-        );
-    END
-
-    SET @CargoCreated = @CargoCreated + 1;
-    SET @CargoIdx = @CargoIdx + 1;
-END;
-
-PRINT N' -> Cargo tạo: ' + CAST(@CargoCreated AS VARCHAR(10)) + N', đã gán chuyến: ' + CAST(@CargoAssigned AS VARCHAR(10));
-
--- ============================================================================
--- LEVEL 5.3: LIFECYCLE SAMPLES (in-progress, incident, cargo flow, check-in, refund)
+-- LEVEL 5.2: LIFECYCLE SAMPLES (in-progress, incident, check-in, refund)
 -- ============================================================================
 PRINT N'-> Gắn sample lifecycle vận hành...';
 
 DECLARE @LifeTripId INT;
 DECLARE @LifeCoachId INT;
 DECLARE @LifeDriverId INT;
-DECLARE @LifeAttendantId INT;
 DECLARE @PastTripId INT;
 DECLARE @CancelTicketId INT;
 DECLARE @CancelPaymentId INT;
@@ -998,7 +860,7 @@ DECLARE @CheckedTripId INT;
 DECLARE @IncidentTripId INT;
 DECLARE @IncidentCoachId INT;
 
-SELECT TOP 1 @LifeTripId = t.tripId, @LifeCoachId = t.coachId, @LifeDriverId = t.driverId, @LifeAttendantId = t.attendantId
+SELECT TOP 1 @LifeTripId = t.tripId, @LifeCoachId = t.coachId, @LifeDriverId = t.driverId
 FROM [trip] t
 WHERE t.[status] = 'SCHEDULED'
   AND t.departureTime <= DATEADD(hour, 2, GETDATE())
@@ -1007,7 +869,7 @@ ORDER BY ABS(DATEDIFF(minute, t.departureTime, GETDATE()));
 
 IF @LifeTripId IS NULL
 BEGIN
-    SELECT TOP 1 @LifeTripId = t.tripId, @LifeCoachId = t.coachId, @LifeDriverId = t.driverId, @LifeAttendantId = t.attendantId
+    SELECT TOP 1 @LifeTripId = t.tripId, @LifeCoachId = t.coachId, @LifeDriverId = t.driverId
     FROM [trip] t
     WHERE t.[status] = 'SCHEDULED'
     ORDER BY ABS(DATEDIFF(minute, t.departureTime, GETDATE()));
@@ -1024,11 +886,6 @@ BEGIN
     JOIN [passenger_ticket] pt ON pt.passengerTicketId = ptd.passengerTicketId
     WHERE pt.tripId = @LifeTripId AND pt.[status] = 'CONFIRMED' AND ptd.[status] = 'CONFIRMED';
 
-    UPDATE TOP (3) ct
-    SET [status] = 'LOADED', loadedBy = @LifeAttendantId
-    FROM [cargo_ticket] ct
-    WHERE ct.tripId = @LifeTripId AND ct.[status] = 'RECEIVED';
-
     SET @CheckedTripId = @LifeTripId;
 END
 
@@ -1042,14 +899,6 @@ ORDER BY t.departureTime DESC;
 IF @PastTripId IS NOT NULL
 BEGIN
     UPDATE [trip] SET [status] = 'COMPLETED' WHERE tripId = @PastTripId;
-
-    UPDATE ct
-    SET [status] = 'DELIVERED',
-        loadedBy = ISNULL(loadedBy, @TicketStaffId),
-        unloadedBy = @TicketStaffId,
-        deliveredBy = @TicketStaffId
-    FROM [cargo_ticket] ct
-    WHERE ct.tripId = @PastTripId AND ct.[status] IN ('RECEIVED', 'LOADED', 'ARRIVED');
 END
 
 SELECT TOP 1 @IncidentTripId = t.tripId, @IncidentCoachId = t.coachId
@@ -1136,8 +985,7 @@ JOIN [cargo_type_price] ctp ON ct.cargoTypeId = ctp.cargoTypeId;
 SELECT COUNT(*) AS agencies, (SELECT COUNT(*) FROM coach_stop) AS stops FROM [ticket_agency];
 SELECT [status], COUNT(*) AS trips FROM [trip] GROUP BY [status];
 SELECT [status], COUNT(*) AS coaches FROM [coach] GROUP BY [status];
-SELECT CASE WHEN tripId IS NULL THEN 'UNASSIGNED' ELSE 'ASSIGNED' END AS cargoAssign, COUNT(*) AS cnt
-FROM [cargo_ticket] GROUP BY CASE WHEN tripId IS NULL THEN 'UNASSIGNED' ELSE 'ASSIGNED' END;
+SELECT COUNT(*) AS cargoTickets FROM [cargo_ticket];
 SELECT COUNT(*) AS refunds FROM [refund];
 SELECT COUNT(*) AS kids FROM [accompanied_child];
 
