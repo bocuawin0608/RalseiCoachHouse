@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Alert, Badge, Button, Spinner } from 'react-bootstrap';
-import { BsArrowLeft, BsBusFront, BsClock, BsGeoAltFill, BsPeople, BsTelephone, BsPersonVcard } from 'react-icons/bs';
+import { BsArrowLeft, BsBusFront, BsClock, BsGeoAltFill, BsPeople, BsTelephone } from 'react-icons/bs';
 import { cargoTicketApi } from '../../../features/cargoTickets/api/cargoTicketApi';
 import CargoQueuePanel from '../../../features/cargoTickets/components/CargoQueuePanel';
 import Pagination from '../../../components/common/Pagination';
@@ -157,8 +157,8 @@ function TripCard({ trip, onSelect }) {
             <p className="cargo-stops"><strong>Nhận tại:</strong> {trip.pickupStopName} ({trip.pickupCity})</p>
             <p className="cargo-stops">{trip.stopSummary || 'Chưa cập nhật điểm dừng'}</p>
             <div className="cargo-responsibility-grid">
-                <StaffBlock label="Tài xế" name={trip.driverName} phone={trip.driverPhone} cccd={trip.driverCccd} />
-                <StaffBlock label="Phụ xe" name={trip.attendantName} phone={trip.attendantPhone} cccd={trip.attendantCccd} />
+                <StaffBlock label="Tài xế" name={trip.driverName} phone={trip.driverPhone} />
+                <StaffBlock label="Phụ xe" name={trip.attendantName} phone={trip.attendantPhone} />
             </div>
             <div className="cargo-capacity"><div><span>Khoang hàng</span><strong>{used.toFixed(2)} / {capacity.toFixed(2)} m³</strong></div><div className="cargo-capacity-track"><span style={{ width: `${percent}%` }} /></div></div>
             <Button className="cargo-primary-button w-100" disabled={isUnavailable} onClick={onSelect}>{actionLabel}</Button>
@@ -166,9 +166,9 @@ function TripCard({ trip, onSelect }) {
     );
 }
 
-/** Displays contact and identity data for one assigned staff member. */
-function StaffBlock({ label, name, phone, cccd }) {
-    return <div className="cargo-staff-block"><span><BsPeople /> {label}</span><strong>{name || 'Chưa phân công'}</strong><small><BsTelephone /> {phone || '—'}</small><small><BsPersonVcard /> {cccd || '—'}</small></div>;
+/** Displays contact details for one assigned staff member. */
+function StaffBlock({ label, name, phone }) {
+    return <div className="cargo-staff-block"><span><BsPeople /> {label}</span><strong>{name || 'Chưa phân công'}</strong><small><BsTelephone /> {phone || '—'}</small></div>;
 }
 
 /** Formats backend timestamps consistently for Vietnamese ticket staff. */

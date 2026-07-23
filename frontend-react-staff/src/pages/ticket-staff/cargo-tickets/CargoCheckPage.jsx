@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Badge, Button, Spinner } from 'react-bootstrap';
-import { BsArrowLeft, BsBusFront, BsGeoAltFill, BsPeople, BsPersonVcard, BsTelephone } from 'react-icons/bs';
+import { BsArrowLeft, BsBusFront, BsGeoAltFill, BsPeople, BsTelephone } from 'react-icons/bs';
 import { useNavigate } from 'react-router-dom';
 import { cargoTicketApi } from '../../../features/cargoTickets/api/cargoTicketApi';
 import CargoQueuePanel from '../../../features/cargoTickets/components/CargoQueuePanel';
@@ -161,13 +161,11 @@ function ReceivingTripCard({ trip, onSelect }) {
                     label="Tài xế"
                     name={trip.driverName}
                     phone={trip.driverPhone}
-                    cccd={trip.driverCccd}
                 />
                 <StaffBlock
                     label="Phụ xe"
                     name={trip.attendantName}
                     phone={trip.attendantPhone}
-                    cccd={trip.attendantCccd}
                 />
             </div>
             <Button className="cargo-primary-button w-100 mt-3" onClick={onSelect}>
@@ -178,12 +176,11 @@ function ReceivingTripCard({ trip, onSelect }) {
 }
 
 /** Displays responsibility details for one assigned trip employee. */
-function StaffBlock({ label, name, phone, cccd }) {
+function StaffBlock({ label, name, phone }) {
     return <div className="cargo-staff-block">
         <span><BsPeople /> {label}</span>
         <strong>{name || 'Chưa phân công'}</strong>
         <small><BsTelephone /> {phone || '—'}</small>
-        <small><BsPersonVcard /> {cccd || '—'}</small>
     </div>;
 }
 
