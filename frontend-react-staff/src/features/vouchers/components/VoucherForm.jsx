@@ -64,7 +64,15 @@ const VoucherForm = ({ initialData, isSubmitting, hasReferences, onSubmit, onBac
       newErrors.discountValue = 'Vui lòng nhập giá trị giảm hợp lệ';
     } else if (formData.discountType === 'PERCENT' && parseFloat(formData.discountValue) > 100) {
       newErrors.discountValue = 'Giảm theo phần trăm không thể vượt quá 100%';
+    } else
+    
+    if (formData.discountType === 'FIXED' && parseFloat(formData.discountValue) > parseFloat(formData.minOrderValue)) {
+      newErrors.discountValue = 'Giá trị giảm tối đa phải nhỏ hơn giá trị đơn hàng tối thiểu';
     }
+    // if ((!formData.discountValue || parseFloat(formData.discountValue) <= parseFloat(formData.maxDiscountValue) ) && formData.discountType === 'FIXED') {
+    //   newErrors.maxDiscountValue = 'Giá trị giảm tối đa phải lớn hơn giá trị giảm';
+    // }
+
     if (!formData.startEffectiveDate) {
       newErrors.startEffectiveDate = 'Vui lòng chọn ngày bắt đầu';
     } else if (!initialData) {

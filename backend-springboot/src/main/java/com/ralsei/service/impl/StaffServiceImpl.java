@@ -120,7 +120,7 @@ public class StaffServiceImpl implements StaffService {
         staff.setCccd(request.cccd() != null ? request.cccd().trim() : null);
         staff.setStaffPosition(request.staffPosition().trim());
         staff.setHireDate(request.hireDate() != null ? request.hireDate()
-            : (staff.getHireDate() != null ? staff.getHireDate() : java.time.LocalDate.now()));
+                : (staff.getHireDate() != null ? staff.getHireDate() : java.time.LocalDate.now()));
         staff.setTicketAgencyId(request.ticketAgencyId());
         if (request.isActive() != null) {
             staff.setActive(request.isActive());
