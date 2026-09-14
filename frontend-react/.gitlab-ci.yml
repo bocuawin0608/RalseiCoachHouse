@@ -1,70 +1,15 @@
 stages:
-  # - test
   - build
   - deploy
 
-# fe-customer-test:
-#   stage: test
-
-#   script:
-#     - cd frontend-react
-#     - npm ci
-#     - npm run test
-#     - echo "Customer site tests completed"
-#   artifacts:
-#     paths:
-#       - frontend-react/coverage/
-
-# fe-staff-test:
-#   stage: test
- 
-#   script:
-#     - cd frontend-react-staff
-#     - npm ci
-#     - npm run test
-#     - echo "Staff site tests completed"
-#   artifacts:
-#     paths:
-#       - frontend-react-staff/coverage/
-build-customer:
-  stage: build
-  image: node:22
-  script:
-    - cd frontend-react
-    - npm ci
-    - npm run build
-    - echo "Customer site build completed"
-  artifacts:
-    paths:
-      - frontend-react/build/
-build-staff:
-  stage: build
-
-  script:
-    - cd frontend-react-staff
-    - npm ci
-    - npm run build
-    - echo "Staff site build completed"
-  artifacts:
-    paths:
-      - frontend-react-staff/build/
-build-fe:
+build-fe-customer:
   stage: build
   script:
-    - docker build -t nhaxetuanmv-fe:latest ./frontend-react
+    - docker build -t nhaxetuanmv-fe:latest .
 
-build-fe-staff:
-  stage: build
-  script:
-    - docker build -t nhaxetuanmv-fe-staff:latest ./frontend-react-staff
-
-build-be:
-  stage: build
-  script:
-    - docker build -t nhaxetuanmv-be:latest ./backend-springboot
-
-deploy:
+deploy-fe-customer:
   stage: deploy
   script:
-    - echo "deploy 2 FE + 1 BE"
-  when: manual
+    - docker stop nhaxetuanmv-fe 2>/dev/null || true
+    - docker rm nhaxetuanmv-fe 2>/dev/null || true
+    - docker run -d --name nhaxetuanmv-fe -p 8080:80 nhaxetuanmv-fe:latest

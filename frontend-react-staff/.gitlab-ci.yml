@@ -5,7 +5,7 @@ stages:
 build-fe-staff:
   stage: build
   script:
-    - docker build -t nhaxetuanmv-fe-staff:latest .
+    - docker build -t nhaxetuanmv-fe-staff:latest ./frontend-react-staff
 
 deploy-fe-staff:
   stage: deploy
