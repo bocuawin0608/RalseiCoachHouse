@@ -5,7 +5,7 @@ stages:
 build-fe-customer:
   stage: build
   script:
-    - docker build -t nhaxetuanmv-fe:latest .
+    - docker build -t nhaxetuanmv-fe:latest ./frontend-react
 
 deploy-fe-customer:
   stage: deploy

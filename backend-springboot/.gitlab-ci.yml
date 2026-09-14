@@ -5,7 +5,7 @@ stages:
 build-be:
   stage: build
   script:
-    - docker build -t nhaxetuanmv-be:latest .
+    - docker build -t nhaxetuanmv-be:latest ./backend-springboot
 
 deploy-be:
   stage: deploy
