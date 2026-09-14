@@ -5,7 +5,7 @@ stages:
 
 fe-customer-test:
   stage: test
-  image: node:22
+
   script:
     - cd frontend-react
     - npm ci
@@ -17,7 +17,7 @@ fe-customer-test:
 
 fe-staff-test:
   stage: test
-  image: node:22
+ 
   script:
     - cd frontend-react-staff
     - npm ci
@@ -39,7 +39,7 @@ build-customer:
       - frontend-react/build/
 build-staff:
   stage: build
-  image: node:22
+
   script:
     - cd frontend-react-staff
     - npm ci
