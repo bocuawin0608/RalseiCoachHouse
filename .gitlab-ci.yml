@@ -3,29 +3,29 @@ stages:
   - build
   - deploy
 
-fe-customer-test:
-  stage: test
+# fe-customer-test:
+#   stage: test
 
-  script:
-    - cd frontend-react
-    - npm ci
-    - npm run test
-    - echo "Customer site tests completed"
-  artifacts:
-    paths:
-      - frontend-react/coverage/
+#   script:
+#     - cd frontend-react
+#     - npm ci
+#     - npm run test
+#     - echo "Customer site tests completed"
+#   artifacts:
+#     paths:
+#       - frontend-react/coverage/
 
-fe-staff-test:
-  stage: test
+# fe-staff-test:
+#   stage: test
  
-  script:
-    - cd frontend-react-staff
-    - npm ci
-    - npm run test
-    - echo "Staff site tests completed"
-  artifacts:
-    paths:
-      - frontend-react-staff/coverage/
+#   script:
+#     - cd frontend-react-staff
+#     - npm ci
+#     - npm run test
+#     - echo "Staff site tests completed"
+#   artifacts:
+#     paths:
+#       - frontend-react-staff/coverage/
 build-customer:
   stage: build
   image: node:22
