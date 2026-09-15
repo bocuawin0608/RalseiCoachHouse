@@ -1,3 +1,4 @@
+```groovy
 pipeline {
     agent any
 
@@ -6,13 +7,20 @@ pipeline {
         timestamps()
     }
 
-    triggers
-    {
+    triggers {
         gitlab(
-        triggerOnPush: true, triggerOnMergeRequest: false, triggerOnNoteRequest: false, triggerOnPipelineEvent: false, triggerOnAcceptedMergeRequest: false, triggerOnClosedMergeRequest: false, triggerOnApprovedMergeRequest: false, triggerOnBuildStatusChanged: false, branchFilterType: 'NameBasedFilter', includeBranchesSpec: 'main'
+            triggerOnPush: true,
+            triggerOnMergeRequest: false,
+            triggerOnNoteRequest: false,
+            triggerOnPipelineEvent: false,
+            triggerOnAcceptedMergeRequest: false,
+            triggerOnClosedMergeRequest: false,
+            triggerOnApprovedMergeRequest: false,
+            triggerOnBuildStatusChanged: false,
+            branchFilterType: 'NameBasedFilter',
+            includeBranchesSpec: 'main'
         )
     }
-
 
     environment {
         IMAGE = 'ralsei-coach-house-be:latest'
@@ -62,11 +70,14 @@ pipeline {
         success {
             echo 'Deployment Completed Successfully!'
         }
+
         failure {
             echo 'Deployment Failed!'
         }
+
         always {
             cleanWs()
         }
     }
 }
+```
