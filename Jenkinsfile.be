@@ -1,4 +1,4 @@
-```groovy
+
 pipeline {
     agent any
 
@@ -67,4 +67,3 @@ pipeline {
 
     post {
         success {
-```
