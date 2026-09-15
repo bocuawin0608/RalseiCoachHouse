@@ -50,7 +50,7 @@ pipeline {
 
                     if (env.BE_CHANGED == 'true') {
                         jobs['Backend'] = {
-                            build job: 'ralsie-coach-house-be',
+                            build job: 'ralsei-coach-house-be',
                                   wait: true,
                                   propagate: true
                         }
@@ -58,7 +58,7 @@ pipeline {
 
                     if (env.FE_CHANGED == 'true') {
                         jobs['Customer FE'] = {
-                            build job: 'ralsie-coach-house-fe',
+                            build job: 'ralsei-coach-house-fe',
                                   wait: true,
                                   propagate: true
                         }
@@ -66,7 +66,7 @@ pipeline {
 
                     if (env.STAFF_CHANGED == 'true') {
                         jobs['Staff FE'] = {
-                            build job: 'ralsie-coach-house-fe-staff',
+                            build job: 'ralsei-coach-house-fe-staff',
                                   wait: true,
                                   propagate: true
                         }
