@@ -1,24 +1,9 @@
-
 pipeline {
     agent any
 
     options {
         disableConcurrentBuilds()
         timestamps()
-    }
-
-    triggers {
-        gitlab(
-            triggerOnPush: true,
-            triggerOnMergeRequest: false,
-            triggerOnNoteRequest: false,
-            triggerOnPipelineEvent: false,
-            triggerOnAcceptedMergeRequest: false,
-            triggerOnClosedMergeRequest: false,
-            triggerOnApprovedMergeRequest: false,
-            branchFilterType: 'NameBasedFilter',
-            includeBranchesSpec: 'main'
-        )
     }
 
     environment {
@@ -37,7 +22,14 @@ pipeline {
         stage('Build Maven') {
             steps {
                 dir('backend-springboot') {
-                    sh './mvnw clean package -DskipTests'
+                    sh '''
+                        if [ -f ./mvnw ]; then
+                            chmod +x ./mvnw
+                            ./mvnw clean package -DskipTests
+                        else
+                            mvn clean package -DskipTests
+                        fi
+                    '''
                 }
             }
         }
@@ -67,3 +59,15 @@ pipeline {
 
     post {
         success {
+            echo 'Deployment Completed Successfully!'
+        }
+
+        failure {
+            echo 'Deployment Failed!'
+        }
+
+        always {
+            cleanWs()
+        }
+    }
+}
