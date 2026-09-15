@@ -5,7 +5,7 @@ pipeline {
         disableConcurrentBuilds()
         timestamps()
     }
-
+triggers { gitlab( triggerOnPush: true, triggerOnMergeRequest: false, triggerOnNoteRequest: false, triggerOnPipelineEvent: false, triggerOnAcceptedMergeRequest: false, triggerOnClosedMergeRequest: false, triggerOnApprovedMergeRequest: false, triggerOnBuildStatusChanged: false, branchFilterType: 'NameBasedFilter', includeBranchesSpec: 'main' ) }
     environment {
         IMAGE = 'ralsei-coachhouse-fe:latest'
         CONTAINER = 'ralsei-coachhouse-fe'

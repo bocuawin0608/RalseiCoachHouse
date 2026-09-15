@@ -6,6 +6,14 @@ pipeline {
         timestamps()
     }
 
+    triggers
+    {
+        gitlab(
+        triggerOnPush: true, triggerOnMergeRequest: false, triggerOnNoteRequest: false, triggerOnPipelineEvent: false, triggerOnAcceptedMergeRequest: false, triggerOnClosedMergeRequest: false, triggerOnApprovedMergeRequest: false, triggerOnBuildStatusChanged: false, branchFilterType: 'NameBasedFilter', includeBranchesSpec: 'main'
+        )
+    }
+
+
     environment {
         IMAGE = 'ralsei-coach-house-be:latest'
         CONTAINER = 'ralsei-be'
