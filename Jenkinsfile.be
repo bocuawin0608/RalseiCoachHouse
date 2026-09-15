@@ -1,4 +1,4 @@
-
+```groovy
 pipeline {
     agent any
 
@@ -16,7 +16,6 @@ pipeline {
             triggerOnAcceptedMergeRequest: false,
             triggerOnClosedMergeRequest: false,
             triggerOnApprovedMergeRequest: false,
-            triggerOnBuildStatusChanged: false,
             branchFilterType: 'NameBasedFilter',
             includeBranchesSpec: 'main'
         )
@@ -38,7 +37,7 @@ pipeline {
         stage('Build Maven') {
             steps {
                 dir('backend-springboot') {
-                    sh './mvnw clean package -DskipTests || mvn clean package -DskipTests'
+                    sh './mvnw clean package -DskipTests'
                 }
             }
         }
@@ -68,15 +67,4 @@ pipeline {
 
     post {
         success {
-            echo 'Deployment Completed Successfully!'
-        }
-
-        failure {
-            echo 'Deployment Failed!'
-        }
-
-        always {
-            cleanWs()
-        }
-    }
-}
+```
