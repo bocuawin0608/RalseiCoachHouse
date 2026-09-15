@@ -1,0 +1,59 @@
+pipeline {
+    agent any
+
+    options {
+        disableConcurrentBuilds()
+        timestamps()
+    }
+
+    environment {
+        IMAGE = 'ralsei-coachhouse-fe:latest'
+        CONTAINER = 'ralsei-coachhouse-fe'
+        PORT = '8080'
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                dir('frontend-react') {
+                    sh 'docker build -t ${IMAGE} .'
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                sh '''
+                    docker rm -f ${CONTAINER} 2>/dev/null || true
+
+                    docker run -d \
+                        --name ${CONTAINER} \
+                        --restart unless-stopped \
+                        -p ${PORT}:80 \
+                        ${IMAGE}
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Customer frontend deployed successfully.'
+        }
+
+        failure {
+            echo 'Customer frontend pipeline failed.'
+        }
+
+        cleanup {
+            sh 'docker image prune -f || true'
+        }
+    }
+}s

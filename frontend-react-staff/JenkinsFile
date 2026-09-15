@@ -1,0 +1,59 @@
+pipeline {
+    agent any
+
+    options {
+        disableConcurrentBuilds()
+        timestamps()
+    }
+
+    environment {
+        IMAGE = 'nhaxetuanmv-fe-staff:latest'
+        CONTAINER = 'nhaxetuanmv-fe-staff'
+        PORT = '8081'
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                dir('frontend-react-staff') {
+                    sh 'docker build -t ${IMAGE} .'
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                sh '''
+                    docker rm -f ${CONTAINER} 2>/dev/null || true
+
+                    docker run -d \
+                        --name ${CONTAINER} \
+                        --restart unless-stopped \
+                        -p ${PORT}:80 \
+                        ${IMAGE}
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Staff frontend deployed successfully.'
+        }
+
+        failure {
+            echo 'Staff frontend pipeline failed.'
+        }
+
+        cleanup {
+            sh 'docker image prune -f || true'
+        }
+    }
+}
