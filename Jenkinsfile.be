@@ -95,6 +95,7 @@ pipeline {
         }
 
         always {
+            archiveArtifacts artifacts: 'backend-springboot/semgrep-report.json', fingerprint: true
             cleanWs()
         }
     }
