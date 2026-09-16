@@ -10,6 +10,7 @@ pipeline {
         IMAGE = 'ralsei-coach-house-be:latest'
         CONTAINER = 'ralsei-be'
         PORT = '8000'
+        VERSION = '0.0.{BUILD_NUMBER}'
     }
 
     stages {

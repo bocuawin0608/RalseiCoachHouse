@@ -10,6 +10,7 @@ pipeline {
         IMAGE = 'nhaxetuanmv-fe-staff:latest'
         CONTAINER = 'nhaxetuanmv-fe-staff'
         PORT = '8081'
+        VERSION = '0.0.{BUILD_NUMBER}'
     }
 
     stages {
