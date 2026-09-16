@@ -29,6 +29,16 @@ pipeline {
             }
         }
 
+        stage('Check fucked up code') {
+            steps {
+                echo 'check fucked up code stage'
+                dir('backend-springboot') {
+                    sh 'mvn checkstyle:check'
+                }
+            }
+
+        }
+
         stage('Build Maven') {
             steps {
                 dir('backend-springboot') {
