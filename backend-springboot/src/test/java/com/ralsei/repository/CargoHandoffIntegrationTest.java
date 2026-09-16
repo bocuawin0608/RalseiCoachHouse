@@ -3,6 +3,7 @@ package com.ralsei.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,6 +69,7 @@ import com.ralsei.service.impl.CargoTicketServiceImpl;
  */
 @SpringBootTest
 @Transactional
+@Disabled("Requires an externally provisioned SQL Server database and the documented fixture data.")
 class CargoHandoffIntegrationTest {
 
     @Autowired

@@ -82,8 +82,10 @@ class CustomerTicketHistoryServiceCancellationTest {
 
     @Test
     void rejectsSelfCancellationAtTheFiveHourDepartureBoundary() {
+        CustomerTicketHistoryProjection ticket = ticketRow(
+                LocalDateTime.now().minusHours(25), LocalDateTime.now().plusHours(5));
         when(ticketDetailRepository.findCustomerTicketHistory(10, "PT-100"))
-                .thenReturn(List.of(ticketRow(LocalDateTime.now().minusHours(25), LocalDateTime.now().plusHours(5))));
+                .thenReturn(List.of(ticket));
 
         assertThrows(BusinessRuleException.class, () -> service.cancelTicket(
                 10, "PT-100", cancellationRequest()));
@@ -95,8 +97,9 @@ class CustomerTicketHistoryServiceCancellationTest {
     @Test
     void cancelsEligibleTicketReleasesSeatsAndCreatesFullPendingRefund() {
         LocalDateTime now = LocalDateTime.now();
+        CustomerTicketHistoryProjection ticket = ticketRow(now.minusHours(25), now.plusHours(6));
         when(ticketDetailRepository.findCustomerTicketHistory(10, "PT-100"))
-                .thenReturn(List.of(ticketRow(now.minusHours(25), now.plusHours(6))));
+                .thenReturn(List.of(ticket));
         when(ticketRepository.findById(100)).thenReturn(Optional.of(PassengerTicket.builder().build()));
         when(ticketDetailRepository.findByPassengerTicketId(100)).thenReturn(List.of(
                 PassengerTicketDetail.builder().status("CONFIRMED").build()));
