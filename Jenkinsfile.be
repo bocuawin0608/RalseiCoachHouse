@@ -20,6 +20,13 @@ pipeline {
             }
         }
 
+        stage('Backend Unit Test') {
+            steps {
+                echo 'unit test backend-springboot stage'
+                sh 'mvn clean test' 
+            }
+        }
+
         stage('Build Maven') {
             steps {
                 dir('backend-springboot') {
