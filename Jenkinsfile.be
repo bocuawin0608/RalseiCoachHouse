@@ -60,6 +60,14 @@ pipeline {
                 }
             }
        }
+        stage('Performance Testing ') {
+            steps {
+                dir('backend-springboot') {
+                        // Chạy k6 và tự động fail pipeline nếu không đạt thresholds cấu hình sẵn
+                        sh 'k6 run load-test.js'
+                    }
+            }
+        }
 
 
         stage('Docker Build') {
