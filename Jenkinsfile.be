@@ -53,6 +53,14 @@ pipeline {
                 }
             }
         }
+        stage('Security testing'){
+            steps {
+                dir('backend-springboot') {
+                    sh 'semgrep scan --config=auto --json --output semgrep-report.json || true'
+                }
+            }
+       }
+
 
         stage('Docker Build') {
             steps {
