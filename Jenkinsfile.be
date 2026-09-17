@@ -16,12 +16,14 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
+                script { env.FAILED_STAGE = 'Checkout' }
                 checkout scm
             }
         }
 
         stage('Backend Unit Test') {
             steps {
+                script { env.FAILED_STAGE = 'Backend Unit Test' }
                 echo 'unit test backend-springboot stage'
                 dir('backend-springboot') {
                     sh 'mvn clean test'
@@ -31,6 +33,7 @@ pipeline {
 
         stage('Check fucked up code') {
             steps {
+                script { env.FAILED_STAGE = 'Check fucked up code' }
                 echo 'check fucked up code stage'
                 dir('backend-springboot') {
                     sh 'mvn checkstyle:check'
@@ -40,6 +43,7 @@ pipeline {
 
         stage('Security testing') {
             steps {
+                script { env.FAILED_STAGE = 'Security testing' }
                 dir('backend-springboot') {
                     sh 'semgrep scan --config=auto --json --output semgrep-report.json || true'
                 }
@@ -48,6 +52,7 @@ pipeline {
 
         stage('Build Maven') {
             steps {
+                script { env.FAILED_STAGE = 'Build Maven' }
                 dir('backend-springboot') {
                     sh '''
                         if [ -f ./mvnw ]; then
@@ -63,6 +68,7 @@ pipeline {
 
         stage('Docker Build') {
             steps {
+                script { env.FAILED_STAGE = 'Docker Build' }
                 dir('backend-springboot') {
                     sh "docker build -t ${IMAGE} ."
                 }
@@ -71,6 +77,7 @@ pipeline {
 
         stage('Deploy') {
             steps {
+                script { env.FAILED_STAGE = 'Deploy' }
                 sh """
                     docker rm -f ${CONTAINER} 2>/dev/null || true
 
@@ -85,6 +92,7 @@ pipeline {
 
         stage('Performance Testing') {
             steps {
+                script { env.FAILED_STAGE = 'Performance Testing' }
                 dir('backend-springboot') {
                     script {
                         // Đợi app sống thật sự trên cổng 8000 (đã map ra ngoài) trước khi gọi k6
@@ -114,6 +122,45 @@ pipeline {
 
         failure {
             echo 'Pipeline Failed!'
+            script {
+                writeFile file: 'ci-failure-report.log', text: """\
+Pipeline: ${env.JOB_NAME}
+Build: #${env.BUILD_NUMBER}
+Failed stage: ${env.FAILED_STAGE ?: 'Unknown'}
+Build URL: ${env.BUILD_URL}
+
+Open the Jenkins console for the failed command and complete stack trace.
+"""
+
+                echo """
+FAKE EMAIL (dry run — no email was sent)
+Pipeline       : ${env.JOB_NAME}
+Build          : #${env.BUILD_NUMBER}
+Failed stage   : ${env.FAILED_STAGE ?: 'Unknown'}
+Recipient route: email.sh will select the responsible role for this stage
+Jenkins URL    : ${env.BUILD_URL}
+"""
+
+                /* Enable this block after verifying the dry-run output and
+                   configuring the Jenkins SMTP credential and team emails.
+                withCredentials([usernamePassword(
+                    credentialsId: 'jenkins-smtp',
+                    usernameVariable: 'SMTP_USER',
+                    passwordVariable: 'SMTP_PASSWORD'
+                )]) {
+                    sh '''#!/usr/bin/env bash
+                        set +e
+                        ./email.sh "$JOB_NAME" "$BUILD_NUMBER" "$BUILD_URL" \
+                          ci-failure-report.log "$FAILED_STAGE"
+                        status=$?
+                        if [ "$status" -ne 0 ]; then
+                          echo "WARNING: CI failure email could not be sent (exit $status)."
+                        fi
+                        exit 0
+                    '''
+                }
+                */
+            }
         }
 
         always {
