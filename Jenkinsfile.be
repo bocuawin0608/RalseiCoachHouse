@@ -39,20 +39,6 @@ pipeline {
 
         }
 
-        stage('Build Maven') {
-            steps {
-                dir('backend-springboot') {
-                    sh '''
-                        if [ -f ./mvnw ]; then
-                            chmod +x ./mvnw
-                            ./mvnw clean package -DskipTests
-                        else
-                            mvn clean package -DskipTests
-                        fi
-                    '''
-                }
-            }
-        }
         stage('Security testing'){
             steps {
                 dir('backend-springboot') {
@@ -66,6 +52,21 @@ pipeline {
                         // Chạy k6 và tự động fail pipeline nếu không đạt thresholds cấu hình sẵn
                         sh 'k6 run load-test.js'
                     }
+            }
+        }
+
+        stage('Build Maven') {
+            steps {
+                dir('backend-springboot') {
+                    sh '''
+                        if [ -f ./mvnw ]; then
+                            chmod +x ./mvnw
+                            ./mvnw clean package -DskipTests
+                        else
+                            mvn clean package -DskipTests
+                        fi
+                    '''
+                }
             }
         }
 
