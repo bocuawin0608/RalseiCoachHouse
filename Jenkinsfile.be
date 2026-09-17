@@ -10,7 +10,7 @@ pipeline {
         IMAGE = 'ralsei-coach-house-be:latest'
         CONTAINER = 'ralsei-be'
         PORT = '8000'
-        VERSION = '0.0.{BUILD_NUMBER}'
+        VERSION = '0.0.${BUILD_NUMBER}' // Sửa lại cú pháp string interpolation cho đúng
     }
 
     stages {
@@ -43,32 +43,6 @@ pipeline {
                 dir('backend-springboot') {
                     sh 'semgrep scan --config=auto --json --output semgrep-report.json || true'
                 }
-            }
-        }
-        stage('Performance Testing ') {
-            steps {
-                dir('backend-springboot') {
-                    // Chạy k6 và tự động fail pipeline nếu không đạt thresholds cấu hình sẵn
-                    stage('Load Test') {
-                        steps {
-                            script {
-                                // Đợi app sẵn sàng trước khi gọi k6 (tránh race condition)
-                                sh '''
-                echo "Waiting for backend to be up..."
-                for i in {1..30}; do
-                  if curl -s http://localhost:9090/api/v1/trips/home?date=2026-09-24 > /dev/null; then
-                    echo "Backend is up!"
-                    break
-                  fi
-                  sleep 3
-                done
-            '''
-
-                                // Chạy k6 và ép biến môi trường BASE_URL chính xác
-                                sh 'k6 run -e BASE_URL=http://localhost:9090/api -e K6_PROFILE=load load-test.js'
-                            }
-                        }
-                    }
             }
         }
 
@@ -108,15 +82,38 @@ pipeline {
                 """
             }
         }
+
+        stage('Performance Testing') {
+            steps {
+                dir('backend-springboot') {
+                    script {
+                        // Đợi app sống thật sự trên cổng 8000 (đã map ra ngoài) trước khi gọi k6
+                        sh '''
+                            echo "Waiting for backend to be up..."
+                            for i in {1..30}; do
+                              if curl -s http://localhost:8000/api/v1/trips/home?date=2026-09-24 > /dev/null; then
+                                echo "Backend is up!"
+                                break
+                              fi
+                              sleep 3
+                            done
+                        '''
+
+                        // Chạy k6 với BASE_URL trỏ đúng vào cổng 8000
+                        sh 'k6 run -e BASE_URL=http://localhost:8000/api -e K6_PROFILE=load load-test.js'
+                    }
+                }
+            }
+        }
     }
 
     post {
         success {
-            echo 'Deployment Completed Successfully!'
+            echo 'Deployment and Load Test Completed Successfully!'
         }
 
         failure {
-            echo 'Deployment Failed!'
+            echo 'Pipeline Failed!'
         }
 
         always {
@@ -124,6 +121,4 @@ pipeline {
             cleanWs()
         }
     }
-    }
-    }
-
+}
