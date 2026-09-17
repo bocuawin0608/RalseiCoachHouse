@@ -68,7 +68,7 @@ pipeline {
                                 sh 'k6 run -e BASE_URL=http://localhost:9090/api -e K6_PROFILE=load load-test.js'
                             }
                         }
-}                    }
+                    }
             }
         }
 
