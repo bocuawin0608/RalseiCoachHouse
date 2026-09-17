@@ -91,7 +91,7 @@ pipeline {
                         sh '''
                             echo "Waiting for backend to be up..."
                             for i in {1..30}; do
-                              if curl -s http://localhost:8000/api/v1/trips/home?date=2026-09-24 > /dev/null; then
+                              if curl -s http://127.0.0.1:8000/api/v1/trips/home?date=2026-09-24 > /dev/null; then
                                 echo "Backend is up!"
                                 break
                               fi
@@ -100,7 +100,7 @@ pipeline {
                         '''
 
                         // Chạy k6 với BASE_URL trỏ đúng vào cổng 8000
-                        sh 'k6 run -e BASE_URL=http://localhost:8000/api -e K6_PROFILE=load load-test.js'
+                        sh 'k6 run -e BASE_URL=http://127.0.0.1:8000/api -e K6_PROFILE=load load-test.js'
                     }
                 }
             }
