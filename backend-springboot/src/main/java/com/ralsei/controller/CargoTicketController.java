@@ -22,7 +22,7 @@ import com.ralsei.dto.request.cargoticket.CargoTicketRequest;
 import com.ralsei.dto.request.cargoticket.CargoTicketWithDetailsRequest;
 import com.ralsei.dto.request.cargoticket.CargoTripAssignRequest;
 import com.ralsei.dto.request.cargoticket.ConfirmReceivedRequest;
-import com.ralsei.dto.reques t.cargoticket.ReceiverPaymentMethodRequest;
+import com.ralsei.dto.request.cargoticket.ReceiverPaymentMethodRequest;
 import com.ralsei.dto.request.cargoticket.TripByStopRequest;
 import com.ralsei.dto.request.cargoticketdetail.CargoTicketDetailPriceRequest;
 import com.ralsei.dto.request.cargoticketdetail.CargoTicketDetailRequest;
