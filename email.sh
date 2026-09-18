@@ -29,6 +29,9 @@ FAILED_STAGE="${5:-${FAILED_STAGE:-Unknown}}"
 
 SMTP_PORT="${SMTP_PORT:-587}"
 MAIL_FROM="${MAIL_FROM:-$SMTP_USER}"
+# Test fallback. Configure role-specific recipient variables in Jenkins before
+# using this pipeline for the wider team.
+MAIL_TO="${MAIL_TO:-doanngocduc2006@gmail.com}"
 
 role_for_stage() {
     case "$1" in

@@ -11,6 +11,7 @@ pipeline {
         CONTAINER = 'ralsei-be'
         PORT = '8000'
         VERSION = '0.0.${BUILD_NUMBER}' // Sửa lại cú pháp string interpolation cho đúng
+        SMTP_HOST = 'smtp.gmail.com'
     }
 
     stages {
@@ -133,7 +134,7 @@ Open the Jenkins console for the failed command and complete stack trace.
 """
 
                 echo """
-FAKE EMAIL (dry run — no email was sent)
+EMAIL NOTIFICATION TEST
 Pipeline       : ${env.JOB_NAME}
 Build          : #${env.BUILD_NUMBER}
 Failed stage   : ${env.FAILED_STAGE ?: 'Unknown'}
@@ -141,8 +142,6 @@ Recipient route: email.sh will select the responsible role for this stage
 Jenkins URL    : ${env.BUILD_URL}
 """
 
-                /* Enable this block after verifying the dry-run output and
-                   configuring the Jenkins SMTP credential and team emails.
                 withCredentials([usernamePassword(
                     credentialsId: 'jenkins-smtp',
                     usernameVariable: 'SMTP_USER',
@@ -159,7 +158,6 @@ Jenkins URL    : ${env.BUILD_URL}
                         exit 0
                     '''
                 }
-                */
             }
         }
 
