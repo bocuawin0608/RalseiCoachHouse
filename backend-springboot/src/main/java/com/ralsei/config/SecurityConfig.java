@@ -54,6 +54,9 @@ public class SecurityConfig {
      *
      * @throws Exception if the operation fails
      */
+    void yourMom(){
+        
+    }
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configure(http))
