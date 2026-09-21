@@ -1,16 +1,16 @@
 def sendStageNotification(String stageName, String stageStatus) {
-    def reportFile = "ci-stage-${env.BUILD_NUMBER}-${stageName.replaceAll(/[^A-Za-z0-9]+/, '-').toLowerCase()}.log"
-    writeFile file: reportFile, text: """\
-Pipeline: ${env.JOB_NAME}
-Build: #${env.BUILD_NUMBER}
-Stage: ${stageName}
-Status: ${stageStatus}
-Build URL: ${env.BUILD_URL}
-"""
+    def reportFile = "ci-stage-${env.BUILD_NUMBER}-${stageName.replaceAll(/[^A-Za-z0-9]+/, '-').toLowerCase()}.pdf"
 
     sh """#!/usr/bin/env sh
+        report_file="${reportFile}"
+        if ! ./stage-report.sh "${stageName}" "${stageStatus}" "\$JOB_NAME" \\
+          "\$BUILD_NUMBER" "\$BUILD_URL" "\$report_file"; then
+          echo "WARNING: PDF report generation failed for ${stageName}; sending notification without attachment."
+          report_file=''
+        fi
+
         if ./email.sh "\$JOB_NAME" "\$BUILD_NUMBER" "\$BUILD_URL" \\
-          "${reportFile}" "${stageName}" "${stageStatus}"; then
+          "\$report_file" "${stageName}" "${stageStatus}"; then
           echo "Stage ${stageName} ${stageStatus} notification sent."
         else
           notification_status=\$?
@@ -191,7 +191,7 @@ pipeline {
         }
 
         always {
-            archiveArtifacts artifacts: 'backend-springboot/semgrep-report.json', fingerprint: true
+            archiveArtifacts artifacts: 'backend-springboot/semgrep-report.json,ci-stage-*.pdf', fingerprint: true, allowEmptyArchive: true
             cleanWs()
         }
     }
