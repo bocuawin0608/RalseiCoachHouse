@@ -3,17 +3,19 @@
 from __future__ import annotations
 
 import argparse
+import html as html_lib
+import os
 import re
+import smtplib
 import sys
 from collections import Counter
 from datetime import datetime, timezone
+from email.mime.application import MIMEApplication
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
-
-import requests
-from jinja2 import Environment, FileSystemLoader, select_autoescape
-from weasyprint import CSS, HTML
 
 TIMEOUT = (10, 30)
 LOG_SNIPPET_LINES = 24
@@ -29,6 +31,82 @@ ERROR_PATTERNS = [
 
 class JenkinsApiError(RuntimeError):
     pass
+
+
+def recipient_list(recipients: str) -> list[str]:
+    """Normalize the comma/semicolon-separated recipient list from CI config."""
+    parsed = [address.strip() for address in re.split(r"[,;]", recipients) if address.strip()]
+    if not parsed:
+        raise ValueError("At least one email recipient is required")
+    return parsed
+
+
+def require_pdf(pdf_path: Path) -> None:
+    """Refuse to send a notification that claims to include a missing report."""
+    if not pdf_path.is_file():
+        raise ValueError(f"PDF report does not exist: {pdf_path}")
+    if pdf_path.stat().st_size <= 0:
+        raise ValueError(f"PDF report is empty: {pdf_path}")
+
+
+def executive_summary(status: str, duration: str, failed_stage: str, build_url: str) -> str:
+    """Return a small, safe HTML body; the detailed information is in the PDF."""
+    safe_status = html_lib.escape(status)
+    safe_duration = html_lib.escape(duration)
+    safe_stage = html_lib.escape(failed_stage)
+    safe_url = html_lib.escape(build_url, quote=True)
+    return f"""\
+<!doctype html>
+<html><body>
+  <h2>Jenkins build report</h2>
+  <table>
+    <tr><th align="left">Status</th><td>{safe_status}</td></tr>
+    <tr><th align="left">Duration</th><td>{safe_duration}</td></tr>
+    <tr><th align="left">Failed stage</th><td>{safe_stage}</td></tr>
+  </table>
+  <p><a href="{safe_url}">Open Jenkins build</a></p>
+  <p>The full analytics report is attached as a PDF.</p>
+</body></html>
+"""
+
+
+def build_pdf_email(sender_email: str, recipients: list[str], pdf_path: Path, subject: str, body: str) -> MIMEMultipart:
+    """Build the MIME message separately so it is testable before SMTP delivery."""
+    require_pdf(pdf_path)
+    message = MIMEMultipart()
+    message["From"] = sender_email
+    message["To"] = ", ".join(recipients)
+    message["Subject"] = subject
+    message.attach(MIMEText(body, "html", "utf-8"))
+
+    with pdf_path.open("rb") as report_file:
+        attachment = MIMEApplication(report_file.read(), _subtype="pdf", Name=pdf_path.name)
+    attachment.add_header("Content-Disposition", "attachment", filename=pdf_path.name)
+    message.attach(attachment)
+    return message
+
+
+def send_pdf_report(
+    smtp_server: str,
+    smtp_port: int,
+    sender_email: str,
+    password: str,
+    recipient_email: str | list[str],
+    pdf_path: Path,
+    subject: str,
+    body: str,
+) -> None:
+    """Send an HTML Jenkins summary with a verified PDF MIME attachment."""
+    recipients = recipient_list(recipient_email) if isinstance(recipient_email, str) else recipient_email
+    if not recipients:
+        raise ValueError("At least one email recipient is required")
+    message = build_pdf_email(sender_email, recipients, pdf_path, subject, body)
+    with smtplib.SMTP(smtp_server, smtp_port, timeout=30) as server:
+        server.ehlo()
+        server.starttls()
+        server.ehlo()
+        server.login(sender_email, password)
+        server.send_message(message, from_addr=sender_email, to_addrs=recipients)
 
 
 def job_url(base: str, job_name: str, build: int | None = None) -> str:
@@ -188,14 +266,70 @@ def collect_report(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
-def main() -> int:
+def send_email_main(argv: list[str]) -> int:
+    """CLI entry point used by email.sh after it loads protected SMTP config."""
+    parser = argparse.ArgumentParser(description="Send a Jenkins PDF report through SMTP.")
+    parser.add_argument("--pdf", required=True, type=Path)
+    parser.add_argument("--job-name", required=True)
+    parser.add_argument("--build-number", required=True, type=int)
+    parser.add_argument("--status", required=True)
+    parser.add_argument("--failed-stage", required=True)
+    parser.add_argument("--build-url", required=True)
+    parser.add_argument("--duration", default="Not available")
+    parser.add_argument("--recipients", required=True)
+    parser.add_argument("--sender-email", required=True)
+    args = parser.parse_args(argv)
+
+    smtp_server = os.environ.get("SMTP_HOST", "")
+    smtp_password = os.environ.get("SMTP_PASSWORD", "")
+    try:
+        smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+    except ValueError:
+        print("Email delivery failed: SMTP_PORT must be an integer.", file=sys.stderr)
+        return 2
+    if not smtp_server or not smtp_password:
+        print("Email delivery failed: SMTP_HOST and SMTP_PASSWORD must be configured.", file=sys.stderr)
+        return 2
+
+    subject = f"[Jenkins Alert] Build #{args.build_number} {args.status} - {args.job_name}"
+    body = executive_summary(args.status, args.duration, args.failed_stage, args.build_url)
+    try:
+        send_pdf_report(
+            smtp_server=smtp_server,
+            smtp_port=smtp_port,
+            sender_email=args.sender_email,
+            password=smtp_password,
+            recipient_email=args.recipients,
+            pdf_path=args.pdf,
+            subject=subject,
+            body=body,
+        )
+    except (OSError, ValueError, smtplib.SMTPException) as exc:
+        print(f"Email delivery failed: {exc}", file=sys.stderr)
+        return 2
+    print(f"Jenkins PDF report emailed to: {', '.join(recipient_list(args.recipients))}")
+    return 0
+
+
+def report_main(argv: list[str]) -> int:
+    # Sending email uses only the standard library. Load PDF dependencies only
+    # for report generation so an SMTP failure can still be diagnosed clearly.
+    global requests, Environment, FileSystemLoader, select_autoescape, CSS, HTML
+    try:
+        import requests
+        from jinja2 import Environment, FileSystemLoader, select_autoescape
+        from weasyprint import CSS, HTML
+    except ImportError as exc:
+        print(f"Report generation failed: missing Python dependency: {exc.name}", file=sys.stderr)
+        return 69
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--jenkins-url", required=True); parser.add_argument("--job-name", required=True)
     parser.add_argument("--build-number", required=True, type=int); parser.add_argument("--user", required=True)
     parser.add_argument("--token", required=True); parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--status-override", choices=["SUCCESS", "FAILED", "ABORTED", "UNSTABLE", "UNKNOWN"])
     parser.add_argument("--template", required=True, type=Path); parser.add_argument("--stylesheet", required=True, type=Path)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     try:
         report = collect_report(args)
         environment = Environment(loader=FileSystemLoader(str(args.template.parent)), autoescape=select_autoescape(["html"]))
@@ -212,4 +346,6 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    if len(sys.argv) > 1 and sys.argv[1] == "send-email":
+        raise SystemExit(send_email_main(sys.argv[2:]))
+    raise SystemExit(report_main(sys.argv[1:]))

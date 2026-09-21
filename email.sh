@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
-# Sends CI/CD status notifications through an external SMTP provider. Jenkins
-# only runs this script; credentials live in a protected file on the build agent.
+# Sends a MIME multipart Jenkins PDF report through SMTP. Credentials live in a
+# protected file on the build agent; no raw email text is piped to an SMTP tool.
 set -eu
 
 usage() {
@@ -14,7 +14,7 @@ and SMTP_PASSWORD and must not be committed to source control.
 Recipients: BACKEND_TEAM_EMAILS, DEVOPS_TEAM_EMAILS, QA_TEAM_EMAILS,
             SECURITY_TEAM_EMAILS, PIPELINE_REPORT_EMAILS (comma/semicolon-separated);
             MAIL_TO is fallback.
-Optional: SMTP_PORT (587), MAIL_FROM (SMTP_USER), FAILURE_SUMMARY, FAILED_STAGE
+Optional: SMTP_PORT (587), MAIL_FROM (SMTP_USER), BUILD_DURATION
 EOF
 }
 
@@ -49,16 +49,6 @@ MAIL_FROM="${MAIL_FROM:-$SMTP_USER}"
 # SMTP configuration file before using this pipeline for the wider team.
 MAIL_TO="${MAIL_TO:-doanngocduc2006@gmail.com}"
 
-role_for_stage() {
-    case "$1" in
-        'Checkout'|'Backend Unit Test'|'Check fucked up code'|'Build Maven') printf '%s' 'Backend engineering' ;;
-        'Security testing') printf '%s' 'Security and DevOps' ;;
-        'Docker Build'|'Deploy') printf '%s' 'DevOps' ;;
-        'Performance Testing') printf '%s' 'Backend engineering, QA and DevOps' ;;
-        *) printf '%s' 'DevOps (triage)' ;;
-    esac
-}
-
 recipients_for_stage() {
     case "$1" in
         'Pipeline Analytics') printf '%s' "${PIPELINE_REPORT_EMAILS:-${MAIL_TO:-}}" ;;
@@ -70,61 +60,29 @@ recipients_for_stage() {
     esac
 }
 
-ROLE="$(role_for_stage "$FAILED_STAGE")"
 RECIPIENTS="$(recipients_for_stage "$FAILED_STAGE")"
-if [ "$BUILD_STATUS" = "SUCCESS" ]; then
-    FAILURE_SUMMARY="${FAILURE_SUMMARY:-Stage completed successfully.}"
-else
-    FAILURE_SUMMARY="${FAILURE_SUMMARY:-See the attached Jenkins report and console log for the failing command and stack trace.}"
-fi
 RECIPIENTS="${RECIPIENTS:-${MAIL_TO:-}}"
 [ -n "$RECIPIENTS" ] || { printf '%s\n' "No recipients configured for failed stage: $FAILED_STAGE" >&2; exit 2; }
 
-SUBJECT="[CI/CD ${BUILD_STATUS}] ${JOB_NAME} #${BUILD_NUMBER} — ${FAILED_STAGE}"
-BODY=$(cat <<EOF
-CI/CD pipeline status notification.
-
-Project       : ${JOB_NAME}
-Build         : #${BUILD_NUMBER}
-Stage         : ${FAILED_STAGE}
-Responsible   : ${ROLE}
-Status        : ${BUILD_STATUS}
-
-Details:
-${FAILURE_SUMMARY}
-
-Jenkins build:
-${BUILD_URL}
-EOF
-)
-
-set -- --fail --silent --show-error \
-    --connect-timeout 10 \
-    --max-time 30 \
-    --url "smtp://${SMTP_HOST}:${SMTP_PORT}" \
-    --ssl-reqd \
-    --user "${SMTP_USER}:${SMTP_PASSWORD}" \
-    --mail-from "${MAIL_FROM}"
-
-# curl needs one --mail-rcpt per recipient. Permit both common separators.
-OLD_IFS=$IFS
-IFS=',;'
-set -f
-for recipient in $RECIPIENTS; do
-    recipient=$(printf '%s' "$recipient" | tr -d '[:space:]')
-    [ -n "$recipient" ] && set -- "$@" --mail-rcpt "$recipient"
-done
-set +f
-IFS=$OLD_IFS
-
-set -- "$@" \
-    --form-string "from=${MAIL_FROM}" \
-    --form-string "to=${RECIPIENTS}" \
-    --form-string "subject=${SUBJECT}" \
-    --form-string "body=${BODY}"
-
-if [ -n "$REPORT_FILE" ] && [ -f "$REPORT_FILE" ]; then
-    set -- "$@" --form "attachment=@${REPORT_FILE};filename=jenkins-build-${BUILD_NUMBER}-analytics.pdf;type=application/pdf"
+if [ -z "$REPORT_FILE" ] || [ ! -s "$REPORT_FILE" ]; then
+    printf '%s\n' "PDF report is missing or empty; refusing to send an incomplete email: ${REPORT_FILE:-<unset>}" >&2
+    exit 2
 fi
 
-curl "$@"
+PYTHON_BIN="${REPORT_PYTHON:-python3}"
+command -v "$PYTHON_BIN" >/dev/null || { printf '%s\n' "Python interpreter is not available: $PYTHON_BIN" >&2; exit 69; }
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+
+# Keep the password out of the process argument list. jenkins_reporter.py reads
+# these values only from the process environment.
+export SMTP_HOST SMTP_PORT SMTP_PASSWORD
+exec "$PYTHON_BIN" "$SCRIPT_DIR/jenkins_reporter.py" send-email \
+    --pdf "$REPORT_FILE" \
+    --job-name "$JOB_NAME" \
+    --build-number "$BUILD_NUMBER" \
+    --status "$BUILD_STATUS" \
+    --failed-stage "$FAILED_STAGE" \
+    --build-url "$BUILD_URL" \
+    --duration "${BUILD_DURATION:-Not available}" \
+    --recipients "$RECIPIENTS" \
+    --sender-email "$MAIL_FROM"

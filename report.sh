@@ -34,7 +34,6 @@ done
 [[ "$BUILD_NUMBER" =~ ^[0-9]+$ ]] || { echo 'BUILD_NUMBER must be numeric.' >&2; exit 64; }
 PYTHON_BIN="${REPORT_PYTHON:-python3}"
 command -v "$PYTHON_BIN" >/dev/null || { echo "Python interpreter is not available: $PYTHON_BIN" >&2; exit 69; }
-command -v curl >/dev/null || { echo 'curl is required.' >&2; exit 69; }
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 "$PYTHON_BIN" - <<'PY' || { echo "Install dependencies with: $PYTHON_BIN -m pip install -r requirements.txt" >&2; exit 69; }
@@ -50,4 +49,5 @@ command=("$PYTHON_BIN" "$SCRIPT_DIR/jenkins_reporter.py" \
   --user "$JENKINS_USER" --token "$JENKINS_TOKEN" --output "$OUTPUT_PDF" \
   --template "$SCRIPT_DIR/template.html" --stylesheet "$SCRIPT_DIR/style.css")
 [[ -z "$STATUS_OVERRIDE" ]] || command+=(--status-override "$STATUS_OVERRIDE")
-exec "${command[@]}"
+"${command[@]}"
+[[ -s "$OUTPUT_PDF" ]] || { echo "PDF report was not created or is empty: $OUTPUT_PDF" >&2; exit 2; }
