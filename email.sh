@@ -68,13 +68,11 @@ recipients_for_stage() {
     esac
 }
 
+ROLE="$(role_for_stage "$FAILED_STAGE")"
+RECIPIENTS="$(recipients_for_stage "$FAILED_STAGE")"
 if [ "$BUILD_STATUS" = "SUCCESS" ]; then
-    ROLE='DevOps'
-    RECIPIENTS="${DEVOPS_TEAM_EMAILS:-}"
-    FAILURE_SUMMARY="${FAILURE_SUMMARY:-Deployment and performance testing completed successfully.}"
+    FAILURE_SUMMARY="${FAILURE_SUMMARY:-Stage completed successfully.}"
 else
-    ROLE="$(role_for_stage "$FAILED_STAGE")"
-    RECIPIENTS="$(recipients_for_stage "$FAILED_STAGE")"
     FAILURE_SUMMARY="${FAILURE_SUMMARY:-See the attached Jenkins report and console log for the failing command and stack trace.}"
 fi
 RECIPIENTS="${RECIPIENTS:-${MAIL_TO:-}}"
@@ -99,6 +97,8 @@ EOF
 )
 
 set -- --fail --silent --show-error \
+    --connect-timeout 10 \
+    --max-time 30 \
     --url "smtp://${SMTP_HOST}:${SMTP_PORT}" \
     --ssl-reqd \
     --user "${SMTP_USER}:${SMTP_PASSWORD}" \

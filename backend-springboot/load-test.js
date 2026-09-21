@@ -75,6 +75,10 @@ export default function publicBookingFlow() {
       // An empty result is valid for a date without scheduled trips. It is not a
       // successful booking-flow iteration, so test environments should provide
       // a future trip via TRIP_DATE (and optionally ROUTE).
+      // Back off before retrying. In particular, a refused connection returns
+      // immediately; without this delay k6 can generate millions of noisy
+      // failed requests before its threshold stops the test.
+      sleep(1);
       return;
     }
 

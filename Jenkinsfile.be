@@ -1,3 +1,24 @@
+def sendStageNotification(String stageName, String stageStatus) {
+    def reportFile = "ci-stage-${env.BUILD_NUMBER}-${stageName.replaceAll(/[^A-Za-z0-9]+/, '-').toLowerCase()}.log"
+    writeFile file: reportFile, text: """\
+Pipeline: ${env.JOB_NAME}
+Build: #${env.BUILD_NUMBER}
+Stage: ${stageName}
+Status: ${stageStatus}
+Build URL: ${env.BUILD_URL}
+"""
+
+    sh """#!/usr/bin/env sh
+        if ./email.sh "\$JOB_NAME" "\$BUILD_NUMBER" "\$BUILD_URL" \\
+          "${reportFile}" "${stageName}" "${stageStatus}"; then
+          echo "Stage ${stageName} ${stageStatus} notification sent."
+        else
+          notification_status=\$?
+          echo "WARNING: Stage ${stageName} ${stageStatus} notification failed (exit \$notification_status)."
+        fi
+    """
+}
+
 pipeline {
     agent any
 
@@ -19,6 +40,10 @@ pipeline {
                 script { env.FAILED_STAGE = 'Checkout' }
                 checkout scm
             }
+            post {
+                success { script { sendStageNotification('Checkout', 'SUCCESS') } }
+                failure { script { sendStageNotification('Checkout', 'FAILED') } }
+            }
         }
 
         stage('Backend Unit Test') {
@@ -28,6 +53,10 @@ pipeline {
                 dir('backend-springboot') {
                     sh 'mvn clean test'
                 }
+            }
+            post {
+                success { script { sendStageNotification('Backend Unit Test', 'SUCCESS') } }
+                failure { script { sendStageNotification('Backend Unit Test', 'FAILED') } }
             }
         }
 
@@ -39,6 +68,10 @@ pipeline {
                     sh 'mvn checkstyle:check'
                 }
             }
+            post {
+                success { script { sendStageNotification('Check fucked up code', 'SUCCESS') } }
+                failure { script { sendStageNotification('Check fucked up code', 'FAILED') } }
+            }
         }
 
         stage('Security testing') {
@@ -47,6 +80,10 @@ pipeline {
                 dir('backend-springboot') {
                     sh 'semgrep scan --config=auto --json --output semgrep-report.json || true'
                 }
+            }
+            post {
+                success { script { sendStageNotification('Security testing', 'SUCCESS') } }
+                failure { script { sendStageNotification('Security testing', 'FAILED') } }
             }
         }
 
@@ -64,6 +101,10 @@ pipeline {
                     '''
                 }
             }
+            post {
+                success { script { sendStageNotification('Build Maven', 'SUCCESS') } }
+                failure { script { sendStageNotification('Build Maven', 'FAILED') } }
+            }
         }
 
         stage('Docker Build') {
@@ -72,6 +113,10 @@ pipeline {
                 dir('backend-springboot') {
                     sh "docker build -t ${IMAGE} ."
                 }
+            }
+            post {
+                success { script { sendStageNotification('Docker Build', 'SUCCESS') } }
+                failure { script { sendStageNotification('Docker Build', 'FAILED') } }
             }
         }
 
@@ -88,6 +133,10 @@ pipeline {
                         ${IMAGE}
                 """
             }
+            post {
+                success { script { sendStageNotification('Deploy', 'SUCCESS') } }
+                failure { script { sendStageNotification('Deploy', 'FAILED') } }
+            }
         }
 
         stage('Performance Testing') {
@@ -95,16 +144,29 @@ pipeline {
                 script { env.FAILED_STAGE = 'Performance Testing' }
                 dir('backend-springboot') {
                     script {
-                        // Đợi app sống thật sự trên cổng 8000 (đã map ra ngoài) trước khi gọi k6
+                        // Jenkins uses POSIX sh. Wait for a real HTTP response
+                        // before k6 starts; a closed port must fail immediately.
                         sh '''
-                            echo "Waiting for backend to be up..."
-                            for i in {1..30}; do
-                              if curl -s http://localhost:8000/api/v1/trips/home?date=2026-09-24 > /dev/null; then
-                                echo "Backend is up!"
-                                break
+                            set -eu
+                            max_attempts=30
+                            attempt=1
+                            echo "Waiting for backend to be reachable on port 8000..."
+                            while [ "$attempt" -le "$max_attempts" ]; do
+                              if curl --fail --silent --show-error --max-time 5 \
+                                'http://127.0.0.1:8000/api/v1/trips/home?date=2026-09-24&page=0&size=1' \
+                                > /dev/null; then
+                                echo "Backend is ready."
+                                exit 0
                               fi
+                              echo "Backend is not ready (attempt $attempt/$max_attempts)."
+                              attempt=$((attempt + 1))
                               sleep 3
                             done
+
+                            echo "Backend did not become reachable on port 8000; skipping k6." >&2
+                            docker ps -a --filter 'name=ralsei-be' >&2 || true
+                            docker logs --tail 100 ralsei-be >&2 || true
+                            exit 1
                         '''
 
                         // Chạy k6 với BASE_URL trỏ đúng vào cổng 8000
@@ -112,56 +174,20 @@ pipeline {
                     }
                 }
             }
+            post {
+                success { script { sendStageNotification('Performance Testing', 'SUCCESS') } }
+                failure { script { sendStageNotification('Performance Testing', 'FAILED') } }
+            }
         }
     }
 
     post {
         success {
             echo 'Deployment and Load Test Completed Successfully!'
-            script {
-                echo "External SMTP configuration: ${env.CI_EMAIL_CONFIG ?: '/etc/nhaxetuanmv-ci-email.env'}"
-                writeFile file: 'ci-success-report.log', text: """\
-Pipeline: ${env.JOB_NAME}
-Build: #${env.BUILD_NUMBER}
-Status: SUCCESS
-Build URL: ${env.BUILD_URL}
-"""
-                sh '''#!/usr/bin/env sh
-                    ./email.sh "$JOB_NAME" "$BUILD_NUMBER" "$BUILD_URL" \
-                      ci-success-report.log "Pipeline completed" SUCCESS || \
-                      echo "WARNING: CI success email could not be sent."
-                '''
-            }
         }
 
         failure {
             echo 'Pipeline Failed!'
-            script {
-                echo "External SMTP configuration: ${env.CI_EMAIL_CONFIG ?: '/etc/nhaxetuanmv-ci-email.env'}"
-                writeFile file: 'ci-failure-report.log', text: """\
-Pipeline: ${env.JOB_NAME}
-Build: #${env.BUILD_NUMBER}
-Failed stage: ${env.FAILED_STAGE ?: 'Unknown'}
-Build URL: ${env.BUILD_URL}
-
-Open the Jenkins console for the failed command and complete stack trace.
-"""
-
-                echo """
-EMAIL NOTIFICATION TEST
-Pipeline       : ${env.JOB_NAME}
-Build          : #${env.BUILD_NUMBER}
-Failed stage   : ${env.FAILED_STAGE ?: 'Unknown'}
-Recipient route: email.sh will select the responsible role for this stage
-Jenkins URL    : ${env.BUILD_URL}
-"""
-
-                sh '''#!/usr/bin/env sh
-                    ./email.sh "$JOB_NAME" "$BUILD_NUMBER" "$BUILD_URL" \
-                      ci-failure-report.log "$FAILED_STAGE" FAILED || \
-                      echo "WARNING: CI failure email could not be sent."
-                '''
-            }
         }
 
         always {
