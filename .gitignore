@@ -1,2 +1,4 @@
 # External SMTP credentials must be provisioned on the CI agent, never Git.
 ci-email.env
+jenkins-report.env
+__pycache__/

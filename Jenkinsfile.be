@@ -1,24 +1,3 @@
-def sendStageNotification(String stageName, String stageStatus) {
-    def reportFile = "ci-stage-${env.BUILD_NUMBER}-${stageName.replaceAll(/[^A-Za-z0-9]+/, '-').toLowerCase()}.pdf"
-
-    sh """#!/usr/bin/env sh
-        report_file="${reportFile}"
-        if ! ./stage-report.sh "${stageName}" "${stageStatus}" "\$JOB_NAME" \\
-          "\$BUILD_NUMBER" "\$BUILD_URL" "\$report_file"; then
-          echo "WARNING: PDF report generation failed for ${stageName}; sending notification without attachment."
-          report_file=''
-        fi
-
-        if ./email.sh "\$JOB_NAME" "\$BUILD_NUMBER" "\$BUILD_URL" \\
-          "\$report_file" "${stageName}" "${stageStatus}"; then
-          echo "Stage ${stageName} ${stageStatus} notification sent."
-        else
-          notification_status=\$?
-          echo "WARNING: Stage ${stageName} ${stageStatus} notification failed (exit \$notification_status)."
-        fi
-    """
-}
-
 pipeline {
     agent any
 
@@ -40,10 +19,6 @@ pipeline {
                 script { env.FAILED_STAGE = 'Checkout' }
                 checkout scm
             }
-            post {
-                success { script { sendStageNotification('Checkout', 'SUCCESS') } }
-                failure { script { sendStageNotification('Checkout', 'FAILED') } }
-            }
         }
 
         stage('Backend Unit Test') {
@@ -55,8 +30,11 @@ pipeline {
                 }
             }
             post {
-                success { script { sendStageNotification('Backend Unit Test', 'SUCCESS') } }
-                failure { script { sendStageNotification('Backend Unit Test', 'FAILED') } }
+                always {
+                    // Publishes structured JUnit data for the analytics API;
+                    // this runs even when Maven reports failed tests.
+                    junit allowEmptyResults: true, testResults: 'backend-springboot/target/surefire-reports/TEST-*.xml'
+                }
             }
         }
 
@@ -68,10 +46,6 @@ pipeline {
                     sh 'mvn checkstyle:check'
                 }
             }
-            post {
-                success { script { sendStageNotification('Check fucked up code', 'SUCCESS') } }
-                failure { script { sendStageNotification('Check fucked up code', 'FAILED') } }
-            }
         }
 
         stage('Security testing') {
@@ -80,10 +54,6 @@ pipeline {
                 dir('backend-springboot') {
                     sh 'semgrep scan --config=auto --json --output semgrep-report.json || true'
                 }
-            }
-            post {
-                success { script { sendStageNotification('Security testing', 'SUCCESS') } }
-                failure { script { sendStageNotification('Security testing', 'FAILED') } }
             }
         }
 
@@ -101,10 +71,6 @@ pipeline {
                     '''
                 }
             }
-            post {
-                success { script { sendStageNotification('Build Maven', 'SUCCESS') } }
-                failure { script { sendStageNotification('Build Maven', 'FAILED') } }
-            }
         }
 
         stage('Docker Build') {
@@ -113,10 +79,6 @@ pipeline {
                 dir('backend-springboot') {
                     sh "docker build -t ${IMAGE} ."
                 }
-            }
-            post {
-                success { script { sendStageNotification('Docker Build', 'SUCCESS') } }
-                failure { script { sendStageNotification('Docker Build', 'FAILED') } }
             }
         }
 
@@ -132,10 +94,6 @@ pipeline {
                         -p ${PORT}:8080 \
                         ${IMAGE}
                 """
-            }
-            post {
-                success { script { sendStageNotification('Deploy', 'SUCCESS') } }
-                failure { script { sendStageNotification('Deploy', 'FAILED') } }
             }
         }
 
@@ -174,10 +132,6 @@ pipeline {
                     }
                 }
             }
-            post {
-                success { script { sendStageNotification('Performance Testing', 'SUCCESS') } }
-                failure { script { sendStageNotification('Performance Testing', 'FAILED') } }
-            }
         }
     }
 
@@ -191,7 +145,34 @@ pipeline {
         }
 
         always {
-            archiveArtifacts artifacts: 'backend-springboot/semgrep-report.json,ci-stage-*.pdf', fingerprint: true, allowEmptyArchive: true
+            script {
+                def reportFile = "jenkins-build-${env.BUILD_NUMBER}-analytics.pdf"
+                def reportStatus = currentBuild.currentResult ?: 'UNKNOWN'
+                if (reportStatus == 'FAILURE') {
+                    reportStatus = 'FAILED'
+                }
+                sh """#!/usr/bin/env sh
+                    set -eu
+                    # The next commands consume an API token from a protected
+                    # agent file. Do not expose expanded values in Jenkins logs.
+                    set +x
+                    report_config="\${JENKINS_REPORT_CONFIG:-/etc/nhaxetuanmv-jenkins-report.env}"
+                    if [ ! -r "\$report_config" ]; then
+                      echo "WARNING: Jenkins report configuration is not readable: \$report_config"
+                      exit 0
+                    fi
+                    . "\$report_config"
+                    ./report.sh -u "\$JENKINS_API_URL" -j "\$JOB_NAME" -b "\$BUILD_NUMBER" \
+                      -usr "\$JENKINS_API_USER" -t "\$JENKINS_API_TOKEN" -o "${reportFile}" -s "${reportStatus}" || {
+                        echo "WARNING: Jenkins analytics PDF could not be generated."
+                        exit 0
+                      }
+                    ./email.sh "\$JOB_NAME" "\$BUILD_NUMBER" "\$BUILD_URL" \
+                      "${reportFile}" "Pipeline Analytics" "${reportStatus}" || \
+                      echo "WARNING: Jenkins analytics email could not be sent."
+                """
+            }
+            archiveArtifacts artifacts: 'backend-springboot/semgrep-report.json,jenkins-build-*-analytics.pdf', fingerprint: true, allowEmptyArchive: true
             cleanWs()
         }
     }

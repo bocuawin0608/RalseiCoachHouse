@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Jenkins Build {{ report.build_number }} Report</title></head>
+<body>
+  <header class="hero">
+    <div><p class="eyebrow">JENKINS PIPELINE ANALYTICS</p><h1>{{ report.project_name }}</h1><p>{{ report.job_name }} · Build #{{ report.build_number }}</p></div>
+    <div class="status status-{{ report.status|lower }}">{{ report.status }}</div>
+  </header>
+
+  <section class="metadata">
+    <div><span>Trigger</span><strong>{{ report.trigger }}</strong></div><div><span>Started</span><strong>{{ report.timestamp }}</strong></div>
+    <div><span>Total duration</span><strong>{{ report.total_duration }}</strong></div><div><span>Build URL</span><strong class="url">{{ report.build_url }}</strong></div>
+  </section>
+
+  <section><h2>Executive summary</h2><div class="metrics">
+    <div class="metric"><span>Total stages</span><strong>{{ report.total_stages }}</strong></div><div class="metric"><span>Stage success rate</span><strong>{{ report.success_rate }}%</strong></div>
+    <div class="metric"><span>Tests run</span><strong>{{ report.tests.total }}</strong></div><div class="metric"><span>Tests passed</span><strong>{{ report.tests.passed }}</strong></div>
+    <div class="metric danger"><span>Tests failed</span><strong>{{ report.tests.failed }}</strong></div><div class="metric"><span>Tests skipped</span><strong>{{ report.tests.skipped }}</strong></div>
+  </div></section>
+
+  <section><h2>Stage execution breakdown</h2><table><thead><tr><th>Stage</th><th>Duration</th><th>Status</th><th>Execution note</th></tr></thead><tbody>
+  {% for stage in report.stages %}<tr><td>{{ stage.name }}</td><td>{{ stage.duration }}</td><td><span class="pill pill-{{ stage.status|lower }}">{{ stage.status }}</span></td><td>{{ stage.error_summary }}</td></tr>{% endfor %}
+  </tbody></table></section>
+
+  {% if report.status in ['FAILED', 'ABORTED'] or report.analysis.categories %}
+  <section class="failure"><h2>Failure analysis &amp; likely root cause</h2>
+    <p><strong>Detected categories:</strong> {{ report.analysis.categories|join(', ') if report.analysis.categories else 'No recognized category' }}</p>
+    <div class="root-cause">{{ report.analysis.root_cause }}</div>
+    <p class="caption">Console-log context (the report retains only a bounded excerpt, not a raw log dump):</p><pre>{{ report.analysis.snippet }}</pre>
+  </section>{% endif %}
+
+  <section><h2>Test results</h2>
+  {% if report.tests.suites %}<table><thead><tr><th>Suite</th><th>Tests</th><th>Failed</th></tr></thead><tbody>{% for suite in report.tests.suites %}<tr><td>{{ suite.name }}</td><td>{{ suite.total }}</td><td>{{ suite.failed }}</td></tr>{% endfor %}</tbody></table>
+  {% else %}<p class="muted">JUnit/TestNG results were not published for this build.</p>{% endif %}
+  {% for failure in report.tests.failures %}<article class="test-failure"><strong>{{ failure.suite }} · {{ failure.name }}</strong><pre>{{ failure.error }}</pre></article>{% endfor %}
+  </section>
+
+  <footer>Generated {{ report.generated_at }} · {{ report.environment }} · <a href="{{ report.build_url }}">Open Jenkins build</a></footer>
+</body></html>
