@@ -6,7 +6,7 @@ set -eu
 
 usage() {
     cat <<'EOF'
-Usage: email.sh JOB_NAME BUILD_NUMBER BUILD_URL LOG_FILE [STAGE] [STATUS]
+Usage: email.sh JOB_NAME BUILD_NUMBER BUILD_URL REPORT_FILE [STAGE] [STATUS]
 
 SMTP configuration is loaded from CI_EMAIL_CONFIG (default:
 /etc/nhaxetuanmv-ci-email.env). The file must define SMTP_HOST, SMTP_USER,
@@ -22,7 +22,7 @@ if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then usage; exit 0; fi
 JOB_NAME="${1:?JOB_NAME is required}"
 BUILD_NUMBER="${2:?BUILD_NUMBER is required}"
 BUILD_URL="${3:?BUILD_URL is required}"
-LOG_FILE="${4:-}"
+REPORT_FILE="${4:-}"
 FAILED_STAGE="${5:-${FAILED_STAGE:-Unknown}}"
 BUILD_STATUS="${6:-${BUILD_STATUS:-FAILED}}"
 
@@ -121,8 +121,8 @@ set -- "$@" \
     --form-string "subject=${SUBJECT}" \
     --form-string "body=${BODY}"
 
-if [ -n "$LOG_FILE" ] && [ -f "$LOG_FILE" ]; then
-    set -- "$@" --form "attachment=@${LOG_FILE};filename=jenkins-build-${BUILD_NUMBER}.log"
+if [ -n "$REPORT_FILE" ] && [ -f "$REPORT_FILE" ]; then
+    set -- "$@" --form "attachment=@${REPORT_FILE};filename=jenkins-build-${BUILD_NUMBER}-analytics.pdf;type=application/pdf"
 fi
 
 curl "$@"
