@@ -1,0 +1,12 @@
+# Installed dependencies
+node_modules/
+
+# Playwright-generated reports and run artifacts
+reports/
+playwright-report/
+blob-report/
+test-results/
+
+# Local environment overrides
+.env
+.env.local

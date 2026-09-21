@@ -29,6 +29,7 @@ BUILD_STATUS="${6:-${BUILD_STATUS:-FAILED}}"
 CI_EMAIL_CONFIG="${CI_EMAIL_CONFIG:-/etc/nhaxetuanmv-ci-email.env}"
 if [ ! -r "$CI_EMAIL_CONFIG" ]; then
     printf '%s\n' "SMTP configuration is not readable: $CI_EMAIL_CONFIG" >&2
+    printf '%s\n' "Provision the external SMTP secret on the Jenkins agent or mount it into the agent container." >&2
     exit 2
 fi
 

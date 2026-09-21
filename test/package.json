@@ -1,0 +1,19 @@
+{
+  "name": "ralsei-booking-blackbox-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:scenario-b": "playwright test specs/scenario-b-failed.spec.js",
+    "test:scenario-b:headed": "playwright test specs/scenario-b-failed.spec.js --headed",
+    "test:scenario-b:debug": "playwright test specs/scenario-b-failed.spec.js --debug",
+    "test:cargo": "playwright test --config=playwright.cargo.config.js",
+    "test:cargo:headed": "playwright test --config=playwright.cargo.config.js --headed",
+    "test:cargo:live": "playwright test --config=playwright.cargo.config.js specs/cargo-booking/live",
+    "test:headed": "playwright test --headed",
+    "test:report": "playwright show-report reports/html"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0"
+  }
+}

@@ -1,0 +1,142 @@
+{
+  "info": {
+    "_postman_id": "8ee52df7-bf7f-4d13-a739-0ea42bbdc26f",
+    "name": "Ralsei - Scenario B Failed Trip Search Tests",
+    "description": "Failed Scenario B cases only. Run repeatedly with Collection Runner or Newman for pressure/regression testing. No request mutates production data.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.collectionVariables.get('searchDate')) {",
+          "  const date = new Date();",
+          "  date.setUTCDate(date.getUTCDate() + 30);",
+          "  pm.collectionVariables.set('resolvedSearchDate', date.toISOString().slice(0, 10));",
+          "} else {",
+          "  pm.collectionVariables.set('resolvedSearchDate', pm.collectionVariables.get('searchDate'));",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const id = pm.info.requestName.split(' ')[0];",
+          "const status = pm.response.code;",
+          "let body = null;",
+          "try { body = pm.response.json(); } catch (_) {}",
+          "const content = Array.isArray(body && body.content) ? body.content : [];",
+          "const pageContract = () => {",
+          "  pm.expect(body).to.be.an('object');",
+          "  pm.expect(body.content).to.be.an('array');",
+          "  pm.expect(body.pageNumber).to.be.a('number');",
+          "};",
+          "const parseTime = (value) => { const time = new Date(value); return Number.isNaN(time.getTime()) ? null : time; };",
+          "const price = (trip) => Number(trip.seatPrice);",
+          "pm.test(`${id} returns a controlled HTTP status`, () => pm.expect(status).to.be.below(500));",
+          "if (['BK-TC-B13', 'BK-TC-B14', 'BK-TC-B18', 'BK-TC-B22'].includes(id)) {",
+          "  pm.test(`${id} rejects the unsafe filter contract`, () => pm.expect(status).to.eql(400));",
+          "} else {",
+          "  pm.test(`${id} search succeeds`, () => pm.expect(status).to.eql(200));",
+          "  pm.test(`${id} preserves the paged response contract`, pageContract);",
+          "}",
+          "if (id === 'BK-TC-B02' && status === 200) pm.test('sold-out trips are excluded', () => content.forEach((trip) => pm.expect(Number(trip.availableSeats), `trip ${trip.tripId}`).to.be.above(0)));",
+          "if (id === 'BK-TC-B03' && status === 200) pm.test('null availableSeats has a valid totalSeats fallback', () => { const fallbackTrips = content.filter((trip) => trip.availableSeats === null && Number.isFinite(Number(trip.totalSeats)) && Number(trip.totalSeats) >= 0); pm.expect(fallbackTrips.length, 'seed at least one trip with null availableSeats and valid totalSeats').to.be.above(0); fallbackTrips.forEach((trip) => pm.expect(Number(trip.totalSeats), `trip ${trip.tripId} totalSeats`).to.be.at.least(0)); });",
+          "if (id === 'BK-TC-B06' && status === 200) pm.test('timestamps are valid ISO date-times', () => content.forEach((trip) => { pm.expect(parseTime(trip.departureTime), `trip ${trip.tripId} departureTime`).not.eql(null); pm.expect(parseTime(trip.arrivalTime), `trip ${trip.tripId} arrivalTime`).not.eql(null); }));",
+          "if (id === 'BK-TC-B07' && status === 200) pm.test('prices are finite and non-negative', () => content.forEach((trip) => { pm.expect(price(trip), `trip ${trip.tripId} seatPrice`).to.be.a('number').and.satisfy(Number.isFinite).and.at.least(0); }));",
+          "if (id === 'BK-TC-B19' && status === 200) pm.test('Under 300,000 is exclusive', () => content.forEach((trip) => pm.expect(price(trip), `trip ${trip.tripId}`).to.be.below(300000)));",
+          "if (id === 'BK-TC-B21' && status === 200) pm.test('Over 500,000 is exclusive and unbounded', () => content.forEach((trip) => pm.expect(price(trip), `trip ${trip.tripId}`).to.be.above(500000)));",
+          "if (id === 'BK-TC-B26' && status === 200) pm.test('latest requested layout owns every result', () => content.forEach((trip) => pm.expect(String(trip.coachTypeName).toLowerCase()).to.include('luxury')));",
+          "if (id === 'BK-TC-B34' && status === 200) pm.test('every selectable trip has a positive ID', () => content.forEach((trip) => pm.expect(trip.tripId, JSON.stringify(trip)).to.be.a('number').and.above(0)));",
+          "if (id === 'BK-TC-B37' && status === 200) pm.test('trips without active available seats are excluded', () => content.forEach((trip) => pm.expect(Number(trip.availableSeats), `trip ${trip.tripId}`).to.be.above(0)));",
+          "if (id === 'BK-TC-B40' && status === 200) pm.test('overlapping prices never duplicate a trip', () => { const ids = content.map((trip) => trip.tripId); pm.expect(new Set(ids).size).to.eql(ids.length); });",
+          "if (id === 'BK-TC-B41' && status === 200) pm.test('route with extra hyphens is preserved', () => content.forEach((trip) => pm.expect(trip.routeName).to.eql(pm.collectionVariables.get('hyphenatedRoute'))));"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "https://localhost:9090/api/v1", "type": "string" },
+    { "key": "searchDate", "value": "", "type": "string" },
+    { "key": "resolvedSearchDate", "value": "", "type": "string" },
+    { "key": "route", "value": "Hà Nội - Quảng Bình", "type": "string" },
+    { "key": "hyphenatedRoute", "value": "A - B - C", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Response integrity",
+      "item": [
+        {
+          "name": "BK-TC-B02 Sold-out trip",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/trips/home?advanced=true&date={{resolvedSearchDate}}&route={{route}}&page=0&size=100" }
+        },
+        {
+          "name": "BK-TC-B03 Null available seats",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/trips/home?advanced=true&date={{resolvedSearchDate}}&route={{route}}&page=0&size=100" }
+        },
+        {
+          "name": "BK-TC-B06 Malformed timestamp",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/trips/home?advanced=true&date={{resolvedSearchDate}}&route={{route}}&page=0&size=100" }
+        },
+        {
+          "name": "BK-TC-B07 Invalid price",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/trips/home?advanced=true&date={{resolvedSearchDate}}&route={{route}}&page=0&size=100" }
+        },
+        {
+          "name": "BK-TC-B34 Missing trip ID",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/trips/home?advanced=true&date={{resolvedSearchDate}}&route={{route}}&page=0&size=100" }
+        },
+        {
+          "name": "BK-TC-B37 Only inactive seats",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/trips/home?advanced=true&date={{resolvedSearchDate}}&route={{route}}&page=0&size=100" }
+        },
+        {
+          "name": "BK-TC-B40 Overlapping price records",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/trips/home?advanced=true&date={{resolvedSearchDate}}&route={{route}}&page=0&size=100" }
+        },
+        {
+          "name": "BK-TC-B41 Route with extra hyphens",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/trips/home?advanced=true&date={{resolvedSearchDate}}&route={{hyphenatedRoute}}&page=0&size=100" }
+        }
+      ]
+    },
+    {
+      "name": "Filter validation and boundaries",
+      "item": [
+        {
+          "name": "BK-TC-B13 More than four time ranges",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/trips/home?advanced=true&date={{resolvedSearchDate}}&route={{route}}&timeSlots=00:00-01:00,01:00-02:00,02:00-03:00,03:00-04:00,04:00-05:00&page=0&size=100" }
+        },
+        {
+          "name": "BK-TC-B14 Malformed time range",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/trips/home?advanced=true&date={{resolvedSearchDate}}&route={{route}}&timeSlots=25:00-26:00&page=0&size=100" }
+        },
+        {
+          "name": "BK-TC-B18 More than three layouts",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/trips/home?advanced=true&date={{resolvedSearchDate}}&route={{route}}&layouts=Limousine,luxury,truyền thống,custom-fourth&page=0&size=100" }
+        },
+        {
+          "name": "BK-TC-B19 Under 300,000",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/trips/home?advanced=true&date={{resolvedSearchDate}}&route={{route}}&minPrice=0&maxPrice=299999.99&page=0&size=100" }
+        },
+        {
+          "name": "BK-TC-B21 Over 500,000",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/trips/home?advanced=true&date={{resolvedSearchDate}}&route={{route}}&minPrice=500000.01&page=0&size=100" }
+        },
+        {
+          "name": "BK-TC-B22 Reversed price range",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/trips/home?advanced=true&date={{resolvedSearchDate}}&route={{route}}&minPrice=500000&maxPrice=100000&page=0&size=100" }
+        },
+        {
+          "name": "BK-TC-B26 Rapid filter changes latest request",
+          "request": { "method": "GET", "header": [{ "key": "X-Scenario-B-Sequence", "value": "latest" }], "url": "{{baseUrl}}/trips/home?advanced=true&date={{resolvedSearchDate}}&route={{route}}&layouts=luxury&page=0&size=100" }
+        }
+      ]
+    }
+  ]
+}

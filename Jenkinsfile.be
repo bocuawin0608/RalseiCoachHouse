@@ -119,6 +119,7 @@ pipeline {
         success {
             echo 'Deployment and Load Test Completed Successfully!'
             script {
+                echo "External SMTP configuration: ${env.CI_EMAIL_CONFIG ?: '/etc/nhaxetuanmv-ci-email.env'}"
                 writeFile file: 'ci-success-report.log', text: """\
 Pipeline: ${env.JOB_NAME}
 Build: #${env.BUILD_NUMBER}
@@ -136,6 +137,7 @@ Build URL: ${env.BUILD_URL}
         failure {
             echo 'Pipeline Failed!'
             script {
+                echo "External SMTP configuration: ${env.CI_EMAIL_CONFIG ?: '/etc/nhaxetuanmv-ci-email.env'}"
                 writeFile file: 'ci-failure-report.log', text: """\
 Pipeline: ${env.JOB_NAME}
 Build: #${env.BUILD_NUMBER}
