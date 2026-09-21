@@ -23,7 +23,8 @@ else
     [ -z "${REPORT_PYTHON:-}" ] || export REPORT_PYTHON
     printf '%s\n' "REPORT: Creating $OUTPUT_FILE from Jenkins API data..."
     if ./report.sh -u "$JENKINS_API_URL" -j "$JOB_NAME" -b "$BUILD_NUMBER" \
-        -usr "$JENKINS_API_USER" -t "$JENKINS_API_TOKEN" -o "$OUTPUT_FILE" -s "$STATUS" && [ -s "$OUTPUT_FILE" ]; then
+        -usr "$JENKINS_API_USER" -t "$JENKINS_API_TOKEN" -o "$OUTPUT_FILE" \
+        --build-url "$BUILD_URL" -s "$STATUS" && [ -s "$OUTPUT_FILE" ]; then
         REPORT_READY=true
         REPORT_FILE="$OUTPUT_FILE"
         printf '%s\n' "REPORT: PDF created successfully: $REPORT_FILE"

@@ -110,10 +110,12 @@ def send_pdf_report(
 
 
 def job_url(base: str, job_name: str, build: int | None = None) -> str:
-    parts = ["job", *[quote(part, safe="") for part in job_name.strip("/").split("/") if part]]
-    if not parts[1:]:
+    job_parts = [quote(part, safe="") for part in job_name.strip("/").split("/") if part]
+    if not job_parts:
         raise JenkinsApiError("JOB_NAME must not be empty")
-    path = "/".join(parts)
+    # Nested Jenkins jobs are addressed as /job/folder/job/child, not as a
+    # flat /job/folder/child path.
+    path = "/".join(f"job/{part}" for part in job_parts)
     return f"{base.rstrip('/')}/{path}" + (f"/{build}" if build is not None else "")
 
 
@@ -227,7 +229,10 @@ def collect_tests(payload: Any) -> dict[str, Any]:
 
 def collect_report(args: argparse.Namespace) -> dict[str, Any]:
     client = JenkinsClient(args.jenkins_url, args.user, args.token)
-    build_url = job_url(args.jenkins_url, args.job_name, args.build_number)
+    # BUILD_URL is supplied by Jenkins for the exact running job/build. Prefer
+    # it over reconstructing a route from JOB_NAME, which is error-prone for
+    # folders, renamed jobs, and controller URL-prefix configurations.
+    build_url = args.build_url.rstrip("/") if args.build_url else job_url(args.jenkins_url, args.job_name, args.build_number)
     build = client.get_json(f"{build_url}/api/json?tree=displayName,fullDisplayName,result,timestamp,duration,building,description,actions[causes[shortDescription]]") or {}
     console_log = client.get_text(f"{build_url}/consoleText")
     pipeline = client.get_json(f"{build_url}/wfapi/describe", required=False) or {}
@@ -327,6 +332,7 @@ def report_main(argv: list[str]) -> int:
     parser.add_argument("--jenkins-url", required=True); parser.add_argument("--job-name", required=True)
     parser.add_argument("--build-number", required=True, type=int); parser.add_argument("--user", required=True)
     parser.add_argument("--token", required=True); parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--build-url", help="Canonical Jenkins BUILD_URL for this build")
     parser.add_argument("--status-override", choices=["SUCCESS", "FAILED", "ABORTED", "UNSTABLE", "UNKNOWN"])
     parser.add_argument("--template", required=True, type=Path); parser.add_argument("--stylesheet", required=True, type=Path)
     args = parser.parse_args(argv)

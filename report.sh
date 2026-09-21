@@ -5,7 +5,7 @@ set -Eeuo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: report.sh -u JENKINS_URL -j JOB_NAME -b BUILD_NUMBER -usr USER -t TOKEN -o OUTPUT_PDF_PATH [-s STATUS]
+Usage: report.sh -u JENKINS_URL -j JOB_NAME -b BUILD_NUMBER -usr USER -t TOKEN -o OUTPUT_PDF_PATH [-l BUILD_URL] [-s STATUS]
 
 Example:
   ./report.sh -u http://jenkins.local:8080 -j backend-pipeline -b 142 \
@@ -13,7 +13,7 @@ Example:
 EOF
 }
 
-JENKINS_URL='' JOB_NAME='' BUILD_NUMBER='' JENKINS_USER='' JENKINS_TOKEN='' OUTPUT_PDF='' STATUS_OVERRIDE=''
+JENKINS_URL='' JOB_NAME='' BUILD_NUMBER='' JENKINS_USER='' JENKINS_TOKEN='' OUTPUT_PDF='' BUILD_URL='' STATUS_OVERRIDE=''
 while (($#)); do
   case "$1" in
     -u) JENKINS_URL="${2:?Missing value for -u}"; shift 2 ;;
@@ -22,6 +22,7 @@ while (($#)); do
     -usr|--user) JENKINS_USER="${2:?Missing value for $1}"; shift 2 ;;
     -t|--token) JENKINS_TOKEN="${2:?Missing value for $1}"; shift 2 ;;
     -o|--output) OUTPUT_PDF="${2:?Missing value for $1}"; shift 2 ;;
+    -l|--build-url) BUILD_URL="${2:?Missing value for $1}"; shift 2 ;;
     -s|--status) STATUS_OVERRIDE="${2:?Missing value for $1}"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) printf 'Unknown option: %s\n' "$1" >&2; usage >&2; exit 64 ;;
@@ -48,6 +49,7 @@ command=("$PYTHON_BIN" "$SCRIPT_DIR/jenkins_reporter.py" \
   --jenkins-url "$JENKINS_URL" --job-name "$JOB_NAME" --build-number "$BUILD_NUMBER" \
   --user "$JENKINS_USER" --token "$JENKINS_TOKEN" --output "$OUTPUT_PDF" \
   --template "$SCRIPT_DIR/template.html" --stylesheet "$SCRIPT_DIR/style.css")
+[[ -z "$BUILD_URL" ]] || command+=(--build-url "$BUILD_URL")
 [[ -z "$STATUS_OVERRIDE" ]] || command+=(--status-override "$STATUS_OVERRIDE")
 "${command[@]}"
 [[ -s "$OUTPUT_PDF" ]] || { echo "PDF report was not created or is empty: $OUTPUT_PDF" >&2; exit 2; }
