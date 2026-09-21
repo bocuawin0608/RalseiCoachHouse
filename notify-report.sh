@@ -33,12 +33,16 @@ else
     fi
 fi
 
-printf '%s\n' "EMAIL: Sending $STATUS notification (PDF attached: $REPORT_READY)..."
-if ./email.sh "$JOB_NAME" "$BUILD_NUMBER" "$BUILD_URL" "$REPORT_FILE" 'Pipeline Analytics' "$STATUS"; then
-    printf '%s\n' 'EMAIL: Notification sent successfully.'
+if [ "$REPORT_READY" = true ]; then
+    printf '%s\n' "EMAIL: Sending $STATUS notification with verified PDF attachment..."
+    if ./email.sh "$JOB_NAME" "$BUILD_NUMBER" "$BUILD_URL" "$REPORT_FILE" 'Pipeline Analytics' "$STATUS"; then
+        printf '%s\n' 'EMAIL: Notification sent successfully.'
+    else
+        status=$?
+        printf '%s\n' "EMAIL ERROR: Notification failed (exit $status). See the SMTP error above." >&2
+    fi
 else
-    status=$?
-    printf '%s\n' "EMAIL ERROR: Notification failed (exit $status). See the SMTP error above." >&2
+    printf '%s\n' 'EMAIL: Not sent because no verified PDF report was generated.' >&2
 fi
 
 # Notifications are observability; they must never overwrite the CI result.
