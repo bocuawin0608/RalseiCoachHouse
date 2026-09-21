@@ -11,7 +11,6 @@ pipeline {
         CONTAINER = 'ralsei-be'
         PORT = '8000'
         VERSION = '0.0.${BUILD_NUMBER}' // Sửa lại cú pháp string interpolation cho đúng
-        SMTP_HOST = 'smtp.gmail.com'
     }
 
     stages {
@@ -119,6 +118,19 @@ pipeline {
     post {
         success {
             echo 'Deployment and Load Test Completed Successfully!'
+            script {
+                writeFile file: 'ci-success-report.log', text: """\
+Pipeline: ${env.JOB_NAME}
+Build: #${env.BUILD_NUMBER}
+Status: SUCCESS
+Build URL: ${env.BUILD_URL}
+"""
+                sh '''#!/usr/bin/env sh
+                    ./email.sh "$JOB_NAME" "$BUILD_NUMBER" "$BUILD_URL" \
+                      ci-success-report.log "Pipeline completed" SUCCESS || \
+                      echo "WARNING: CI success email could not be sent."
+                '''
+            }
         }
 
         failure {
@@ -142,22 +154,11 @@ Recipient route: email.sh will select the responsible role for this stage
 Jenkins URL    : ${env.BUILD_URL}
 """
 
-                withCredentials([usernamePassword(
-                    credentialsId: 'jenkins-smtp',
-                    usernameVariable: 'SMTP_USER',
-                    passwordVariable: 'SMTP_PASSWORD'
-                )]) {
-                    sh '''#!/usr/bin/env bash
-                        set +e
-                        ./email.sh "$JOB_NAME" "$BUILD_NUMBER" "$BUILD_URL" \
-                          ci-failure-report.log "$FAILED_STAGE"
-                        status=$?
-                        if [ "$status" -ne 0 ]; then
-                          echo "WARNING: CI failure email could not be sent (exit $status)."
-                        fi
-                        exit 0
-                    '''
-                }
+                sh '''#!/usr/bin/env sh
+                    ./email.sh "$JOB_NAME" "$BUILD_NUMBER" "$BUILD_URL" \
+                      ci-failure-report.log "$FAILED_STAGE" FAILED || \
+                      echo "WARNING: CI failure email could not be sent."
+                '''
             }
         }
 

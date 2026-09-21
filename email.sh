@@ -1,14 +1,16 @@
 #!/usr/bin/env sh
 
-# Sends a CI/CD failure notice to the team responsible for the failed stage.
-# SMTP credentials must be supplied by Jenkins, never committed to this repo.
+# Sends CI/CD status notifications through an external SMTP provider. Jenkins
+# only runs this script; credentials live in a protected file on the build agent.
 set -eu
 
 usage() {
     cat <<'EOF'
-Usage: email.sh JOB_NAME BUILD_NUMBER BUILD_URL LOG_FILE [FAILED_STAGE]
+Usage: email.sh JOB_NAME BUILD_NUMBER BUILD_URL LOG_FILE [STAGE] [STATUS]
 
-Required: SMTP_HOST, SMTP_USER, SMTP_PASSWORD
+SMTP configuration is loaded from CI_EMAIL_CONFIG (default:
+/etc/nhaxetuanmv-ci-email.env). The file must define SMTP_HOST, SMTP_USER,
+and SMTP_PASSWORD and must not be committed to source control.
 Recipients: BACKEND_TEAM_EMAILS, DEVOPS_TEAM_EMAILS, QA_TEAM_EMAILS,
             SECURITY_TEAM_EMAILS (comma/semicolon-separated); MAIL_TO is fallback.
 Optional: SMTP_PORT (587), MAIL_FROM (SMTP_USER), FAILURE_SUMMARY, FAILED_STAGE
@@ -22,6 +24,18 @@ BUILD_NUMBER="${2:?BUILD_NUMBER is required}"
 BUILD_URL="${3:?BUILD_URL is required}"
 LOG_FILE="${4:-}"
 FAILED_STAGE="${5:-${FAILED_STAGE:-Unknown}}"
+BUILD_STATUS="${6:-${BUILD_STATUS:-FAILED}}"
+
+CI_EMAIL_CONFIG="${CI_EMAIL_CONFIG:-/etc/nhaxetuanmv-ci-email.env}"
+if [ ! -r "$CI_EMAIL_CONFIG" ]; then
+    printf '%s\n' "SMTP configuration is not readable: $CI_EMAIL_CONFIG" >&2
+    exit 2
+fi
+
+# This file is operator-managed, outside the repository, and permissioned to
+# the CI agent user (recommended mode: 0600).
+# shellcheck disable=SC1090
+. "$CI_EMAIL_CONFIG"
 
 : "${SMTP_HOST:?SMTP_HOST is required}"
 : "${SMTP_USER:?SMTP_USER is required}"
@@ -29,8 +43,8 @@ FAILED_STAGE="${5:-${FAILED_STAGE:-Unknown}}"
 
 SMTP_PORT="${SMTP_PORT:-587}"
 MAIL_FROM="${MAIL_FROM:-$SMTP_USER}"
-# Test fallback. Configure role-specific recipient variables in Jenkins before
-# using this pipeline for the wider team.
+# Test fallback. Configure role-specific recipient variables in the external
+# SMTP configuration file before using this pipeline for the wider team.
 MAIL_TO="${MAIL_TO:-doanngocduc2006@gmail.com}"
 
 role_for_stage() {
@@ -53,23 +67,29 @@ recipients_for_stage() {
     esac
 }
 
-ROLE="$(role_for_stage "$FAILED_STAGE")"
-RECIPIENTS="$(recipients_for_stage "$FAILED_STAGE")"
+if [ "$BUILD_STATUS" = "SUCCESS" ]; then
+    ROLE='DevOps'
+    RECIPIENTS="${DEVOPS_TEAM_EMAILS:-}"
+    FAILURE_SUMMARY="${FAILURE_SUMMARY:-Deployment and performance testing completed successfully.}"
+else
+    ROLE="$(role_for_stage "$FAILED_STAGE")"
+    RECIPIENTS="$(recipients_for_stage "$FAILED_STAGE")"
+    FAILURE_SUMMARY="${FAILURE_SUMMARY:-See the attached Jenkins report and console log for the failing command and stack trace.}"
+fi
 RECIPIENTS="${RECIPIENTS:-${MAIL_TO:-}}"
 [ -n "$RECIPIENTS" ] || { printf '%s\n' "No recipients configured for failed stage: $FAILED_STAGE" >&2; exit 2; }
 
-FAILURE_SUMMARY="${FAILURE_SUMMARY:-See the attached Jenkins report and console log for the failing command and stack trace.}"
-SUBJECT="[CI/CD FAILED] ${JOB_NAME} #${BUILD_NUMBER} — ${FAILED_STAGE}"
+SUBJECT="[CI/CD ${BUILD_STATUS}] ${JOB_NAME} #${BUILD_NUMBER} — ${FAILED_STAGE}"
 BODY=$(cat <<EOF
-CI/CD pipeline failed and requires action.
+CI/CD pipeline status notification.
 
 Project       : ${JOB_NAME}
 Build         : #${BUILD_NUMBER}
-Failed stage  : ${FAILED_STAGE}
+Stage         : ${FAILED_STAGE}
 Responsible   : ${ROLE}
-Status        : FAILED
+Status        : ${BUILD_STATUS}
 
-Failure summary:
+Details:
 ${FAILURE_SUMMARY}
 
 Jenkins build:
