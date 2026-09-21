@@ -12,7 +12,8 @@ SMTP configuration is loaded from CI_EMAIL_CONFIG (default:
 /etc/nhaxetuanmv-ci-email.env). The file must define SMTP_HOST, SMTP_USER,
 and SMTP_PASSWORD and must not be committed to source control.
 Recipients: BACKEND_TEAM_EMAILS, DEVOPS_TEAM_EMAILS, QA_TEAM_EMAILS,
-            SECURITY_TEAM_EMAILS (comma/semicolon-separated); MAIL_TO is fallback.
+            SECURITY_TEAM_EMAILS, PIPELINE_REPORT_EMAILS (comma/semicolon-separated);
+            MAIL_TO is fallback.
 Optional: SMTP_PORT (587), MAIL_FROM (SMTP_USER), FAILURE_SUMMARY, FAILED_STAGE
 EOF
 }
@@ -60,6 +61,7 @@ role_for_stage() {
 
 recipients_for_stage() {
     case "$1" in
+        'Pipeline Analytics') printf '%s' "${PIPELINE_REPORT_EMAILS:-${MAIL_TO:-}}" ;;
         'Checkout'|'Backend Unit Test'|'Check fucked up code'|'Build Maven') printf '%s' "${BACKEND_TEAM_EMAILS:-}" ;;
         'Security testing') printf '%s' "${SECURITY_TEAM_EMAILS:-}${SECURITY_TEAM_EMAILS:+,}${DEVOPS_TEAM_EMAILS:-}" ;;
         'Docker Build'|'Deploy') printf '%s' "${DEVOPS_TEAM_EMAILS:-}" ;;
