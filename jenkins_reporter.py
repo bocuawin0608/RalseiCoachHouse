@@ -133,8 +133,10 @@ class JenkinsClient:
             raise JenkinsApiError(f"Cannot reach Jenkins: {exc}") from exc
         if response.status_code == 404 and not required:
             return None
-        if response.status_code in (401, 403):
-            raise JenkinsApiError("Jenkins authentication was rejected. Check user and API token permissions.")
+        if response.status_code == 401:
+            raise JenkinsApiError("Jenkins rejected the API credentials (HTTP 401). Verify JENKINS_API_USER and issue a new JENKINS_API_TOKEN for that user.")
+        if response.status_code == 403:
+            raise JenkinsApiError("Jenkins authenticated the API user but denied access (HTTP 403). Grant Overall/Read and Job/Read for this job and any parent folders.")
         if not response.ok:
             raise JenkinsApiError(f"Jenkins API returned HTTP {response.status_code} for {url}")
         try:
@@ -147,8 +149,10 @@ class JenkinsClient:
             response = self.session.get(url, timeout=TIMEOUT)
         except requests.RequestException as exc:
             raise JenkinsApiError(f"Cannot retrieve console log: {exc}") from exc
-        if response.status_code in (401, 403):
-            raise JenkinsApiError("Jenkins authentication was rejected while reading console log.")
+        if response.status_code == 401:
+            raise JenkinsApiError("Jenkins rejected the API credentials while reading the console log (HTTP 401).")
+        if response.status_code == 403:
+            raise JenkinsApiError("Jenkins denied console-log access (HTTP 403). Grant the API user Job/Read for this job.")
         if not response.ok:
             return f"Console log unavailable (HTTP {response.status_code})."
         return response.text
@@ -331,11 +335,14 @@ def report_main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--jenkins-url", required=True); parser.add_argument("--job-name", required=True)
     parser.add_argument("--build-number", required=True, type=int); parser.add_argument("--user", required=True)
-    parser.add_argument("--token", required=True); parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--token", default=os.environ.get("JENKINS_REPORTER_TOKEN"))
+    parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--build-url", help="Canonical Jenkins BUILD_URL for this build")
     parser.add_argument("--status-override", choices=["SUCCESS", "FAILED", "ABORTED", "UNSTABLE", "UNKNOWN"])
     parser.add_argument("--template", required=True, type=Path); parser.add_argument("--stylesheet", required=True, type=Path)
     args = parser.parse_args(argv)
+    if not args.token:
+        parser.error("--token is required (or set JENKINS_REPORTER_TOKEN securely)")
     try:
         report = collect_report(args)
         environment = Environment(loader=FileSystemLoader(str(args.template.parent)), autoescape=select_autoescape(["html"]))

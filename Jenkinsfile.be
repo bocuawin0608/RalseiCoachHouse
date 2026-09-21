@@ -137,7 +137,13 @@ pipeline {
         stage('Send CI Report') {
             steps {
                 // This stage runs only after performance testing succeeds.
-                sh './notify-report.sh SUCCESS'
+                withCredentials([usernamePassword(
+                    credentialsId: 'jenkins-report-api',
+                    usernameVariable: 'JENKINS_REPORT_API_USER',
+                    passwordVariable: 'JENKINS_REPORT_API_TOKEN'
+                )]) {
+                    sh './notify-report.sh SUCCESS'
+                }
             }
         }
     }
@@ -149,7 +155,13 @@ pipeline {
 
         failure {
             echo 'Pipeline Failed!'
-            sh './notify-report.sh FAILED'
+            withCredentials([usernamePassword(
+                credentialsId: 'jenkins-report-api',
+                usernameVariable: 'JENKINS_REPORT_API_USER',
+                passwordVariable: 'JENKINS_REPORT_API_TOKEN'
+            )]) {
+                sh './notify-report.sh FAILED'
+            }
         }
 
         always {

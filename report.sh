@@ -13,7 +13,7 @@ Example:
 EOF
 }
 
-JENKINS_URL='' JOB_NAME='' BUILD_NUMBER='' JENKINS_USER='' JENKINS_TOKEN='' OUTPUT_PDF='' BUILD_URL='' STATUS_OVERRIDE=''
+JENKINS_URL='' JOB_NAME='' BUILD_NUMBER='' JENKINS_USER='' JENKINS_TOKEN="${JENKINS_REPORTER_TOKEN:-}" OUTPUT_PDF='' BUILD_URL='' STATUS_OVERRIDE=''
 while (($#)); do
   case "$1" in
     -u) JENKINS_URL="${2:?Missing value for -u}"; shift 2 ;;
@@ -47,7 +47,7 @@ PY
 mkdir -p "$(dirname -- "$OUTPUT_PDF")"
 command=("$PYTHON_BIN" "$SCRIPT_DIR/jenkins_reporter.py" \
   --jenkins-url "$JENKINS_URL" --job-name "$JOB_NAME" --build-number "$BUILD_NUMBER" \
-  --user "$JENKINS_USER" --token "$JENKINS_TOKEN" --output "$OUTPUT_PDF" \
+  --user "$JENKINS_USER" --output "$OUTPUT_PDF" \
   --template "$SCRIPT_DIR/template.html" --stylesheet "$SCRIPT_DIR/style.css")
 [[ -z "$BUILD_URL" ]] || command+=(--build-url "$BUILD_URL")
 [[ -z "$STATUS_OVERRIDE" ]] || command+=(--status-override "$STATUS_OVERRIDE")
