@@ -133,6 +133,13 @@ pipeline {
                 }
             }
         }
+
+        stage('Send CI Report') {
+            steps {
+                // This stage runs only after performance testing succeeds.
+                sh './notify-report.sh SUCCESS'
+            }
+        }
     }
 
     post {
@@ -142,61 +149,10 @@ pipeline {
 
         failure {
             echo 'Pipeline Failed!'
+            sh './notify-report.sh FAILED'
         }
 
         always {
-            script {
-                def reportFile = "jenkins-build-${env.BUILD_NUMBER}-analytics.pdf"
-                def reportStatus = currentBuild.currentResult ?: 'UNKNOWN'
-                if (reportStatus == 'FAILURE') {
-                    reportStatus = 'FAILED'
-                }
-               sh """#!/usr/bin/env sh
-                    set -u
-                   # The next commands consume an API token from a protected
-                   # agent file. Do not expose expanded values in Jenkins logs.
-                   set +x
-                   report_config="\${JENKINS_REPORT_CONFIG:-/etc/nhaxetuanmv-jenkins-report.env}"
-                    report_file="${reportFile}"
-                    report_generated=false
-                   if [ ! -r "\$report_config" ]; then
-                      echo "REPORT ERROR: API configuration is not readable: \$report_config"
-                    else
-                      . "\$report_config"
-                      if [ -z "\${JENKINS_API_URL:-}" ] || [ -z "\${JENKINS_API_USER:-}" ] || [ -z "\${JENKINS_API_TOKEN:-}" ]; then
-                        echo "REPORT ERROR: JENKINS_API_URL, JENKINS_API_USER, and JENKINS_API_TOKEN are required."
-                      else
-                      [ -z "\${REPORT_PYTHON:-}" ] || export REPORT_PYTHON
-                      echo "REPORT: Collecting Jenkins build data and creating ${reportFile}..."
-                      if ./report.sh -u "\$JENKINS_API_URL" -j "\$JOB_NAME" -b "\$BUILD_NUMBER" \
-                        -usr "\$JENKINS_API_USER" -t "\$JENKINS_API_TOKEN" -o "\$report_file" -s "${reportStatus}"; then
-                        if [ -s "\$report_file" ]; then
-                          report_generated=true
-                          echo "REPORT: PDF created successfully: \$report_file"
-                        else
-                          echo "REPORT ERROR: Generator returned success but no PDF was created."
-                        fi
-                      else
-                        echo "REPORT ERROR: PDF generation failed; see the report.sh output above."
-                      fi
-                      fi
-                    fi
-
-                    if [ "\$report_generated" = false ]; then
-                      # Still send an alert when the reporting stack is broken.
-                      # email.sh omits a missing attachment safely.
-                      report_file=""
-                    fi
-                    echo "EMAIL: Sending ${reportStatus} notification (PDF attached: \$report_generated)..."
-                    if ./email.sh "\$JOB_NAME" "\$BUILD_NUMBER" "\$BUILD_URL" \
-                      "\$report_file" "Pipeline Analytics" "${reportStatus}"; then
-                      echo "EMAIL: Notification sent successfully."
-                    else
-                      email_status=\$?
-                      echo "EMAIL ERROR: Notification failed (exit \$email_status). See the SMTP error above."
-                    fi
-               """
-            }
             archiveArtifacts artifacts: 'backend-springboot/semgrep-report.json,jenkins-build-*-analytics.pdf', fingerprint: true, allowEmptyArchive: true
             cleanWs()
         }
