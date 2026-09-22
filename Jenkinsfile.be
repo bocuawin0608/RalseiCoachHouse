@@ -149,7 +149,11 @@ pipeline {
         stage("Production Deployment") {
             steps {
                 echo 'Deploying to Kubernetes...'
-
+                sh '''
+                    pwd
+                    ls -la
+                    find . -maxdepth 2 -type f | sort
+                '''
                 sh '''
                     kind load docker-image ${IMAGE} --name local
 
