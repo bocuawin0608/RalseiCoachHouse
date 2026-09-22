@@ -12,6 +12,7 @@ pipeline {
         K8S_NAMESPACE = 'default'
         K8S_DEPLOYMENT = 'ralsei-be'
         K8S_CONTAINER = 'ralsei-be'
+        K8S_RUNTIME_SECRET = 'ralsei-be-runtime'
         KIND_CLUSTER = 'local'
         IMAGE = 'ralsei-coach-house-be'
         VERSION = "0.0.${BUILD_NUMBER}"
@@ -118,6 +119,12 @@ pipeline {
 
                     if [ "$manifest_found" != true ]; then
                         printf '%s\\n' "ERROR: No .yaml or .yml manifests found directly in $K8S_MANIFEST_DIR" >&2
+                        exit 1
+                    fi
+
+                    if ! kubectl get secret --namespace "$K8S_NAMESPACE" "$K8S_RUNTIME_SECRET" > /dev/null; then
+                        printf '%s\\n' "ERROR: Required runtime Secret is missing: $K8S_RUNTIME_SECRET" >&2
+                        printf '%s\\n' "Create it in namespace $K8S_NAMESPACE before deployment; see $K8S_MANIFEST_DIR/README.md." >&2
                         exit 1
                     fi
                 '''
