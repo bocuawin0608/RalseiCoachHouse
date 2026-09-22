@@ -7,10 +7,15 @@ pipeline {
     }
 
     environment {
-        IMAGE = 'ralsei-coach-house-be:latest'
-        CONTAINER = 'ralsei-be'
-        PORT = '8000'
-        VERSION = '0.0.${BUILD_NUMBER}' // Sửa lại cú pháp string interpolation cho đúng
+        BACKEND_DIR = 'backend-springboot'
+        K8S_MANIFEST_DIR = 'backend-springboot/k8s'
+        K8S_NAMESPACE = 'default'
+        K8S_DEPLOYMENT = 'ralsei-be'
+        K8S_CONTAINER = 'ralsei-be'
+        KIND_CLUSTER = 'local'
+        IMAGE = 'ralsei-coach-house-be'
+        VERSION = "0.0.${BUILD_NUMBER}"
+        IMAGE_TAG = "${IMAGE}:${VERSION}"
     }
 
     stages {
@@ -24,35 +29,42 @@ pipeline {
         stage('Backend Unit Test') {
             steps {
                 script { env.FAILED_STAGE = 'Backend Unit Test' }
-                echo 'unit test backend-springboot stage'
-                dir('backend-springboot') {
-                    sh 'mvn clean test'
+                dir(env.BACKEND_DIR) {
+                    sh '''
+                        set -eu
+                        chmod +x ./mvnw
+                        ./mvnw clean test
+                    '''
                 }
             }
             post {
                 always {
-                    // Publishes structured JUnit data for the analytics API;
-                    // this runs even when Maven reports failed tests.
                     junit allowEmptyResults: true, testResults: 'backend-springboot/target/surefire-reports/TEST-*.xml'
                 }
             }
         }
 
-        stage('Check fucked up code') {
+        stage('Code Style Check') {
             steps {
-                script { env.FAILED_STAGE = 'Check fucked up code' }
-                echo 'check fucked up code stage'
-                dir('backend-springboot') {
-                    sh 'mvn checkstyle:check'
+                script { env.FAILED_STAGE = 'Code Style Check' }
+                dir(env.BACKEND_DIR) {
+                    sh '''
+                        set -eu
+                        chmod +x ./mvnw
+                        ./mvnw checkstyle:check
+                    '''
                 }
             }
         }
 
-        stage('Security testing') {
+        stage('Security Testing') {
             steps {
-                script { env.FAILED_STAGE = 'Security testing' }
-                dir('backend-springboot') {
-                    sh 'semgrep scan --config=auto --json --output semgrep-report.json || true'
+                script { env.FAILED_STAGE = 'Security Testing' }
+                dir(env.BACKEND_DIR) {
+                    sh '''
+                        set -eu
+                        semgrep scan --config=auto --json --output semgrep-report.json
+                    '''
                 }
             }
         }
@@ -60,14 +72,11 @@ pipeline {
         stage('Build Maven') {
             steps {
                 script { env.FAILED_STAGE = 'Build Maven' }
-                dir('backend-springboot') {
+                dir(env.BACKEND_DIR) {
                     sh '''
-                        if [ -f ./mvnw ]; then
-                            chmod +x ./mvnw
-                            ./mvnw clean package -DskipTests
-                        else
-                            mvn clean package -DskipTests
-                        fi
+                        set -eu
+                        chmod +x ./mvnw
+                        ./mvnw clean package -DskipTests
                     '''
                 }
             }
@@ -76,112 +85,96 @@ pipeline {
         stage('Docker Build') {
             steps {
                 script { env.FAILED_STAGE = 'Docker Build' }
-                dir('backend-springboot') {
-                    sh "docker build -t ${IMAGE} ."
+                dir(env.BACKEND_DIR) {
+                    sh '''
+                        set -eu
+                        docker build --pull -t "$IMAGE_TAG" .
+                    '''
                 }
             }
         }
 
-        stage('Deploy') {
+        stage('Validate Kubernetes Manifests') {
             steps {
-                script { env.FAILED_STAGE = 'Deploy' }
-                sh """
-                    docker rm -f ${CONTAINER} 2>/dev/null || true
+                script { env.FAILED_STAGE = 'Validate Kubernetes Manifests' }
+                sh '''
+                    set -eu
 
-                    docker run -d \
-                        --name ${CONTAINER} \
-                        --restart unless-stopped \
-                        -p ${PORT}:8080 \
-                        ${IMAGE}
-                """
+                    if [ ! -d "$K8S_MANIFEST_DIR" ]; then
+                        printf '%s\\n' "ERROR: Kubernetes manifests directory is missing: $K8S_MANIFEST_DIR" >&2
+                        printf '%s\\n' 'Expected a workspace-relative directory containing deployment manifests.' >&2
+                        printf '%s\\n' 'Available top-level workspace directories:' >&2
+                        find . -mindepth 1 -maxdepth 1 -type d -print | sort >&2
+                        exit 1
+                    fi
+
+                    manifest_found=false
+                    for manifest in "$K8S_MANIFEST_DIR"/*.yaml "$K8S_MANIFEST_DIR"/*.yml; do
+                        if [ -f "$manifest" ]; then
+                            manifest_found=true
+                            break
+                        fi
+                    done
+
+                    if [ "$manifest_found" != true ]; then
+                        printf '%s\\n' "ERROR: No .yaml or .yml manifests found directly in $K8S_MANIFEST_DIR" >&2
+                        exit 1
+                    fi
+                '''
             }
         }
 
-        // stage('Performance Testing') {
-        //     steps {
-        //         script { env.FAILED_STAGE = 'Performance Testing' }
-        //         dir('backend-springboot') {
-        //             script {
-        //                 // Jenkins uses POSIX sh. Wait for a real HTTP response
-        //                 // before k6 starts; a closed port must fail immediately.
-        //                 sh '''
-        //                     set -eu
-        //                     max_attempts=30
-        //                     attempt=1
-        //                     echo "Waiting for backend to be reachable on port 8000..."
-        //                     while [ "$attempt" -le "$max_attempts" ]; do
-        //                       if curl --fail --silent --show-error --max-time 5 \
-        //                         'http://127.0.0.1:8000/api/v1/trips/home?date=2026-09-24&page=0&size=1' \
-        //                         > /dev/null; then
-        //                         echo "Backend is ready."
-        //                         exit 0
-        //                       fi
-        //                       echo "Backend is not ready (attempt $attempt/$max_attempts)."
-        //                       attempt=$((attempt + 1))
-        //                       sleep 3
-        //                     done
-
-        //                     echo "Backend did not become reachable on port 8000; skipping k6." >&2
-        //                     docker ps -a --filter 'name=ralsei-be' >&2 || true
-        //                     docker logs --tail 100 ralsei-be >&2 || true
-        //                     exit 1
-        //                 '''
-
-        //                 // Chạy k6 với BASE_URL trỏ đúng vào cổng 8000
-        //                 sh 'k6 run -e BASE_URL=http://127.0.0.1:8000/api -e K6_PROFILE=load load-test.js'
-        //             }
-        //         }
-        //     }
-        // }
-
-        // stage('Send CI Report') {
-        //     steps {
-        //         // This stage runs only after performance testing succeeds.
-        //         withCredentials([usernamePassword(
-        //             credentialsId: 'jenkins-report-api',
-        //             usernameVariable: 'JENKINS_REPORT_API_USER',
-        //             passwordVariable: 'JENKINS_REPORT_API_TOKEN'
-        //         )]) {
-        //             sh './notify-report.sh SUCCESS'
-        //         }
-            //     }
-            // }
-        stage("Production Deployment") {
+        stage('Production Deployment') {
             steps {
-                echo 'Deploying to Kubernetes...'
-                sh '''
-                    pwd
-                    ls -la
-                    find . -maxdepth 2 -type f | sort
-                '''
-                sh '''
-                    kind load docker-image ${IMAGE} --name local
+                script { env.FAILED_STAGE = 'Production Deployment' }
+                dir(env.K8S_MANIFEST_DIR) {
+                    sh '''
+                        set -eu
 
-                    kubectl apply -f k8s/
+                        kind load docker-image "$IMAGE_TAG" --name "$KIND_CLUSTER"
+                        kubectl apply --namespace "$K8S_NAMESPACE" -f .
+                        kubectl set image --namespace "$K8S_NAMESPACE" "deployment/$K8S_DEPLOYMENT" \\
+                            "$K8S_CONTAINER=$IMAGE_TAG"
+                        kubectl rollout status --namespace "$K8S_NAMESPACE" "deployment/$K8S_DEPLOYMENT" \\
+                            --timeout=120s
+                    '''
+                }
+            }
+        }
 
-                    kubectl set image deployment/ralsei-be \
-                        ralsei-be=${IMAGE}
-
-                    kubectl rollout status deployment/ralsei-be \
-                        --timeout=120s
-                '''
+        stage('Send CI Report') {
+            steps {
+                script { env.FAILED_STAGE = 'Send CI Report' }
+                withCredentials([usernamePassword(
+                    credentialsId: 'jenkins-report-api',
+                    usernameVariable: 'JENKINS_REPORT_API_USER',
+                    passwordVariable: 'JENKINS_REPORT_API_TOKEN'
+                )]) {
+                    sh '''
+                        set -eu
+                        ./notify-report.sh SUCCESS
+                    '''
+                }
             }
         }
     }
-    
+
     post {
         success {
-            echo 'Deployment and Load Test Completed Successfully!'
+            echo 'Kubernetes deployment and CI reporting completed successfully.'
         }
 
         failure {
-            echo 'Pipeline Failed!'
+            echo "Pipeline failed in stage: ${env.FAILED_STAGE ?: 'unknown'}"
             withCredentials([usernamePassword(
                 credentialsId: 'jenkins-report-api',
                 usernameVariable: 'JENKINS_REPORT_API_USER',
                 passwordVariable: 'JENKINS_REPORT_API_TOKEN'
             )]) {
-                sh './notify-report.sh FAILED'
+                sh '''
+                    set -eu
+                    ./notify-report.sh FAILED
+                '''
             }
         }
 
