@@ -134,20 +134,37 @@ pipeline {
         //     }
         // }
 
-        stage('Send CI Report') {
+        // stage('Send CI Report') {
+        //     steps {
+        //         // This stage runs only after performance testing succeeds.
+        //         withCredentials([usernamePassword(
+        //             credentialsId: 'jenkins-report-api',
+        //             usernameVariable: 'JENKINS_REPORT_API_USER',
+        //             passwordVariable: 'JENKINS_REPORT_API_TOKEN'
+        //         )]) {
+        //             sh './notify-report.sh SUCCESS'
+        //         }
+            //     }
+            // }
+        stage("Production Deployment") {
             steps {
-                // This stage runs only after performance testing succeeds.
-                withCredentials([usernamePassword(
-                    credentialsId: 'jenkins-report-api',
-                    usernameVariable: 'JENKINS_REPORT_API_USER',
-                    passwordVariable: 'JENKINS_REPORT_API_TOKEN'
-                )]) {
-                    sh './notify-report.sh SUCCESS'
-                }
+                echo 'Deploying to Kubernetes...'
+
+                sh '''
+                    kind load docker-image ${IMAGE} --name local
+
+                    kubectl apply -f k8s/
+
+                    kubectl set image deployment/ralsei-be \
+                        ralsei-be=${IMAGE}
+
+                    kubectl rollout status deployment/ralsei-be \
+                        --timeout=120s
+                '''
             }
         }
     }
-
+    
     post {
         success {
             echo 'Deployment and Load Test Completed Successfully!'
