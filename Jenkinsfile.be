@@ -197,6 +197,9 @@ pipeline {
                 passwordVariable: 'JENKINS_REPORT_API_TOKEN'
             )]) {
                 sh '''
+                    kind export kubeconfig --name local
+                    kubectl cluster-info
+
                     set -eu
                     ./notify-report.sh FAILED
                 '''
