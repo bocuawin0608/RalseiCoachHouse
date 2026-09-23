@@ -28,6 +28,10 @@ kind export kubeconfig --name local
 kubectl cluster-info
 ```
 
+The Jenkins pipeline performs this export automatically and selects
+`kind-local`. Its agent must therefore have access to the Docker daemon that
+runs the `local` Kind cluster.
+
 The service is internal (`ClusterIP`) on port 8000 and forwards to the
 container's HTTP port 8080. For a local Kind smoke test:
 
