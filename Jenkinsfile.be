@@ -122,11 +122,38 @@ pipeline {
                         exit 1
                     fi
 
-                    if ! kubectl get secret --namespace "$K8S_NAMESPACE" "$K8S_RUNTIME_SECRET" > /dev/null; then
-                        printf '%s\\n' "ERROR: Required runtime Secret is missing: $K8S_RUNTIME_SECRET" >&2
-                        printf '%s\\n' "Create it in namespace $K8S_NAMESPACE before deployment; see $K8S_MANIFEST_DIR/README.md." >&2
-                        exit 1
-                    fi
+                   if ! kubectl get secret --namespace "$K8S_NAMESPACE" "$K8S_RUNTIME_SECRET" > /dev/null; then
+                       printf '%s\\n' "ERROR: Required runtime Secret is missing: $K8S_RUNTIME_SECRET" >&2
+                       printf '%s\\n' "Create it in namespace $K8S_NAMESPACE before deployment; see $K8S_MANIFEST_DIR/README.md." >&2
+                       exit 1
+                   fi
+
+                    # Do not deploy template values such as <host>. `envFrom`
+                    # would otherwise pass them to Spring as real configuration,
+                    # causing a crash loop that is only visible after deployment.
+                    for secret_key in SPRING_DATASOURCE_URL SPRING_DATASOURCE_USERNAME \
+                        SPRING_DATASOURCE_PASSWORD SPRING_DATA_REDIS_HOST JWT_SECRET \
+                        SEPAY_API_TOKEN GOONG_API_KEY MAIL_USERNAME MAIL_PASSWORD MAIL_FROM; do
+                        encoded_value=$(kubectl get secret --namespace "$K8S_NAMESPACE" "$K8S_RUNTIME_SECRET" \
+                            --output="jsonpath={.data.${secret_key}}")
+                        if [ -z "$encoded_value" ]; then
+                            printf '%s\\n' "ERROR: Runtime Secret $K8S_RUNTIME_SECRET is missing required key: $secret_key" >&2
+                            exit 1
+                        fi
+
+                        if ! secret_value=$(printf '%s' "$encoded_value" | base64 --decode); then
+                            printf '%s\\n' "ERROR: Runtime Secret $K8S_RUNTIME_SECRET contains an unreadable value for key: $secret_key" >&2
+                            exit 1
+                        fi
+
+                        case "$secret_value" in
+                            *'<'*'>'*)
+                                printf '%s\\n' "ERROR: Runtime Secret $K8S_RUNTIME_SECRET still contains a placeholder for key: $secret_key" >&2
+                                printf '%s\\n' "Replace template values in backend-springboot/k8s/runtime-secret.env and re-apply the Secret." >&2
+                                exit 1
+                                ;;
+                        esac
+                    done
                 '''
             }
         }
