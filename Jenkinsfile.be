@@ -122,25 +122,7 @@ pipeline {
                         exit 1
                     fi
 
-                    # A failed Secret lookup can mean either that the Secret is
-                    # absent or that kubectl is pointed at an invalid API server.
-                    # Check the API endpoint first so the latter is not reported as
-                    # a missing Secret.
-                    if ! kubectl get --raw='/api' --request-timeout=10s > /dev/null; then
-                        printf '%s\\n' "ERROR: Kubernetes API is unavailable or the active kubeconfig context is invalid." >&2
-                        printf '%s\\n' "Active context: $(kubectl config current-context 2>/dev/null || printf '%s' '<none>')" >&2
-                        printf '%s\\n' "Repair the Kind cluster/kubeconfig, then rerun the deployment." >&2
-                        exit 1
-                    fi
-
-                    if ! secret_name=$(kubectl get secret --namespace "$K8S_NAMESPACE" "$K8S_RUNTIME_SECRET" \
-                        --ignore-not-found --output=name --request-timeout=10s); then
-                        printf '%s\\n' "ERROR: Could not query runtime Secret $K8S_RUNTIME_SECRET in namespace $K8S_NAMESPACE." >&2
-                        printf '%s\\n' 'The Kubernetes API did not complete the Secret lookup; inspect the cluster and kubeconfig.' >&2
-                        exit 1
-                    fi
-
-                    if [ -z "$secret_name" ]; then
+                    if ! kubectl get secret --namespace "$K8S_NAMESPACE" "$K8S_RUNTIME_SECRET" > /dev/null; then
                         printf '%s\\n' "ERROR: Required runtime Secret is missing: $K8S_RUNTIME_SECRET" >&2
                         printf '%s\\n' "Create it in namespace $K8S_NAMESPACE before deployment; see $K8S_MANIFEST_DIR/README.md." >&2
                         exit 1
@@ -160,8 +142,31 @@ pipeline {
                         kubectl apply --namespace "$K8S_NAMESPACE" -f .
                         kubectl set image --namespace "$K8S_NAMESPACE" "deployment/$K8S_DEPLOYMENT" \\
                             "$K8S_CONTAINER=$IMAGE_TAG"
-                        kubectl rollout status --namespace "$K8S_NAMESPACE" "deployment/$K8S_DEPLOYMENT" \\
-                            --timeout=120s
+                        # The startup probe permits up to five minutes for Spring Boot
+                        # to initialize. The rollout timeout must not be shorter than
+                        # the application's own allowed startup window.
+                        if ! kubectl rollout status --namespace "$K8S_NAMESPACE" "deployment/$K8S_DEPLOYMENT" \\
+                            --timeout=6m; then
+                            printf '%s\\n' "ERROR: Deployment $K8S_DEPLOYMENT did not become ready. Pod diagnostics follow:" >&2
+                            kubectl get pods --namespace "$K8S_NAMESPACE" \\
+                                --selector=app.kubernetes.io/name="$K8S_DEPLOYMENT" -o wide >&2 || true
+                            kubectl describe deployment --namespace "$K8S_NAMESPACE" "$K8S_DEPLOYMENT" >&2 || true
+
+                            pod_names=$(kubectl get pods --namespace "$K8S_NAMESPACE" \\
+                                --selector=app.kubernetes.io/name="$K8S_DEPLOYMENT" \\
+                                --output=jsonpath='{range .items[*]}{.metadata.name}{" "}{end}' || true)
+                            for pod_name in $pod_names; do
+                                printf '%s\\n' "--- Describe pod: $pod_name ---" >&2
+                                kubectl describe pod --namespace "$K8S_NAMESPACE" "$pod_name" >&2 || true
+                                printf '%s\\n' "--- Current logs: $pod_name ---" >&2
+                                kubectl logs --namespace "$K8S_NAMESPACE" "$pod_name" \\
+                                    --all-containers --tail=200 >&2 || true
+                                printf '%s\\n' "--- Previous logs: $pod_name ---" >&2
+                                kubectl logs --namespace "$K8S_NAMESPACE" "$pod_name" \\
+                                    --all-containers --previous --tail=200 >&2 || true
+                            done
+                            exit 1
+                        fi
                     '''
                 }
             }
@@ -197,9 +202,6 @@ pipeline {
                 passwordVariable: 'JENKINS_REPORT_API_TOKEN'
             )]) {
                 sh '''
-                    kind export kubeconfig --name local
-                    kubectl cluster-info
-
                     set -eu
                     ./notify-report.sh FAILED
                 '''
