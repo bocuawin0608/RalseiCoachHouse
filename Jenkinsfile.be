@@ -122,7 +122,25 @@ pipeline {
                         exit 1
                     fi
 
-                    if ! kubectl get secret --namespace "$K8S_NAMESPACE" "$K8S_RUNTIME_SECRET" > /dev/null; then
+                    # A failed Secret lookup can mean either that the Secret is
+                    # absent or that kubectl is pointed at an invalid API server.
+                    # Check the API endpoint first so the latter is not reported as
+                    # a missing Secret.
+                    if ! kubectl get --raw='/api' --request-timeout=10s > /dev/null; then
+                        printf '%s\\n' "ERROR: Kubernetes API is unavailable or the active kubeconfig context is invalid." >&2
+                        printf '%s\\n' "Active context: $(kubectl config current-context 2>/dev/null || printf '%s' '<none>')" >&2
+                        printf '%s\\n' "Repair the Kind cluster/kubeconfig, then rerun the deployment." >&2
+                        exit 1
+                    fi
+
+                    if ! secret_name=$(kubectl get secret --namespace "$K8S_NAMESPACE" "$K8S_RUNTIME_SECRET" \
+                        --ignore-not-found --output=name --request-timeout=10s); then
+                        printf '%s\\n' "ERROR: Could not query runtime Secret $K8S_RUNTIME_SECRET in namespace $K8S_NAMESPACE." >&2
+                        printf '%s\\n' 'The Kubernetes API did not complete the Secret lookup; inspect the cluster and kubeconfig.' >&2
+                        exit 1
+                    fi
+
+                    if [ -z "$secret_name" ]; then
                         printf '%s\\n' "ERROR: Required runtime Secret is missing: $K8S_RUNTIME_SECRET" >&2
                         printf '%s\\n' "Create it in namespace $K8S_NAMESPACE before deployment; see $K8S_MANIFEST_DIR/README.md." >&2
                         exit 1

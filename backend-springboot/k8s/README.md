@@ -6,20 +6,26 @@ the build. The image in `deployment.yaml` is only a bootstrap value; do not
 deploy it manually before replacing the image.
 
 Create the runtime Secret before the first deployment. Do not commit it, and
-use an external secret manager in production.
+use an external secret manager in production. For a local Kind cluster, copy
+the tracked template, replace all placeholders, and create the Secret:
 
 ```sh
+cp backend-springboot/k8s/runtime-secret.example.env \
+  backend-springboot/k8s/runtime-secret.env
+# Edit backend-springboot/k8s/runtime-secret.env with real values first.
 kubectl -n default create secret generic ralsei-be-runtime \
-  --from-literal=SPRING_DATASOURCE_URL='jdbc:sqlserver://<host>:1433;databaseName=VeXeDB;encrypt=true;trustServerCertificate=false;' \
-  --from-literal=SPRING_DATASOURCE_USERNAME='<database-user>' \
-  --from-literal=SPRING_DATASOURCE_PASSWORD='<database-password>' \
-  --from-literal=SPRING_DATA_REDIS_HOST='<redis-host>' \
-  --from-literal=JWT_SECRET='<jwt-secret>' \
-  --from-literal=SEPAY_API_TOKEN='<sepay-token>' \
-  --from-literal=GOONG_API_KEY='<goong-api-key>' \
-  --from-literal=MAIL_USERNAME='<smtp-user>' \
-  --from-literal=MAIL_PASSWORD='<smtp-password>' \
-  --from-literal=MAIL_FROM='<from-address>'
+  --from-env-file=backend-springboot/k8s/runtime-secret.env \
+  --dry-run=client -o yaml | kubectl apply -f -
+```
+
+If Jenkins reports `Kubernetes API is unavailable or the active kubeconfig
+context is invalid`, this is not a Secret problem. Restore the Kind cluster
+and its kubeconfig before creating or applying any manifests. For example,
+on the Jenkins agent that owns the cluster:
+
+```sh
+kind export kubeconfig --name local
+kubectl cluster-info
 ```
 
 The service is internal (`ClusterIP`) on port 8000 and forwards to the

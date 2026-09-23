@@ -1,4 +1,6 @@
 # External SMTP credentials must be provisioned on the CI agent, never Git.
 ci-email.env
 jenkins-report.env
+# Kubernetes runtime credentials. The tracked example contains placeholders only.
+backend-springboot/k8s/runtime-secret.env
 __pycache__/
