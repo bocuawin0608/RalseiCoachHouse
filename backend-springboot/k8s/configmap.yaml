@@ -11,11 +11,5 @@ data:
   SERVER_SSL_ENABLED: "false"
   SPRING_JPA_HIBERNATE_DDL_AUTO: none
   SPRING_JPA_SHOW_SQL: "false"
-  # ── Database ───────────────────────────────────────────────
-  # Replace "ralsei-mssql" with your actual SQL Server K8s Service name.
-  SPRING_DATASOURCE_URL: "jdbc:sqlserver://ralsei-mssql:1433;databaseName=VeXeDB;encrypt=true;trustServerCertificate=true;"
-  SPRING_DATASOURCE_DRIVER_CLASS_NAME: "com.microsoft.sqlserver.jdbc.SQLServerDriver"
-  # ── Redis ──────────────────────────────────────────────────
-  # Replace "ralsei-redis" with your actual Redis K8s Service name.
-  SPRING_DATA_REDIS_HOST: "ralsei-redis"
   SPRING_DATA_REDIS_PORT: "6379"
+
