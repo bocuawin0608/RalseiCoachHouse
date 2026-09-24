@@ -15,8 +15,10 @@ pipeline {
         K8S_RUNTIME_SECRET = 'ralsei-be-runtime'
         KIND_CLUSTER = 'local'
         IMAGE = 'ralsei-coach-house-be'
+        DB_IMAGE = 'ralsei-db'
         VERSION = "0.0.${BUILD_NUMBER}"
         IMAGE_TAG = "${IMAGE}:${VERSION}"
+        DB_IMAGE_TAG = "${DB_IMAGE}:${VERSION}"
     }
 
     stages {
@@ -95,6 +97,18 @@ pipeline {
             }
         }
 
+        stage('Build Database Image') {
+            steps {
+                script { env.FAILED_STAGE = 'Build Database Image' }
+                dir(env.BACKEND_DIR + '/db') {
+                    sh '''
+                        set -eu
+                        docker build -t "$DB_IMAGE_TAG" .
+                    '''
+                }
+            }
+        }
+
         stage('Validate Kubernetes Manifests') {
             steps {
                 script { env.FAILED_STAGE = 'Validate Kubernetes Manifests' }
@@ -165,8 +179,13 @@ pipeline {
                     sh '''
                         set -eu
 
+                        kind load docker-image "$DB_IMAGE_TAG" --name "$KIND_CLUSTER"
                         kind load docker-image "$IMAGE_TAG" --name "$KIND_CLUSTER"
                         kubectl apply --namespace "$K8S_NAMESPACE" -f .
+                        kubectl set image --namespace "$K8S_NAMESPACE" "deployment/ralsei-mssql" \
+                            "ralsei-mssql=$DB_IMAGE_TAG"
+                        kubectl rollout status --namespace "$K8S_NAMESPACE" "deployment/ralsei-mssql" \
+                            --timeout=6m || true
                         kubectl set image --namespace "$K8S_NAMESPACE" "deployment/$K8S_DEPLOYMENT" \\
                             "$K8S_CONTAINER=$IMAGE_TAG"
                         # The startup probe permits up to five minutes for Spring Boot
