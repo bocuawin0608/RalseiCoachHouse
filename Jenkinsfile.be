@@ -75,8 +75,7 @@ pipeline {
                     // Đã thêm dấu chấm (.) để định vị build context
                     sh '''
                         set -eu
-                        docker build --pull -t "$IMAGE_TAG" .
-                    '''
+                        docker build --network=host --pull -t "$IMAGE_TAG" .                    '''
                 }
             }
         }
