@@ -8,15 +8,12 @@ pipeline {
 
     environment {
         BACKEND_DIR = 'backend-springboot'
-        K8S_MANIFEST_DIR = 'backend-springboot/k8s'
-        K8S_NAMESPACE = 'default'
-        K8S_DEPLOYMENT = 'ralsei-be'
-        K8S_CONTAINER = 'ralsei-be'
-        K8S_RUNTIME_SECRET = 'ralsei-be-runtime'
-        KIND_CLUSTER = 'local'
-        IMAGE = 'ralsei-coach-house-be'
+        REGISTRY_URL = 'docker.io'
+        IMAGE_REPO = 'ralsei/ralsei-coach-house-be'
         VERSION = "0.0.${BUILD_NUMBER}"
-        IMAGE_TAG = "${IMAGE}:${VERSION}"
+        IMAGE_TAG = "${IMAGE_REPO}:${VERSION}"
+        GITOPS_REPO_URL = 'https://github.com/ralsei/ralsei-gitops-config.git'
+        GITOPS_DEFAULT_BRANCH = 'main'
     }
 
     stages {
@@ -34,6 +31,7 @@ pipeline {
                         }
                     }
                 }
+
                 stage('Security Testing') {
                     steps {
                         script { env.FAILED_STAGE = 'Security Testing' }
@@ -52,8 +50,6 @@ pipeline {
             steps {
                 script { env.FAILED_STAGE = 'Build & Unit Test' }
                 dir(env.BACKEND_DIR) {
-                    // Lệnh package của Maven tự động chạy test. 
-                    // Chạy 1 lần duy nhất, lấy cả kết quả test lẫn file .jar cuối cùng.
                     sh '''
                         set -eu
                         chmod +x ./mvnw
@@ -68,14 +64,22 @@ pipeline {
             }
         }
 
-        stage('Docker Build') {
+        stage('Docker Build & Push') {
             steps {
-                script { env.FAILED_STAGE = 'Docker Build' }
-                dir(env.BACKEND_DIR) {
-                    // Đã thêm dấu chấm (.) để định vị build context
-                    sh '''
-                        set -eu
-                        docker build --network=host --pull -t "$IMAGE_TAG" .                    '''
+                script { env.FAILED_STAGE = 'Docker Build & Push' }
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'DOCKER_REGISTRY_USER',
+                    passwordVariable: 'DOCKER_REGISTRY_PASSWORD'
+                )]) {
+                    dir(env.BACKEND_DIR) {
+                        sh '''
+                            set -eu
+                            echo "$DOCKER_REGISTRY_PASSWORD" | docker login "$REGISTRY_URL" -u "$DOCKER_REGISTRY_USER" --password-stdin
+                            docker build --network=host --pull -t "$IMAGE_TAG" .
+                            docker push "$IMAGE_TAG"
+                        '''
+                    }
                 }
             }
         }
@@ -83,78 +87,136 @@ pipeline {
         stage('Validate Kubernetes Manifests') {
             steps {
                 script { env.FAILED_STAGE = 'Validate Kubernetes Manifests' }
-                sh '''
-                    set -eu
-                    if [ ! -d "$K8S_MANIFEST_DIR" ]; then
-                        printf '%s\n' "ERROR: Kubernetes manifests directory is missing." >&2
-                        exit 1
-                    fi
-                    
-                    # Logic kiểm tra secret của cậu được giữ nguyên vì nó hợp lệ
-                    if ! kubectl get secret --namespace "$K8S_NAMESPACE" "$K8S_RUNTIME_SECRET" > /dev/null; then
-                       printf '%s\n' "ERROR: Required runtime Secret is missing: $K8S_RUNTIME_SECRET" >&2
-                       exit 1
-                    fi
-                '''
-            }
-        }
-
-        stage('Deploy to Environment') {
-            // Đổi tên vì Kind không bao giờ là Production
-            steps {
-                script { env.FAILED_STAGE = 'Deploy to Environment' }
-                dir(env.K8S_MANIFEST_DIR) {
                     sh '''
                         set -eu
-                        
-                        kind load docker-image "$IMAGE_TAG" --name "$KIND_CLUSTER"
-                        kubectl apply --namespace "$K8S_NAMESPACE" -f .
-                        kubectl set image --namespace "$K8S_NAMESPACE" "deployment/$K8S_DEPLOYMENT" \
-                            "$K8S_CONTAINER=$IMAGE_TAG"
-                            
-                        if ! kubectl rollout status --namespace "$K8S_NAMESPACE" "deployment/$K8S_DEPLOYMENT" \
-                            --timeout=6m; then
-                            printf '%s\n' "ERROR: Deployment failed." >&2
+                        if [ ! -d "$BACKEND_DIR/k8s" ]; then
+                            printf '%s\n' "ERROR: Kubernetes manifests directory is missing." >&2
                             exit 1
                         fi
+
+                        find "$BACKEND_DIR/k8s" -type f \( -name '*.yaml' -o -name '*.yml' \) | sort | while IFS= read -r file; do
+                            if [ ! -s "$file" ]; then
+                                printf '%s\n' "ERROR: Empty manifest file detected: $file" >&2
+                                exit 1
+                            fi
+                        done
+
+                        printf '%s\n' "Kubernetes manifests validation passed."
                     '''
-                }
             }
         }
 
-        stage('Send CI Report') {
+        stage('GitOps CD Promotion') {
             steps {
-                script { env.FAILED_STAGE = 'Send CI Report' }
-                withCredentials([usernamePassword(
-                    credentialsId: 'jenkins-report-api',
-                    usernameVariable: 'JENKINS_REPORT_API_USER',
-                    passwordVariable: 'JENKINS_REPORT_API_TOKEN'
-                )]) {
-                    sh '''
-                        set -eu
-                        ./notify-report.sh SUCCESS || true
-                    '''
+                script {
+                    env.FAILED_STAGE = 'GitOps CD Promotion'
+
+                    def branchName = env.BRANCH_NAME ?: sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
+                    def targetEnv = ''
+                    def overlayPath = ''
+
+                    if (branchName == 'develop') {
+                        targetEnv = 'dev'
+                        overlayPath = 'k8s/overlays/dev'
+                    } else if (branchName.startsWith('release/')) {
+                        targetEnv = 'staging'
+                        overlayPath = 'k8s/overlays/staging'
+                    } else if (branchName == 'main') {
+                        targetEnv = 'prod'
+                        overlayPath = 'k8s/overlays/prod'
+                    } else {
+                        echo "Skipping GitOps promotion for branch '${branchName}'. Only develop, release/* and main are supported."
+                        return
+                    }
+
+                    env.TARGET_ENV = targetEnv
+                    env.GITOPS_OVERLAY_PATH = overlayPath
+
+                    if (targetEnv == 'prod') {
+                        input(
+                            id: 'prod-approval',
+                            message: "Approve production GitOps promotion for build #${env.BUILD_NUMBER} on branch ${branchName}.",
+                            ok: 'Approve Production'
+                        )
+                    }
+
+                    withCredentials([usernamePassword(
+                        credentialsId: 'gitops-credentials',
+                        usernameVariable: 'GITOPS_USERNAME',
+                        passwordVariable: 'GITOPS_TOKEN'
+                    )]) {
+                        sh '''
+                            set -eu
+                            rm -rf "$WORKSPACE/gitops"
+                            git clone "https://${GITOPS_USERNAME}:${GITOPS_TOKEN}@github.com/ralsei/ralsei-gitops-config.git" "$WORKSPACE/gitops"
+                            git -C "$WORKSPACE/gitops" checkout "$GITOPS_DEFAULT_BRANCH"
+                            git -C "$WORKSPACE/gitops" config user.name "Jenkins CI"
+                            git -C "$WORKSPACE/gitops" config user.email "jenkins@ralsei.local"
+
+                            DEPLOYMENT_FILE="$(find "$WORKSPACE/gitops/$GITOPS_OVERLAY_PATH" -type f \( -name '*.yaml' -o -name '*.yml' \) | head -n 1)"
+                            if [ -z "$DEPLOYMENT_FILE" ]; then
+                                printf '%s\n' "ERROR: No deployment manifest found in $GITOPS_OVERLAY_PATH" >&2
+                                exit 1
+                            fi
+
+                            if command -v yq >/dev/null 2>&1; then
+                                yq e -i '.spec.template.spec.containers[0].image = strenv(IMAGE_TAG)' "$DEPLOYMENT_FILE"
+                            else
+                                sed -i -E "s#(image:\s*).+?#\\1${IMAGE_TAG}#g" "$DEPLOYMENT_FILE"
+                            fi
+
+                            git -C "$WORKSPACE/gitops" add .
+                            if git -C "$WORKSPACE/gitops" diff --cached --quiet; then
+                                printf '%s\n' "No GitOps manifest change required for ${TARGET_ENV}."
+                                exit 0
+                            fi
+
+                            git -C "$WORKSPACE/gitops" commit -m "chore(ci): promote ${IMAGE_TAG} to ${TARGET_ENV}"
+                            git -C "$WORKSPACE/gitops" push "https://${GITOPS_USERNAME}:${GITOPS_TOKEN}@github.com/ralsei/ralsei-gitops-config.git" HEAD:"${GITOPS_DEFAULT_BRANCH}"
+                        '''
+                    }
                 }
             }
         }
     }
 
     post {
-        failure {
-            echo "Pipeline failed in stage: ${env.FAILED_STAGE ?: 'unknown'}"
-            withCredentials([usernamePassword(
-                credentialsId: 'jenkins-report-api',
-                usernameVariable: 'JENKINS_REPORT_API_USER',
-                passwordVariable: 'JENKINS_REPORT_API_TOKEN'
-            )]) {
-                sh '''
-                    set -eu
-                    ./notify-report.sh FAILED || true
-                '''
+        success {
+            script {
+                def buildNumber = env.BUILD_NUMBER ?: 'unknown'
+                def branchName = env.BRANCH_NAME ?: 'unknown'
+                def stageName = env.FAILED_STAGE ?: 'All CI stages completed'
+
+                withCredentials([string(credentialsId: 'slack-webhook-url', variable: 'SLACK_WEBHOOK_URL')]) {
+                    sh """
+                        set -eu
+                        curl -fsS -X POST -H 'Content-Type: application/json' \
+                            --data '{"text":"✅ CI pipeline succeeded\\nBuild #: ${buildNumber}\\nBranch: ${branchName}\\nStage: ${stageName}"}' \
+                            "${SLACK_WEBHOOK_URL}"
+                    """
+                }
             }
         }
+
+        failure {
+            script {
+                def buildNumber = env.BUILD_NUMBER ?: 'unknown'
+                def branchName = env.BRANCH_NAME ?: 'unknown'
+                def stageName = env.FAILED_STAGE ?: 'unknown'
+
+                withCredentials([string(credentialsId: 'slack-webhook-url', variable: 'SLACK_WEBHOOK_URL')]) {
+                    sh """
+                        set -eu
+                        curl -fsS -X POST -H 'Content-Type: application/json' \
+                            --data '{"text":"❌ CI pipeline failed\\nBuild #: ${buildNumber}\\nBranch: ${branchName}\\nStage: ${stageName}"}' \
+                            "${SLACK_WEBHOOK_URL}"
+                    """
+                }
+            }
+        }
+
         always {
-            archiveArtifacts artifacts: 'backend-springboot/semgrep-report.json,jenkins-build-*-analytics.pdf', fingerprint: true, allowEmptyArchive: true
+            archiveArtifacts artifacts: 'backend-springboot/semgrep-report.json', fingerprint: true, allowEmptyArchive: true
             cleanWs()
         }
     }
