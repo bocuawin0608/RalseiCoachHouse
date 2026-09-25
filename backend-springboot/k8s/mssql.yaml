@@ -40,19 +40,28 @@ spec:
             limits:
               cpu: "1"
               memory: 1Gi
+# KHÔNG DÙNG tcpSocket CHO DATABASE NỮA
           readinessProbe:
-            tcpSocket:
-              port: mssql
-            initialDelaySeconds: 10
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                # Gọi công cụ sqlcmd có sẵn trong container MSSQL
+                # Cờ -b cực kỳ quan trọng: Ép sqlcmd trả về mã lỗi (exit code 1) nếu query thất bại
+                - /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "$MSSQL_SA_PASSWORD" -Q "SELECT 1" -b -d master -t 3
+            initialDelaySeconds: 15
             periodSeconds: 10
-            timeoutSeconds: 3
-            failureThreshold: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
           livenessProbe:
-            tcpSocket:
-              port: mssql
-            initialDelaySeconds: 20
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - /opt/mssql-tools/bin/sqlcmd -S localhost -U SA -P "$MSSQL_SA_PASSWORD" -Q "SELECT 1" -b -d master -t 3
+            initialDelaySeconds: 30
             periodSeconds: 20
-            timeoutSeconds: 3
+            timeoutSeconds: 5
             failureThreshold: 3
 ---
 apiVersion: v1
