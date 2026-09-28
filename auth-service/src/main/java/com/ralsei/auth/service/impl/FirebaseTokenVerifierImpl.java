@@ -1,0 +1,44 @@
+package com.ralsei.auth.service.impl;
+
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseToken;
+import com.ralsei.auth.exception.BusinessRuleException;
+import com.ralsei.auth.service.FirebaseTokenVerifier;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+/**
+ * Provides the firebase token verifier impl component for the application.
+ */
+public class FirebaseTokenVerifierImpl implements FirebaseTokenVerifier {
+
+    private final Optional<FirebaseAuth> firebaseAuth;
+
+    @Override
+    /**
+     * Executes the verify id token operation.
+     *
+     * @param idToken the value supplied for this operation
+     *
+     * @return the operation result
+     */
+    public FirebaseToken verifyIdToken(String idToken) {
+        if (firebaseAuth.isEmpty()) {
+            throw new BusinessRuleException("Firebase chưa được cấu hình!");
+        }
+        try {
+            return firebaseAuth.get().verifyIdToken(idToken);
+        } catch (Exception e) {
+            log.error("Firebase token verification failed", e);
+            throw new BusinessRuleException("Xác thực Firebase thất bại!");
+        }
+    }
+}

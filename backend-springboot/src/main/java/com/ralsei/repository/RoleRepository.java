@@ -1,23 +1,15 @@
 package com.ralsei.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
-
 import com.ralsei.dto.projection.RoleListProjection;
 import com.ralsei.model.Role;
 
-/**
- * Repository interface for {@link com.ralsei.model.Role} entity.
- */
-
-/**
- * Provides persistence access for role data.
- */
 public interface RoleRepository extends JpaRepository<Role, Integer> {
     Optional<Role> findByRoleName(String roleName);
 

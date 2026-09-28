@@ -1,0 +1,87 @@
+package com.ralsei.staff.controller;
+
+import com.ralsei.staff.dto.request.CoachAndRouteStop.RouteStopRequest;
+import com.ralsei.staff.dto.response.PagedResponse;
+import com.ralsei.staff.dto.response.CoachAndRouteStop.RouteStopResponse;
+import com.ralsei.staff.dto.request.route.RouteStopOrderUpdateRequest;
+import com.ralsei.staff.service.RouteStopService;
+import java.util.List;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/v1/route-stops")
+@RequiredArgsConstructor
+/**
+ * Handles HTTP requests for route stop operations.
+ */
+public class RouteStopController {
+
+    private final RouteStopService routeStopService;
+
+    @PostMapping
+    /**
+     * Creates the route stop.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the created route stop
+     */
+    public ResponseEntity<RouteStopResponse> createRouteStop(@Valid @RequestBody RouteStopRequest request) {
+        RouteStopResponse response = routeStopService.createRouteStop(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<RouteStopResponse> updateRouteStop(
+            @PathVariable int id,
+            @Valid @RequestBody RouteStopRequest request) {
+        RouteStopResponse response = routeStopService.updateRouteStop(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/bulk-update-orders")
+    public ResponseEntity<List<RouteStopResponse>> bulkUpdateOrders(
+            @Valid @RequestBody List<RouteStopOrderUpdateRequest> requests) {
+        List<RouteStopResponse> responses = routeStopService.bulkUpdateOrders(requests);
+        return ResponseEntity.ok(responses);
+    }
+
+    @GetMapping("/{id}")
+    /**
+     * Returns the route stop by id.
+     *
+     * @param id the value supplied for this operation
+     *
+     * @return the route stop by id
+     */
+    public ResponseEntity<RouteStopResponse> getRouteStopById(@PathVariable int id) {
+        RouteStopResponse response = routeStopService.getRouteStopById(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping
+    public ResponseEntity<PagedResponse<RouteStopResponse>> getAllRouteStops(
+            @RequestParam(required = false, defaultValue = "0") int routeId,
+            @RequestParam(required = false, defaultValue = "0") int stopPointId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        PagedResponse<RouteStopResponse> response = routeStopService.getAllRouteStops(routeId, stopPointId,
+                page, size);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{id}")
+    /**
+     * Deletes the route stop.
+     *
+     * @param id the value supplied for this operation
+     */
+    public ResponseEntity<Void> deleteRouteStop(@PathVariable int id) {
+        routeStopService.deleteRouteStop(id);
+        return ResponseEntity.noContent().build();
+    }
+}

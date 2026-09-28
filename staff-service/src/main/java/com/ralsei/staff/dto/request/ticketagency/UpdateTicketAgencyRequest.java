@@ -1,0 +1,25 @@
+package com.ralsei.staff.dto.request.ticketagency;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
+
+/**
+ * UpdateTicketAgencyRequest
+ */
+
+/**
+ * Represents the request payload for update ticket agency operations.
+ */
+public record UpdateTicketAgencyRequest(
+    @NotBlank(message = "Tên bến xe không được để trống.")
+    @Size(max = 200, message = "Tên bến xe không được vượt quá 200 ký tự.")
+    String ticketAgencyName,
+
+    @NotNull(message = "Vui lòng chọn điểm dừng.")
+    @Positive(message = "ID điểm dừng phải là số dương.")
+    Integer stopPointId,
+
+    Boolean isActive
+) {}

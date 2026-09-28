@@ -1,0 +1,22 @@
+package com.ralsei.staff.dto.response.staffpassengerticket;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+
+/**
+ * Represents the response payload for staff passenger ticket list item operations.
+ */
+public record StaffPassengerTicketListItemResponse(
+    Integer passengerTicketId,
+    String ticketCode,
+    String status,
+    String primaryPassengerName,
+    String primaryPhone,
+    String routeName,
+    LocalDateTime departureTime,
+    String licensePlate,
+    List<String> seatCodes,
+    int seatCount,
+    BigDecimal totalPrice
+) {}

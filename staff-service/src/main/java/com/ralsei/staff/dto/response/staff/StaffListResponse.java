@@ -1,0 +1,26 @@
+package com.ralsei.staff.dto.response.staff;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+/**
+ * Represents the response payload for staff list operations.
+ */
+public record StaffListResponse(
+    Integer staffId,
+    String staffName,
+    String phone,
+    String email,
+    String cccd,
+    String staffPosition,
+    Integer ticketAgencyId,
+    String ticketAgencyName,
+    String username,
+    @JsonProperty("active") boolean isActive,
+    LocalDate dob,
+    LocalDate hireDate,
+    LocalDateTime createdAt,
+    String roleName
+) {}

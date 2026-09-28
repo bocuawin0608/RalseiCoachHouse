@@ -1,0 +1,337 @@
+package com.ralsei.customer.service.impl;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ralsei.customer.dto.notification.PassengerTicketCancellationEmailPayload;
+import com.ralsei.customer.dto.notification.PassengerTicketEmailPayload;
+import com.ralsei.customer.dto.projection.customer.CustomerTicketHistoryProjection;
+import com.ralsei.customer.dto.request.customer.CustomerTicketCancellationRequest;
+import com.ralsei.customer.dto.response.customer.CustomerTicketCancellationResponse;
+import com.ralsei.customer.dto.response.customer.CustomerTicketHistoryResponse;
+import com.ralsei.customer.dto.response.customer.CustomerTicketHistoryResponse.CustomerTicketSeatResponse;
+import com.ralsei.customer.exception.BusinessRuleException;
+import com.ralsei.customer.exception.ResourceNotFoundException;
+import com.ralsei.customer.model.PassengerTicket;
+import com.ralsei.customer.model.PassengerTicketDetail;
+import com.ralsei.customer.model.Payment;
+import com.ralsei.customer.model.Refund;
+import com.ralsei.customer.model.PassengerTicketDetailStatus;
+import com.ralsei.customer.model.PassengerTicketStatus;
+import com.ralsei.customer.model.TripSeatStatus;
+import com.ralsei.customer.repository.PassengerTicketDetailRepository;
+import com.ralsei.customer.repository.PassengerTicketRepository;
+import com.ralsei.customer.repository.PaymentRepository;
+import com.ralsei.customer.repository.RefundRepository;
+import com.ralsei.customer.repository.TripSeatRepository;
+import com.ralsei.customer.service.CustomerTicketHistoryService;
+import com.ralsei.customer.service.notification.PassengerTicketEmailAssembler;
+import com.ralsei.customer.service.notification.TicketEmailService;
+import com.ralsei.customer.service.passengerbooking.SeatHoldService;
+import com.ralsei.customer.util.QRCreateUitility;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * Reads customer-owned booking rows and converts their flat seat data into API responses.
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+/**
+ * Provides the customer ticket history service impl component for the application.
+ */
+public class CustomerTicketHistoryServiceImpl implements CustomerTicketHistoryService {
+
+    private static final long CANCELLATION_CUTOFF_HOURS = 5;
+    private static final long CANCEL_MIN_AGE_HOURS = 24;
+    private static final String CUSTOMER_CANCELLATION_REASON = "Khách hàng hủy vé trước giờ xuất bến";
+
+    private final PassengerTicketDetailRepository ticketDetailRepository;
+    private final PassengerTicketRepository ticketRepository;
+    private final PaymentRepository paymentRepository;
+    private final RefundRepository refundRepository;
+    private final TripSeatRepository tripSeatRepository;
+    private final SeatHoldService seatHoldService;
+    private final QRCreateUitility qrCreateUitility;
+    private final ObjectMapper objectMapper;
+    private final PassengerTicketEmailAssembler passengerTicketEmailAssembler;
+    private final TicketEmailService ticketEmailService;
+
+    /** {@inheritDoc} */
+    @Override
+    @Transactional(readOnly = true)
+    /**
+     * Returns the history.
+     *
+     * @param accountId the value supplied for this operation
+     *
+     * @return the history
+     */
+    public List<CustomerTicketHistoryResponse> getHistory(Integer accountId) {
+        validateAccountId(accountId);
+        return assembleTickets(ticketDetailRepository.findCustomerTicketHistory(accountId, null));
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    @Transactional(readOnly = true)
+    /**
+     * Returns the detail.
+     *
+     * @param accountId the value supplied for this operation
+     * @param ticketCode the value supplied for this operation
+     *
+     * @return the detail
+     */
+    public CustomerTicketHistoryResponse getDetail(Integer accountId, String ticketCode) {
+        if (ticketCode == null || ticketCode.isBlank()) {
+            throw new ResourceNotFoundException("Mã vé không hợp lệ.");
+        }
+
+        validateAccountId(accountId);
+        return assembleTickets(ticketDetailRepository.findCustomerTicketHistory(accountId, ticketCode))
+            .stream()
+            .findFirst()
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vé trong tài khoản của bạn."));
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    @Transactional(readOnly = true)
+    /**
+     * Returns the seat qr image.
+     *
+     * @param accountId the value supplied for this operation
+     * @param ticketDetailId the value supplied for this operation
+     *
+     * @return the seat qr image
+     */
+    public byte[] getSeatQrImage(Integer accountId, Integer ticketDetailId) {
+        validateAccountId(accountId);
+        String token = ticketDetailRepository.findOwnedQrToken(ticketDetailId, accountId)
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy mã QR của ghế trong tài khoản của bạn."));
+        return qrCreateUitility.createPng(token);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    @Transactional
+    public CustomerTicketCancellationResponse cancelTicket(
+        Integer accountId,
+        String ticketCode,
+        CustomerTicketCancellationRequest request
+    ) {
+        validateAccountId(accountId);
+
+        CustomerTicketHistoryResponse ownedTicket = getOwnedTicket(accountId, ticketCode);
+        boolean ticketActive = PassengerTicketStatus.CONFIRMED.name().equals(ownedTicket.status())
+            || PassengerTicketStatus.CHANGED.name().equals(ownedTicket.status());
+        if (!ticketActive) {
+            throw new BusinessRuleException("Chỉ vé đã thanh toán và chưa hủy mới có thể yêu cầu hoàn tiền.");
+        }
+        if (ownedTicket.bookedAt() == null
+            || ownedTicket.bookedAt().plusHours(CANCEL_MIN_AGE_HOURS).isAfter(LocalDateTime.now())) {
+            throw new BusinessRuleException(
+                "Chỉ được hủy vé sau ít nhất " + CANCEL_MIN_AGE_HOURS + " giờ kể từ thời điểm đặt vé."
+            );
+        }
+        LocalDateTime cancellationDeadline = LocalDateTime.now().plusHours(CANCELLATION_CUTOFF_HOURS);
+        if (ownedTicket.departureTime() == null || !ownedTicket.departureTime().isAfter(cancellationDeadline)) {
+            throw new BusinessRuleException("Chỉ có thể hủy vé trước giờ xuất bến ít nhất 5 tiếng.");
+        }
+
+        PassengerTicket ticketEntity = ticketRepository.findById(ownedTicket.passengerTicketId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vé trong tài khoản của bạn."));
+        if (ticketEntity.getMajorChangeType() != null) {
+            throw new BusinessRuleException(
+                "Vé đã sử dụng quyền đổi chuyến hoặc hủy vé. Không thể thực hiện thêm thao tác này."
+            );
+        }
+
+        List<PassengerTicketDetail> seatDetails =
+            ticketDetailRepository.findByPassengerTicketId(ownedTicket.passengerTicketId());
+        boolean hasCheckedInSeat = seatDetails.stream()
+            .anyMatch(detail -> PassengerTicketDetailStatus.CHECKED_IN.name().equals(detail.getStatus()));
+        if (hasCheckedInSeat) {
+            throw new BusinessRuleException("Không thể hủy vé khi có ghế đã check-in.");
+        }
+
+        Payment payment = paymentRepository.findByPassengerTicketId(ownedTicket.passengerTicketId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy giao dịch thanh toán của vé."));
+        if (!"COMPLETED".equals(payment.getStatus())) {
+            throw new BusinessRuleException("Thanh toán chưa hoàn tất nên không thể tạo yêu cầu hoàn tiền.");
+        }
+        if (refundRepository.existsByPaymentIdAndStatusIn(payment.getPaymentId(), List.of("PENDING", "COMPLETED"))) {
+            throw new BusinessRuleException("Vé đã có yêu cầu hoàn tiền đang được xử lý.");
+        }
+
+        int updatedTickets = ticketRepository.updateStatusIfCurrent(
+            ownedTicket.passengerTicketId(),
+            PassengerTicketStatus.CONFIRMED,
+            PassengerTicketStatus.CANCELLED
+        );
+        if (updatedTickets == 0) {
+            updatedTickets = ticketRepository.updateStatusIfCurrent(
+                ownedTicket.passengerTicketId(),
+                PassengerTicketStatus.CHANGED,
+                PassengerTicketStatus.CANCELLED
+            );
+        }
+        if (updatedTickets != 1) {
+            throw new BusinessRuleException("Trạng thái vé vừa thay đổi. Vui lòng tải lại lịch sử.");
+        }
+
+        ticketDetailRepository.updateStatusByPassengerTicketId(
+            ownedTicket.passengerTicketId(), PassengerTicketDetailStatus.CANCELLED.name());
+        List<Integer> seatIds = ticketDetailRepository
+            .findTripSeatIdsByPassengerTicketId(ownedTicket.passengerTicketId());
+        if (!seatIds.isEmpty()) {
+            tripSeatRepository.updateStatusByTripSeatIds(seatIds, TripSeatStatus.AVAILABLE);
+            // Seat map overlays Redis locks on top of DB status — must clear holds or UI stays LOCKED
+            seatHoldService.forceReleaseSeatsByIds(seatIds);
+        }
+
+        BigDecimal refundAmount = payment.getAmount();
+        payment.setRefundAmount(refundAmount);
+        paymentRepository.save(payment);
+
+        Refund refund = Refund.builder()
+            .paymentId(payment.getPaymentId())
+            .amount(refundAmount)
+            .reason(CUSTOMER_CANCELLATION_REASON)
+            .refundMethod("BANK_TRANSFER")
+            .status("PENDING")
+            .callbackData(serializeBankDestination(request))
+            .build();
+        refund.setCreatedBy(accountId);
+        refundRepository.save(refund);
+
+        PassengerTicketEmailPayload emailTicket =
+            passengerTicketEmailAssembler.assemble(ownedTicket.passengerTicketId());
+        PassengerTicketCancellationEmailPayload emailPayload = new PassengerTicketCancellationEmailPayload(
+            emailTicket,
+            LocalDateTime.now(),
+            refundAmount,
+            refund.getStatus(),
+            CUSTOMER_CANCELLATION_REASON
+        );
+        sendTicketCancellationEmailAfterCommit(emailPayload, ownedTicket.passengerTicketId());
+
+        return new CustomerTicketCancellationResponse(
+            ownedTicket.ticketCode(),
+            PassengerTicketStatus.CANCELLED.name(),
+            refundAmount,
+            refund.getStatus()
+        );
+    }
+
+    /** Loads one ticket through the same account-and-phone ownership query as history. */
+    private CustomerTicketHistoryResponse getOwnedTicket(Integer accountId, String ticketCode) {
+        return assembleTickets(ticketDetailRepository.findCustomerTicketHistory(accountId, ticketCode))
+            .stream()
+            .findFirst()
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vé trong tài khoản của bạn."));
+    }
+
+    /**
+     * Sends cancellation communication only after the database transaction is
+     * committed so the customer never receives an email for a rolled-back
+     * cancellation.
+     */
+    private void sendTicketCancellationEmailAfterCommit(
+        PassengerTicketCancellationEmailPayload payload,
+        Integer passengerTicketId
+    ) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            /**
+             * Executes the after commit operation.
+             */
+            public void afterCommit() {
+                try {
+                    ticketEmailService.sendTicketCancellation(payload);
+                } catch (Exception exception) {
+                    log.error("Failed to send customer ticket cancellation email for passengerTicketId={}",
+                        passengerTicketId, exception);
+                }
+            }
+        });
+    }
+
+    /** Serializes bank details into the refund audit payload without changing the DDL. */
+    private String serializeBankDestination(CustomerTicketCancellationRequest request) {
+        try {
+            return objectMapper.writeValueAsString(Map.of(
+                "bankName", request.bankName().trim(),
+                "accountHolder", request.accountHolder().trim(),
+                "accountNumber", request.accountNumber().trim()
+            ));
+        } catch (JsonProcessingException exception) {
+            throw new IllegalStateException("Không thể lưu thông tin nhận tiền hoàn.", exception);
+        }
+    }
+
+    /**
+     * Rejects access tokens that do not contain a usable account identifier.
+     */
+    private void validateAccountId(Integer accountId) {
+        if (accountId == null || accountId < 1) {
+            throw new ResourceNotFoundException("Không xác định được tài khoản khách hàng.");
+        }
+    }
+
+    /**
+     * Groups one-row-per-seat projections into one response per master ticket.
+     */
+    private List<CustomerTicketHistoryResponse> assembleTickets(List<CustomerTicketHistoryProjection> rows) {
+        Map<Integer, List<CustomerTicketHistoryProjection>> rowsByTicket = new LinkedHashMap<>();
+        rows.forEach(row -> rowsByTicket
+            .computeIfAbsent(row.getPassengerTicketId(), ignored -> new ArrayList<>())
+            .add(row));
+
+        return rowsByTicket.values().stream().map(ticketRows -> {
+            CustomerTicketHistoryProjection first = ticketRows.get(0);
+            List<CustomerTicketSeatResponse> seats = ticketRows.stream()
+                .map(row -> new CustomerTicketSeatResponse(
+                    row.getTicketDetailId(),
+                    row.getSeatCode(),
+                    row.getSeatPrice()
+                ))
+                .toList();
+
+            return new CustomerTicketHistoryResponse(
+                first.getPassengerTicketId(),
+                first.getTicketCode(),
+                first.getTicketStatus(),
+                first.getTotalPrice(),
+                first.getPickupStopName(),
+                first.getDropoffStopName(),
+                first.getBookedAt(),
+                first.getDepartureTime(),
+                first.getRouteName(),
+                first.getCoachTypeName(),
+                first.getPaymentMethod(),
+                first.getPaymentStatus(),
+                first.getTransactionId(),
+                first.getPaymentExpiresAt(),
+                first.getFullName(),
+                first.getPhone(),
+                first.getEmail(),
+                seats
+            );
+        }).toList();
+    }
+}

@@ -1,0 +1,243 @@
+package com.ralsei.staff.service.passengerticket.impl;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ralsei.staff.dto.notification.PassengerTicketCancellationEmailPayload;
+import com.ralsei.staff.dto.notification.PassengerTicketEmailPayload;
+import com.ralsei.staff.dto.projection.staffpassengerticket.StaffPassengerTicketRowProjection;
+import com.ralsei.staff.dto.request.staffpassengerticket.StaffPassengerTicketCancelRequest;
+import com.ralsei.staff.dto.response.staffpassengerticket.StaffPassengerTicketDetailResponse;
+import com.ralsei.staff.exception.BusinessRuleException;
+import com.ralsei.staff.exception.ResourceNotFoundException;
+import com.ralsei.staff.model.Payment;
+import com.ralsei.staff.model.PassengerTicket;
+import com.ralsei.staff.model.Refund;
+import com.ralsei.staff.model.Trip;
+import com.ralsei.staff.model.PassengerTicketDetailStatus;
+import com.ralsei.staff.model.PassengerTicketStatus;
+import com.ralsei.staff.model.TripSeatStatus;
+import com.ralsei.staff.repository.PassengerTicketDetailRepository;
+import com.ralsei.staff.repository.PassengerTicketRepository;
+import com.ralsei.staff.repository.PaymentRepository;
+import com.ralsei.staff.repository.RefundRepository;
+import com.ralsei.staff.repository.StaffRepository;
+import com.ralsei.staff.repository.TripRepository;
+import com.ralsei.staff.repository.TripSeatRepository;
+import com.ralsei.staff.service.notification.PassengerTicketEmailAssembler;
+import com.ralsei.staff.service.notification.TicketEmailService;
+import com.ralsei.staff.service.passengerbooking.PassengerPhoneVerificationService;
+import com.ralsei.staff.service.passengerbooking.SeatHoldService;
+import com.ralsei.staff.service.passengerticket.PassengerTicketStaffPolicy;
+import com.ralsei.staff.service.passengerticket.StaffPassengerTicketCancelService;
+import com.ralsei.staff.service.passengerticket.StaffPassengerTicketQueryService;
+import com.ralsei.staff.util.PhoneNumberUtility;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+/**
+ * Provides the staff passenger ticket cancel service impl component for the application.
+ */
+public class StaffPassengerTicketCancelServiceImpl implements StaffPassengerTicketCancelService {
+
+    private final PassengerTicketDetailRepository ticketDetailRepository;
+    private final PassengerTicketRepository ticketRepository;
+    private final PaymentRepository paymentRepository;
+    private final RefundRepository refundRepository;
+    private final TripSeatRepository tripSeatRepository;
+    private final TripRepository tripRepository;
+    private final StaffRepository staffRepository;
+    private final SeatHoldService seatHoldService;
+    private final PassengerPhoneVerificationService passengerPhoneVerificationService;
+    private final PassengerTicketStaffPolicy policy;
+    private final StaffPassengerTicketQueryService queryService;
+    private final ObjectMapper objectMapper;
+    private final PassengerTicketEmailAssembler passengerTicketEmailAssembler;
+    private final TicketEmailService ticketEmailService;
+
+    @Override
+    @Transactional
+    public StaffPassengerTicketDetailResponse cancelFull(
+        Integer accountId,
+        String ticketCode,
+        StaffPassengerTicketCancelRequest request
+    ) {
+        staffRepository.findByAccountId(accountId)
+            .orElseThrow(() -> new BusinessRuleException("Không tìm thấy thông tin nhân viên!"));
+
+        String normalizedTicketCode = ticketCode == null ? "" : ticketCode.trim();
+        List<StaffPassengerTicketRowProjection> rows =
+            ticketDetailRepository.findStaffTicketRowsByTicketCode(normalizedTicketCode);
+
+        if (rows.isEmpty()) {
+            throw new ResourceNotFoundException("Không tìm thấy vé.");
+        }
+
+        requireCustomerPhoneOtp(rows, request.firebaseIdToken());
+
+        StaffPassengerTicketRowProjection first = rows.get(0);
+        PassengerTicket ticketEntity = ticketRepository.findById(first.getPassengerTicketId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy vé."));
+        Trip trip = tripRepository.findById(first.getTripId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyến xe."));
+
+        policy.assertCancelFullAllowed(
+            first.getTicketStatus(),
+            rows,
+            first.getPaymentStatus(),
+            first.getDepartureTime(),
+            first.getBookedAt(),
+            trip.getStatus(),
+            ticketEntity.getMajorChangeType()
+        );
+
+        Payment payment = paymentRepository.findByPassengerTicketId(first.getPassengerTicketId())
+            .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy giao dịch thanh toán của vé."));
+
+        if (refundRepository.existsByPaymentIdAndStatusIn(payment.getPaymentId(), List.of("PENDING", "COMPLETED"))) {
+            throw new BusinessRuleException("Vé đã có yêu cầu hoàn tiền đang được xử lý.");
+        }
+
+        LocalDateTime refundPolicyDepartureTime = policy.resolveRefundPolicyDepartureTime(
+            ticketEntity.getRefundPolicyDepartureTime(),
+            first.getDepartureTime()
+        );
+        long refundHoursLeft = policy.hoursUntilDeparture(refundPolicyDepartureTime);
+        BigDecimal refundAmount = policy.calculateRefundAmount(refundHoursLeft, payment.getAmount());
+        String refundTierLabel = policy.resolveRefundTierLabel(refundHoursLeft);
+
+        int updatedTickets = ticketRepository.updateStatusIfCurrent(
+            first.getPassengerTicketId(),
+            PassengerTicketStatus.CONFIRMED,
+            PassengerTicketStatus.CANCELLED
+        );
+        if (updatedTickets == 0) {
+            updatedTickets = ticketRepository.updateStatusIfCurrent(
+                first.getPassengerTicketId(),
+                PassengerTicketStatus.CHANGED,
+                PassengerTicketStatus.CANCELLED
+            );
+        }
+        if (updatedTickets != 1) {
+            throw new BusinessRuleException("Trạng thái vé vừa thay đổi. Vui lòng tải lại chi tiết.");
+        }
+
+        ticketDetailRepository.updateStatusByPassengerTicketId(
+            first.getPassengerTicketId(),
+            PassengerTicketDetailStatus.CANCELLED.name()
+        );
+
+        List<Integer> seatIds = ticketDetailRepository.findTripSeatIdsByPassengerTicketId(first.getPassengerTicketId());
+        if (!seatIds.isEmpty()) {
+            tripSeatRepository.updateStatusByTripSeatIds(seatIds, TripSeatStatus.AVAILABLE);
+            // Seat map overlays Redis locks on top of DB status — must clear holds or UI stays LOCKED
+            seatHoldService.forceReleaseSeatsByIds(seatIds);
+        }
+
+        payment.setRefundAmount(refundAmount);
+        payment.setUpdatedBy(accountId);
+        paymentRepository.save(payment);
+
+        String reason = buildRefundReason(request, refundTierLabel);
+        Refund refund = Refund.builder()
+            .paymentId(payment.getPaymentId())
+            .amount(refundAmount)
+            .reason(reason)
+            .refundMethod("BANK_TRANSFER")
+            .status("PENDING")
+            .callbackData(serializeBankDestination(request))
+            .build();
+        refund.setCreatedBy(accountId);
+        refundRepository.save(refund);
+
+        PassengerTicketEmailPayload emailTicket =
+            passengerTicketEmailAssembler.assemble(first.getPassengerTicketId());
+        PassengerTicketCancellationEmailPayload emailPayload = new PassengerTicketCancellationEmailPayload(
+            emailTicket,
+            LocalDateTime.now(),
+            refundAmount,
+            refund.getStatus(),
+            "Nhân viên hủy vé - hoàn " + refundTierLabel
+        );
+        sendTicketCancellationEmailAfterCommit(emailPayload, first.getPassengerTicketId());
+
+        return queryService.getDetail(normalizedTicketCode);
+    }
+
+    /**
+     * Defers cancellation email delivery until the staff cancellation
+     * transaction commits. Failed SMTP delivery is logged without reverting the
+     * already-valid cancellation and refund record.
+     */
+    private void sendTicketCancellationEmailAfterCommit(
+        PassengerTicketCancellationEmailPayload payload,
+        Integer passengerTicketId
+    ) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            /**
+             * Executes the after commit operation.
+             */
+            public void afterCommit() {
+                try {
+                    ticketEmailService.sendTicketCancellation(payload);
+                } catch (Exception exception) {
+                    log.error("Failed to send staff ticket cancellation email for passengerTicketId={}",
+                        passengerTicketId, exception);
+                }
+            }
+        });
+    }
+
+    private String buildRefundReason(StaffPassengerTicketCancelRequest request, String refundTierLabel) {
+        String base = "Nhân viên hủy vé - hoàn " + refundTierLabel;
+        if (request.reason() != null && !request.reason().isBlank()) {
+            return base + ": " + request.reason().trim();
+        }
+        return base;
+    }
+
+    private String serializeBankDestination(StaffPassengerTicketCancelRequest request) {
+        try {
+            return objectMapper.writeValueAsString(Map.of(
+                "bankName", request.bankName().trim(),
+                "accountHolder", request.accountHolder().trim(),
+                "accountNumber", request.accountNumber().trim()
+            ));
+        } catch (JsonProcessingException exception) {
+            throw new IllegalStateException("Không thể lưu thông tin nhận tiền hoàn.", exception);
+        }
+    }
+
+    private void requireCustomerPhoneOtp(
+        List<StaffPassengerTicketRowProjection> rows,
+        String firebaseIdToken
+    ) {
+        String contactPhone = rows.stream()
+            .filter(row -> PassengerTicketDetailStatus.CONFIRMED.name().equals(row.getDetailStatus()))
+            .sorted(Comparator.comparing(StaffPassengerTicketRowProjection::getTicketDetailId))
+            .map(StaffPassengerTicketRowProjection::getPhone)
+            .filter(phone -> phone != null && !phone.isBlank())
+            .map(PhoneNumberUtility::normalizeToLocalFormat)
+            .findFirst()
+            .orElseThrow(() -> new BusinessRuleException(
+                "Vé không có số điện thoại hành khách để xác thực OTP."
+            ));
+
+        passengerPhoneVerificationService.verifyFirebasePhoneToken(contactPhone, firebaseIdToken);
+    }
+}

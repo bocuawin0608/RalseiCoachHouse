@@ -1,0 +1,76 @@
+package com.ralsei.staff.service.passengerticket;
+
+import java.util.List;
+
+import com.ralsei.staff.dto.request.passengerbooking.SeatLockRequest;
+import com.ralsei.staff.dto.request.staffpassengerticket.StaffPassengerChangePassengerRequest;
+import com.ralsei.staff.dto.request.staffpassengerticket.StaffPassengerChangeSeatRequest;
+import com.ralsei.staff.dto.request.staffpassengerticket.StaffPassengerItineraryChangeRequest;
+import com.ralsei.staff.dto.request.staffpassengerticket.StaffPassengerTicketChangesRequest;
+import com.ralsei.staff.dto.response.passengerbooking.SeatLockResponse;
+import com.ralsei.staff.dto.response.passengerbooking.TripSeatResponse;
+import com.ralsei.staff.dto.response.staffpassengerticket.StaffPassengerItineraryPreviewResponse;
+import com.ralsei.staff.dto.response.staffpassengerticket.StaffPassengerTicketDetailResponse;
+import com.ralsei.staff.dto.response.staffpassengerticket.StaffPassengerTransferCandidateResponse;
+
+import java.time.LocalDate;
+
+/**
+ * Provides the business service contract for staff passenger ticket change.
+ */
+public interface StaffPassengerTicketChangeService {
+
+    StaffPassengerTicketDetailResponse changePassengerInfo(
+        Integer accountId,
+        String ticketCode,
+        Integer ticketDetailId,
+        StaffPassengerChangePassengerRequest request
+    );
+
+    List<TripSeatResponse> getSeatMap(Integer tripId);
+
+    SeatLockResponse lockSeats(Integer tripId, SeatLockRequest request, String holdToken, String lockMode);
+
+    void releaseSeats(List<Integer> tripSeatIds, String holdToken, List<Integer> restoreVacatedTripSeatIds);
+
+    StaffPassengerTicketDetailResponse changeSeat(
+        Integer accountId,
+        String ticketCode,
+        Integer ticketDetailId,
+        StaffPassengerChangeSeatRequest request,
+        String holdToken
+    );
+
+    List<StaffPassengerTransferCandidateResponse> getTransferCandidates(
+        String ticketCode,
+        LocalDate departureDate,
+        Integer routeId,
+        boolean excludeCurrentTrip
+    );
+
+    StaffPassengerItineraryPreviewResponse previewItineraryChange(
+        String ticketCode,
+        Integer newTripId,
+        Integer pickupStopId,
+        Integer dropoffStopId,
+        List<Integer> newTripSeatIds
+    );
+
+    StaffPassengerTicketDetailResponse changeItinerary(
+        Integer accountId,
+        String ticketCode,
+        StaffPassengerItineraryChangeRequest request,
+        String holdToken
+    );
+
+    /**
+     * Confirms one staff change session: passenger info, seat, and/or itinerary
+     * in a single transaction, then notifies the customer once.
+     */
+    StaffPassengerTicketDetailResponse confirmChanges(
+        Integer accountId,
+        String ticketCode,
+        StaffPassengerTicketChangesRequest request,
+        String holdToken
+    );
+}

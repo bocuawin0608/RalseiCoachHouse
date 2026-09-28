@@ -1,0 +1,97 @@
+package com.ralsei.staff.repository;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import com.ralsei.staff.dto.projection.staff.StaffListProjection;
+import com.ralsei.staff.dto.projection.staff.StaffProjection;
+import com.ralsei.staff.dto.projection.cargoticket.CargoTicketStaffOptionProjection;
+import com.ralsei.staff.model.Staff;
+
+/**
+ * Provides persistence access for staff data.
+ */
+public interface StaffRepository extends JpaRepository<Staff, Integer> {
+    @Query(value = "SELECT staffId, staffName FROM staff WHERE isActive = 1 AND staffPosition = 'TICKET_STAFF' ORDER BY staffName", nativeQuery = true)
+    List<CargoTicketStaffOptionProjection> findCargoTicketSellerOptions();
+
+    @Query(value = "SELECT s.staffId, s.staffName, a.username AS username FROM staff s LEFT JOIN account a ON s.accountId = a.accountId WHERE s.isActive = 1 AND s.staffPosition = 'TICKET_STAFF' ORDER BY s.staffName", nativeQuery = true)
+    List<CargoTicketStaffOptionProjection> findCargoTicketSellerOptionsWithUsername();
+
+    @Query(value = "SELECT staffId, staffName FROM staff WHERE isActive = 1 AND staffPosition IN ('ATTENDANT', 'TICKET_STAFF') ORDER BY staffName", nativeQuery = true)
+    List<CargoTicketStaffOptionProjection> findCargoTicketHandlerOptions();
+
+    @Query(value = "SELECT staffId, staffName FROM staff WHERE isActive = 1 AND staffPosition = 'DRIVER' ORDER BY staffName", nativeQuery = true)
+    List<CargoTicketStaffOptionProjection> findCargoTicketDriverOptions();
+
+    boolean existsByStaffIdAndIsActiveTrueAndStaffPosition(int staffId, String staffPosition);
+
+    boolean existsByStaffIdAndIsActiveTrueAndStaffPositionIn(int staffId, java.util.Collection<String> positions);
+
+    Optional<Staff> findByAccountId(Integer accountId);
+
+    List<Staff> findByTicketAgencyId(Integer ticketAgencyId);
+
+    boolean existsByAccountId(Integer accountId);
+
+    boolean existsByPhoneIgnoreCase(String phone);
+
+    boolean existsByEmailIgnoreCaseAndStaffIdNot(String email, Integer staffId);
+
+    long countByTicketAgencyId(Integer ticketAgencyId);
+
+    @Query(value = """
+                SELECT s.staffId         AS staffId,
+                    s.staffName          AS staffName,
+                    s.phone              AS phone,
+                    s.email              AS email,
+                    s.cccd               AS cccd,
+                    s.staffPosition      AS staffPosition,
+                    s.ticketAgencyId     AS ticketAgencyId,
+                    ta.ticketAgencyName  AS ticketAgencyName,
+                    a.username           AS username,
+                    s.isActive           AS isActive,
+                    s.dob                AS dob,
+                    s.hireDate           AS hireDate,
+                    s.createdAt          AS createdAt,
+                COALESCE((SELECT TOP 1 r.roleName FROM account_role ar JOIN role r ON r.roleId = ar.roleId WHERE ar.accountId = a.accountId), '') AS roleName
+                FROM staff s
+                LEFT JOIN ticket_agency ta ON ta.ticketAgencyId = s.ticketAgencyId
+                LEFT JOIN account a ON a.accountId = s.accountId
+                WHERE (:search IS NULL
+                    OR LOWER(s.staffName) LIKE LOWER(CONCAT('%', :search, '%'))
+                    OR LOWER(ISNULL(s.phone, '')) LIKE LOWER(CONCAT('%', :search, '%'))
+                    OR LOWER(ISNULL(s.email, '')) LIKE LOWER(CONCAT('%', :search, '%'))
+                    OR LOWER(ISNULL(s.cccd, '')) LIKE LOWER(CONCAT('%', :search, '%')))
+                  AND (:isActive IS NULL OR s.isActive = :isActive)
+                  AND (:staffPosition IS NULL OR s.staffPosition = :staffPosition)
+                  AND (:ticketAgencyId IS NULL OR s.ticketAgencyId = :ticketAgencyId)
+                ORDER BY s.staffId DESC
+            """, nativeQuery = true)
+    List<StaffListProjection> filterStaff(
+            @Param("search") String search,
+            @Param("isActive") Boolean isActive,
+            @Param("staffPosition") String staffPosition,
+            @Param("ticketAgencyId") Integer ticketAgencyId);
+
+    @Query(value = """
+                SELECT s.staffName AS staffName
+                FROM staff s
+                JOIN account a ON a.accountId = s.accountId
+                JOIN account_role ar ON ar.accountId = a.accountId
+                JOIN role r ON r.roleId = ar.roleId
+                WHERE r.roleName = 'TRIP_STAFF' AND s.staffPosition = 'DRIVER'
+                AND EXISTS (
+                    SELECT 1
+                    FROM trip t
+                    WHERE t.driverId = s.staffId
+                    AND CAST(t.departureTime AS DATE) = :date
+                )
+            """, nativeQuery = true)
+    List<StaffProjection> getStaffNameDropDown(@Param("date") LocalDate date);
+}

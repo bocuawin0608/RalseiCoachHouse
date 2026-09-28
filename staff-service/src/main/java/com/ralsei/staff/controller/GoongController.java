@@ -1,0 +1,65 @@
+package com.ralsei.staff.controller;
+
+import com.ralsei.staff.dto.request.goong.DistanceTimeRequest;
+import com.ralsei.staff.dto.request.goong.CalculateRouteDistancesRequest;
+import com.ralsei.staff.dto.response.goong.DistanceTimeResponse;
+import com.ralsei.staff.dto.response.goong.CalculateRouteDistancesResponse;
+import com.ralsei.staff.dto.response.goong.GeocodeResponse;
+import com.ralsei.staff.service.GoongService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/v2/goong")
+@RequiredArgsConstructor
+/**
+ * Handles HTTP requests for goong operations.
+ */
+public class GoongController {
+
+    private final GoongService goongService;
+
+    @GetMapping("/place/autocomplete")
+    /**
+     * Executes the autocomplete operation.
+     *
+     * @param input the value supplied for this operation
+     *
+     * @return the operation result
+     */
+    public ResponseEntity<Object> autocomplete(@RequestParam String input) {
+        return ResponseEntity.ok(goongService.autocomplete(input));
+    }
+
+    @GetMapping("/geocode")
+    /**
+     * Executes the geocode operation.
+     *
+     * @param address the value supplied for this operation
+     *
+     * @return the operation result
+     */
+    public ResponseEntity<GeocodeResponse> geocode(@RequestParam String address) {
+        return ResponseEntity.ok(goongService.geocode(address));
+    }
+
+    @GetMapping("/place/distance-time")
+    /**
+     * Returns the distance and time.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the distance and time
+     */
+    public ResponseEntity<DistanceTimeResponse> getDistanceAndTime(@Valid @ModelAttribute DistanceTimeRequest request) {
+        return ResponseEntity.ok(goongService.getDistanceAndTime(request));
+    }
+
+    @PostMapping("/calculate-route-distances")
+    public ResponseEntity<CalculateRouteDistancesResponse> calculateRouteDistances(
+            @Valid @RequestBody CalculateRouteDistancesRequest request) {
+        return ResponseEntity.ok(goongService.calculateRouteDistances(request));
+    }
+}

@@ -1,0 +1,303 @@
+package com.ralsei.customer.service.impl;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ralsei.customer.dto.request.payment.PaymentCheckoutRequest;
+import com.ralsei.customer.dto.request.sePay.SepayWebhookRequest;
+import com.ralsei.customer.dto.notification.PassengerTicketEmailPayload;
+import com.ralsei.customer.exception.BusinessRuleException;
+import com.ralsei.customer.model.CargoTicket;
+import com.ralsei.customer.model.PassengerTicket;
+import com.ralsei.customer.model.PassengerTicketDetail;
+import com.ralsei.customer.model.Payment;
+import com.ralsei.customer.model.PassengerTicketDetailStatus;
+import com.ralsei.customer.model.PassengerTicketStatus;
+import com.ralsei.customer.model.TripSeatStatus;
+import com.ralsei.customer.repository.PassengerTicketDetailRepository;
+import com.ralsei.customer.repository.PassengerTicketRepository;
+import com.ralsei.customer.repository.PaymentRepository;
+import com.ralsei.customer.repository.TripSeatRepository;
+import com.ralsei.customer.service.PaymentService;
+import com.ralsei.customer.service.TransactionIdGenerator;
+import com.ralsei.customer.service.notification.PassengerTicketEmailAssembler;
+import com.ralsei.customer.service.notification.TicketEmailService;
+import com.ralsei.customer.service.passengerbooking.BoardingQrTokenGenerator;
+import com.ralsei.customer.service.passengerbooking.PaymentSseService;
+import com.ralsei.customer.service.passengerbooking.SeatHoldService;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+/**
+ * Provides the payment service impl component for the application.
+ */
+public class PaymentServiceImpl implements PaymentService {
+
+    private final PaymentRepository paymentRepository;
+    private final PassengerTicketRepository passengerTicketRepository;
+    private final PassengerTicketDetailRepository passengerTicketDetailRepository;
+    private final TripSeatRepository tripSeatRepository;
+    private final ObjectMapper objectMapper;
+    private final TransactionIdGenerator transactionIdGenerator;
+    private final PaymentSseService paymentSseService;
+    private final BoardingQrTokenGenerator boardingQrTokenGenerator;
+    private final PassengerTicketEmailAssembler passengerTicketEmailAssembler;
+    private final TicketEmailService ticketEmailService;
+    private final SeatHoldService seatHoldService;
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    @Override
+    @Transactional
+    /**
+     * Executes the initialize payment operation.
+     *
+     * @param request the value supplied for this operation
+     *
+     * @return the operation result
+     */
+    public Payment initializePayment(PaymentCheckoutRequest request) {
+        validateCheckoutRequest(request);
+
+        String transactionId = transactionIdGenerator.generateUniqueTransactionId();
+
+        CargoTicket ct = request.getCargoTicketId() != null
+                ? entityManager.getReference(CargoTicket.class, request.getCargoTicketId())
+                : null;
+
+        Payment payment = Payment.builder()
+                .passengerTicketId(request.getPassengerTicketId())
+                .cargoTicket(ct)
+                .amount(request.getAmount())
+                .paymentMethod(request.getPaymentMethod())
+                .transactionId(transactionId)
+                .cancelToken(UUID.randomUUID().toString())
+                .status("PENDING")
+                .refundAmount(BigDecimal.ZERO)
+                .build();
+
+        return paymentRepository.save(payment);
+    }
+
+    @Override
+    @Transactional
+    /**
+     * Executes the process webhook operation.
+     *
+     * @param request the value supplied for this operation
+     */
+    public void processWebhook(SepayWebhookRequest request) {
+        String content = request.getContent();
+        if (content == null || content.isEmpty()) {
+            throw new IllegalArgumentException("Webhook content is empty");
+        }
+
+        // Extract transactionId from content (e.g., PAYxxxxxx)
+        Pattern pattern = Pattern.compile("(PAY[A-Z0-9]{6})");
+        Matcher matcher = pattern.matcher(content);
+
+        String transactionId = null;
+        if (matcher.find()) {
+            transactionId = matcher.group(1);
+        }
+
+        if (transactionId == null) {
+            throw new IllegalArgumentException("Could not extract transactionId from content");
+        }
+
+        Optional<Payment> paymentOpt = paymentRepository.findByTransactionIdAndStatus(transactionId, "PENDING");
+        if (paymentOpt.isPresent()) {
+            Payment payment = paymentOpt.get();
+
+            // Verify transfer amount
+            if (payment.getAmount().compareTo(request.getTransferAmount()) <= 0) {
+                String callbackData;
+                try {
+                    callbackData = objectMapper.writeValueAsString(request);
+                } catch (JsonProcessingException e) {
+                    callbackData = request.toString();
+                }
+
+                LocalDateTime paymentTime = LocalDateTime.now();
+                int rowsUpdated = paymentRepository.completeIfCurrent(
+                        transactionId,
+                        "PENDING",
+                        "COMPLETED",
+                        paymentTime,
+                        callbackData);
+
+                if (rowsUpdated == 0) {
+                    log.info("Payment already processed before webhook completion, transactionId={}", transactionId);
+                    return;
+                }
+
+                // completeIfCurrent evicts the managed entity; sync in-memory copy for
+                // downstream use only.
+                payment.setStatus("COMPLETED");
+                payment.setPaymentTime(paymentTime);
+                payment.setCallbackData(callbackData);
+
+                if (payment.getPassengerTicketId() != null) {
+                    completePassengerPaymentTarget(payment);
+                } else if (payment.getCargoTicket().getCargoTicketId() > 0) {
+                    completeCargoPaymentTarget(payment);
+                } else {
+                    throw new BusinessRuleException("Dữ liệu thanh toán không hợp lệ!");
+                }
+
+                paymentSseService.sendStatusUpdate(transactionId, "COMPLETED");
+
+            } else {
+                throw new IllegalArgumentException("Transfer amount is less than required payment amount");
+            }
+        } else {
+            throw new IllegalArgumentException(
+                    "Payment not found or already processed for transactionId: " + transactionId);
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    /**
+     * Returns the payment by transaction id.
+     *
+     * @param transactionId the value supplied for this operation
+     *
+     * @return the payment by transaction id
+     */
+    public Payment getPaymentByTransactionId(String transactionId) {
+        return paymentRepository.findByTransactionId(transactionId)
+                .orElseThrow(
+                        () -> new IllegalArgumentException(
+                                "Không tìm thấy thanh toán có mã giao dịch: " + transactionId));
+    }
+
+    @Override
+    @Transactional
+    /**
+     * Executes the fail pending payment operation.
+     *
+     * @param transactionId the value supplied for this operation
+     *
+     * @return the operation result
+     */
+    public boolean failPendingPayment(String transactionId) {
+        int rowsUpdated = paymentRepository.updateStatusIfCurrent(transactionId, "PENDING", "FAILED");
+        if (rowsUpdated == 0) {
+            log.info("Skip fail pending payment because payment is no longer pending, transactionId={}", transactionId);
+            return false;
+        }
+
+        paymentSseService.sendStatusUpdate(transactionId, "FAILED");
+        return true;
+    }
+
+    private void validateCheckoutRequest(PaymentCheckoutRequest request) {
+        if (request == null) {
+            throw new BusinessRuleException("Thông tin thanh toán không được để trống!");
+        }
+        boolean hasPassengerTicket = request.getPassengerTicketId() != null;
+        boolean hasCargoTicket = request.getCargoTicketId() != null;
+        if (hasPassengerTicket == hasCargoTicket) {
+            throw new BusinessRuleException("Một thanh toán chỉ được ứng với vé hành khách hoặc đơn gửi hàng!");
+        }
+        if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BusinessRuleException("Số tiền thanh toán phải lớn hơn 0!");
+        }
+        if (request.getPaymentMethod() == null || request.getPaymentMethod().isBlank()) {
+            throw new BusinessRuleException("Phải chọn phương thức thanh toán!");
+        }
+    }
+
+    private void completePassengerPaymentTarget(Payment payment) {
+        int rowsAffected = passengerTicketRepository.updateStatusIfCurrent(
+                payment.getPassengerTicketId(),
+                PassengerTicketStatus.PENDING,
+                PassengerTicketStatus.CONFIRMED);
+
+        if (rowsAffected == 0) {
+            throw new BusinessRuleException(
+                    "Thao tác thất bại: Vé không tồn tại hoặc trạng thái vé đã thay đổi trước đó!");
+        }
+
+        List<PassengerTicketDetail> details = passengerTicketDetailRepository
+                .findByPassengerTicketId(payment.getPassengerTicketId());
+
+        if (!details.isEmpty()) {
+            List<Integer> tripSeatIds = new ArrayList<>();
+
+            for (PassengerTicketDetail detail : details) {
+                detail.setStatus(PassengerTicketDetailStatus.CONFIRMED.name());
+                detail.setQrcode(boardingQrTokenGenerator.generateToken());
+
+                if (detail.getTripSeatId() > 0) {
+                    tripSeatIds.add(detail.getTripSeatId());
+                }
+            }
+
+            passengerTicketDetailRepository.saveAll(details);
+
+            if (!tripSeatIds.isEmpty()) {
+                tripSeatRepository.updateStatusByTripSeatIds(tripSeatIds, TripSeatStatus.SOLD);
+                // Booking Redis locks can outlive payment; clear so seat map shows SOLD from DB, not LOCKED
+                seatHoldService.forceReleaseSeatsByIds(tripSeatIds);
+            }
+        }
+
+        PassengerTicketEmailPayload emailPayload = passengerTicketEmailAssembler
+                .assemble(payment.getPassengerTicketId());
+        sendTicketEmailAfterCommit(emailPayload, payment.getPassengerTicketId());
+    }
+
+    /**
+     * Defers customer communication until the enclosing payment transaction has
+     * committed. This prevents a rollback from leaving the customer with an
+     * email for a ticket that was never successfully confirmed.
+     *
+     * @param payload           detached ticket information safe to use after commit
+     * @param passengerTicketId identifier used only for failure diagnostics
+     */
+    private void sendTicketEmailAfterCommit(
+            PassengerTicketEmailPayload payload,
+            Integer passengerTicketId) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            /**
+             * Executes the after commit operation.
+             */
+            public void afterCommit() {
+                try {
+                    ticketEmailService.sendTicketConfirmation(payload);
+                } catch (Exception exception) {
+                    log.error("Failed to send ticket confirmation for passengerTicketId={}",
+                            passengerTicketId, exception);
+                }
+            }
+        });
+    }
+
+    private void completeCargoPaymentTarget(Payment payment) {
+        // Cargo order status is driven by ticket-staff / trip-staff workflows.
+        // SePay only marks payment COMPLETED; feePayer gates enforce collection timing.
+    }
+}

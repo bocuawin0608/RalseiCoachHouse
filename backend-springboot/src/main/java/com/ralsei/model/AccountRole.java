@@ -19,13 +19,6 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-/**
- * AccountRole entity.
- */
-
-/**
- * Provides the account role component for the application.
- */
 public class AccountRole {
 
     @Id
@@ -38,5 +31,4 @@ public class AccountRole {
 
     @Column(name = "roleId", nullable = false)
     private Integer roleId;
-
 }

@@ -19,13 +19,6 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-/**
- * Role entity.
- */
-
-/**
- * Provides the role component for the application.
- */
 public class Role extends BaseEntity {
 
     @Id
@@ -34,7 +27,7 @@ public class Role extends BaseEntity {
     private Integer roleId;
 
     @Column(name = "roleName", nullable = false, unique = true, length = 50)
-    private String roleName;  // "Manager", "Customer", "TicketStaff"...
+    private String roleName;
 
     @Column(name = "isActive", nullable = false)
     @Builder.Default
