@@ -5,12 +5,13 @@ import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
-@Data
-@Getter
-@Setter
 /**
  * Represents the request payload for trip create operations.
  */
+@Data
+@Getter
+@Setter
+
 public class TripCreateRequest {
     private Integer routeId;
     private Integer coachId;

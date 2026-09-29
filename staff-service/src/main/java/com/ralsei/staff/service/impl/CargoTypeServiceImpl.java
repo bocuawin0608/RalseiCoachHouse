@@ -26,11 +26,12 @@ import java.time.LocalDateTime;
 
 import lombok.RequiredArgsConstructor;
 
-@Service
-@RequiredArgsConstructor
 /**
  * Provides the cargo type service impl component for the application.
  */
+@Service
+@RequiredArgsConstructor
+
 public class CargoTypeServiceImpl implements CargoTypeService {
 
     private static final LocalDateTime DEFAULT_SURCHARGE_END_DATE = LocalDateTime.of(2099, 12, 31, 23, 59, 59);

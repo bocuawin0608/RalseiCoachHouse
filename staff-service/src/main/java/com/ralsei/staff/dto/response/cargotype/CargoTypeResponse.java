@@ -13,13 +13,14 @@ import lombok.NoArgsConstructor;
  * <p>The price fields represent surcharge data from cargo type price, not the
  * freight-based base cargo price.</p>
  */
+/**
+ * Represents the response payload for cargo type operations.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-/**
- * Represents the response payload for cargo type operations.
- */
+
 public class CargoTypeResponse {
     private int cargoTypeId;
     private String cargoTypeName;

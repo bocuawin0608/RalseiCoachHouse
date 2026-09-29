@@ -30,11 +30,12 @@ import com.ralsei.staff.service.tripstaff.TripStaffCargoService;
 
 import lombok.RequiredArgsConstructor;
 
-@Service
-@RequiredArgsConstructor
 /**
  * Provides the trip staff cargo service impl component for the application.
  */
+@Service
+@RequiredArgsConstructor
+
 public class TripStaffCargoServiceImpl implements TripStaffCargoService {
 
     /** Statuses trip staff still handles on the coach (load / unload / just unloaded). */

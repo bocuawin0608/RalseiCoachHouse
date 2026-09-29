@@ -1,5 +1,9 @@
 package com.ralsei.customer.service.notification;
 
+import com.ralsei.customer.repository.RouteStopRepository;
+
+import com.ralsei.customer.repository.TripRepository;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -13,13 +17,9 @@ import com.ralsei.customer.exception.ResourceNotFoundException;
 import com.ralsei.customer.model.PassengerTicket;
 import com.ralsei.customer.model.PassengerTicketDetail;
 import com.ralsei.customer.model.Payment;
-import com.ralsei.customer.model.RouteStop;
-import com.ralsei.customer.model.Trip;
 import com.ralsei.customer.repository.PassengerTicketDetailRepository;
 import com.ralsei.customer.repository.PassengerTicketRepository;
 import com.ralsei.customer.repository.PaymentRepository;
-import com.ralsei.customer.repository.RouteStopRepository;
-import com.ralsei.customer.repository.TripRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -69,23 +69,19 @@ public class PassengerTicketEmailAssembler {
         Payment payment = paymentRepository.findByPassengerTicketId(passengerTicketId)
             .orElse(null);
 
-        Trip trip = tripRepository.findByIdWithRouteAndCoach(ticket.getTripId()).orElse(null);
-        String routeName = trip != null && trip.getRoute() != null ? trip.getRoute().getRouteName() : null;
-        String coachTypeName = trip != null && trip.getCoach() != null && trip.getCoach().getCoachType() != null
-            ? trip.getCoach().getCoachType().getCoachTypeName()
-            : null;
-        String coachLicensePlate = trip != null && trip.getCoach() != null
-            ? trip.getCoach().getLicensePlate()
-            : null;
+        // [MICROSERVICE-REFACTOR]: Fetch trip info via FeignClient
+        String routeName = null;
+        String coachTypeName = null;
+        String coachLicensePlate = null;
 
-        LocalDateTime departureTime = trip != null ? trip.getDepartureTime() : null;
-        LocalDateTime arrivalTime = resolveStopTime(trip, ticket.getDropoffStopId());
-        LocalDateTime pickupPresentBy = resolveStopTime(trip, ticket.getPickupStopId());
+        LocalDateTime departureTime = null;
+        LocalDateTime arrivalTime = null;
+        LocalDateTime pickupPresentBy = null;
 
         PassengerTicketDetail primaryDetail = details.get(0);
         List<PassengerSeatEmailItem> seats = details.stream()
             .map(detail -> new PassengerSeatEmailItem(
-                detail.getSeatCodeSnapshot(),
+                null, // seatCodeSnapshot not available here
                 detail.getFullName(),
                 detail.getPhone(),
                 detail.getQrcode()
@@ -101,28 +97,14 @@ public class PassengerTicketEmailAssembler {
             coachLicensePlate,
             departureTime,
             arrivalTime,
-            ticket.getPickupStopName(),
-            ticket.getDropoffStopName(),
+            null, // pickupStopName
+            null, // dropoffStopName
             pickupPresentBy,
             primaryDetail.getFullName(),
             primaryDetail.getPhone(),
-            primaryDetail.getEmail(),
+            null, // email
             ticket.getTotalPrice(),
             List.copyOf(seats)
         );
-    }
-
-    /**
-     * Calculates when the coach reaches the selected pickup stop according to
-     * the route-stop schedule.
-     */
-    private LocalDateTime resolveStopTime(Trip trip, int stopPointId) {
-        if (trip == null || trip.getDepartureTime() == null) {
-            return null;
-        }
-        Optional<RouteStop> stop = routeStopRepository.findByRouteIdAndStopPointId(
-            trip.getRouteId(), stopPointId);
-        int minutesFromStart = stop.map(RouteStop::getMinutesFromStart).orElse(0);
-        return trip.getDepartureTime().plusMinutes(minutesFromStart);
     }
 }

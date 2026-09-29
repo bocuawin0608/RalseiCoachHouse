@@ -26,12 +26,13 @@ import com.ralsei.staff.dto.projection.route.RouteLocationDropdownProjection;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-@RestController
-@RequestMapping("/api/v1/routes")
-@RequiredArgsConstructor
 /**
  * Handles HTTP requests for route operations.
  */
+@RestController
+@RequestMapping("/api/v1/routes")
+@RequiredArgsConstructor
+
 public class RouteController {
 
     private final RouteService routeService;

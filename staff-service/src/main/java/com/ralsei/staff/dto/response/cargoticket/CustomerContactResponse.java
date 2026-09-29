@@ -5,13 +5,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Represents the response payload for customer contact operations.
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-/**
- * Represents the response payload for customer contact operations.
- */
+
 public class CustomerContactResponse {
     private String phone;
     private String name;

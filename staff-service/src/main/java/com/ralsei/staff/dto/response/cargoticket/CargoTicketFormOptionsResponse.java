@@ -11,11 +11,12 @@ import com.ralsei.staff.dto.response.CoachAndRouteStop.RouteDropdownDTO;
 import lombok.Builder;
 import lombok.Getter;
 
-@Getter
-@Builder
 /**
  * Represents the response payload for cargo ticket form options operations.
  */
+@Getter
+@Builder
+
 public class CargoTicketFormOptionsResponse {
     private List<RouteDropdownDTO> routes;
     private List<CargoTicketTripOptionWithCoachTypeProjection> trips;

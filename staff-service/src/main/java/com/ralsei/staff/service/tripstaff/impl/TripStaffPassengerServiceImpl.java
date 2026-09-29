@@ -35,8 +35,8 @@ import com.ralsei.staff.model.CoachStatusLog;
 import com.ralsei.staff.model.Route;
 import com.ralsei.staff.model.Staff;
 import com.ralsei.staff.model.Trip;
-import com.ralsei.staff.model.PassengerTicketDetailStatus;
-import com.ralsei.staff.model.CoachStatus;
+import com.ralsei.staff.model.enums.PassengerTicketDetailStatus;
+import com.ralsei.staff.model.enums.CoachStatus;
 import com.ralsei.staff.repository.AccompaniedChildRepository;
 import com.ralsei.staff.repository.CoachRepository;
 import com.ralsei.staff.repository.CoachStatusLogRepository;
@@ -53,11 +53,12 @@ import com.ralsei.staff.service.tripstaff.TripStaffPassengerService;
 
 import lombok.RequiredArgsConstructor;
 
-@Service
-@RequiredArgsConstructor
 /**
  * Provides the trip staff passenger service impl component for the application.
  */
+@Service
+@RequiredArgsConstructor
+
 public class TripStaffPassengerServiceImpl implements TripStaffPassengerService {
 
     private final JwtService jwtService;
@@ -87,7 +88,7 @@ public class TripStaffPassengerServiceImpl implements TripStaffPassengerService 
      */
     public List<AssignedTripProjection> getAssignedTrips(String authorizationHeader, LocalDate date) {
         int staffId = resolveStaffId(authorizationHeader);
-        return tripStaffRepository.findAssignedTripsByStaffAndDate(staffId, date.toString());
+        return tripStaffRepository.findAssignedTripsByStaffAndDate(staffId, date);
     }
 
     @Override
@@ -108,7 +109,7 @@ public class TripStaffPassengerServiceImpl implements TripStaffPassengerService 
                 .orElseThrow(() -> new ResourceNotFoundException("Chuyến đi không tồn tại"));
 
         List<AssignedTripProjection> assigned = tripStaffRepository.findAssignedTripsByStaffAndDate(
-                staffId, trip.getDepartureTime().toLocalDate().toString());
+                staffId, trip.getDepartureTime().toLocalDate());
         AssignedTripProjection summary = assigned.stream()
                 .filter(item -> item.getTripId().equals(tripId))
                 .findFirst()

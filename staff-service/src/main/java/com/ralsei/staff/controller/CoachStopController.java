@@ -10,12 +10,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@RestController
-@RequestMapping("/api/v1/coach-stops")
-@RequiredArgsConstructor
 /**
  * Handles HTTP requests for coach stop operations.
  */
+@RestController
+@RequestMapping("/api/v1/coach-stops")
+@RequiredArgsConstructor
+
 public class CoachStopController {
 
     private final CoachStopService coachStopService;

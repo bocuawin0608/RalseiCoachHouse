@@ -33,11 +33,12 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/v1/refunds")
 @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
-@RequiredArgsConstructor
-@Validated
 /**
  * Handles HTTP requests for staff refund operations.
  */
+@RequiredArgsConstructor
+@Validated
+
 public class StaffRefundController {
 
     private final StaffRefundService staffRefundService;

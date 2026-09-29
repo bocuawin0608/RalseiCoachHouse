@@ -2,7 +2,7 @@ package com.ralsei.customer.model;
 
 import java.math.BigDecimal;
 
-import com.ralsei.customer.model.TripSeatStatus;
+import com.ralsei.customer.model.enums.TripSeatStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

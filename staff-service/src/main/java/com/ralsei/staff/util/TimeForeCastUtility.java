@@ -5,10 +5,11 @@ import java.time.LocalDateTime;
 
 import lombok.experimental.UtilityClass;
 
-@UtilityClass
 /**
  * Provides utility helpers for time fore cast uti processing.
  */
+@UtilityClass
+
 public class TimeForeCastUtility {
     private static final long CUSTOMER_TRIP_FORECAST_MINUTES = 432L;
 

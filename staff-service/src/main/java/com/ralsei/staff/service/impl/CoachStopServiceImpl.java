@@ -24,11 +24,12 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-@Service
-@RequiredArgsConstructor
 /**
  * Provides the coach stop service impl component for the application.
  */
+@Service
+@RequiredArgsConstructor
+
 public class CoachStopServiceImpl implements CoachStopService {
 
     private final CoachStopRepository coachStopRepository;

@@ -19,13 +19,14 @@ import lombok.NoArgsConstructor;
  * {@code cargo_type_price}. They are submitted together because staff edits the
  * business record as a single surcharge configuration.</p>
  */
+/**
+ * Represents the request payload for cargo type management operations.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-/**
- * Represents the request payload for cargo type management operations.
- */
+
 public class CargoTypeManagementRequest {
 
     @NotBlank(message = "Tên loại hàng là bắt buộc")

@@ -12,10 +12,11 @@ import java.time.LocalDate;
  * Bean Validation annotations are evaluated by the customer controller before
  * any service or repository work begins.
  */
-@Data
 /**
  * Represents the request payload for trip search operations.
  */
+@Data
+
 public class TripSearchRequest {
 
     public static final int MAX_PAGE_SIZE = 100;

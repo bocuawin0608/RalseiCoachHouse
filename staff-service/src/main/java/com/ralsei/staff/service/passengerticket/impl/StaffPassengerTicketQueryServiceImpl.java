@@ -23,7 +23,7 @@ import com.ralsei.staff.exception.ResourceNotFoundException;
 import com.ralsei.staff.model.PassengerTicket;
 import com.ralsei.staff.model.Payment;
 import com.ralsei.staff.model.Refund;
-import com.ralsei.staff.model.PassengerTicketStatus;
+import com.ralsei.staff.model.enums.PassengerTicketStatus;
 import com.ralsei.staff.repository.PassengerTicketDetailRepository;
 import com.ralsei.staff.repository.PassengerTicketRepository;
 import com.ralsei.staff.repository.PaymentRepository;
@@ -35,11 +35,12 @@ import com.ralsei.staff.util.PhoneNumberUtility;
 
 import lombok.RequiredArgsConstructor;
 
-@Service
-@RequiredArgsConstructor
 /**
  * Provides the staff passenger ticket query service impl component for the application.
  */
+@Service
+@RequiredArgsConstructor
+
 public class StaffPassengerTicketQueryServiceImpl implements StaffPassengerTicketQueryService {
 
     private static final Pattern TICKET_CODE_PATTERN = Pattern.compile("[A-Za-z0-9_-]{3,64}");

@@ -20,13 +20,12 @@ import com.ralsei.customer.dto.request.payment.PaymentCheckoutRequest;
 import com.ralsei.customer.dto.request.sePay.SepayWebhookRequest;
 import com.ralsei.customer.dto.notification.PassengerTicketEmailPayload;
 import com.ralsei.customer.exception.BusinessRuleException;
-import com.ralsei.customer.model.CargoTicket;
 import com.ralsei.customer.model.PassengerTicket;
 import com.ralsei.customer.model.PassengerTicketDetail;
 import com.ralsei.customer.model.Payment;
-import com.ralsei.customer.model.PassengerTicketDetailStatus;
-import com.ralsei.customer.model.PassengerTicketStatus;
-import com.ralsei.customer.model.TripSeatStatus;
+import com.ralsei.customer.model.enums.PassengerTicketDetailStatus;
+import com.ralsei.customer.model.enums.PassengerTicketStatus;
+import com.ralsei.customer.model.enums.TripSeatStatus;
 import com.ralsei.customer.repository.PassengerTicketDetailRepository;
 import com.ralsei.customer.repository.PassengerTicketRepository;
 import com.ralsei.customer.repository.PaymentRepository;
@@ -81,19 +80,13 @@ public class PaymentServiceImpl implements PaymentService {
 
         String transactionId = transactionIdGenerator.generateUniqueTransactionId();
 
-        CargoTicket ct = request.getCargoTicketId() != null
-                ? entityManager.getReference(CargoTicket.class, request.getCargoTicketId())
-                : null;
-
         Payment payment = Payment.builder()
                 .passengerTicketId(request.getPassengerTicketId())
-                .cargoTicket(ct)
+                .cargoTicketId(request.getCargoTicketId())
                 .amount(request.getAmount())
                 .paymentMethod(request.getPaymentMethod())
                 .transactionId(transactionId)
-                .cancelToken(UUID.randomUUID().toString())
                 .status("PENDING")
-                .refundAmount(BigDecimal.ZERO)
                 .build();
 
         return paymentRepository.save(payment);
@@ -155,11 +148,10 @@ public class PaymentServiceImpl implements PaymentService {
                 // downstream use only.
                 payment.setStatus("COMPLETED");
                 payment.setPaymentTime(paymentTime);
-                payment.setCallbackData(callbackData);
 
                 if (payment.getPassengerTicketId() != null) {
                     completePassengerPaymentTarget(payment);
-                } else if (payment.getCargoTicket().getCargoTicketId() > 0) {
+                } else if (payment.getCargoTicketId() != null && payment.getCargoTicketId() > 0) {
                     completeCargoPaymentTarget(payment);
                 } else {
                     throw new BusinessRuleException("Dữ liệu thanh toán không hợp lệ!");

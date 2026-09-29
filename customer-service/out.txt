@@ -1,0 +1,23 @@
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] --------------------< com.ralsei:customer-service >---------------------
+[INFO] Building customer-service 0.0.1-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.4.0:clean (default-clean) @ customer-service ---
+[INFO] Deleting /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ customer-service ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] Copying 0 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ customer-service ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 189 source files with javac [debug parameters release 17] to target/classes
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  3.690 s
+[INFO] Finished at: 2026-09-29T08:40:47+07:00
+[INFO] ------------------------------------------------------------------------

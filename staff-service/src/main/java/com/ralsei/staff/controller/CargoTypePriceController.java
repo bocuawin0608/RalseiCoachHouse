@@ -23,13 +23,14 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Handles HTTP requests for cargo type price operations.
+ */
 @RestController
 @RequestMapping("/api/v1/manager/cargo-type-prices")
 @RequiredArgsConstructor
 @Validated
-/**
- * Handles HTTP requests for cargo type price operations.
- */
+
 public class CargoTypePriceController {
 
     private final CargoTypePriceService cargoTypePriceService;

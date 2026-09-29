@@ -7,13 +7,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Unassigned waiting order that can be attached to a selected trip.
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-/**
- * Unassigned waiting order that can be attached to a selected trip.
- */
+
 public class CargoAssignableTicketResponse {
     private int cargoTicketId;
     private String ticketCode;

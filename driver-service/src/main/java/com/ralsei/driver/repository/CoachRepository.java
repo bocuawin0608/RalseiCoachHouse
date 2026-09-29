@@ -1,6 +1,5 @@
 package com.ralsei.driver.repository;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -8,30 +7,26 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.data.jpa.repository.Lock;
 
-import jakarta.persistence.LockModeType;
-
-import com.ralsei.driver.dto.projection.coach.CoachLicensePlateProjection;
 import com.ralsei.driver.dto.request.coach.CoachFilterRequest;
 import com.ralsei.driver.dto.response.coach.CoachResponse;
 import com.ralsei.driver.model.Coach;
 import com.ralsei.driver.model.CoachStatus;
 
-/**
- * Provides persistence access for coach data.
- */
+import jakarta.persistence.LockModeType;
+
 public interface CoachRepository extends JpaRepository<Coach, Integer> {
 
-    /** Serializes irreversible operational status changes for one coach. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT c FROM Coach c WHERE c.coachId = :coachId")
     Optional<Coach> findByIdForUpdate(@Param("coachId") Integer coachId);
 
+    // [MICROSERVICE-REFACTOR]: Removed 'route' JOIN and 'routeName' SQL filter.
     @Query(value = """
-                SELECT new com.ralsei.dto.response.coach.CoachResponse(
+                SELECT new com.ralsei.driver.dto.response.coach.CoachResponse(
                     c.coachId,
                     c.licensePlate,
                     ct.coachTypeName,
@@ -42,11 +37,9 @@ public interface CoachRepository extends JpaRepository<Coach, Integer> {
                 FROM Coach c
                 JOIN c.coachType ct
                 LEFT JOIN c.seats s ON s.isActive = true
-                LEFT JOIN c.route r
                 WHERE
                     (:#{#filter.licensePlate == null || #filter.licensePlate.trim().isEmpty()} = true OR c.licensePlate LIKE CONCAT('%', :#{#filter.licensePlate}, '%'))
                     AND (:#{#filter.coachTypeId == null} = true OR ct.coachTypeId = :#{#filter.coachTypeId})
-                    AND (:#{#filter.routeName == null || #filter.routeName.trim().isEmpty()} = true OR r.routeName LIKE CONCAT('%', :#{#filter.routeName}, '%'))
                     AND (:#{#filter.statuses == null || #filter.statuses.isEmpty()} = true OR c.status IN :#{#filter.statuses})
                 GROUP BY c.coachId, c.licensePlate, ct.coachTypeName, c.manufacturer, c.year, c.status
                 ORDER BY
@@ -72,13 +65,4 @@ public interface CoachRepository extends JpaRepository<Coach, Integer> {
     List<Coach> findByCoachType_CoachTypeIdAndStatusNot(Integer coachTypeId, CoachStatus status);
 
     long countByCoachType_CoachTypeIdAndStatusNot(Integer coachTypeId, CoachStatus status);
-
-    @Query(value = """
-                SELECT c.licensePlate, ct.coachTypeName
-                FROM coach c
-                JOIN coach_type ct ON c.coachTypeId = ct.coachTypeId
-                JOIN trip t ON t.coachId = c.coachId
-                WHERE CAST(t.departureTime AS DATE) = :date
-            """, nativeQuery = true)
-    List<CoachLicensePlateProjection> getCoachInfo(@Param("date") LocalDate date);
 }

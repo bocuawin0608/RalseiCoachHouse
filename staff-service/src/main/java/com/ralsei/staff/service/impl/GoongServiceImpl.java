@@ -20,11 +20,12 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 
-@Service
-@RequiredArgsConstructor
 /**
  * Provides the goong service impl component for the application.
  */
+@Service
+@RequiredArgsConstructor
+
 public class GoongServiceImpl implements GoongService {
 
     @Value("${goong.api.key}")

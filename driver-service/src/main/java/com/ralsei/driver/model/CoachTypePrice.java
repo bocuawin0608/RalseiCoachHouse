@@ -25,9 +25,6 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-/**
- * Provides the coach type price component for the application.
- */
 public class CoachTypePrice extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,12 +35,12 @@ public class CoachTypePrice extends BaseEntity {
     @JoinColumn(name = "coachTypeId", nullable = false)
     private CoachType coachType;
 
-    @Column(name = "seatPrice", nullable = false)
+    @Column(name = "seatPrice", nullable = false, precision = 18, scale = 2)
     private BigDecimal seatPrice;
 
     @Column(name = "startEffectiveDate", nullable = false)
     private LocalDateTime startEffectiveDate;
 
-    @Column(name = "endEffectiveDate", nullable = false)
+    @Column(name = "endEffectiveDate")
     private LocalDateTime endEffectiveDate;
 }

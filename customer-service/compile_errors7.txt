@@ -1,0 +1,16 @@
+[ERROR] COMPILATION ERROR : 
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/dto/request/CoachAndRouteStop/RouteStopRequest.java:[3,43] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/dto/request/CoachAndRouteStop/RouteStopRequest.java:[17,2] cannot find symbol
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.13.0:compile (default-compile) on project customer-service: Compilation failure: Compilation failure: 
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/dto/request/CoachAndRouteStop/RouteStopRequest.java:[3,43] cannot find symbol
+[ERROR]   symbol:   class ValidRouteStopMetrics
+[ERROR]   location: package com.ralsei.customer.util.validation
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/dto/request/CoachAndRouteStop/RouteStopRequest.java:[17,2] cannot find symbol
+[ERROR]   symbol: class ValidRouteStopMetrics
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

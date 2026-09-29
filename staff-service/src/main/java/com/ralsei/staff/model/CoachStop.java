@@ -23,14 +23,15 @@ import lombok.Setter;
 @Table(name = "coach_stop", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"address", "city"})
 })
+/**
+ * Provides the coach stop component for the application.
+ */
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-/**
- * Provides the coach stop component for the application.
- */
+
 public class CoachStop extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

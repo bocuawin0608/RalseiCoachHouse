@@ -31,11 +31,12 @@ import lombok.RequiredArgsConstructor;
  * All lookups are based on the authenticated JWT principal so staff pages
  * cannot request or mutate another staff member's profile by guessing IDs.
  */
-@Service
-@RequiredArgsConstructor
 /**
  * Provides the staff account service impl component for the application.
  */
+@Service
+@RequiredArgsConstructor
+
 public class StaffAccountServiceImpl implements StaffAccountService {
 
     private static final int MIN_STAFF_AGE_YEARS = 20;

@@ -6,5 +6,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 @FeignClient(name = "staff-service", url = "${feign.staff-service.url:http://localhost:8083}")
 public interface StaffServiceClient {
-    // Defines endpoints to fetch route data, etc.
+    @GetMapping("/api/internal/routes/{routeId}")
+    Object getRouteById(@PathVariable("routeId") Integer routeId);
 }

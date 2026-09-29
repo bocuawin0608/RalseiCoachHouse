@@ -36,8 +36,6 @@ import com.ralsei.staff.util.AccountRoleGuard;
 
 import lombok.RequiredArgsConstructor;
 
-@Service
-@RequiredArgsConstructor
 /**
  * Implementation of {@link com.ralsei.service.StaffService}.
  */
@@ -45,6 +43,9 @@ import lombok.RequiredArgsConstructor;
 /**
  * Provides the staff service impl component for the application.
  */
+@Service
+@RequiredArgsConstructor
+
 public class StaffServiceImpl implements StaffService {
 
     private final StaffRepository staffRepo;

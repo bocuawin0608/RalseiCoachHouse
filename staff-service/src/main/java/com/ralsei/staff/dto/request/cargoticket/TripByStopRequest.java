@@ -4,10 +4,11 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
-@Data
 /**
  * Represents the request payload for trip by stop operations.
  */
+@Data
+
 public class TripByStopRequest {
     @NotNull(message = "Pickup stop is required")
     @Min(value = 1, message = "Pickup stop ID must be valid")

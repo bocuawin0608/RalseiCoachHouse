@@ -7,13 +7,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Represents the response payload for trip by stop operations.
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-/**
- * Represents the response payload for trip by stop operations.
- */
+
 public class TripByStopResponse {
     private int tripId;
     private int routeId;

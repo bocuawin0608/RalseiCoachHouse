@@ -6,13 +6,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Represents the request payload for distance time operations.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-/**
- * Represents the request payload for distance time operations.
- */
+
 public class DistanceTimeRequest {
     @NotNull(message = "Origin latitude is required")
     private Double originLat;

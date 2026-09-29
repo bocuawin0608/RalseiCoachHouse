@@ -11,7 +11,7 @@ import org.springframework.data.repository.query.Param;
 
 import com.ralsei.customer.dto.response.passengerbooking.TripSeatResponse;
 import com.ralsei.customer.model.TripSeat;
-import com.ralsei.customer.model.TripSeatStatus;
+import com.ralsei.customer.model.enums.TripSeatStatus;
 
 /**
  * Provides persistence access for trip seat data.

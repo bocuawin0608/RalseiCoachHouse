@@ -52,7 +52,6 @@ public class CoachTypeServiceImpl implements CoachTypeService {
     private final CoachTypeRepository coachTypeRepo;
     private final CoachTypePriceRepository coachTypePriceRepo;
     private final CoachRepository coachRepo;
-    private final TripRepository tripRepo;
     private final ObjectMapper objectMapper;
 
     private static final LocalDateTime INFINITE_END = LocalDateTime.of(9999, 12, 31, 23, 59, 59);

@@ -1,0 +1,121 @@
+[ERROR] COMPILATION ERROR : 
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CargoTicket.java:[88,13] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CargoTicket.java:[92,13] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CargoTicket.java:[96,13] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CargoTicket.java:[100,13] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CargoTicket.java:[88,19] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CargoTicket.java:[92,19] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CargoTicket.java:[96,19] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CargoTicket.java:[100,19] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CargoTicket.java:[27,1] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CargoTicket.java:[29,1] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CargoTicket.java:[30,1] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/Coach.java:[45,13] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/Coach.java:[66,18] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/Coach.java:[33,1] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/Coach.java:[45,23] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/Coach.java:[66,24] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/Coach.java:[30,1] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/Coach.java:[32,1] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/FirebaseTokenVerifier.java:[3,32] package com.google.firebase.auth does not exist
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/FirebaseTokenVerifier.java:[9,5] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/notification/PassengerTicketEmailAssembler.java:[37,19] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/notification/PassengerTicketEmailAssembler.java:[38,19] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/notification/PassengerTicketEmailAssembler.java:[28,1] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/passengerbooking/impl/PassengerBookingServiceImpl.java:[62,35] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/passengerbooking/impl/PassengerBookingServiceImpl.java:[95,19] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/passengerbooking/impl/PassengerBookingServiceImpl.java:[79,1] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/passengerbooking/impl/PassengerPendingPaymentServiceImpl.java:[12,33] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/passengerbooking/impl/PassengerPendingPaymentServiceImpl.java:[118,64] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/passengerbooking/impl/PassengerPhoneVerificationServiceImpl.java:[9,32] package com.google.firebase.auth does not exist
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.13.0:compile (default-compile) on project customer-service: Compilation failure: Compilation failure: 
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CargoTicket.java:[88,13] cannot find symbol
+[ERROR]   symbol:   class Staff
+[ERROR]   location: class com.ralsei.customer.model.CargoTicket
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CargoTicket.java:[92,13] cannot find symbol
+[ERROR]   symbol:   class Staff
+[ERROR]   location: class com.ralsei.customer.model.CargoTicket
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CargoTicket.java:[96,13] cannot find symbol
+[ERROR]   symbol:   class Staff
+[ERROR]   location: class com.ralsei.customer.model.CargoTicket
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CargoTicket.java:[100,13] cannot find symbol
+[ERROR]   symbol:   class Staff
+[ERROR]   location: class com.ralsei.customer.model.CargoTicket
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CargoTicket.java:[88,19] cannot find symbol
+[ERROR]   symbol:   class Staff
+[ERROR]   location: class com.ralsei.customer.model.CargoTicket
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CargoTicket.java:[92,19] cannot find symbol
+[ERROR]   symbol:   class Staff
+[ERROR]   location: class com.ralsei.customer.model.CargoTicket
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CargoTicket.java:[96,19] cannot find symbol
+[ERROR]   symbol:   class Staff
+[ERROR]   location: class com.ralsei.customer.model.CargoTicket
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CargoTicket.java:[100,19] cannot find symbol
+[ERROR]   symbol:   class Staff
+[ERROR]   location: class com.ralsei.customer.model.CargoTicket
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CargoTicket.java:[27,1] cannot find symbol
+[ERROR]   symbol:   class Staff
+[ERROR]   location: class com.ralsei.customer.model.CargoTicket
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CargoTicket.java:[29,1] cannot find symbol
+[ERROR]   symbol:   class Staff
+[ERROR]   location: class com.ralsei.customer.model.CargoTicket
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CargoTicket.java:[30,1] cannot find symbol
+[ERROR]   symbol:   class Staff
+[ERROR]   location: class com.ralsei.customer.model.CargoTicket.CargoTicketBuilder
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/Coach.java:[45,13] cannot find symbol
+[ERROR]   symbol:   class CoachType
+[ERROR]   location: class com.ralsei.customer.model.Coach
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/Coach.java:[66,18] cannot find symbol
+[ERROR]   symbol:   class Seat
+[ERROR]   location: class com.ralsei.customer.model.Coach
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/Coach.java:[33,1] cannot find symbol
+[ERROR]   symbol:   class Seat
+[ERROR]   location: class com.ralsei.customer.model.Coach
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/Coach.java:[45,23] cannot find symbol
+[ERROR]   symbol:   class CoachType
+[ERROR]   location: class com.ralsei.customer.model.Coach
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/Coach.java:[66,24] cannot find symbol
+[ERROR]   symbol:   class Seat
+[ERROR]   location: class com.ralsei.customer.model.Coach
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/Coach.java:[30,1] cannot find symbol
+[ERROR]   symbol:   class CoachType
+[ERROR]   location: class com.ralsei.customer.model.Coach
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/Coach.java:[32,1] cannot find symbol
+[ERROR]   symbol:   class CoachType
+[ERROR]   location: class com.ralsei.customer.model.Coach
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/FirebaseTokenVerifier.java:[3,32] package com.google.firebase.auth does not exist
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/FirebaseTokenVerifier.java:[9,5] cannot find symbol
+[ERROR]   symbol:   class FirebaseToken
+[ERROR]   location: interface com.ralsei.customer.service.FirebaseTokenVerifier
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/notification/PassengerTicketEmailAssembler.java:[37,19] cannot find symbol
+[ERROR]   symbol:   class TripRepository
+[ERROR]   location: class com.ralsei.customer.service.notification.PassengerTicketEmailAssembler
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/notification/PassengerTicketEmailAssembler.java:[38,19] cannot find symbol
+[ERROR]   symbol:   class RouteStopRepository
+[ERROR]   location: class com.ralsei.customer.service.notification.PassengerTicketEmailAssembler
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/notification/PassengerTicketEmailAssembler.java:[28,1] cannot find symbol
+[ERROR]   symbol:   class TripRepository
+[ERROR]   location: class com.ralsei.customer.service.notification.PassengerTicketEmailAssembler
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/passengerbooking/impl/PassengerBookingServiceImpl.java:[62,35] cannot find symbol
+[ERROR]   symbol:   class RouteStopService
+[ERROR]   location: package com.ralsei.customer.service
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/passengerbooking/impl/PassengerBookingServiceImpl.java:[95,19] cannot find symbol
+[ERROR]   symbol:   class RouteStopService
+[ERROR]   location: class com.ralsei.customer.service.passengerbooking.impl.PassengerBookingServiceImpl
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/passengerbooking/impl/PassengerBookingServiceImpl.java:[79,1] cannot find symbol
+[ERROR]   symbol:   class RouteStopService
+[ERROR]   location: class com.ralsei.customer.service.passengerbooking.impl.PassengerBookingServiceImpl
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/passengerbooking/impl/PassengerPendingPaymentServiceImpl.java:[12,33] cannot find symbol
+[ERROR]   symbol:   class PassengerPendingPaymentOutcome
+[ERROR]   location: package com.ralsei.customer.model
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/passengerbooking/impl/PassengerPendingPaymentServiceImpl.java:[118,64] cannot find symbol
+[ERROR]   symbol:   class PassengerPendingPaymentOutcome
+[ERROR]   location: class com.ralsei.customer.service.passengerbooking.impl.PassengerPendingPaymentServiceImpl
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/passengerbooking/impl/PassengerPhoneVerificationServiceImpl.java:[9,32] package com.google.firebase.auth does not exist
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

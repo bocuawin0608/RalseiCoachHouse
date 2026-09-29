@@ -2,10 +2,11 @@ package com.ralsei.staff.exception;
 
 import lombok.Getter;
 
-@Getter
 /**
  * Signals a business rule error condition.
  */
+@Getter
+
 public class BusinessRuleException extends RuntimeException {
 
     private final String code;

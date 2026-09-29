@@ -9,13 +9,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Represents the request payload for cargo ticket detail operations.
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-/**
- * Represents the request payload for cargo ticket detail operations.
- */
+
 public class CargoTicketDetailRequest {
     /** Existing row identifier; omitted when a new detail is added. */
     private Integer cargoTicketDetailId;

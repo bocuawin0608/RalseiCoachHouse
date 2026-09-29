@@ -24,9 +24,9 @@ import com.ralsei.staff.model.Payment;
 import com.ralsei.staff.model.PassengerTicket;
 import com.ralsei.staff.model.Refund;
 import com.ralsei.staff.model.Trip;
-import com.ralsei.staff.model.PassengerTicketDetailStatus;
-import com.ralsei.staff.model.PassengerTicketStatus;
-import com.ralsei.staff.model.TripSeatStatus;
+import com.ralsei.staff.model.enums.PassengerTicketDetailStatus;
+import com.ralsei.staff.model.enums.PassengerTicketStatus;
+import com.ralsei.staff.model.enums.TripSeatStatus;
 import com.ralsei.staff.repository.PassengerTicketDetailRepository;
 import com.ralsei.staff.repository.PassengerTicketRepository;
 import com.ralsei.staff.repository.PaymentRepository;
@@ -46,12 +46,13 @@ import com.ralsei.staff.util.PhoneNumberUtility;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
-@Service
-@RequiredArgsConstructor
 /**
  * Provides the staff passenger ticket cancel service impl component for the application.
  */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+
 public class StaffPassengerTicketCancelServiceImpl implements StaffPassengerTicketCancelService {
 
     private final PassengerTicketDetailRepository ticketDetailRepository;

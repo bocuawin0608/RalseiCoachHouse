@@ -21,8 +21,8 @@ import com.ralsei.staff.exception.BusinessRuleException;
 import com.ralsei.staff.exception.ResourceNotFoundException;
 import com.ralsei.staff.model.Refund;
 import com.ralsei.staff.model.Staff;
-import com.ralsei.staff.model.RefundMethod;
-import com.ralsei.staff.model.RefundStatus;
+import com.ralsei.staff.model.enums.RefundMethod;
+import com.ralsei.staff.model.enums.RefundStatus;
 import com.ralsei.staff.repository.RefundRepository;
 import com.ralsei.staff.repository.StaffRepository;
 import com.ralsei.staff.service.notification.PassengerTicketEmailAssembler;
@@ -37,12 +37,13 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Implements manager refund search, detail review, and payout confirmation.
  */
-@Slf4j
-@Service
-@RequiredArgsConstructor
 /**
  * Provides the staff refund service impl component for the application.
  */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+
 public class StaffRefundServiceImpl implements StaffRefundService {
 
     private static final Pattern BANK_TRANSFER_TRANSACTION_PATTERN =

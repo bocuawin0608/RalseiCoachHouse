@@ -12,13 +12,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Represents the response payload for cargo ticket operations.
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-/**
- * Represents the response payload for cargo ticket operations.
- */
+
 public class CargoTicketResponse {
     private int cargoTicketId;
     private Integer tripId;

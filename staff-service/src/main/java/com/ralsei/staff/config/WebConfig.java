@@ -9,10 +9,11 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 /**
  * Cấu hình CORS cho ứng dụng
  */
-@Configuration
 /**
  * Configures web for the application.
  */
+@Configuration
+
 public class WebConfig {
     /**
      * Cấu hình CORS cho ứng dụng

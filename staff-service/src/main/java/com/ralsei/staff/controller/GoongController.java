@@ -11,12 +11,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@RestController
-@RequestMapping("/api/v2/goong")
-@RequiredArgsConstructor
 /**
  * Handles HTTP requests for goong operations.
  */
+@RestController
+@RequestMapping("/api/v2/goong")
+@RequiredArgsConstructor
+
 public class GoongController {
 
     private final GoongService goongService;

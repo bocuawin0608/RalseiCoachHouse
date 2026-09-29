@@ -17,11 +17,12 @@ import lombok.EqualsAndHashCode;
  * or repository sees them. The service repeats the important invariants so calls
  * made outside MVC cannot bypass the public contract.</p>
  */
-@Data
-@EqualsAndHashCode(callSuper = true)
 /**
  * Represents the request payload for trip filter operations.
  */
+@Data
+@EqualsAndHashCode(callSuper = true)
+
 public class TripFilterRequest extends TripSearchRequest {
     private static final int MAX_TIME_SLOTS = 4;
     private static final int MAX_LAYOUTS = 3;

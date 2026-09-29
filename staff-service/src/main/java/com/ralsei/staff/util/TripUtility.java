@@ -4,10 +4,11 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import lombok.experimental.UtilityClass;
 
-@UtilityClass    
 /**
  * Provides utility helpers for trip uti processing.
  */
+@UtilityClass    
+
 public class TripUtility {
 
     // Tạo sẵn một bộ format chuẩn có khoảng trắng để dùng chung cho cả hệ thống, tránh tạo đi tạo lại object

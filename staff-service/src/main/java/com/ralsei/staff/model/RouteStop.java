@@ -10,14 +10,15 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "route_stop", uniqueConstraints = {@UniqueConstraint(columnNames = {"routeId", "stopOrder"})})
+/**
+ * Provides the route stop component for the application.
+ */
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-/**
- * Provides the route stop component for the application.
- */
+
 public class RouteStop extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -44,10 +44,10 @@ import com.ralsei.customer.model.RouteStop;
 import com.ralsei.customer.model.Trip;
 import com.ralsei.customer.model.TripSeat;
 import com.ralsei.customer.model.Voucher;
-import com.ralsei.customer.model.PassengerTicketDetailStatus;
-import com.ralsei.customer.model.PassengerTicketStatus;
-import com.ralsei.customer.model.TripSeatStatus;
-import com.ralsei.customer.model.VoucherType;
+import com.ralsei.customer.model.enums.PassengerTicketDetailStatus;
+import com.ralsei.customer.model.enums.PassengerTicketStatus;
+import com.ralsei.customer.model.enums.TripSeatStatus;
+import com.ralsei.customer.model.enums.VoucherType;
 import com.ralsei.customer.repository.AccompaniedChildRepository;
 import com.ralsei.customer.repository.AccountRepository;
 import com.ralsei.customer.repository.CustomerRepository;
@@ -561,7 +561,7 @@ public class PassengerBookingServiceImpl implements PassengerBookingService {
             PassengerTicketDetail.builder()
                 .passengerTicketId(ticketId)
                 .tripSeatId(p.tripSeatId())
-                .seatCodeSnapshot(coreResult.tripSeatMap().get(p.tripSeatId()).getSeat().getSeatCode())
+                .seatCodeSnapshot(coreResult.tripSeatMap().get(p.tripSeatId()).getSeatId() + "")
                 .fullName(p.fullname().trim())
                 .phone(p.phone().trim())
                 .email(p.email().trim())

@@ -39,10 +39,10 @@ import com.ralsei.staff.model.PassengerTicketDetail;
 import com.ralsei.staff.model.RouteStop;
 import com.ralsei.staff.model.Trip;
 import com.ralsei.staff.model.TripSeat;
-import com.ralsei.staff.model.PassengerTicketDetailStatus;
-import com.ralsei.staff.model.PassengerTicketMajorChangeType;
-import com.ralsei.staff.model.PassengerTicketStatus;
-import com.ralsei.staff.model.TripSeatStatus;
+import com.ralsei.staff.model.enums.PassengerTicketDetailStatus;
+import com.ralsei.staff.model.enums.PassengerTicketMajorChangeType;
+import com.ralsei.staff.model.enums.PassengerTicketStatus;
+import com.ralsei.staff.model.enums.TripSeatStatus;
 import com.ralsei.staff.repository.AccompaniedChildRepository;
 import com.ralsei.staff.repository.PassengerTicketDetailRepository;
 import com.ralsei.staff.repository.PassengerTicketRepository;
@@ -63,12 +63,13 @@ import com.ralsei.staff.util.PhoneNumberUtility;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
-@Service
-@RequiredArgsConstructor
 /**
  * Provides the staff passenger ticket change service impl component for the application.
  */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+
 public class StaffPassengerTicketChangeServiceImpl implements StaffPassengerTicketChangeService {
 
     private static final long STAFF_SEAT_HOLD_TTL_SECONDS = 300;

@@ -12,12 +12,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@RestController
-@RequestMapping("/api/v1/route-stops")
-@RequiredArgsConstructor
 /**
  * Handles HTTP requests for route stop operations.
  */
+@RestController
+@RequestMapping("/api/v1/route-stops")
+@RequiredArgsConstructor
+
 public class RouteStopController {
 
     private final RouteStopService routeStopService;

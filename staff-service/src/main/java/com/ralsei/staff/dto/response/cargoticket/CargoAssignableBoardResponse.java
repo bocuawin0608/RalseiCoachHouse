@@ -8,13 +8,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Assign board payload: trip capacity snapshot plus eligible unassigned orders.
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-/**
- * Assign board payload: trip capacity snapshot plus eligible unassigned orders.
- */
+
 public class CargoAssignableBoardResponse {
     private int tripId;
     private BigDecimal usedCargoVolume;

@@ -2,8 +2,6 @@ package com.ralsei.driver.model;
 
 import java.time.LocalDateTime;
 
-import com.ralsei.driver.model.CoachStatus;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -28,9 +26,6 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-/**
- * Provides the coach status log component for the application.
- */
 public class CoachStatusLog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -49,15 +44,12 @@ public class CoachStatusLog {
     @Column(name = "toStatus", nullable = false)
     private CoachStatus toStatus;
 
-    @Column(name = "reason", nullable = false, length = 500)
+    @Column(name = "reason")
     private String reason;
 
     @Column(name = "expectedEndAt")
     private LocalDateTime expectedEndAt;
 
-    @Column(name = "createdAt", updatable = false)
+    @Column(name = "createdAt", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    @Column(name = "createdBy", updatable = false)
-    private Integer createdBy;
 }

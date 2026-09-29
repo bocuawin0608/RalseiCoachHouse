@@ -73,7 +73,7 @@ public class CoachServiceImpl implements CoachService {
         Integer routeId = request.routeId();
         if (routeId != null) {
             try {
-                // [MICROSERVICE-REFACTOR]: Replaced local RouteRepository lookup with FeignClient to Staff Service
+                // [MICROSERVICE-REFACTOR]: Replaced local Route entity lookup with FeignClient to Staff Service
                 staffServiceClient.getRouteById(routeId);
             } catch (Exception e) {
                 throw new ResourceNotFoundException("Tuyến đường không tồn tại hoặc không hợp lệ!");
@@ -173,7 +173,7 @@ public class CoachServiceImpl implements CoachService {
         Integer newRouteId = request.routeId();
         if (newRouteId != null && !Objects.equals(coachToUpdate.getRouteId(), newRouteId)) {
             try {
-                // [MICROSERVICE-REFACTOR]: Replaced local RouteRepository lookup with FeignClient to Staff Service
+                // [MICROSERVICE-REFACTOR]: Replaced local Route entity lookup with FeignClient to Staff Service
                 staffServiceClient.getRouteById(newRouteId);
             } catch (Exception e) {
                 throw new ResourceNotFoundException("Tuyến đường không tồn tại hoặc ngưng hoạt động!");

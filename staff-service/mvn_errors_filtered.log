@@ -1,0 +1,89 @@
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/model/Account.java:[28,8] com.ralsei.staff.model.Account is not abstract and does not override abstract method isEnabled() in org.springframework.security.core.userdetails.UserDetails
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/exception/GlobalExceptionHandler.java:[169,11] cannot find symbol
+  symbol:   method getParameterValidationResults()
+  location: variable ex of type org.springframework.web.method.annotation.HandlerMethodValidationException
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/impl/CargoTicketServiceImpl.java:[788,41] cannot find symbol
+  symbol:   method getCoach()
+  location: variable t of type com.ralsei.staff.model.Trip
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/impl/CargoTicketServiceImpl.java:[788,65] cannot find symbol
+  symbol:   method getCoach()
+  location: variable t of type com.ralsei.staff.model.Trip
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/impl/CargoTicketServiceImpl.java:[789,36] cannot find symbol
+  symbol:   method getCoach()
+  location: variable t of type com.ralsei.staff.model.Trip
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/impl/CargoTicketServiceImpl.java:[802,61] package com.ralsei.dto.response.cargoticketdetail does not exist
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/impl/TripServiceImpl.java:[273,29] cannot find symbol
+  symbol:   method getCoach()
+  location: variable trip of type com.ralsei.staff.model.Trip
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/impl/TripServiceImpl.java:[572,24] cannot find symbol
+  symbol:   method getCoach()
+  location: variable trip of type com.ralsei.staff.model.Trip
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/notification/PassengerTicketEmailAssembler.java:[74,52] cannot find symbol
+  symbol:   method getCoach()
+  location: variable trip of type com.ralsei.staff.model.Trip
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/notification/PassengerTicketEmailAssembler.java:[74,79] cannot find symbol
+  symbol:   method getCoach()
+  location: variable trip of type com.ralsei.staff.model.Trip
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/notification/PassengerTicketEmailAssembler.java:[75,19] cannot find symbol
+  symbol:   method getCoach()
+  location: variable trip of type com.ralsei.staff.model.Trip
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/notification/PassengerTicketEmailAssembler.java:[77,56] cannot find symbol
+  symbol:   method getCoach()
+  location: variable trip of type com.ralsei.staff.model.Trip
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/notification/PassengerTicketEmailAssembler.java:[78,19] cannot find symbol
+  symbol:   method getCoach()
+  location: variable trip of type com.ralsei.staff.model.Trip
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/tripstaff/impl/TripStaffPassengerServiceImpl.java:[90,90] incompatible types: java.lang.String cannot be converted to java.time.LocalDate
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/tripstaff/impl/TripStaffPassengerServiceImpl.java:[111,72] incompatible types: java.lang.String cannot be converted to java.time.LocalDate
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/tripstaff/impl/TripStaffPassengerServiceImpl.java:[117,78] cannot find symbol
+  symbol:   method findPassengersForTrip(java.lang.Integer)
+  location: variable tripStaffRepository of type com.ralsei.staff.repository.TripStaffRepository
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/tripstaff/impl/TripStaffPassengerServiceImpl.java:[223,33] cannot find symbol
+  symbol:   method isStaffAssignedToTrip(int,int)
+  location: variable tripStaffRepository of type com.ralsei.staff.repository.TripStaffRepository
+[INFO] 17 errors 
+--
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/model/Account.java:[28,8] com.ralsei.staff.model.Account is not abstract and does not override abstract method isEnabled() in org.springframework.security.core.userdetails.UserDetails
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/exception/GlobalExceptionHandler.java:[169,11] cannot find symbol
+[ERROR]   symbol:   method getParameterValidationResults()
+[ERROR]   location: variable ex of type org.springframework.web.method.annotation.HandlerMethodValidationException
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/impl/CargoTicketServiceImpl.java:[788,41] cannot find symbol
+[ERROR]   symbol:   method getCoach()
+[ERROR]   location: variable t of type com.ralsei.staff.model.Trip
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/impl/CargoTicketServiceImpl.java:[788,65] cannot find symbol
+[ERROR]   symbol:   method getCoach()
+[ERROR]   location: variable t of type com.ralsei.staff.model.Trip
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/impl/CargoTicketServiceImpl.java:[789,36] cannot find symbol
+[ERROR]   symbol:   method getCoach()
+[ERROR]   location: variable t of type com.ralsei.staff.model.Trip
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/impl/CargoTicketServiceImpl.java:[802,61] package com.ralsei.dto.response.cargoticketdetail does not exist
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/impl/TripServiceImpl.java:[273,29] cannot find symbol
+[ERROR]   symbol:   method getCoach()
+[ERROR]   location: variable trip of type com.ralsei.staff.model.Trip
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/impl/TripServiceImpl.java:[572,24] cannot find symbol
+[ERROR]   symbol:   method getCoach()
+[ERROR]   location: variable trip of type com.ralsei.staff.model.Trip
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/notification/PassengerTicketEmailAssembler.java:[74,52] cannot find symbol
+[ERROR]   symbol:   method getCoach()
+[ERROR]   location: variable trip of type com.ralsei.staff.model.Trip
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/notification/PassengerTicketEmailAssembler.java:[74,79] cannot find symbol
+[ERROR]   symbol:   method getCoach()
+[ERROR]   location: variable trip of type com.ralsei.staff.model.Trip
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/notification/PassengerTicketEmailAssembler.java:[75,19] cannot find symbol
+[ERROR]   symbol:   method getCoach()
+[ERROR]   location: variable trip of type com.ralsei.staff.model.Trip
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/notification/PassengerTicketEmailAssembler.java:[77,56] cannot find symbol
+[ERROR]   symbol:   method getCoach()
+[ERROR]   location: variable trip of type com.ralsei.staff.model.Trip
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/notification/PassengerTicketEmailAssembler.java:[78,19] cannot find symbol
+[ERROR]   symbol:   method getCoach()
+[ERROR]   location: variable trip of type com.ralsei.staff.model.Trip
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/tripstaff/impl/TripStaffPassengerServiceImpl.java:[90,90] incompatible types: java.lang.String cannot be converted to java.time.LocalDate
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/tripstaff/impl/TripStaffPassengerServiceImpl.java:[111,72] incompatible types: java.lang.String cannot be converted to java.time.LocalDate
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/tripstaff/impl/TripStaffPassengerServiceImpl.java:[117,78] cannot find symbol
+[ERROR]   symbol:   method findPassengersForTrip(java.lang.Integer)
+[ERROR]   location: variable tripStaffRepository of type com.ralsei.staff.repository.TripStaffRepository
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/staff-service/src/main/java/com/ralsei/staff/service/tripstaff/impl/TripStaffPassengerServiceImpl.java:[223,33] cannot find symbol
+[ERROR]   symbol:   method isStaffAssignedToTrip(int,int)
+[ERROR]   location: variable tripStaffRepository of type com.ralsei.staff.repository.TripStaffRepository
+[ERROR] -> [Help 1]

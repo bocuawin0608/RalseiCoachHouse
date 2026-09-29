@@ -14,13 +14,14 @@ import com.ralsei.staff.model.PassengerTicket;
 import com.ralsei.staff.model.PassengerTicketDetail;
 import com.ralsei.staff.model.Route;
 import com.ralsei.staff.model.Trip;
-import com.ralsei.staff.model.PassengerTicketDetailStatus;
-import com.ralsei.staff.model.PassengerTicketStatus;
+import com.ralsei.staff.model.enums.PassengerTicketDetailStatus;
+import com.ralsei.staff.model.enums.PassengerTicketStatus;
 
-@Component
 /**
  * Provides the trip staff check in policy component for the application.
  */
+@Component
+
 public class TripStaffCheckInPolicy {
 
     private static final int CHECK_IN_OPEN_MINUTES_BEFORE_DEPARTURE = 60;

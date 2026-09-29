@@ -15,7 +15,7 @@ import com.ralsei.staff.dto.response.PagedResponse;
 import com.ralsei.staff.dto.response.trip.ManagerTripIncidentResponse;
 import com.ralsei.staff.dto.response.CoachAndRouteStop.RouteDropdownDTO;
 import com.ralsei.staff.model.Trip;
-import com.ralsei.staff.model.CoachStatus;
+import com.ralsei.staff.model.enums.CoachStatus;
 import com.ralsei.staff.repository.RouteRepository;
 import com.ralsei.staff.repository.StaffRepository;
 import com.ralsei.staff.repository.TripRepository;
@@ -45,11 +45,12 @@ import java.util.Set;
  * rules. Public filter validation is repeated here to protect non-HTTP callers
  * before repository parameters are constructed.
  */
-@Service
-@RequiredArgsConstructor
 /**
  * Provides the trip service impl component for the application.
  */
+@Service
+@RequiredArgsConstructor
+
 public class TripServiceImpl implements TripService {
     private static final Logger LOGGER = LoggerFactory.getLogger(TripService.class);
     private static final ZoneId BUSINESS_TIME_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");

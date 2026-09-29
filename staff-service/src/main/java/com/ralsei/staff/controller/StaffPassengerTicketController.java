@@ -45,11 +45,12 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/v1/staff/passenger-tickets")
 @PreAuthorize("hasRole('TICKET_STAFF')")
-@RequiredArgsConstructor
-@Validated
 /**
  * Handles HTTP requests for staff passenger ticket operations.
  */
+@RequiredArgsConstructor
+@Validated
+
 public class StaffPassengerTicketController {
 
     private final StaffPassengerTicketQueryService queryService;

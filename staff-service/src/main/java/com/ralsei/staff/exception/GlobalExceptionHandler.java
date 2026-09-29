@@ -1,6 +1,5 @@
 package com.ralsei.staff.exception;
 
-import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -9,7 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -24,15 +23,16 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
-@RestControllerAdvice
 /**
  * Provides the global exception handler component for the application.
  */
+@Slf4j
+@RestControllerAdvice
+
 public class GlobalExceptionHandler {
 
     // Hứng lỗi phân quyền (khi user có token hợp lệ nhưng không đủ Role)
-    @ExceptionHandler({AuthorizationDeniedException.class, AccessDeniedException.class})
+    @ExceptionHandler({AccessDeniedException.class, AccessDeniedException.class})
     /**
      * Executes the handle access denied exception operation.
      *
@@ -166,26 +166,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HandlerMethodValidationException.class)
     public ResponseEntity<ErrorResponse> handleHandlerMethodValidation(HandlerMethodValidationException ex,
             HttpServletRequest request) {
-        Map<String, String> errors = new HashMap<>();
-        ex.getParameterValidationResults().forEach(error -> {
-            String paramName = error.getMethodParameter().getParameterName();
-            error.getResolvableErrors().forEach(err -> {
-                String message = err.getDefaultMessage();
-                errors.put(paramName, message);
-            });
-        });
-
         ErrorResponse response = ErrorResponse.builder()
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.BAD_REQUEST.value())
                 .error("Validation Error")
-                .message("Tham số đường dẫn hoặc tham số truy vấn không hợp lệ!")
-                .fieldErrors(errors)
+                .message("Invalid parameter")
                 .path(request.getRequestURI())
                 .build();
-
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
+
 
     // Hứng lỗi @Validated với @PathVariable và @RequestParam (áp cho Spring Boot <
     // 3.2)

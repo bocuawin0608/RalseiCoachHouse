@@ -20,11 +20,12 @@ import com.ralsei.staff.service.CargoTypePriceService;
 
 import lombok.RequiredArgsConstructor;
 
-@Service
-@RequiredArgsConstructor
 /**
  * Provides the cargo type price service impl component for the application.
  */
+@Service
+@RequiredArgsConstructor
+
 public class CargoTypePriceServiceImpl implements CargoTypePriceService {
 
     private final CargoTypePriceRepository cargoTypePriceRepository;

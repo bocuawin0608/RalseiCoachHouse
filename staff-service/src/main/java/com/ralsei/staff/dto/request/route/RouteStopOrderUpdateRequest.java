@@ -8,13 +8,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Represents the request payload for route stop order update operations.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-/**
- * Represents the request payload for route stop order update operations.
- */
+
 public class RouteStopOrderUpdateRequest {
     @NotNull(message = "Route Stop ID is required")
     private Integer routeStopId;

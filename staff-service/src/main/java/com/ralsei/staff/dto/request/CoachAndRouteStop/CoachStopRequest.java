@@ -11,13 +11,14 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
+/**
+ * Represents the request payload for coach stop operations.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-/**
- * Represents the request payload for coach stop operations.
- */
+
 public class CoachStopRequest {
     @NotBlank(message = "Stop point name is required")
     @Size(max = 255, message = "Stop point name must be less than 255 characters")

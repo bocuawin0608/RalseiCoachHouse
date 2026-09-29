@@ -1,0 +1,30 @@
+package com.ralsei.customer.dto.projection.trip;
+
+import java.time.LocalDateTime;
+
+/**
+ * Read-only customer view of one ordered stop on a concrete trip route.
+ */
+/**
+ * Projects the trip sto data shape for query results.
+ */
+public interface TripStopProjection {
+
+    Integer getTripId();
+
+    String getRouteName();
+
+    Integer getStopPointId();
+
+    String getStopPointName();
+
+    String getAddress();
+
+    String getCity();
+
+    Integer getStopOrder();
+
+    Integer getMinutesFromStart();
+
+    LocalDateTime getEstimatedStopTime();
+}

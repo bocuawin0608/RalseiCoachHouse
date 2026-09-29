@@ -22,6 +22,13 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import org.hibernate.annotations.DynamicUpdate;
 
+/**
+ * Staff entity.
+ */
+
+/**
+ * Provides the staff component for the application.
+ */
 @Entity
 @Table(name = "staff")
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
@@ -31,13 +38,7 @@ import org.hibernate.annotations.DynamicUpdate;
 @AllArgsConstructor
 @Builder
 @DynamicUpdate
-/**
- * Staff entity.
- */
 
-/**
- * Provides the staff component for the application.
- */
 public class Staff extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

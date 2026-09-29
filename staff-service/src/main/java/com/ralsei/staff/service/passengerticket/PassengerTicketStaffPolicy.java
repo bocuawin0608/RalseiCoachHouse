@@ -11,14 +11,15 @@ import org.springframework.stereotype.Component;
 
 import com.ralsei.staff.dto.projection.staffpassengerticket.StaffPassengerTicketRowProjection;
 import com.ralsei.staff.exception.BusinessRuleException;
-import com.ralsei.staff.model.PassengerTicketDetailStatus;
-import com.ralsei.staff.model.PassengerTicketMajorChangeType;
-import com.ralsei.staff.model.PassengerTicketStatus;
+import com.ralsei.staff.model.enums.PassengerTicketDetailStatus;
+import com.ralsei.staff.model.enums.PassengerTicketMajorChangeType;
+import com.ralsei.staff.model.enums.PassengerTicketStatus;
 
-@Component
 /**
  * Provides the passenger ticket staff policy component for the application.
  */
+@Component
+
 public class PassengerTicketStaffPolicy {
 
     private static final long CHANGE_CUTOFF_HOURS = 3;

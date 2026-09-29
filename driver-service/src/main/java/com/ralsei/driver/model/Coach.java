@@ -3,8 +3,6 @@ package com.ralsei.driver.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.ralsei.driver.model.CoachStatus;
-
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -31,9 +29,6 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-/**
- * Provides the coach component for the application.
- */
 public class Coach extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -44,7 +39,8 @@ public class Coach extends BaseEntity {
     @JoinColumn(name = "coachTypeId", nullable = false)
     private CoachType coachType;
 
-    // [MICROSERVICE-REFACTOR]: Removed @ManyToOne Route. Use routeId + FeignClient to Staff Service.
+    // CRITICAL BOUNDED CONTEXT RULE: routeId is a scalar column (Integer).
+    // ABSOLUTELY NO @ManyToOne Route route or reference to Route class.
     @Column(name = "routeId")
     private Integer routeId;
 
@@ -62,6 +58,6 @@ public class Coach extends BaseEntity {
     private Integer year;
 
     @Builder.Default
-    @OneToMany(mappedBy="coach", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "coach", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Seat> seats = new ArrayList<>();
 }

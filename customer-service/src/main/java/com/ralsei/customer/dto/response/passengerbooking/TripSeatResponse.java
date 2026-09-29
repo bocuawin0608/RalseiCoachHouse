@@ -1,6 +1,6 @@
 package com.ralsei.customer.dto.response.passengerbooking;
 
-import com.ralsei.customer.model.TripSeatStatus;
+import com.ralsei.customer.model.enums.TripSeatStatus;
 
 import lombok.Builder;
 

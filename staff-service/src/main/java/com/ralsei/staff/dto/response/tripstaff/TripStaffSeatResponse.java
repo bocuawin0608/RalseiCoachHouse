@@ -4,7 +4,7 @@
  */
 package com.ralsei.staff.dto.response.tripstaff;
 
-import com.ralsei.staff.model.TripSeatStatus;
+import com.ralsei.staff.model.enums.TripSeatStatus;
 
 /**
  * Represents the response payload for trip staff seat operations.

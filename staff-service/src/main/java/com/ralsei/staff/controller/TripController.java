@@ -39,12 +39,13 @@ import lombok.RequiredArgsConstructor;
  * trip operations. Each endpoint delegates business rules to {@link TripService}
  * and keeps request binding concerns at the web boundary.
  */
-@RestController
-@RequestMapping("/api/v1")
-@RequiredArgsConstructor
 /**
  * Handles HTTP requests for trip operations.
  */
+@RestController
+@RequestMapping("/api/v1")
+@RequiredArgsConstructor
+
 public class TripController {
     private final TripService tripService;
 

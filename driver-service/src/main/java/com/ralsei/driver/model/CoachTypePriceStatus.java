@@ -1,10 +1,7 @@
-package com.ralsei.driver.model.enums;
+package com.ralsei.driver.model;
 
-/**
- * Provides the coach type price status component for the application.
- */
 public enum CoachTypePriceStatus {
-    UPCOMING,
     ACTIVE,
+    UPCOMING,
     EXPIRED
 }

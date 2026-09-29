@@ -65,12 +65,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-@Service
-@RequiredArgsConstructor
-@Transactional(readOnly = true)
 /**
  * Provides the cargo ticket service impl component for the application.
  */
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+
 public class CargoTicketServiceImpl implements CargoTicketService {
     private static final String STATUS_ABANDONED = "ABANDONED";
     private static final BigDecimal CARGO_CAPACITY_M3 = CargoOperationalTripResponse.capacity();
@@ -799,7 +800,7 @@ public class CargoTicketServiceImpl implements CargoTicketService {
             CargoTicketDetailPriceRequest request) {
         BigDecimal price = calculateDetailPrice(request.getCargoTypePriceId(), request.getDimensionVol(),
                 request.getQuantity());
-        return new com.ralsei.dto.response.cargoticketdetail.CargoTicketDetailPriceResponse(price);
+        return new com.ralsei.staff.dto.response.cargoticketdetail.CargoTicketDetailPriceResponse(price);
     }
 
     @Override

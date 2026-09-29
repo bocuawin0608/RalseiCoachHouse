@@ -9,13 +9,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Represents the request payload for route stop create operations.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-/**
- * Represents the request payload for route stop create operations.
- */
+
 public class RouteStopCreateRequest {
     @NotNull(message = "Coach stop ID is required")
     @Min(value = 1, message = "Coach stop ID must be at least 1")

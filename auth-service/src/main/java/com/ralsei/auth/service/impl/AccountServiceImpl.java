@@ -256,13 +256,13 @@ public class AccountServiceImpl implements AccountService {
             proj.getIsActive() != null && proj.getIsActive(),
             lastLogin,
             roleNames,
-            proj.getStaffId(),
-            proj.getStaffName(),
-            proj.getStaffPosition(),
-            proj.getPhone(),
-            proj.getEmail(),
+            null,
+            null,
+            null,
+            null,
+            null,
             createdAt,
-            proj.getCustomerName()
+            null
         );
     }
 

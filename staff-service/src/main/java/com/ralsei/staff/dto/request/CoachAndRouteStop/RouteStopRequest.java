@@ -10,14 +10,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Represents the request payload for route stop operations.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @ValidRouteStopMetrics
-/**
- * Represents the request payload for route stop operations.
- */
+
 public class RouteStopRequest {
     @NotNull(message = "Route ID is required")
     @Min(value = 1, message = "Route ID must be at least 1")

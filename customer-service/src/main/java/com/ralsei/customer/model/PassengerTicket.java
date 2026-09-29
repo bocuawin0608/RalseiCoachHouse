@@ -3,8 +3,8 @@ package com.ralsei.customer.model;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-import com.ralsei.customer.model.PassengerTicketMajorChangeType;
-import com.ralsei.customer.model.PassengerTicketStatus;
+import com.ralsei.customer.model.enums.PassengerTicketMajorChangeType;
+import com.ralsei.customer.model.enums.PassengerTicketStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

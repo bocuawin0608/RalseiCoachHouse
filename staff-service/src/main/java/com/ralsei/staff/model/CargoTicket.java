@@ -21,6 +21,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * Provides the cargo ticket component for the application.
+ */
 @Entity
 @Table(name = "cargo_ticket")
 @Getter
@@ -28,9 +31,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-/**
- * Provides the cargo ticket component for the application.
- */
+
 public class CargoTicket extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

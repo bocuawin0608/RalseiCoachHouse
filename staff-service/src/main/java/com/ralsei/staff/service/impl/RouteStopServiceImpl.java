@@ -28,11 +28,12 @@ import com.ralsei.staff.service.RouteStopService;
 
 import lombok.RequiredArgsConstructor;
 
-@Service
-@RequiredArgsConstructor
 /**
  * Provides the route stop service impl component for the application.
  */
+@Service
+@RequiredArgsConstructor
+
 public class RouteStopServiceImpl implements RouteStopService {
 
         private final RouteStopRepository routeStopRepository;

@@ -27,8 +27,6 @@ import com.ralsei.staff.service.TicketAgencyService;
 
 import lombok.RequiredArgsConstructor;
 
-@Service
-@RequiredArgsConstructor
 /**
  * Implementation of {@link com.ralsei.service.TicketAgencyService}.
  */
@@ -36,6 +34,9 @@ import lombok.RequiredArgsConstructor;
 /**
  * Provides the ticket agency service impl component for the application.
  */
+@Service
+@RequiredArgsConstructor
+
 public class TicketAgencyServiceImpl implements TicketAgencyService {
 
     private final TicketAgencyRepository ticketAgencyRepo;

@@ -8,13 +8,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Result of batch-assigning waiting cargo orders onto one trip.
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-/**
- * Result of batch-assigning waiting cargo orders onto one trip.
- */
+
 public class CargoTripAssignResponse {
     private int tripId;
     private int assignedCount;

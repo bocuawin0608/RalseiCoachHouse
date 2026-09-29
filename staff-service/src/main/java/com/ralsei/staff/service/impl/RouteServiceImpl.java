@@ -36,11 +36,12 @@ import com.ralsei.staff.service.RouteService;
 
 import lombok.RequiredArgsConstructor;
 
-@Service
-@RequiredArgsConstructor
 /**
  * Provides the route service impl component for the application.
  */
+@Service
+@RequiredArgsConstructor
+
 public class RouteServiceImpl implements RouteService {
 
     private final RouteRepository routeRepository;

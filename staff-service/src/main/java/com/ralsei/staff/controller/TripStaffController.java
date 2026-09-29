@@ -35,11 +35,12 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/v1/staff/trips")
 @PreAuthorize("hasRole('TRIP_STAFF')")
-@RequiredArgsConstructor
-@Validated
 /**
  * Handles HTTP requests for trip staff operations.
  */
+@RequiredArgsConstructor
+@Validated
+
 public class TripStaffController {
 
     private final TripStaffPassengerService tripStaffPassengerService;

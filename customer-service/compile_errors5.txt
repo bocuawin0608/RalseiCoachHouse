@@ -1,0 +1,87 @@
+[ERROR] COMPILATION ERROR : 
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CoachType.java:[51,18] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CoachType.java:[27,1] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CoachType.java:[51,34] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CoachType.java:[24,1] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CoachType.java:[26,1] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/RouteStopService.java:[5,57] package com.ralsei.customer.dto.request.CoachAndRouteStop does not exist
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/RouteStopService.java:[6,45] package com.ralsei.customer.dto.request.route does not exist
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/RouteStopService.java:[7,58] package com.ralsei.customer.dto.response.CoachAndRouteStop does not exist
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/RouteStopService.java:[15,39] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/RouteStopService.java:[15,5] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/RouteStopService.java:[17,47] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/RouteStopService.java:[17,5] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/RouteStopService.java:[19,5] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/RouteStopService.java:[21,19] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/RouteStopService.java:[25,51] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/RouteStopService.java:[25,10] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/notification/PassengerTicketEmailAssembler.java:[37,19] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/notification/PassengerTicketEmailAssembler.java:[38,19] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/notification/PassengerTicketEmailAssembler.java:[28,1] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/passengerbooking/impl/PassengerPendingPaymentServiceImpl.java:[12,33] cannot find symbol
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/passengerbooking/impl/PassengerPendingPaymentServiceImpl.java:[118,64] cannot find symbol
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.13.0:compile (default-compile) on project customer-service: Compilation failure: Compilation failure: 
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CoachType.java:[51,18] cannot find symbol
+[ERROR]   symbol:   class CoachTypePrice
+[ERROR]   location: class com.ralsei.customer.model.CoachType
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CoachType.java:[27,1] cannot find symbol
+[ERROR]   symbol:   class CoachTypePrice
+[ERROR]   location: class com.ralsei.customer.model.CoachType
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CoachType.java:[51,34] cannot find symbol
+[ERROR]   symbol:   class CoachTypePrice
+[ERROR]   location: class com.ralsei.customer.model.CoachType
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CoachType.java:[24,1] cannot find symbol
+[ERROR]   symbol:   class CoachTypePrice
+[ERROR]   location: class com.ralsei.customer.model.CoachType
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/model/CoachType.java:[26,1] cannot find symbol
+[ERROR]   symbol:   class CoachTypePrice
+[ERROR]   location: class com.ralsei.customer.model.CoachType
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/RouteStopService.java:[5,57] package com.ralsei.customer.dto.request.CoachAndRouteStop does not exist
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/RouteStopService.java:[6,45] package com.ralsei.customer.dto.request.route does not exist
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/RouteStopService.java:[7,58] package com.ralsei.customer.dto.response.CoachAndRouteStop does not exist
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/RouteStopService.java:[15,39] cannot find symbol
+[ERROR]   symbol:   class RouteStopRequest
+[ERROR]   location: interface com.ralsei.customer.service.RouteStopService
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/RouteStopService.java:[15,5] cannot find symbol
+[ERROR]   symbol:   class RouteStopResponse
+[ERROR]   location: interface com.ralsei.customer.service.RouteStopService
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/RouteStopService.java:[17,47] cannot find symbol
+[ERROR]   symbol:   class RouteStopRequest
+[ERROR]   location: interface com.ralsei.customer.service.RouteStopService
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/RouteStopService.java:[17,5] cannot find symbol
+[ERROR]   symbol:   class RouteStopResponse
+[ERROR]   location: interface com.ralsei.customer.service.RouteStopService
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/RouteStopService.java:[19,5] cannot find symbol
+[ERROR]   symbol:   class RouteStopResponse
+[ERROR]   location: interface com.ralsei.customer.service.RouteStopService
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/RouteStopService.java:[21,19] cannot find symbol
+[ERROR]   symbol:   class RouteStopResponse
+[ERROR]   location: interface com.ralsei.customer.service.RouteStopService
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/RouteStopService.java:[25,51] cannot find symbol
+[ERROR]   symbol:   class RouteStopOrderUpdateRequest
+[ERROR]   location: interface com.ralsei.customer.service.RouteStopService
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/RouteStopService.java:[25,10] cannot find symbol
+[ERROR]   symbol:   class RouteStopResponse
+[ERROR]   location: interface com.ralsei.customer.service.RouteStopService
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/notification/PassengerTicketEmailAssembler.java:[37,19] cannot find symbol
+[ERROR]   symbol:   class TripRepository
+[ERROR]   location: class com.ralsei.customer.service.notification.PassengerTicketEmailAssembler
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/notification/PassengerTicketEmailAssembler.java:[38,19] cannot find symbol
+[ERROR]   symbol:   class RouteStopRepository
+[ERROR]   location: class com.ralsei.customer.service.notification.PassengerTicketEmailAssembler
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/notification/PassengerTicketEmailAssembler.java:[28,1] cannot find symbol
+[ERROR]   symbol:   class TripRepository
+[ERROR]   location: class com.ralsei.customer.service.notification.PassengerTicketEmailAssembler
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/passengerbooking/impl/PassengerPendingPaymentServiceImpl.java:[12,33] cannot find symbol
+[ERROR]   symbol:   class PassengerPendingPaymentOutcome
+[ERROR]   location: package com.ralsei.customer.model
+[ERROR] /home/loliconhihi/Documents/Project/nhaxetuanmv/customer-service/src/main/java/com/ralsei/customer/service/passengerbooking/impl/PassengerPendingPaymentServiceImpl.java:[118,64] cannot find symbol
+[ERROR]   symbol:   class PassengerPendingPaymentOutcome
+[ERROR]   location: class com.ralsei.customer.service.passengerbooking.impl.PassengerPendingPaymentServiceImpl
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

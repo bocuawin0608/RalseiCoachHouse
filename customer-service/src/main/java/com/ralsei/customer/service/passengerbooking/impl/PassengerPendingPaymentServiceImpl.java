@@ -1,5 +1,7 @@
 package com.ralsei.customer.service.passengerbooking.impl;
 
+import com.ralsei.customer.model.enums.PassengerPendingPaymentOutcome;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -9,10 +11,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ralsei.customer.exception.BusinessRuleException;
 import com.ralsei.customer.model.PassengerTicket;
 import com.ralsei.customer.model.Payment;
-import com.ralsei.customer.model.PassengerPendingPaymentOutcome;
-import com.ralsei.customer.model.PassengerTicketDetailStatus;
-import com.ralsei.customer.model.PassengerTicketStatus;
-import com.ralsei.customer.model.TripSeatStatus;
+import com.ralsei.customer.model.enums.PassengerPendingPaymentOutcome;
+import com.ralsei.customer.model.enums.PassengerTicketDetailStatus;
+import com.ralsei.customer.model.enums.PassengerTicketStatus;
+import com.ralsei.customer.model.enums.TripSeatStatus;
 import com.ralsei.customer.repository.CustomerRepository;
 import com.ralsei.customer.repository.PassengerTicketDetailRepository;
 import com.ralsei.customer.repository.PassengerTicketRepository;

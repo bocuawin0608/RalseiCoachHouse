@@ -10,8 +10,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.ralsei.customer.model.PassengerTicket;
-import com.ralsei.customer.model.PassengerTicketMajorChangeType;
-import com.ralsei.customer.model.PassengerTicketStatus;
+import com.ralsei.customer.model.enums.PassengerTicketMajorChangeType;
+import com.ralsei.customer.model.enums.PassengerTicketStatus;
 
 /**
  * Provides persistence access for passenger ticket data.

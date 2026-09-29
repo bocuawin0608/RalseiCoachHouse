@@ -27,7 +27,7 @@ import com.ralsei.staff.dto.projection.trip.TripResourceProjection;
 import com.ralsei.staff.dto.projection.trip.TripStopProjection;
 import com.ralsei.staff.dto.projection.trip.TripSummaryProjection;
 import com.ralsei.staff.model.Trip;
-import com.ralsei.staff.model.CoachStatus;
+import com.ralsei.staff.model.enums.CoachStatus;
 
 import jakarta.transaction.Transactional;
 

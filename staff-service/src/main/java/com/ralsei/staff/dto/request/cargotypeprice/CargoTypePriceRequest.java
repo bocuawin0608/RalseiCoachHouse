@@ -14,18 +14,19 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Represents the request payload for cargo type price operations.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-/**
- * Represents the request payload for cargo type price operations.
- */
+
 public class CargoTypePriceRequest {
 
     @NotNull(message = "Cargo type ID is required")
     @Min(value = 1, message = "Cargo type ID must be greater than or equal to 1")
-    @com.ralsei.util.validation.ExistsCargoTypeId
+    @com.ralsei.staff.util.validation.ExistsCargoTypeId
     private int cargoTypeId;
 
     @NotBlank(message = "Unit is required")
