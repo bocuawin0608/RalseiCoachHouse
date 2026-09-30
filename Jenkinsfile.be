@@ -89,7 +89,6 @@ pipeline {
         }
 
         stage('Docker Build & Push') {
-            agent any // Cần truy cập docker daemon của host
             when {
                 anyOf {
                     branch 'develop'
@@ -118,7 +117,6 @@ pipeline {
         }
 
         stage('Validate Kubernetes Manifests') {
-            agent any
             when {
                 anyOf {
                     branch 'develop'
@@ -138,7 +136,6 @@ pipeline {
         }
 
         stage('GitOps CD Promotion') {
-            agent any
             when {
                 anyOf {
                     branch 'develop'
