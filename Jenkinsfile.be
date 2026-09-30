@@ -31,7 +31,9 @@ pipeline {
                     agent {
                         docker {
                             image 'eclipse-temurin:17-jdk-jammy'
-                            args '-v $HOME/.m2:/root/.m2' // Cache Maven
+                            // Ánh xạ thư mục .m2 của host vào /maven_cache trong container
+                            // Sử dụng MAVEN_OPTS để ép Maven ghi đè đường dẫn kho chứa cục bộ
+                            args '-v $HOME/.m2:/maven_cache -e MAVEN_OPTS="-Dmaven.repo.local=/maven_cache"'
                         }
                     }
                     steps {
