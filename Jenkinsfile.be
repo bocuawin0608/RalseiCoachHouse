@@ -99,7 +99,7 @@ pipeline {
             steps {
                 script { env.FAILED_STAGE = 'Docker Build & Push' }
                 withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-creds',
+                    credentialsId: 'deploy',
                     usernameVariable: 'DOCKER_USER',
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
