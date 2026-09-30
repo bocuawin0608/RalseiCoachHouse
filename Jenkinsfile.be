@@ -17,6 +17,12 @@ pipeline {
     }
 
     stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+        
         stage('Static Analysis') {
             parallel {
                 stage('Code Style Check') {
@@ -65,6 +71,13 @@ pipeline {
         }
 
         stage('Docker Build & Push') {
+            when {
+                anyOf {
+                    branch 'develop'
+                    branch 'main'
+                    branch 'release/*'
+                }
+            }
             steps {
                 script { env.FAILED_STAGE = 'Docker Build & Push' }
                 withCredentials([usernamePassword(
@@ -85,6 +98,13 @@ pipeline {
         }
 
         stage('Validate Kubernetes Manifests') {
+            when {
+                anyOf {
+                    branch 'develop'
+                    branch 'main'
+                    branch 'release/*'
+                }
+            }
             steps {
                 script { env.FAILED_STAGE = 'Validate Kubernetes Manifests' }
                     sh '''
@@ -107,6 +127,13 @@ pipeline {
         }
 
         stage('GitOps CD Promotion') {
+            when {
+                anyOf {
+                    branch 'develop'
+                    branch 'main'
+                    branch 'release/*'
+                }
+            }
             steps {
                 script {
                     env.FAILED_STAGE = 'GitOps CD Promotion'
