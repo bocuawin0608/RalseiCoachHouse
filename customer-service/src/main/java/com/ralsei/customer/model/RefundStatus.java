@@ -1,4 +1,4 @@
-package com.ralsei.customer.model.enums;
+package com.ralsei.customer.model;
 
 import com.ralsei.customer.exception.BusinessRuleException;
 
