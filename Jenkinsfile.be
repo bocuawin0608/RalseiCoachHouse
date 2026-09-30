@@ -189,12 +189,12 @@ pipeline {
         success {
             script {
                 // Sử dụng Slack Plugin chuẩn mực, dọn dẹp mã Bash rác
-                slackSend color: 'good', message: " CI pipeline succeeded\nBuild #: ${env.BUILD_NUMBER}\nBranch: ${env.BRANCH_NAME ?: 'unknown'}\nStage: ${env.FAILED_STAGE ?: 'All CI stages completed'}"
+                slackSend color: 'good', message: "✅ CI pipeline succeeded\nBuild #: ${env.BUILD_NUMBER}\nBranch: ${env.BRANCH_NAME ?: 'unknown'}\nStage: ${env.FAILED_STAGE ?: 'All CI stages completed'}"
             }
         }
         failure {
             script {
-                slackSend color: 'danger', message: " CI pipeline failed\nBuild #: ${env.BUILD_NUMBER}\nBranch: ${env.BRANCH_NAME ?: 'unknown'}\nStage: ${env.FAILED_STAGE ?: 'unknown'}"
+                slackSend color: 'danger', message: "❌ CI pipeline failed\nBuild #: ${env.BUILD_NUMBER}\nBranch: ${env.BRANCH_NAME ?: 'unknown'}\nStage: ${env.FAILED_STAGE ?: 'unknown'}"
             }
         }
         always {
