@@ -50,7 +50,10 @@ pipeline {
 
                 stage('Security Testing') {
                     agent {
-                        docker { image 'returntocorp/semgrep' }
+                        docker { 
+                            image 'returntocorp/semgrep'
+                            args '--entrypoint=""' 
+                        }
                     }
                     steps {
                         script { env.FAILED_STAGE = 'Security Testing' }
@@ -117,7 +120,10 @@ pipeline {
 
         stage('Validate Kubernetes Manifests') {
             agent {
-                docker { image 'ghcr.io/yannh/kubeconform:latest' }
+                docker { 
+                    image 'ghcr.io/yannh/kubeconform:latest'
+                    args '--entrypoint=""'
+                }
             }
             when {
                 anyOf {
