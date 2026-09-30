@@ -10,7 +10,7 @@ pipeline {
     environment {
         BACKEND_DIR = 'backend-springboot'
         REGISTRY_URL = 'docker.io'
-        IMAGE_REPO = 'ralsei/ralsei-coach-house-be'
+        IMAGE_REPO = 'bocuawin0608/ralsei-coach-house-be'
         VERSION = "0.0.${BUILD_NUMBER}"
         IMAGE_TAG = "${IMAGE_REPO}:${VERSION}"
         GITOPS_REPO_URL = 'https://github.com/ralsei/ralsei-gitops-config.git'
