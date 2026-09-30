@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: driver-service-config
+data:
+  SPRING_PROFILES_ACTIVE: dev
+  SPRING_DATASOURCE_URL: jdbc:sqlserver://database:1433;databaseName=driver_db;encrypt=true;trustServerCertificate=true;
+  SPRING_DATASOURCE_USERNAME: sa
+  SPRING_DATASOURCE_PASSWORD: 01102006Duc.
+  SPRING_DATA_REDIS_HOST: redis
+  SPRING_DATA_REDIS_PORT: '6379'

@@ -1,0 +1,72 @@
+pipeline {
+    agent any
+    options {
+        disableConcurrentBuilds()
+        timestamps()
+    }
+    environment {
+        IMAGE_REPO = 'ralsei/driver-service'
+        VERSION = '0.0.${BUILD_NUMBER}'
+        IMAGE_TAG = "${IMAGE_REPO}:${VERSION}"
+        SVC_NAME = 'driver-service'
+    }
+    stages {
+        stage('Checkout') {
+            steps { checkout scm }
+        }
+        stage('Docker Build & Push') {
+            steps {
+                script {
+                    // Assuming docker login is handled
+                    sh '''
+                        docker build -t "$IMAGE_TAG" -f driver-service/Dockerfile .
+                        docker push "$IMAGE_TAG"
+                    '''
+                }
+            }
+        }
+        stage('GitOps CD Promotion') {
+            steps {
+                script {
+                    def branchName = env.BRANCH_NAME ?: sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
+                    def targetEnv = ''
+                    def overlayPath = ''
+
+                    if (branchName == 'develop') {
+                        targetEnv = 'dev'
+                        overlayPath = 'k8s/overlays/dev'
+                    } else if (branchName.startsWith('release/')) {
+                        targetEnv = 'staging'
+                        overlayPath = 'k8s/overlays/staging'
+                    } else if (branchName == 'main') {
+                        targetEnv = 'prod'
+                        overlayPath = 'k8s/overlays/prod'
+                    } else {
+                        echo "Skipping GitOps promotion for branch '${branchName}'."
+                        return
+                    }
+
+                    withCredentials([usernamePassword(
+                        credentialsId: 'gitops-credentials',
+                        usernameVariable: 'GITOPS_USERNAME',
+                        passwordVariable: 'GITOPS_TOKEN'
+                    )]) {
+                        sh """
+                            set -eu
+                            rm -rf "$WORKSPACE/gitops"
+                            git clone "https://${GITOPS_USERNAME}:${GITOPS_TOKEN}@github.com/ralsei/ralsei-gitops-config.git" "$WORKSPACE/gitops"
+                            (cd "$WORKSPACE/gitops/${overlayPath}" && kustomize edit set image ralsei/${SVC_NAME}="$IMAGE_TAG")
+                            git -C "$WORKSPACE/gitops" add .
+                            if git -C "$WORKSPACE/gitops" diff --cached --quiet; then
+                                echo "No changes"
+                                exit 0
+                            fi
+                            git -C "$WORKSPACE/gitops" commit -m "chore(ci): promote ${IMAGE_TAG} to ${targetEnv}"
+                            git -C "$WORKSPACE/gitops" push origin HEAD
+                        """
+                    }
+                }
+            }
+        }
+    }
+}

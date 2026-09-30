@@ -153,17 +153,7 @@ pipeline {
                             git -C "$WORKSPACE/gitops" config user.name "Jenkins CI"
                             git -C "$WORKSPACE/gitops" config user.email "jenkins@ralsei.local"
 
-                            DEPLOYMENT_FILE="$(find "$WORKSPACE/gitops/$GITOPS_OVERLAY_PATH" -type f \( -name '*.yaml' -o -name '*.yml' \) | head -n 1)"
-                            if [ -z "$DEPLOYMENT_FILE" ]; then
-                                printf '%s\n' "ERROR: No deployment manifest found in $GITOPS_OVERLAY_PATH" >&2
-                                exit 1
-                            fi
-
-                            if command -v yq >/dev/null 2>&1; then
-                                yq e -i '.spec.template.spec.containers[0].image = strenv(IMAGE_TAG)' "$DEPLOYMENT_FILE"
-                            else
-                                sed -i -E "s#(image:\s*).+?#\\1${IMAGE_TAG}#g" "$DEPLOYMENT_FILE"
-                            fi
+                            (cd "$WORKSPACE/gitops/$GITOPS_OVERLAY_PATH" && kustomize edit set image ralsei/ralsei-coach-house-be="$IMAGE_TAG")
 
                             git -C "$WORKSPACE/gitops" add .
                             if git -C "$WORKSPACE/gitops" diff --cached --quiet; then

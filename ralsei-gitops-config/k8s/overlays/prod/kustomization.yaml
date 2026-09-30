@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: ralsei-prod
+resources:
+- ../../base
+- namespace.yaml
+images:
+- name: ralsei/auth-service
+  newTag: latest
+- name: ralsei/customer-service
+  newTag: latest
+- name: ralsei/staff-service
+  newTag: latest
+- name: ralsei/driver-service
+  newTag: latest
+- name: ralsei/payment-service
+  newTag: latest
+- name: ralsei/ralsei-coach-house-be
+  newTag: latest
+- name: ralsei-coachhouse-fe
+  newTag: latest
+- name: nhaxetuanmv-fe-staff
+  newTag: latest

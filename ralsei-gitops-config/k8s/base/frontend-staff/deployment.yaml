@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-staff
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend-staff
+  template:
+    metadata:
+      labels:
+        app: frontend-staff
+    spec:
+      containers:
+      - name: frontend-staff
+        image: nhaxetuanmv-fe-staff:latest
+        ports:
+        - containerPort: 80
+        envFrom:
+        - configMapRef:
+            name: frontend-staff-config
