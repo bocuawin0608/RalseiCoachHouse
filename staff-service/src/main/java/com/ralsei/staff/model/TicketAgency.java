@@ -12,13 +12,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * TicketAgency entity.
- */
-
-/**
- * Provides the ticket agency component for the application.
- */
 @Entity
 @Table(name = "ticket_agency")
 @Getter
@@ -26,7 +19,13 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * TicketAgency entity.
+ */
 
+/**
+ * Provides the ticket agency component for the application.
+ */
 public class TicketAgency extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

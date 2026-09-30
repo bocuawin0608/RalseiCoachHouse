@@ -56,6 +56,6 @@ public interface CoachTypeRepository extends JpaRepository<CoachType, Integer> {
     boolean existsByCoachTypeNameIgnoreCase(String coachTypeName);
     Optional<CoachType> findByCoachTypeIdAndIsActiveTrue(Integer id);
     
-    @Query("SELECT new com.ralsei.dto.response.coachtype.CoachTypeDropdownDTO(ct.coachTypeId, ct.coachTypeName) FROM CoachType ct WHERE ct.isActive = true ORDER BY ct.coachTypeName")
+    @Query("SELECT new com.ralsei.driver.dto.response.coachtype.CoachTypeDropdownDTO(ct.coachTypeId, ct.coachTypeName) FROM CoachType ct WHERE ct.isActive = true ORDER BY ct.coachTypeName")
     List<CoachTypeDropdownDTO> findActiveCoachTypesForDropdown();
 }

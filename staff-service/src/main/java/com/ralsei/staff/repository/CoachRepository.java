@@ -31,7 +31,7 @@ public interface CoachRepository extends JpaRepository<Coach, Integer> {
     Optional<Coach> findByIdForUpdate(@Param("coachId") Integer coachId);
 
     @Query(value = """
-                SELECT new com.ralsei.dto.response.coach.CoachResponse(
+                SELECT new com.ralsei.staff.dto.response.coach.CoachResponse(
                     c.coachId,
                     c.licensePlate,
                     ct.coachTypeName,

@@ -38,9 +38,12 @@ public class Payment extends BaseEntity {
     @Column(name = "passengerTicketId")
     private Integer passengerTicketId;
 
-    // [MICROSERVICE-REFACTOR]: Removed @OneToOne CargoTicket. Use scalar cargoTicketId + FeignClient.
     @Column(name = "cargoTicketId")
     private Integer cargoTicketId;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cargoTicketId", insertable = false, updatable = false)
+    private CargoTicket cargoTicket;
 
     @Column(name = "amount", nullable = false)
     private BigDecimal amount;

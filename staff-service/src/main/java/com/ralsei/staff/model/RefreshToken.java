@@ -17,15 +17,16 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * Provides the refresh token component for the application.
- */
+@Entity
+@Table(name = "refresh_token")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-
+/**
+ * Provides the refresh token component for the application.
+ */
 public class RefreshToken {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

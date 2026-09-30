@@ -18,7 +18,7 @@ import com.ralsei.staff.model.enums.TripSeatStatus;
  */
 public interface TripSeatRepository extends JpaRepository<TripSeat, Integer> {
     @Query(value = """
-        SELECT new com.ralsei.dto.response.passengerbooking.TripSeatResponse(
+        SELECT new com.ralsei.staff.dto.response.passengerbooking.TripSeatResponse(
             ts.tripSeatId,
             s.seatCode,
             s.rowIndex,

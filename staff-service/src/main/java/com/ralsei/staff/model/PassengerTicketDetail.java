@@ -15,15 +15,16 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * Provides the passenger ticket detail component for the application.
- */
+@Entity
+@Table(name = "passenger_ticket_detail")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-
+/**
+ * Provides the passenger ticket detail component for the application.
+ */
 public class PassengerTicketDetail extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

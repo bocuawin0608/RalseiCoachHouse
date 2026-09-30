@@ -26,6 +26,9 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Provides the coach status log component for the application.
+ */
 public class CoachStatusLog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -44,12 +47,15 @@ public class CoachStatusLog {
     @Column(name = "toStatus", nullable = false)
     private CoachStatus toStatus;
 
-    @Column(name = "reason")
+    @Column(name = "reason", nullable = false, length = 500)
     private String reason;
 
     @Column(name = "expectedEndAt")
     private LocalDateTime expectedEndAt;
 
-    @Column(name = "createdAt", nullable = false, updatable = false)
+    @Column(name = "createdAt", updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "createdBy", updatable = false)
+    private Integer createdBy;
 }

@@ -37,7 +37,7 @@ public interface RouteRepository extends JpaRepository<Route, Integer> {
    * The customer homepage uses the real coach-stop city instead of parsing
    * display text from {@code routeName}.
    */
-  @Query("SELECT new com.ralsei.dto.response.CoachAndRouteStop.RouteDropdownDTO(r.routeId, r.routeName) FROM Route r WHERE r.isActive = true ORDER BY r.routeName")
+  @Query("SELECT new com.ralsei.staff.dto.response.CoachAndRouteStop.RouteDropdownDTO(r.routeId, r.routeName) FROM Route r WHERE r.isActive = true ORDER BY r.routeName")
   List<RouteDropdownDTO> findRoutesForDropdown();
 
   /**

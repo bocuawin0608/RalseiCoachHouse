@@ -18,16 +18,17 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+@Entity
+@Table(name = "payment")
 @org.hibernate.annotations.Check(constraints = "(passengerTicketId IS NOT NULL AND cargoTicketId IS NULL) OR (passengerTicketId IS NULL AND cargoTicketId IS NOT NULL)")
-/**
- * Provides the payment component for the application.
- */
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-
+/**
+ * Provides the payment component for the application.
+ */
 public class Payment extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

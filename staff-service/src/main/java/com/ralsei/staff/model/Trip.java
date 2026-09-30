@@ -20,9 +20,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * Provides the trip component for the application.
- */
 @Entity
 @Table(name = "trip")
 @Getter
@@ -30,7 +27,9 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-
+/**
+ * Provides the trip component for the application.
+ */
 public class Trip extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -59,14 +58,11 @@ public class Trip extends BaseEntity {
     @JoinColumn(name = "routeId", insertable = false, updatable = false)
     private Route route;
 
-    // [MICROSERVICE-REFACTOR]: Removed @ManyToOne Coach. Use scalar coachId + FeignClient.
-    // coachId is retained as int scalar field.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "coachId", insertable = false, updatable = false)
+    private Coach coach;
 
     @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<CargoTicket> cargoTickets;
 
-    @jakarta.persistence.Transient
-    private Coach coach;
-    public Coach getCoach() { return coach; }
-    public void setCoach(Coach coach) { this.coach = coach; }
 }

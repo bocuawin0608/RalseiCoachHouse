@@ -15,9 +15,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * Provides the cargo type price component for the application.
- */
 @Entity
 @Table(name = "cargo_type_price")
 @Getter
@@ -25,7 +22,9 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-
+/**
+ * Provides the cargo type price component for the application.
+ */
 public class CargoTypePrice extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -46,7 +46,7 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
     @Query("""
             SELECT t FROM Trip t
             JOIN FETCH t.route
-            
+            JOIN FETCH t.coach c
             WHERE c.status = :coachStatus
               AND t.departureTime >= :start
               AND t.departureTime < :end
@@ -1052,7 +1052,7 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
     @Query("""
             SELECT t FROM Trip t
             JOIN FETCH t.route
-            
+            JOIN FETCH t.coach c
             JOIN FETCH c.coachType
             WHERE t.tripId = :tripId
             """)

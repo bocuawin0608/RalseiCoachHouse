@@ -21,9 +21,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * Provides the cargo ticket component for the application.
- */
 @Entity
 @Table(name = "cargo_ticket")
 @Getter
@@ -31,7 +28,9 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-
+/**
+ * Provides the cargo ticket component for the application.
+ */
 public class CargoTicket extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -100,7 +99,8 @@ public class CargoTicket extends BaseEntity {
     @JoinColumn(name = "deliveredBy")
     private Staff deliveredBy;
 
-    // [MICROSERVICE-REFACTOR]: Removed Payment entity relationship. Payment is managed in Customer Service.
+    @OneToOne(mappedBy = "cargoTicket", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Payment payment;
 
     @OneToMany(mappedBy = "cargoTicket", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<CargoTicketDetail> cargoTicketDetails;

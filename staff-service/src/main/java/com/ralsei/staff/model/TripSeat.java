@@ -21,15 +21,16 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * Provides the trip seat component for the application.
- */
+@Entity
+@Table(name = "trip_seat")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-
+/**
+ * Provides the trip seat component for the application.
+ */
 public class TripSeat extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -37,13 +37,13 @@ public class TripSeat extends BaseEntity {
     @Column(name = "tripSeatId")
     private int tripSeatId;
 
-    // [MICROSERVICE-REFACTOR]: Removed @ManyToOne Trip. Use scalar tripId + FeignClient.
-    @Column(name = "tripId", nullable = false)
-    private int tripId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tripId", nullable = false)
+    private Trip trip;
 
-    // [MICROSERVICE-REFACTOR]: Removed @ManyToOne Seat. Use scalar seatId + FeignClient.
-    @Column(name = "seatId", nullable = false)
-    private int seatId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "seatId", nullable = false)
+    private Seat seat;
 
     @Column(name = "price", nullable = false)
     private BigDecimal price;
@@ -51,4 +51,8 @@ public class TripSeat extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private TripSeatStatus status;
+
+    public Integer getSeatId() {
+        return seat != null ? seat.getSeatId() : null;
+    }
 }

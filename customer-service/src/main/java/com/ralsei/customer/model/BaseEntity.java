@@ -29,3 +29,4 @@ public abstract class BaseEntity {
     private Integer updatedBy;
 }
 
+// sau dùng tới @LastModifiedBy + @CreatedBy dùng @EntityListeners(AuditingEntityListener.class) cần @EntityListeners(AuditingEntityListener.class) và tạo @Component public class AuditorAwareImpl implements AuditorAware<Integer>

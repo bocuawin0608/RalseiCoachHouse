@@ -21,6 +21,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+@Entity
+@Table(name = "cargo_ticket")
 @Getter
 @Setter
 @NoArgsConstructor

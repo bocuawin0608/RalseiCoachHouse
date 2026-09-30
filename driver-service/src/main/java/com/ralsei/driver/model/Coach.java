@@ -29,6 +29,9 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Provides the coach component for the application.
+ */
 public class Coach extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,10 +42,12 @@ public class Coach extends BaseEntity {
     @JoinColumn(name = "coachTypeId", nullable = false)
     private CoachType coachType;
 
-    // CRITICAL BOUNDED CONTEXT RULE: routeId is a scalar column (Integer).
-    // ABSOLUTELY NO @ManyToOne Route route or reference to Route class.
     @Column(name = "routeId")
     private Integer routeId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "routeId", insertable = false, updatable = false)
+    private Route route;
 
     @Column(name = "licensePlate", nullable = false, unique = true)
     private String licensePlate;
@@ -58,6 +63,6 @@ public class Coach extends BaseEntity {
     private Integer year;
 
     @Builder.Default
-    @OneToMany(mappedBy = "coach", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy="coach", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Seat> seats = new ArrayList<>();
 }

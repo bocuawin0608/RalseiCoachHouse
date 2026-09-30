@@ -25,6 +25,9 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * Provides the coach type component for the application.
+ */
 public class CoachType extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -44,10 +47,10 @@ public class CoachType extends BaseEntity {
     private boolean isActive;
 
     @Builder.Default
-    @OneToMany(mappedBy = "coachType", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy="coachType", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<CoachTypePrice> coachTypePrices = new ArrayList<>();
 
     @Builder.Default
-    @OneToMany(mappedBy = "coachType", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy="coachType", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Coach> coaches = new ArrayList<>();
 }

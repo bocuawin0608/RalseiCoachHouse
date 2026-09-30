@@ -18,15 +18,16 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * Provides the coach type component for the application.
- */
+@Entity
+@Table(name = "coach_type")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-
+/**
+ * Provides the coach type component for the application.
+ */
 public class CoachType extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

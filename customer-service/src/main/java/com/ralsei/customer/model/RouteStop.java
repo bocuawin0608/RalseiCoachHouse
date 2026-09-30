@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+@Entity
+@Table(name = "route_stop", uniqueConstraints = {@UniqueConstraint(columnNames = {"routeId", "stopOrder"})})
 @Getter
 @Setter
 @NoArgsConstructor
