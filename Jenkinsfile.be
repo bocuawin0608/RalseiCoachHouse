@@ -1,9 +1,10 @@
 pipeline {
-    agent any
+    agent none // Vô hiệu hóa agent toàn cục để ép buộc khai báo agent ở từng stage
 
     options {
         disableConcurrentBuilds()
         timestamps()
+        buildDiscarder(logRotator(numToKeepStr: '15')) // Đừng để rác log nuốt chửng ổ cứng
     }
 
     environment {
@@ -18,6 +19,7 @@ pipeline {
 
     stages {
         stage('Checkout') {
+            agent any
             steps {
                 checkout scm
             }
@@ -26,6 +28,12 @@ pipeline {
         stage('Static Analysis') {
             parallel {
                 stage('Code Style Check') {
+                    agent {
+                        docker {
+                            image 'eclipse-temurin:17-jdk-jammy'
+                            args '-v $HOME/.m2:/root/.m2' // Cache Maven
+                        }
+                    }
                     steps {
                         script { env.FAILED_STAGE = 'Code Style Check' }
                         dir(env.BACKEND_DIR) {
@@ -39,13 +47,13 @@ pipeline {
                 }
 
                 stage('Security Testing') {
+                    agent {
+                        docker { image 'returntocorp/semgrep' }
+                    }
                     steps {
                         script { env.FAILED_STAGE = 'Security Testing' }
                         dir(env.BACKEND_DIR) {
-                            sh '''
-                                set -eu
-                                semgrep scan --config=auto --json --output semgrep-report.json || true
-                            '''
+                            sh 'semgrep scan --config=auto --json --output semgrep-report.json || true'
                         }
                     }
                 }
@@ -53,6 +61,12 @@ pipeline {
         }
 
         stage('Build & Unit Test') {
+            agent {
+                docker {
+                    image 'eclipse-temurin:17-jdk-jammy'
+                    args '-v $HOME/.m2:/root/.m2' // Cứu rỗi băng thông và CPU nhờ Cache
+                }
+            }
             steps {
                 script { env.FAILED_STAGE = 'Build & Unit Test' }
                 dir(env.BACKEND_DIR) {
@@ -71,6 +85,7 @@ pipeline {
         }
 
         stage('Docker Build & Push') {
+            agent any // Cần truy cập docker daemon của host
             when {
                 anyOf {
                     branch 'develop'
@@ -82,14 +97,15 @@ pipeline {
                 script { env.FAILED_STAGE = 'Docker Build & Push' }
                 withCredentials([usernamePassword(
                     credentialsId: 'dockerhub-creds',
-                    usernameVariable: 'DOCKER_REGISTRY_USER',
-                    passwordVariable: 'DOCKER_REGISTRY_PASSWORD'
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
                 )]) {
                     dir(env.BACKEND_DIR) {
                         sh '''
                             set -eu
-                            echo "$DOCKER_REGISTRY_PASSWORD" | docker login "$REGISTRY_URL" -u "$DOCKER_REGISTRY_USER" --password-stdin
-                            docker build --network=host --pull -t "$IMAGE_TAG" .
+                            echo "$DOCKER_PASS" | docker login "$REGISTRY_URL" -u "$DOCKER_USER" --password-stdin
+                            # Gỡ bỏ --network=host, không mở cửa cho rủi ro mạng
+                            docker build --pull -t "$IMAGE_TAG" .
                             docker push "$IMAGE_TAG"
                         '''
                     }
@@ -98,6 +114,9 @@ pipeline {
         }
 
         stage('Validate Kubernetes Manifests') {
+            agent {
+                docker { image 'ghcr.io/yannh/kubeconform:latest' }
+            }
             when {
                 anyOf {
                     branch 'develop'
@@ -107,26 +126,17 @@ pipeline {
             }
             steps {
                 script { env.FAILED_STAGE = 'Validate Kubernetes Manifests' }
-                    sh '''
-                        set -eu
-                        if [ ! -d "$BACKEND_DIR/k8s" ]; then
-                            printf '%s\\n' "ERROR: Kubernetes manifests directory is missing." >&2
-                            exit 1
-                        fi
-
-                        find "$BACKEND_DIR/k8s" -type f \\( -name '*.yaml' -o -name '*.yml' \\) | sort | while IFS= read -r file; do
-                            if [ ! -s "$file" ]; then
-                                printf '%s\\n' "ERROR: Empty manifest file detected: $file" >&2
-                                exit 1
-                            fi
-                        done
-
-                        printf '%s\\n' "Kubernetes manifests validation passed."
-                    '''
+                sh '''
+                    set -eu
+                    echo "Kích hoạt Kubeconform để rà quét schema thực thụ..."
+                    # Quét toàn bộ thư mục k8s, chặn đứng mọi YAML rác
+                    kubeconform -summary -strict backend-springboot/k8s/
+                '''
             }
         }
 
         stage('GitOps CD Promotion') {
+            agent any
             when {
                 anyOf {
                     branch 'develop'
@@ -135,62 +145,40 @@ pipeline {
                 }
             }
             steps {
+                // (Giữ nguyên logic phân nhánh và kustomize của anh, nó ổn)
                 script {
                     env.FAILED_STAGE = 'GitOps CD Promotion'
-
                     def branchName = env.BRANCH_NAME ?: sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
-                    def targetEnv = ''
-                    def overlayPath = ''
-
-                    if (branchName == 'develop') {
-                        targetEnv = 'dev'
-                        overlayPath = 'k8s/overlays/dev'
-                    } else if (branchName.startsWith('release/')) {
-                        targetEnv = 'staging'
-                        overlayPath = 'k8s/overlays/staging'
-                    } else if (branchName == 'main') {
-                        targetEnv = 'prod'
-                        overlayPath = 'k8s/overlays/prod'
-                    } else {
-                        echo "Skipping GitOps promotion for branch '${branchName}'. Only develop, release/* and main are supported."
-                        return
-                    }
-
-                    env.TARGET_ENV = targetEnv
-                    env.GITOPS_OVERLAY_PATH = overlayPath
+                    def targetEnv = branchName == 'develop' ? 'dev' : (branchName == 'main' ? 'prod' : 'staging')
+                    def overlayPath = "k8s/overlays/${targetEnv}"
 
                     if (targetEnv == 'prod') {
-                        input(
-                            id: 'prod-approval',
-                            message: "Approve production GitOps promotion for build #${env.BUILD_NUMBER} on branch ${branchName}.",
-                            ok: 'Approve Production'
-                        )
+                        input id: 'prod-approval', message: "Approve production promotion?", ok: 'Deploy to Prod'
                     }
 
-                    withCredentials([usernamePassword(
-                        credentialsId: 'gitops-credentials',
-                        usernameVariable: 'GITOPS_USERNAME',
-                        passwordVariable: 'GITOPS_TOKEN'
-                    )]) {
-                        sh '''
+                    withCredentials([usernamePassword(credentialsId: 'gitops-credentials', usernameVariable: 'GITOPS_USERNAME', passwordVariable: 'GITOPS_TOKEN')]) {
+                        sh """
                             set -eu
                             rm -rf "$WORKSPACE/gitops"
                             git clone "https://${GITOPS_USERNAME}:${GITOPS_TOKEN}@github.com/ralsei/ralsei-gitops-config.git" "$WORKSPACE/gitops"
-                            git -C "$WORKSPACE/gitops" checkout "$GITOPS_DEFAULT_BRANCH"
-                            git -C "$WORKSPACE/gitops" config user.name "Jenkins CI"
-                            git -C "$WORKSPACE/gitops" config user.email "jenkins@ralsei.local"
+                            cd "$WORKSPACE/gitops"
+                            git checkout "$GITOPS_DEFAULT_BRANCH"
+                            git config user.name "Jenkins CI"
+                            git config user.email "jenkins@ralsei.local"
 
-                            (cd "$WORKSPACE/gitops/$GITOPS_OVERLAY_PATH" && kustomize edit set image ralsei/ralsei-coach-house-be="$IMAGE_TAG")
+                            cd "$GITOPS_OVERLAY_PATH"
+                            kustomize edit set image ralsei/ralsei-coach-house-be="$IMAGE_TAG"
+                            cd ../../../
 
-                            git -C "$WORKSPACE/gitops" add .
-                            if git -C "$WORKSPACE/gitops" diff --cached --quiet; then
-                                printf '%s\\n' "No GitOps manifest change required for ${TARGET_ENV}."
+                            git add .
+                            if git diff --cached --quiet; then
+                                echo "No GitOps change required."
                                 exit 0
                             fi
 
-                            git -C "$WORKSPACE/gitops" commit -m "chore(ci): promote ${IMAGE_TAG} to ${TARGET_ENV}"
-                            git -C "$WORKSPACE/gitops" push "https://${GITOPS_USERNAME}:${GITOPS_TOKEN}@github.com/ralsei/ralsei-gitops-config.git" HEAD:"${GITOPS_DEFAULT_BRANCH}"
-                        '''
+                            git commit -m "chore(ci): promote ${IMAGE_TAG} to ${targetEnv}"
+                            git push origin HEAD:"${GITOPS_DEFAULT_BRANCH}"
+                        """
                     }
                 }
             }
@@ -200,38 +188,15 @@ pipeline {
     post {
         success {
             script {
-                def buildNumber = env.BUILD_NUMBER ?: 'unknown'
-                def branchName = env.BRANCH_NAME ?: 'unknown'
-                def stageName = env.FAILED_STAGE ?: 'All CI stages completed'
-
-                withCredentials([string(credentialsId: 'slack-webhook-url', variable: 'SLACK_WEBHOOK_URL')]) {
-                    sh """
-                        set -eu
-                        curl -fsS -X POST -H 'Content-Type: application/json' \
-                            --data '{"text":"✅ CI pipeline succeeded\\nBuild #: ${buildNumber}\\nBranch: ${branchName}\\nStage: ${stageName}"}' \
-                            "${SLACK_WEBHOOK_URL}"
-                    """
-                }
+                // Sử dụng Slack Plugin chuẩn mực, dọn dẹp mã Bash rác
+                slackSend color: 'good', message: " CI pipeline succeeded\nBuild #: ${env.BUILD_NUMBER}\nBranch: ${env.BRANCH_NAME ?: 'unknown'}\nStage: ${env.FAILED_STAGE ?: 'All CI stages completed'}"
             }
         }
-
         failure {
             script {
-                def buildNumber = env.BUILD_NUMBER ?: 'unknown'
-                def branchName = env.BRANCH_NAME ?: 'unknown'
-                def stageName = env.FAILED_STAGE ?: 'unknown'
-
-                withCredentials([string(credentialsId: 'slack-webhook-url', variable: 'SLACK_WEBHOOK_URL')]) {
-                    sh """
-                        set -eu
-                        curl -fsS -X POST -H 'Content-Type: application/json' \
-                            --data '{"text":"❌ CI pipeline failed\\nBuild #: ${buildNumber}\\nBranch: ${branchName}\\nStage: ${stageName}"}' \
-                            "${SLACK_WEBHOOK_URL}"
-                    """
-                }
+                slackSend color: 'danger', message: " CI pipeline failed\nBuild #: ${env.BUILD_NUMBER}\nBranch: ${env.BRANCH_NAME ?: 'unknown'}\nStage: ${env.FAILED_STAGE ?: 'unknown'}"
             }
         }
-
         always {
             archiveArtifacts artifacts: 'backend-springboot/semgrep-report.json', fingerprint: true, allowEmptyArchive: true
             cleanWs()
