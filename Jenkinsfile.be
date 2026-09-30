@@ -1,5 +1,5 @@
 pipeline {
-    agent none // Vô hiệu hóa agent toàn cục để ép buộc khai báo agent ở từng stage
+    agent any
 
     options {
         disableConcurrentBuilds()
@@ -19,7 +19,6 @@ pipeline {
 
     stages {
         stage('Checkout') {
-            agent any
             steps {
                 checkout scm
             }
@@ -191,13 +190,18 @@ pipeline {
     post {
         success {
             script {
-                // Sử dụng Slack Plugin chuẩn mực, dọn dẹp mã Bash rác
-                slackSend color: 'good', message: "✅ CI pipeline succeeded\nBuild #: ${env.BUILD_NUMBER}\nBranch: ${env.BRANCH_NAME ?: 'unknown'}\nStage: ${env.FAILED_STAGE ?: 'All CI stages completed'}"
+                sh """
+                    curl -X POST -H 'Content-type: application/json' \
+                    --data '{"text":"✅ CI pipeline succeeded\\nBuild #: ${env.BUILD_NUMBER}\\nBranch: ${env.BRANCH_NAME ?: "unknown"}\\nStage: ${env.FAILED_STAGE ?: "All CI stages completed"}"}' \
+                """
             }
         }
         failure {
             script {
-                slackSend color: 'danger', message: "❌ CI pipeline failed\nBuild #: ${env.BUILD_NUMBER}\nBranch: ${env.BRANCH_NAME ?: 'unknown'}\nStage: ${env.FAILED_STAGE ?: 'unknown'}"
+                sh """
+                    curl -X POST -H 'Content-type: application/json' \
+                    --data '{"text":"❌ CI pipeline failed\\nBuild #: ${env.BUILD_NUMBER}\\nBranch: ${env.BRANCH_NAME ?: "unknown"}\\nStage: ${env.FAILED_STAGE ?: "unknown"}"}' \
+                """
             }
         }
         always {
