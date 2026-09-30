@@ -110,18 +110,18 @@ pipeline {
                     sh '''
                         set -eu
                         if [ ! -d "$BACKEND_DIR/k8s" ]; then
-                            printf '%s\n' "ERROR: Kubernetes manifests directory is missing." >&2
+                            printf '%s\\n' "ERROR: Kubernetes manifests directory is missing." >&2
                             exit 1
                         fi
 
-                        find "$BACKEND_DIR/k8s" -type f \( -name '*.yaml' -o -name '*.yml' \) | sort | while IFS= read -r file; do
+                        find "$BACKEND_DIR/k8s" -type f \\( -name '*.yaml' -o -name '*.yml' \\) | sort | while IFS= read -r file; do
                             if [ ! -s "$file" ]; then
-                                printf '%s\n' "ERROR: Empty manifest file detected: $file" >&2
+                                printf '%s\\n' "ERROR: Empty manifest file detected: $file" >&2
                                 exit 1
                             fi
                         done
 
-                        printf '%s\n' "Kubernetes manifests validation passed."
+                        printf '%s\\n' "Kubernetes manifests validation passed."
                     '''
             }
         }
@@ -184,7 +184,7 @@ pipeline {
 
                             git -C "$WORKSPACE/gitops" add .
                             if git -C "$WORKSPACE/gitops" diff --cached --quiet; then
-                                printf '%s\n' "No GitOps manifest change required for ${TARGET_ENV}."
+                                printf '%s\\n' "No GitOps manifest change required for ${TARGET_ENV}."
                                 exit 0
                             fi
 
