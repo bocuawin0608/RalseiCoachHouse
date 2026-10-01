@@ -1,0 +1,12 @@
+ingressController:
+  installCRDs: false
+  enabled: true
+admin:
+  enabled: true
+  type: ClusterIP
+proxy:
+  type: NodePort
+  http:
+    nodePort: 32080
+  tls:
+    nodePort: 32443

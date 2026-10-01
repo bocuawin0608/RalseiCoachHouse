@@ -11,3 +11,4 @@ resources:
 - frontend-staff
 - database
 - redis
+- kong
