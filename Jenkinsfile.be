@@ -158,15 +158,15 @@ pipeline {
                     withCredentials([usernamePassword(credentialsId: 'gitops-credentials', usernameVariable: 'GITOPS_USERNAME', passwordVariable: 'GITOPS_TOKEN')]) {
                         sh """
                             set -eu
-                            rm -rf "$WORKSPACE/gitops"
-                            git clone "http://${GITOPS_USERNAME}:${GITOPS_TOKEN}@localhost/bocuawin0608/ralsei-gitops-config.git" "$WORKSPACE/gitops"
-                            cd "$WORKSPACE/gitops"
-                            git checkout "$GITOPS_DEFAULT_BRANCH"
+                            rm -rf "${env.WORKSPACE}/gitops"
+                            git clone "http://${env.GITOPS_USERNAME}:${env.GITOPS_TOKEN}@localhost/bocuawin0608/ralsei-gitops-config.git" "${env.WORKSPACE}/gitops"
+                            cd "${env.WORKSPACE}/gitops"
+                            git checkout "${env.GITOPS_DEFAULT_BRANCH}"
                             git config user.name "Jenkins CI"
                             git config user.email "jenkins@ralsei.local"
 
-                            cd "$GITOPS_OVERLAY_PATH"
-                            kustomize edit set image ralsei/ralsei-coach-house-be="$IMAGE_TAG"
+                            cd "${overlayPath}"
+                            kustomize edit set image ralsei/ralsei-coach-house-be="${env.IMAGE_TAG}"
                             cd ../../../
 
                             git add .
@@ -175,8 +175,8 @@ pipeline {
                                 exit 0
                             fi
 
-                            git commit -m "chore(ci): promote ${IMAGE_TAG} to ${targetEnv}"
-                            git push origin HEAD:"${GITOPS_DEFAULT_BRANCH}"
+                            git commit -m "chore(ci): promote ${env.IMAGE_TAG} to ${targetEnv}"
+                            git push origin HEAD:"${env.GITOPS_DEFAULT_BRANCH}"
                         """
                     }
                 }
