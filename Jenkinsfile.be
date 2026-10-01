@@ -13,7 +13,7 @@ pipeline {
         IMAGE_REPO = 'bocuawin0608/ralsei-coach-house-be'
         VERSION = "0.0.${BUILD_NUMBER}"
         IMAGE_TAG = "${IMAGE_REPO}:${VERSION}"
-        GITOPS_REPO_URL = 'https://github.com/ralsei/ralsei-gitops-config.git'
+        GITOPS_REPO_URL = 'http://localhost/bocuawin0608/ralsei-gitops-config.git'
         GITOPS_DEFAULT_BRANCH = 'main'
     }
 
@@ -159,7 +159,7 @@ pipeline {
                         sh """
                             set -eu
                             rm -rf "$WORKSPACE/gitops"
-                            git clone "https://${GITOPS_USERNAME}:${GITOPS_TOKEN}@github.com/ralsei/ralsei-gitops-config.git" "$WORKSPACE/gitops"
+                            git clone "http://${GITOPS_USERNAME}:${GITOPS_TOKEN}@localhost/bocuawin0608/ralsei-gitops-config.git" "$WORKSPACE/gitops"
                             cd "$WORKSPACE/gitops"
                             git checkout "$GITOPS_DEFAULT_BRANCH"
                             git config user.name "Jenkins CI"
