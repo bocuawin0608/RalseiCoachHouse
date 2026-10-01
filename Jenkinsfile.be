@@ -155,29 +155,33 @@ pipeline {
                         input id: 'prod-approval', message: "Approve production promotion?", ok: 'Deploy to Prod'
                     }
 
-                    withCredentials([usernamePassword(credentialsId: 'gitops-credentials', usernameVariable: 'GITOPS_USERNAME', passwordVariable: 'GITOPS_TOKEN')]) {
-                        sh """
-                            set -eu
-                            rm -rf "${env.WORKSPACE}/gitops"
-                            git clone "http://${env.GITOPS_USERNAME}:${env.GITOPS_TOKEN}@localhost/bocuawin0608/ralsei-gitops-config.git" "${env.WORKSPACE}/gitops"
-                            cd "${env.WORKSPACE}/gitops"
-                            git checkout "${env.GITOPS_DEFAULT_BRANCH}"
-                            git config user.name "Jenkins CI"
-                            git config user.email "jenkins@ralsei.local"
+                    withEnv(["OVERLAY_PATH=${overlayPath}", "TARGET_ENV=${targetEnv}"]) {
+                        withCredentials([usernamePassword(credentialsId: 'gitops-credentials', usernameVariable: 'GITOPS_USERNAME', passwordVariable: 'GITOPS_TOKEN')]) {
+                            sh '''
+                                set -eu
+                                rm -rf "$WORKSPACE/gitops"
+                                git clone "http://${GITOPS_USERNAME}:${GITOPS_TOKEN}@localhost/bocuawin0608/ralsei-gitops-config.git" "$WORKSPACE/gitops"
+                                cd "$WORKSPACE/gitops"
+                                git checkout "$GITOPS_DEFAULT_BRANCH"
+                                git config user.name "Jenkins CI"
+                                git config user.email "jenkins@ralsei.local"
 
-                            cd "${overlayPath}"
-                            kustomize edit set image ralsei/ralsei-coach-house-be="${env.IMAGE_TAG}"
-                            cd ../../../
+                                cd "$OVERLAY_PATH"
+                                curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+                                ./kustomize edit set image ralsei/ralsei-coach-house-be="$IMAGE_TAG"
+                                rm kustomize
+                                cd ../../../
 
-                            git add .
-                            if git diff --cached --quiet; then
-                                echo "No GitOps change required."
-                                exit 0
-                            fi
+                                git add .
+                                if git diff --cached --quiet; then
+                                    echo "No GitOps change required."
+                                    exit 0
+                                fi
 
-                            git commit -m "chore(ci): promote ${env.IMAGE_TAG} to ${targetEnv}"
-                            git push origin HEAD:"${env.GITOPS_DEFAULT_BRANCH}"
-                        """
+                                git commit -m "chore(ci): promote $IMAGE_TAG to $TARGET_ENV"
+                                git push origin HEAD:"$GITOPS_DEFAULT_BRANCH"
+                            '''
+                        }
                     }
                 }
             }
