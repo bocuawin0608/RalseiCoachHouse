@@ -32,7 +32,7 @@ pipeline {
                             image 'eclipse-temurin:17-jdk-jammy'
                             // Ánh xạ thư mục .m2 của host vào /maven_cache trong container
                             // Sử dụng MAVEN_OPTS để ép Maven ghi đè đường dẫn kho chứa cục bộ
-                            args '-v $HOME/.m2:/maven_cache -e MAVEN_OPTS="-Dmaven.repo.local=/maven_cache" -e HOME=/tmp'
+                            args '-v $HOME/.m2:/maven_cache -e MAVEN_OPTS="-Dmaven.repo.local=/maven_cache" -e HOME=/tmp --dns 8.8.8.8'
                         }
                     }
                     steps {
@@ -51,7 +51,7 @@ pipeline {
                     agent {
                         docker { 
                             image 'returntocorp/semgrep'
-                            args '--entrypoint=""' 
+                            args '--entrypoint="" -e HOME=/tmp --dns 8.8.8.8' 
                         }
                     }
                     steps {
@@ -68,7 +68,7 @@ pipeline {
             agent {
                 docker {
                     image 'eclipse-temurin:17-jdk-jammy'
-                    args '-v $HOME/.m2:/maven_cache -e MAVEN_OPTS="-Dmaven.repo.local=/maven_cache" -e HOME=/tmp' // Cứu rỗi băng thông và CPU nhờ Cache
+                    args '-v $HOME/.m2:/maven_cache -e MAVEN_OPTS="-Dmaven.repo.local=/maven_cache" -e HOME=/tmp --dns 8.8.8.8' // Cứu rỗi băng thông và CPU nhờ Cache
                 }
             }
             steps {

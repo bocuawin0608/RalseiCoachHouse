@@ -31,7 +31,7 @@ pipeline {
                     agent {
                         docker {
                             image 'node:22-alpine'
-                            args '-e HOME=/tmp'
+                            args '-e HOME=/tmp --dns 8.8.8.8'
                         }
                     }
                     steps {
@@ -49,7 +49,7 @@ pipeline {
                     agent {
                         docker { 
                             image 'returntocorp/semgrep'
-                            args '--entrypoint=""' 
+                            args '--entrypoint="" -e HOME=/tmp --dns 8.8.8.8' 
                         }
                     }
                     steps {
@@ -64,7 +64,7 @@ pipeline {
                     agent {
                         docker {
                             image 'node:22-alpine'
-                            args '-e HOME=/tmp'
+                            args '-e HOME=/tmp --dns 8.8.8.8'
                         }
                     }
                     steps {
