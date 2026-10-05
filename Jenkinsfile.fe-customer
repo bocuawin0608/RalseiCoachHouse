@@ -30,7 +30,7 @@ pipeline {
                 stage('Code Style (Lint)') {
                     agent {
                         docker {
-                            image 'node:22-alpine'
+                            image 'node:22'
                             args '-e HOME=/tmp --dns 8.8.8.8'
                         }
                     }
@@ -49,7 +49,7 @@ pipeline {
                     agent {
                         docker { 
                             image 'returntocorp/semgrep'
-                            args '--entrypoint="" -e HOME=/tmp --dns 8.8.8.8' 
+                            args '--entrypoint="" -e HOME=/tmp --dns 8.8.8.8 -e GITHUB_WORKSPACE=/tmp' 
                         }
                     }
                     steps {
@@ -63,7 +63,7 @@ pipeline {
                 stage('Dependency Audit') {
                     agent {
                         docker {
-                            image 'node:22-alpine'
+                            image 'node:22'
                             args '-e HOME=/tmp --dns 8.8.8.8'
                         }
                     }

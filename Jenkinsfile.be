@@ -51,7 +51,7 @@ pipeline {
                     agent {
                         docker { 
                             image 'returntocorp/semgrep'
-                            args '--entrypoint="" -e HOME=/tmp --dns 8.8.8.8' 
+                            args '--entrypoint="" -e HOME=/tmp --dns 8.8.8.8 -e GITHUB_WORKSPACE=/tmp' 
                         }
                     }
                     steps {
