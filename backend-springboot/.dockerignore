@@ -9,7 +9,8 @@
 *.iml
 
 # Java / Maven
-**/target
+**/target/*
+!**/target/*.war
 **/.mvn/wrapper/maven-wrapper.jar
 
 # Node
