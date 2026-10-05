@@ -131,7 +131,7 @@ pipeline {
                     set -eu
                     echo "Kích hoạt Kubeconform để rà quét schema thực thụ..."
                     # Quét toàn bộ thư mục k8s, chặn đứng mọi YAML rác
-                    docker run --rm -v "${WORKSPACE}:/workspace" -w /workspace ghcr.io/yannh/kubeconform:latest -summary -strict backend-springboot/k8s/
+                    docker run --rm --dns 8.8.8.8 -v "${WORKSPACE}:/workspace" -w /workspace ghcr.io/yannh/kubeconform:latest -summary -strict backend-springboot/k8s/
                 '''
             }
         }
