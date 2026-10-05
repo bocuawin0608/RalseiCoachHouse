@@ -106,6 +106,7 @@ pipeline {
                     dir(env.BACKEND_DIR) {
                         sh '''
                             set -eu
+                            cp target/*.war app.war
                             echo "$DOCKER_PASS" | docker login "$REGISTRY_URL" -u "$DOCKER_USER" --password-stdin
                             docker build --network=host --pull -t "$IMAGE_TAG" .
                             docker push "$IMAGE_TAG"
