@@ -67,6 +67,7 @@ pipeline {
         stage('Build & Unit Test') {
             agent {
                 docker {
+                    reuseNode true
                     image 'eclipse-temurin:17-jdk-jammy'
                     args '-v $HOME/.m2:/maven_cache -e MAVEN_OPTS="-Dmaven.repo.local=/maven_cache" -e HOME=/tmp --dns 8.8.8.8' // Cứu rỗi băng thông và CPU nhờ Cache
                 }
