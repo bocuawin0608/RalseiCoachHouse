@@ -15,6 +15,7 @@ spec:
       containers:
       - name: customer-service
         image: ralsei/customer-service:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8082
         envFrom:

@@ -46,6 +46,10 @@ pipeline {
                         return
                     }
 
+                    if (targetEnv == 'prod') {
+                        input id: 'prod-approval', message: "Approve production promotion?", ok: 'Deploy to Prod'
+                    }
+
                     withCredentials([usernamePassword(
                         credentialsId: 'gitops-credentials',
                         usernameVariable: 'GITOPS_USERNAME',
@@ -54,7 +58,7 @@ pipeline {
                         sh """
                             set -eu
                             rm -rf "$WORKSPACE/gitops"
-                            git clone "https://${GITOPS_USERNAME}:${GITOPS_TOKEN}@github.com/ralsei/ralsei-gitops-config.git" "$WORKSPACE/gitops"
+                            git clone "http://${GITOPS_USERNAME}:${GITOPS_TOKEN}@localhost/bocuawin0608/ralsei-gitops-config.git" "$WORKSPACE/gitops"
                             (cd "$WORKSPACE/gitops/${overlayPath}" && kustomize edit set image ralsei/${SVC_NAME}="$IMAGE_TAG")
                             git -C "$WORKSPACE/gitops" add .
                             if git -C "$WORKSPACE/gitops" diff --cached --quiet; then

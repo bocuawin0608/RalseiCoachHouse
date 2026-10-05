@@ -15,6 +15,7 @@ spec:
       containers:
       - name: frontend
         image: ralsei-coachhouse-fe:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 80
         envFrom:

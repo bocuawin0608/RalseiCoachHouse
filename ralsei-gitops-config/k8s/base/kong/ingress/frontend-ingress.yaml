@@ -6,15 +6,19 @@ metadata:
     kubernetes.io/ingress.class: kong
 spec:
   rules:
-  - http:
+  - host: staff.nhaxetuanmv.local
+    http:
       paths:
-      - path: /staff
+      - path: /
         pathType: Prefix
         backend:
           service:
             name: frontend-staff
             port:
               number: 80
+  - host: nhaxetuanmv.local
+    http:
+      paths:
       - path: /
         pathType: Prefix
         backend:

@@ -15,6 +15,7 @@ spec:
       containers:
       - name: frontend-staff
         image: nhaxetuanmv-fe-staff:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 80
         envFrom:

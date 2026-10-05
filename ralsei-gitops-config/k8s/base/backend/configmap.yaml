@@ -4,8 +4,10 @@ metadata:
   name: backend-config
 data:
   SPRING_PROFILES_ACTIVE: dev
-  SPRING_DATASOURCE_URL: jdbc:sqlserver://database:1433;databaseName=ralsei_db;encrypt=true;trustServerCertificate=true;
+  SERVER_SSL_ENABLED: "false"
+  SPRING_DATASOURCE_URL: jdbc:sqlserver://database:1433;databaseName=VeXeDB;encrypt=true;trustServerCertificate=true;
   SPRING_DATASOURCE_USERNAME: sa
   SPRING_DATASOURCE_PASSWORD: 01102006Duc.
   SPRING_DATA_REDIS_HOST: redis
   SPRING_DATA_REDIS_PORT: '6379'
+  JWT_SECRET: af5489e12f4e58d34fb362fd2d5002a817423d51f2dbab3e2f9ae1ec70f873ed

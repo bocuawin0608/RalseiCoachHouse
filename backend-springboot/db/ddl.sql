@@ -43,6 +43,9 @@ CREATE DATABASE VeXeDB;
 GO
 USE VeXeDB;
 GO
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+GO
 
 -- ============================================================================
 -- LEVEL 1: STRONG ENTITIES (Các bảng danh mục và thực thể độc lập)
@@ -590,4 +593,7 @@ FOREIGN KEY ([accountId]) REFERENCES [account]([accountId])
 
 
 USE VeXeDB;
+GO
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
 GO

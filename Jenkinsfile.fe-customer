@@ -4,57 +4,124 @@ pipeline {
     options {
         disableConcurrentBuilds()
         timestamps()
+        buildDiscarder(logRotator(numToKeepStr: '15'))
     }
 
     environment {
-        IMAGE = 'ralsei-coachhouse-fe:latest'
-        CONTAINER = 'ralsei-coachhouse-fe'
-        PORT = '8080'
-        VERSION = '0.0.{BUILD_NUMBER}'
+        FE_DIR = 'frontend-react'
+        REGISTRY_URL = 'docker.io'
+        IMAGE_REPO = 'bocuawin0608/ralsei-coachhouse-fe'
+        VERSION = "0.0.${BUILD_NUMBER}"
+        IMAGE_TAG = "${IMAGE_REPO}:${VERSION}"
+        GITOPS_REPO_URL = 'http://localhost/bocuawin0608/ralsei-gitops-config.git'
+        GITOPS_DEFAULT_BRANCH = 'main'
     }
- 
-    stages {
 
+    stages {
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
 
-        stage('Docker Build') {
+        stage('Docker Build & Push') {
+            when {
+                anyOf {
+                    branch 'develop'
+                    branch 'main'
+                    branch 'release/*'
+                }
+            }
             steps {
-                dir('frontend-react') {
-                    sh 'docker build -t ${IMAGE} .'
+                script { env.FAILED_STAGE = 'Docker Build & Push' }
+                withCredentials([usernamePassword(
+                    credentialsId: 'deploy',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    dir(env.FE_DIR) {
+                        sh '''
+                            set -eu
+                            echo "$DOCKER_PASS" | docker login "$REGISTRY_URL" -u "$DOCKER_USER" --password-stdin
+                            docker build --pull -t "$IMAGE_TAG" .
+                            docker push "$IMAGE_TAG"
+                        '''
+                    }
                 }
             }
         }
 
-        stage('Deploy') {
+        stage('GitOps CD Promotion') {
+            when {
+                anyOf {
+                    branch 'develop'
+                    branch 'main'
+                    branch 'release/*'
+                }
+            }
             steps {
-                sh '''
-                    docker rm -f ${CONTAINER} 2>/dev/null || true
+                script {
+                    env.FAILED_STAGE = 'GitOps CD Promotion'
+                    def branchName = env.BRANCH_NAME ?: sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
+                    def targetEnv = branchName == 'develop' ? 'dev' : (branchName == 'main' ? 'prod' : 'staging')
+                    def overlayPath = "k8s/overlays/${targetEnv}"
 
-                    docker run -d \
-                        --name ${CONTAINER} \
-                        --restart unless-stopped \
-                        -p ${PORT}:80 \
-                        ${IMAGE}
-                '''
+                    if (targetEnv == 'prod') {
+                        input id: 'prod-approval', message: "Approve production promotion?", ok: 'Deploy to Prod'
+                    }
+
+                    withEnv(["OVERLAY_PATH=${overlayPath}", "TARGET_ENV=${targetEnv}"]) {
+                        withCredentials([usernamePassword(credentialsId: 'gitops-credentials', usernameVariable: 'GITOPS_USERNAME', passwordVariable: 'GITOPS_TOKEN')]) {
+                            sh '''
+                                set -eu
+                                rm -rf "$WORKSPACE/gitops"
+                                git clone "http://${GITOPS_USERNAME}:${GITOPS_TOKEN}@localhost/bocuawin0608/ralsei-gitops-config.git" "$WORKSPACE/gitops"
+                                cd "$WORKSPACE/gitops"
+                                git checkout "$GITOPS_DEFAULT_BRANCH"
+                                git config user.name "Jenkins CI"
+                                git config user.email "jenkins@ralsei.local"
+
+                                cd "$OVERLAY_PATH"
+                                curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+                                ./kustomize edit set image ralsei-coachhouse-fe="$IMAGE_TAG"
+                                rm kustomize
+                                cd ../../../
+
+                                git add .
+                                if git diff --cached --quiet; then
+                                    echo "No GitOps change required."
+                                    exit 0
+                                fi
+
+                                git commit -m "chore(ci): promote $IMAGE_TAG to $TARGET_ENV"
+                                git push origin HEAD:"$GITOPS_DEFAULT_BRANCH"
+                            '''
+                        }
+                    }
+                }
             }
         }
     }
 
     post {
         success {
-            echo 'Customer frontend deployed successfully.'
+            script {
+                sh """
+                    curl -X POST -H 'Content-type: application/json' \
+                    --data '{"text":"✅ CI pipeline succeeded for fe-customer\\nBuild #: ${env.BUILD_NUMBER}\\nBranch: ${env.BRANCH_NAME ?: "unknown"}\\nStage: ${env.FAILED_STAGE ?: "All CI stages completed"}"}' \
+                """
+            }
         }
-
         failure {
-            echo 'Customer frontend pipeline failed.'
+            script {
+                sh """
+                    curl -X POST -H 'Content-type: application/json' \
+                    --data '{"text":"❌ CI pipeline failed for fe-customer\\nBuild #: ${env.BUILD_NUMBER}\\nBranch: ${env.BRANCH_NAME ?: "unknown"}\\nStage: ${env.FAILED_STAGE ?: "unknown"}"}' \
+                """
+            }
         }
-
-        cleanup {
-            sh 'docker image prune -f || true'
+        always {
+            cleanWs()
         }
     }
 }

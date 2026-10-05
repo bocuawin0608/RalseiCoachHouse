@@ -6,7 +6,110 @@ metadata:
     kubernetes.io/ingress.class: kong
 spec:
   rules:
-  - http:
+  - host: staff.nhaxetuanmv.local
+    http:
+      paths:
+      - path: /api/auth
+        pathType: Prefix
+        backend:
+          service:
+            name: auth-service
+            port:
+              number: 8081
+      - path: /api/v1/admin/accounts
+        pathType: Prefix
+        backend:
+          service:
+            name: auth-service
+            port:
+              number: 8081
+      - path: /api/v1/admin/roles
+        pathType: Prefix
+        backend:
+          service:
+            name: auth-service
+            port:
+              number: 8081
+      - path: /api/v1/customer
+        pathType: Prefix
+        backend:
+          service:
+            name: customer-service
+            port:
+              number: 8082
+      - path: /api/v1/bookings
+        pathType: Prefix
+        backend:
+          service:
+            name: customer-service
+            port:
+              number: 8082
+      - path: /api/v1/vouchers
+        pathType: Prefix
+        backend:
+          service:
+            name: customer-service
+            port:
+              number: 8082
+      - path: /api/v1/staff
+        pathType: Prefix
+        backend:
+          service:
+            name: staff-service
+            port:
+              number: 8083
+      - path: /api/v1/refunds
+        pathType: Prefix
+        backend:
+          service:
+            name: staff-service
+            port:
+              number: 8083
+      - path: /api/v1/route-stops
+        pathType: Prefix
+        backend:
+          service:
+            name: staff-service
+            port:
+              number: 8083
+      - path: /api/v2/goong
+        pathType: Prefix
+        backend:
+          service:
+            name: staff-service
+            port:
+              number: 8083
+      - path: /api/v1/coaches
+        pathType: Prefix
+        backend:
+          service:
+            name: driver-service
+            port:
+              number: 8084
+      - path: /api/v1/coach-types
+        pathType: Prefix
+        backend:
+          service:
+            name: driver-service
+            port:
+              number: 8084
+      - path: /api/payments
+        pathType: Prefix
+        backend:
+          service:
+            name: payment-service
+            port:
+              number: 8080
+      # Fallback for all other /api routes to the legacy monolith
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: backend
+            port:
+              number: 8080
+  - host: nhaxetuanmv.local
+    http:
       paths:
       - path: /api/auth
         pathType: Prefix

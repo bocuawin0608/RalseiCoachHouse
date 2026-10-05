@@ -16,8 +16,12 @@ images:
 - name: ralsei/payment-service
   newTag: latest
 - name: ralsei/ralsei-coach-house-be
-  newTag: latest
+  newName: bocuawin0608/ralsei-coach-house-be
+  newTag: "0.0.15"
 - name: ralsei-coachhouse-fe
   newTag: latest
 - name: nhaxetuanmv-fe-staff
+  newName: ralsei-coach-house-fe-staff
   newTag: latest
+
+
