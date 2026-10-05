@@ -24,12 +24,64 @@ pipeline {
             }
         }
 
+        
+        stage('Static Analysis & Testing') {
+            parallel {
+                stage('Code Style (Lint)') {
+                    agent {
+                        docker {
+                            image 'node:22-alpine'
+                            args '-e HOME=/tmp'
+                        }
+                    }
+                    steps {
+                        script { env.FAILED_STAGE = 'Code Style' }
+                        dir(env.FE_DIR) {
+                            sh '''
+                                npm ci
+                                npm run lint || echo "Linting failed, but continuing..."
+                            '''
+                        }
+                    }
+                }
+                
+                stage('Security (SAST)') {
+                    agent {
+                        docker { 
+                            image 'returntocorp/semgrep'
+                            args '--entrypoint=""' 
+                        }
+                    }
+                    steps {
+                        script { env.FAILED_STAGE = 'Security Testing' }
+                        dir(env.FE_DIR) {
+                            sh 'semgrep scan --config=auto --json --output semgrep-report.json || true'
+                        }
+                    }
+                }
+
+                stage('Dependency Audit') {
+                    agent {
+                        docker {
+                            image 'node:22-alpine'
+                            args '-e HOME=/tmp'
+                        }
+                    }
+                    steps {
+                        script { env.FAILED_STAGE = 'Dependency Audit' }
+                        dir(env.FE_DIR) {
+                            sh 'npm audit --audit-level=high || true'
+                        }
+                    }
+                }
+            }
+        }
+
         stage('Docker Build & Push') {
             when {
-                anyOf {
-                    branch 'develop'
-                    branch 'main'
-                    branch 'release/*'
+                expression {
+                    def branchName = env.BRANCH_NAME ?: sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
+                    return branchName == 'develop' || branchName == 'main' || branchName.startsWith('release/') || branchName == 'master'
                 }
             }
             steps {
@@ -53,10 +105,9 @@ pipeline {
 
         stage('GitOps CD Promotion') {
             when {
-                anyOf {
-                    branch 'develop'
-                    branch 'main'
-                    branch 'release/*'
+                expression {
+                    def branchName = env.BRANCH_NAME ?: sh(script: 'git rev-parse --abbrev-ref HEAD', returnStdout: true).trim()
+                    return branchName == 'develop' || branchName == 'main' || branchName.startsWith('release/') || branchName == 'master'
                 }
             }
             steps {
@@ -75,7 +126,7 @@ pipeline {
                             sh '''
                                 set -eu
                                 rm -rf "$WORKSPACE/gitops"
-                                git clone "http://${GITOPS_USERNAME}:${GITOPS_TOKEN}@localhost/bocuawin0608/ralsei-gitops-config.git" "$WORKSPACE/gitops"
+                                git clone "http://${GITOPS_USERNAME}:${GITOPS_TOKEN}@172.18.0.2/bocuawin0608/ralsei-gitops-config.git" "$WORKSPACE/gitops"
                                 cd "$WORKSPACE/gitops"
                                 git checkout "$GITOPS_DEFAULT_BRANCH"
                                 git config user.name "Jenkins CI"

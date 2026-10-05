@@ -160,7 +160,7 @@ pipeline {
                             sh '''
                                 set -eu
                                 rm -rf "$WORKSPACE/gitops"
-                                git clone "http://${GITOPS_USERNAME}:${GITOPS_TOKEN}@localhost/bocuawin0608/ralsei-gitops-config.git" "$WORKSPACE/gitops"
+                                git clone "http://${GITOPS_USERNAME}:${GITOPS_TOKEN}@172.18.0.2/bocuawin0608/ralsei-gitops-config.git" "$WORKSPACE/gitops"
                                 cd "$WORKSPACE/gitops"
                                 git checkout "$GITOPS_DEFAULT_BRANCH"
                                 git config user.name "Jenkins CI"
