@@ -19,7 +19,7 @@ pipeline {
                 script {
                     // Assuming docker login is handled
                     sh '''
-                        docker build -t "$IMAGE_TAG" -f payment-service/Dockerfile .
+                        docker build --network=host -t "$IMAGE_TAG" -f payment-service/Dockerfile .
                         docker push "$IMAGE_TAG"
                     '''
                 }

@@ -107,8 +107,7 @@ pipeline {
                         sh '''
                             set -eu
                             echo "$DOCKER_PASS" | docker login "$REGISTRY_URL" -u "$DOCKER_USER" --password-stdin
-                            # Gỡ bỏ --network=host, không mở cửa cho rủi ro mạng
-                            docker build --pull -t "$IMAGE_TAG" .
+                            docker build --network=host --pull -t "$IMAGE_TAG" .
                             docker push "$IMAGE_TAG"
                         '''
                     }
