@@ -23,7 +23,7 @@ pipeline {
                 checkout scm
             }
         }
-        
+
         stage('Static Analysis') {
             parallel {
                 stage('Code Style Check') {
@@ -49,9 +49,9 @@ pipeline {
 
                 stage('Security Testing') {
                     agent {
-                        docker { 
+                        docker {
                             image 'returntocorp/semgrep'
-                            args '--entrypoint="" -e HOME=/tmp --dns 8.8.8.8 -e GITHUB_WORKSPACE=/tmp' 
+                            args '--entrypoint="" -e HOME=/tmp --dns 8.8.8.8 -e GITHUB_WORKSPACE=/tmp'
                         }
                     }
                     steps {
@@ -153,7 +153,7 @@ pipeline {
                     def overlayPath = "k8s/overlays/${targetEnv}"
 
                     if (targetEnv == 'prod') {
-                        input id: 'prod-approval', message: "Approve production promotion?", ok: 'Deploy to Prod'
+                        input id: 'prod-approval', message: 'Approve production promotion?', ok: 'Deploy to Prod'
                     }
 
                     withEnv(["OVERLAY_PATH=${overlayPath}", "TARGET_ENV=${targetEnv}"]) {
@@ -192,22 +192,53 @@ pipeline {
     post {
         success {
             script {
-                sh """
-                    curl -X POST -H 'Content-type: application/json' \
-                    --data '{"text":"✅ CI pipeline succeeded\\nBuild #: ${env.BUILD_NUMBER}\\nBranch: ${env.BRANCH_NAME ?: "unknown"}\\nStage: ${env.FAILED_STAGE ?: "All CI stages completed"}"}' \
-                """
+                withCredentials([
+                string(
+                    credentialsId: 'jenkins-env',
+                    variable: 'JENKINS_ENV'
+                )
+            ]) {
+                    sh '''
+                    printf '%s\\n' "$JENKINS_ENV" > jenkins.env
+
+                    source jenkins.env
+
+                    curl -X POST \
+                      -H 'Content-type: application/json' \
+                      --data '{"text":"CI pipeline succeeded for fe-staff"}' \
+                      "$SLACK_WEBHOOK_URL"
+
+                    rm -f jenkins.env
+                '''
+            }
             }
         }
+
         failure {
             script {
-                sh """
-                    curl -X POST -H 'Content-type: application/json' \
-                    --data '{"text":"❌ CI pipeline failed\\nBuild #: ${env.BUILD_NUMBER}\\nBranch: ${env.BRANCH_NAME ?: "unknown"}\\nStage: ${env.FAILED_STAGE ?: "unknown"}"}' \
-                """
+                withCredentials([
+                string(
+                    credentialsId: 'jenkins-env',
+                    variable: 'JENKINS_ENV'
+                )
+            ]) {
+                    sh '''
+                    printf '%s\\n' "$JENKINS_ENV" > jenkins.env
+
+                    source jenkins.env
+
+                    curl -X POST \
+                      -H 'Content-type: application/json' \
+                      --data '{"text":"CI pipeline failed for fe-staff"}' \
+                      "$SLACK_WEBHOOK_URL"
+
+                    rm -f jenkins.env
+                '''
+            }
             }
         }
+
         always {
-            archiveArtifacts artifacts: 'backend-springboot/semgrep-report.json', fingerprint: true, allowEmptyArchive: true
             cleanWs()
         }
     }
