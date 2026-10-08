@@ -34,7 +34,7 @@ public class EmailUtility {
     @Value("${app.mail.from:doanngocduc2006@gmail.com}")
     private String senderAddress;
 
-    @Value("${app.mail.sender-name:Nhà xe Tuấn MV}")
+    @Value("${app.mail.sender-name:Nhà xe Ralsei}")
     private String senderName;
 
     /**

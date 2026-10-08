@@ -7,10 +7,19 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 import com.ralsei.dto.projection.AccountListProjection;
 import com.ralsei.dto.projection.AccountProjection;
 import com.ralsei.model.Account;
 
+/**
+ * Repository interface for {@link com.ralsei.model.Account} entity.
+ */
+
+/**
+ * Provides persistence access for account data.
+ */
 public interface AccountRepository extends JpaRepository<Account, Integer> {
 
     @Query(value = """
