@@ -4,3 +4,27 @@ jenkins-report.env
 # Kubernetes runtime credentials. The tracked example contains placeholders only.
 backend-springboot/k8s/runtime-secret.env
 __pycache__/
+
+**/target/
+
+# Maven
+**/target/
+.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# Java
+*.class
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
