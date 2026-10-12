@@ -6,22 +6,22 @@ resources:
 - namespace.yaml
 images:
 - name: ralsei/auth-service
-  newTag: latest
+  newTag: "0.0.1"
 - name: ralsei/customer-service
-  newTag: latest
+  newTag: "0.0.1"
 - name: ralsei/staff-service
-  newTag: latest
+  newTag: "0.0.1"
 - name: ralsei/driver-service
-  newTag: latest
+  newTag: "0.0.1"
 - name: ralsei/payment-service
-  newTag: latest
+  newTag: "0.0.1"
 - name: ralsei/ralsei-coach-house-be
   newName: bocuawin0608/ralsei-coach-house-be
-  newTag: "0.0.15"
+  newTag: "0.0.46"
 - name: ralsei-coachhouse-fe
-  newTag: latest
+  newTag: "0.0.1"
 - name: nhaxetuanmv-fe-staff
   newName: ralsei-coach-house-fe-staff
-  newTag: latest
+  newTag: "0.0.1"
 
 

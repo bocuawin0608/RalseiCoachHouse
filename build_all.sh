@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-SERVICES=("customer-service" "driver-service" "payment-service" "staff-service")
+SERVICES=("auth-service" "customer-service" "driver-service" "payment-service" "staff-service")
 
 for SVC in "${SERVICES[@]}"; do
   echo "Building $SVC..."
@@ -16,9 +16,10 @@ COPY temp.jar app.jar
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
 DOCKER
-    docker build -f Dockerfile.fast -t ralsei/$SVC:latest .
+    docker build -f Dockerfile.fast -t ralsei/$SVC:latest -t ralsei/$SVC:0.0.1 .
     rm temp.jar Dockerfile.fast
     kind load docker-image ralsei/$SVC:latest --name local
+    kind load docker-image ralsei/$SVC:0.0.1 --name local
   ) &
 done
 

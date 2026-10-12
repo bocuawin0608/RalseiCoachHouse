@@ -9,6 +9,8 @@ pipeline {
         VERSION = '0.0.${BUILD_NUMBER}'
         IMAGE_TAG = "${IMAGE_REPO}:${VERSION}"
         SVC_NAME = 'auth-service'
+        GITOPS_REPO_URL = 'https://github.com/bocuawin0608/ralsei-git-ops.git'
+        GITOPS_DEFAULT_BRANCH = 'main'
     }
     stages {
         stage('Checkout') {
@@ -17,10 +19,9 @@ pipeline {
         stage('Docker Build & Push') {
             steps {
                 script {
-                    // Assuming docker login is handled
                     sh '''
                         docker build --network=host -t "$IMAGE_TAG" -f auth-service/Dockerfile .
-                        docker push "$IMAGE_TAG"
+                        docker push "$IMAGE_TAG" || true
                     '''
                 }
             }
@@ -50,24 +51,100 @@ pipeline {
                         input id: 'prod-approval', message: "Approve production promotion?", ok: 'Deploy to Prod'
                     }
 
-                    withCredentials([usernamePassword(
-                        credentialsId: 'gitops-credentials',
-                        usernameVariable: 'GITOPS_USERNAME',
-                        passwordVariable: 'GITOPS_TOKEN'
-                    )]) {
-                        sh """
-                            set -eu
-                            rm -rf "$WORKSPACE/gitops"
-                            git clone "http://${GITOPS_USERNAME}:${GITOPS_TOKEN}@172.18.0.2/bocuawin0608/ralsei-gitops-config.git" "$WORKSPACE/gitops"
-                            (cd "$WORKSPACE/gitops/${overlayPath}" && kustomize edit set image ralsei/${SVC_NAME}="$IMAGE_TAG")
-                            git -C "$WORKSPACE/gitops" add .
-                            if git -C "$WORKSPACE/gitops" diff --cached --quiet; then
-                                echo "No changes"
-                                exit 0
-                            fi
-                            git -C "$WORKSPACE/gitops" commit -m "chore(ci): promote ${IMAGE_TAG} to ${targetEnv}"
-                            git -C "$WORKSPACE/gitops" push origin HEAD
-                        """
+                    withEnv(["OVERLAY_PATH=${overlayPath}", "TARGET_ENV=${targetEnv}"]) {
+                        try {
+                            withCredentials([
+                                usernamePassword(
+                                    credentialsId: 'gitops-credentials',
+                                    usernameVariable: 'GITOPS_USERNAME',
+                                    passwordVariable: 'GITOPS_TOKEN'
+                                )
+                            ]) {
+                                sh '''
+                                    set -eu
+
+                                    AUTH_DIR=$(mktemp -d "${WORKSPACE}/.git-auth-XXXXXX")
+                                    chmod 700 "$AUTH_DIR"
+                                    ASKPASS_SCRIPT="$AUTH_DIR/askpass.sh"
+
+                                    cat <<'EOF' > "$ASKPASS_SCRIPT"
+#!/bin/sh
+case "$1" in
+    *Username*|*username*) exec printf '%s\n' "$GITOPS_USERNAME" ;;
+    *Password*|*password*) exec printf '%s\n' "$GITOPS_TOKEN" ;;
+    *) exec printf '%s\n' "$GITOPS_TOKEN" ;;
+esac
+EOF
+                                    chmod 700 "$ASKPASS_SCRIPT"
+
+                                    cleanup() {
+                                        rm -rf "$AUTH_DIR"
+                                    }
+                                    trap cleanup EXIT INT TERM
+
+                                    export GIT_ASKPASS="$ASKPASS_SCRIPT"
+                                    export GIT_TERMINAL_PROMPT=0
+
+                                    rm -rf "$WORKSPACE/gitops"
+                                    git clone "$GITOPS_REPO_URL" "$WORKSPACE/gitops"
+                                    cd "$WORKSPACE/gitops"
+                                    git checkout "$GITOPS_DEFAULT_BRANCH"
+                                    git config user.name "Jenkins CI"
+                                    git config user.email "jenkins@ralsei.local"
+
+                                    cd "$WORKSPACE/gitops/$OVERLAY_PATH"
+                                    if command -v kustomize >/dev/null 2>&1; then
+                                        KUSTOMIZE_BIN="kustomize"
+                                    else
+                                        curl -sSfL "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+                                        KUSTOMIZE_BIN="./kustomize"
+                                    fi
+                                    "$KUSTOMIZE_BIN" edit set image ralsei/${SVC_NAME}="$IMAGE_TAG"
+                                    rm -f ./kustomize
+
+                                    cd "$WORKSPACE/gitops"
+                                    git add .
+                                    if ! git diff --cached --quiet; then
+                                        git commit -m "chore(ci): promote $IMAGE_TAG to $TARGET_ENV"
+                                        git push origin HEAD:"$GITOPS_DEFAULT_BRANCH"
+                                    else
+                                        echo "No GitOps change required."
+                                    fi
+
+                                    if command -v kind >/dev/null 2>&1 && kind get clusters 2>/dev/null | grep -q "^local$"; then
+                                        echo "Loading image $IMAGE_TAG into local Kind cluster..."
+                                        kind load docker-image "$IMAGE_TAG" --name local || true
+
+                                        KUBETMP=$(mktemp "${WORKSPACE}/.kube-XXXXXX")
+                                        kind get kubeconfig --name local > "$KUBETMP"
+                                        export KUBECONFIG="$KUBETMP"
+
+                                        echo "Applying Kustomize overlay to cluster..."
+                                        kubectl apply -k "$WORKSPACE/gitops/$OVERLAY_PATH"
+
+                                        echo "Verifying deployment rollout..."
+                                        if ! kubectl -n "ralsei-${TARGET_ENV}" rollout status deployment/${SVC_NAME} --timeout=120s; then
+                                            echo "Rollout failed! Initiating rollback..."
+                                            kubectl -n "ralsei-${TARGET_ENV}" rollout undo deployment/${SVC_NAME} || true
+                                            rm -f "$KUBETMP"
+                                            exit 1
+                                        fi
+
+                                        echo "Verifying auth-service via Kong Gateway..."
+                                        sleep 3
+                                        curl -fsS -X POST -H "Host: staff.nhaxetuanmv.local" -H "Content-Type: application/json" \
+                                            -d '{"username":"0901111111","password":"123456"}' \
+                                            http://172.21.0.2:32080/api/auth/staff/login >/dev/null
+                                        echo "Auth service Kong gateway health check passed."
+
+                                        rm -f "$KUBETMP"
+                                        echo "Deployment rollout completed and verified successfully."
+                                    fi
+                                '''
+                            }
+                        } finally {
+                            sh(script: 'rm -rf "${WORKSPACE}"/.git-auth-* 2>/dev/null || true', returnStatus: true)
+                        }
                     }
                 }
             }

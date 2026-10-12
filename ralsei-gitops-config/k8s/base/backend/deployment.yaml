@@ -17,7 +17,7 @@ spec:
         image: ralsei/ralsei-coach-house-be:latest
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 8080
+        - containerPort: 9090
         envFrom:
         - configMapRef:
             name: backend-config

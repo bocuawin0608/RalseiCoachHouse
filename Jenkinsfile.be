@@ -209,13 +209,40 @@ EOF
 
                                     cd "$WORKSPACE/gitops"
                                     git add .
-                                    if git diff --cached --quiet; then
+                                    if ! git diff --cached --quiet; then
+                                        git commit -m "chore(ci): promote $IMAGE_TAG to $TARGET_ENV"
+                                        git push origin HEAD:"$GITOPS_DEFAULT_BRANCH"
+                                    else
                                         echo "No GitOps change required."
-                                        exit 0
                                     fi
 
-                                    git commit -m "chore(ci): promote $IMAGE_TAG to $TARGET_ENV"
-                                    git push origin HEAD:"$GITOPS_DEFAULT_BRANCH"
+                                    if command -v kind >/dev/null 2>&1 && kind get clusters 2>/dev/null | grep -q "^local$"; then
+                                        echo "Loading image $IMAGE_TAG into local Kind cluster..."
+                                        kind load docker-image "$IMAGE_TAG" --name local || true
+
+                                        KUBETMP=$(mktemp "${WORKSPACE}/.kube-XXXXXX")
+                                        kind get kubeconfig --name local > "$KUBETMP"
+                                        export KUBECONFIG="$KUBETMP"
+
+                                        echo "Applying Kustomize overlay to cluster..."
+                                        kubectl apply -k "$WORKSPACE/gitops/$OVERLAY_PATH"
+
+                                        echo "Verifying deployment rollout..."
+                                        if ! kubectl -n "ralsei-${TARGET_ENV}" rollout status deployment/backend --timeout=120s; then
+                                            echo "Rollout failed! Initiating rollback..."
+                                            kubectl -n "ralsei-${TARGET_ENV}" rollout undo deployment/backend || true
+                                            rm -f "$KUBETMP"
+                                            exit 1
+                                        fi
+
+                                        echo "Verifying backend via Kong Gateway..."
+                                        sleep 3
+                                        curl -fsS -H "Host: nhaxetuanmv.local" http://172.21.0.2:32080/ >/dev/null
+                                        echo "Backend Kong gateway health check passed."
+
+                                        rm -f "$KUBETMP"
+                                        echo "Deployment rollout completed and verified successfully."
+                                    fi
                                 '''
                             }
                         } finally {
