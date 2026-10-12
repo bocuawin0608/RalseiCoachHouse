@@ -155,22 +155,23 @@ pipeline {
     }
 
     post {
-        success {
-            script {
-                sh """
-                    curl -X POST -H 'Content-type: application/json' \
-                    --data '{"text":"✅ CI pipeline succeeded for fe-customer\\nBuild #: ${env.BUILD_NUMBER}\\nBranch: ${env.BRANCH_NAME ?: "unknown"}\\nStage: ${env.FAILED_STAGE ?: "All CI stages completed"}"}' \
-                """
-            }
-        }
-        failure {
-            script {
-                sh """
-                    curl -X POST -H 'Content-type: application/json' \
-                    --data '{"text":"❌ CI pipeline failed for fe-customer\\nBuild #: ${env.BUILD_NUMBER}\\nBranch: ${env.BRANCH_NAME ?: "unknown"}\\nStage: ${env.FAILED_STAGE ?: "unknown"}"}' \
-                """
-            }
-        }
+        // Notifications disabled until webhook URL is configured.
+        // success {
+        //     script {
+        //         sh """
+        //             curl -X POST -H 'Content-type: application/json' \
+        //             --data '{"text":"✅ CI pipeline succeeded for fe-customer\\nBuild #: ${env.BUILD_NUMBER}\\nBranch: ${env.BRANCH_NAME ?: "unknown"}\\nStage: ${env.FAILED_STAGE ?: "All CI stages completed"}"}' \
+        //         """
+        //     }
+        // }
+        // failure {
+        //     script {
+        //         sh """
+        //             curl -X POST -H 'Content-type: application/json' \
+        //             --data '{"text":"❌ CI pipeline failed for fe-customer\\nBuild #: ${env.BUILD_NUMBER}\\nBranch: ${env.BRANCH_NAME ?: "unknown"}\\nStage: ${env.FAILED_STAGE ?: "unknown"}"}' \
+        //         """
+        //     }
+        // }
         always {
             cleanWs()
         }
