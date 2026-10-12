@@ -268,37 +268,26 @@ EOF
         failure {
             script {
                 try {
-                    withCredentials([
-                        string(
-                            credentialsId: 'slack-webhook-url',
-                            variable: 'SLACK_WEBHOOK_URL'
-                        )
-                    ]) {
-                        def branchName = env.BRANCH_NAME ?: 'unknown'
-                        def buildNum = env.BUILD_NUMBER ?: 'unknown'
-                        def failedStage = env.FAILED_STAGE ?: 'unknown'
-                        def message = "❌ CI pipeline failed for backend (Build #${buildNum}, Branch: ${branchName}, Stage: ${failedStage})"
-                        def payload = groovy.json.JsonOutput.toJson([text: message])
-
+                    withCredentials([string(credentialsId: 'slack-webhook-url', variable: 'SLACK_WEBHOOK_URL')]) {
                         withEnv(["SLACK_PAYLOAD=${payload}"]) {
                             sh(
-                                script: '''
-                                    set +x
-                                    if [ -n "${SLACK_WEBHOOK_URL:-}" ]; then
-                                        curl -sS -X POST \
-                                            -H 'Content-type: application/json' \
-                                            --data "$SLACK_PAYLOAD" \
-                                            "$SLACK_WEBHOOK_URL" > /dev/null || echo "Warning: Slack notification delivery failed."
-                                    else
-                                        echo "Notice: SLACK_WEBHOOK_URL is empty; skipping Slack notification."
-                                    fi
-                                ''',
-                                returnStatus: true
-                            )
+                script: '''
+                    set +x
+                    if [ -n "${SLACK_WEBHOOK_URL:-}" ]; then
+                        curl -sS -X POST \
+                            -H 'Content-type: application/json' \
+                            --data "$SLACK_PAYLOAD" \
+                            "$SLACK_WEBHOOK_URL" > /dev/null || echo "Warning: Slack notification delivery failed."
+                    else
+                        echo "Notice: SLACK_WEBHOOK_URL is empty; skipping Slack notification."
+                    fi
+                ''',
+                returnStatus: true
+            )
                         }
                     }
                 } catch (Exception e) {
-                    echo "Notice: Slack failure notification skipped or failed: ${e.message}"
+                    echo "Notice: Slack success notification skipped or failed: ${e.message}"
                 }
             }
         }
