@@ -13,7 +13,7 @@ pipeline {
         IMAGE_REPO = 'bocuawin0608/ralsei-coach-house-be'
         VERSION = "0.0.${BUILD_NUMBER}"
         IMAGE_TAG = "${IMAGE_REPO}:${VERSION}"
-        GITOPS_REPO_URL = 'https://github.com/bocuawin0608/ralsei-gitops.git'
+        GITOPS_REPO_URL = 'https://github.com/bocuawin0608/ralsei-git-ops.git'
         GITOPS_DEFAULT_BRANCH = 'main'
     }
 
