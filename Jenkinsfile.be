@@ -13,7 +13,7 @@ pipeline {
         IMAGE_REPO = 'bocuawin0608/ralsei-coach-house-be'
         VERSION = "0.0.${BUILD_NUMBER}"
         IMAGE_TAG = "${IMAGE_REPO}:${VERSION}"
-        GITOPS_REPO_URL = 'http://localhost/bocuawin0608/ralsei-gitops-config.git'
+        GITOPS_REPO_URL = 'https://github.com/bocuawin0608/ralsei-gitops-config.git'
         GITOPS_DEFAULT_BRANCH = 'main'
     }
 
@@ -157,31 +157,69 @@ pipeline {
                     }
 
                     withEnv(["OVERLAY_PATH=${overlayPath}", "TARGET_ENV=${targetEnv}"]) {
-                        withCredentials([usernamePassword(credentialsId: 'gitops-credentials', usernameVariable: 'GITOPS_USERNAME', passwordVariable: 'GITOPS_TOKEN')]) {
-                            sh '''
-                                set -eu
-                                rm -rf "$WORKSPACE/gitops"
-                                git clone "https://${GITOPS_USERNAME}:${GITOPS_TOKEN}@github.com/bocuawin0608/ralsei-gitops-config.git" "$WORKSPACE/gitops"
-                                cd "$WORKSPACE/gitops"
-                                git checkout "$GITOPS_DEFAULT_BRANCH"
-                                git config user.name "Jenkins CI"
-                                git config user.email "jenkins@ralsei.local"
+                        try {
+                            withCredentials([
+                                usernamePassword(
+                                    credentialsId: 'gitops-credentials',
+                                    usernameVariable: 'GITOPS_USERNAME',
+                                    passwordVariable: 'GITOPS_TOKEN'
+                                )
+                            ]) {
+                                sh '''
+                                    set -eu
 
-                                cd "$OVERLAY_PATH"
-                                curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
-                                ./kustomize edit set image ralsei/ralsei-coach-house-be="$IMAGE_TAG"
-                                rm kustomize
-                                cd ../../../
+                                    AUTH_DIR=$(mktemp -d "${WORKSPACE}/.git-auth-XXXXXX")
+                                    chmod 700 "$AUTH_DIR"
+                                    ASKPASS_SCRIPT="$AUTH_DIR/askpass.sh"
 
-                                git add .
-                                if git diff --cached --quiet; then
-                                    echo "No GitOps change required."
-                                    exit 0
-                                fi
+                                    cat <<'EOF' > "$ASKPASS_SCRIPT"
+#!/bin/sh
+case "$1" in
+    *Username*|*username*) exec printf '%s\n' "$GITOPS_USERNAME" ;;
+    *Password*|*password*) exec printf '%s\n' "$GITOPS_TOKEN" ;;
+    *) exec printf '%s\n' "$GITOPS_TOKEN" ;;
+esac
+EOF
+                                    chmod 700 "$ASKPASS_SCRIPT"
 
-                                git commit -m "chore(ci): promote $IMAGE_TAG to $TARGET_ENV"
-                                git push origin HEAD:"$GITOPS_DEFAULT_BRANCH"
-                            '''
+                                    cleanup() {
+                                        rm -rf "$AUTH_DIR"
+                                    }
+                                    trap cleanup EXIT INT TERM
+
+                                    export GIT_ASKPASS="$ASKPASS_SCRIPT"
+                                    export GIT_TERMINAL_PROMPT=0
+
+                                    rm -rf "$WORKSPACE/gitops"
+                                    git clone "$GITOPS_REPO_URL" "$WORKSPACE/gitops"
+                                    cd "$WORKSPACE/gitops"
+                                    git checkout "$GITOPS_DEFAULT_BRANCH"
+                                    git config user.name "Jenkins CI"
+                                    git config user.email "jenkins@ralsei.local"
+
+                                    cd "$WORKSPACE/gitops/$OVERLAY_PATH"
+                                    if command -v kustomize >/dev/null 2>&1; then
+                                        KUSTOMIZE_BIN="kustomize"
+                                    else
+                                        curl -sSfL "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+                                        KUSTOMIZE_BIN="./kustomize"
+                                    fi
+                                    "$KUSTOMIZE_BIN" edit set image ralsei/ralsei-coach-house-be="$IMAGE_TAG"
+                                    rm -f ./kustomize
+
+                                    cd "$WORKSPACE/gitops"
+                                    git add .
+                                    if git diff --cached --quiet; then
+                                        echo "No GitOps change required."
+                                        exit 0
+                                    fi
+
+                                    git commit -m "chore(ci): promote $IMAGE_TAG to $TARGET_ENV"
+                                    git push origin HEAD:"$GITOPS_DEFAULT_BRANCH"
+                                '''
+                            }
+                        } finally {
+                            sh(script: 'rm -rf "${WORKSPACE}"/.git-auth-* 2>/dev/null || true', returnStatus: true)
                         }
                     }
                 }
@@ -192,49 +230,76 @@ pipeline {
     post {
         success {
             script {
-                withCredentials([
-                string(
-                    credentialsId: 'jenkins-env',
-                    variable: 'JENKINS_ENV'
-                )
-            ]) {
-                    sh '''
-                    printf '%s\\n' "$JENKINS_ENV" > jenkins.env
+                try {
+                    withCredentials([
+                        string(
+                            credentialsId: 'slack-webhook-url',
+                            variable: 'SLACK_WEBHOOK_URL'
+                        )
+                    ]) {
+                        def branchName = env.BRANCH_NAME ?: 'unknown'
+                        def buildNum = env.BUILD_NUMBER ?: 'unknown'
+                        def message = "✅ CI pipeline succeeded for backend (Build #${buildNum}, Branch: ${branchName})"
+                        def payload = groovy.json.JsonOutput.toJson([text: message])
 
-                    source jenkins.env
-
-                    curl -X POST \
-                      -H 'Content-type: application/json' \
-                      --data '{"text":"CI pipeline succeeded for fe-staff"}' \
-                      "$SLACK_WEBHOOK_URL"
-
-                    rm -f jenkins.env
-                '''
-            }
+                        withEnv(["SLACK_PAYLOAD=${payload}"]) {
+                            sh(
+                                script: '''
+                                    set +x
+                                    if [ -n "${SLACK_WEBHOOK_URL:-}" ]; then
+                                        curl -sS -X POST \
+                                            -H 'Content-type: application/json' \
+                                            --data "$SLACK_PAYLOAD" \
+                                            "$SLACK_WEBHOOK_URL" > /dev/null || echo "Warning: Slack notification delivery failed."
+                                    else
+                                        echo "Notice: SLACK_WEBHOOK_URL is empty; skipping Slack notification."
+                                    fi
+                                ''',
+                                returnStatus: true
+                            )
+                        }
+                    }
+                } catch (Exception e) {
+                    echo "Notice: Slack success notification skipped or failed: ${e.message}"
+                }
             }
         }
 
         failure {
             script {
-                withCredentials([
-                string(
-                    credentialsId: 'jenkins-env',
-                    variable: 'JENKINS_ENV'
-                )
-            ]) {
-                    sh '''
-                    printf '%s\\n' "$JENKINS_ENV" > jenkins.env
+                try {
+                    withCredentials([
+                        string(
+                            credentialsId: 'slack-webhook-url',
+                            variable: 'SLACK_WEBHOOK_URL'
+                        )
+                    ]) {
+                        def branchName = env.BRANCH_NAME ?: 'unknown'
+                        def buildNum = env.BUILD_NUMBER ?: 'unknown'
+                        def failedStage = env.FAILED_STAGE ?: 'unknown'
+                        def message = "❌ CI pipeline failed for backend (Build #${buildNum}, Branch: ${branchName}, Stage: ${failedStage})"
+                        def payload = groovy.json.JsonOutput.toJson([text: message])
 
-                    source jenkins.env
-
-                    curl -X POST \
-                      -H 'Content-type: application/json' \
-                      --data '{"text":"CI pipeline failed for fe-staff"}' \
-                      "$SLACK_WEBHOOK_URL"
-
-                    rm -f jenkins.env
-                '''
-            }
+                        withEnv(["SLACK_PAYLOAD=${payload}"]) {
+                            sh(
+                                script: '''
+                                    set +x
+                                    if [ -n "${SLACK_WEBHOOK_URL:-}" ]; then
+                                        curl -sS -X POST \
+                                            -H 'Content-type: application/json' \
+                                            --data "$SLACK_PAYLOAD" \
+                                            "$SLACK_WEBHOOK_URL" > /dev/null || echo "Warning: Slack notification delivery failed."
+                                    else
+                                        echo "Notice: SLACK_WEBHOOK_URL is empty; skipping Slack notification."
+                                    fi
+                                ''',
+                                returnStatus: true
+                            )
+                        }
+                    }
+                } catch (Exception e) {
+                    echo "Notice: Slack failure notification skipped or failed: ${e.message}"
+                }
             }
         }
 
