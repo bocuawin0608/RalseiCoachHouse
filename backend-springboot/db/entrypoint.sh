@@ -10,7 +10,7 @@ if [ ! -f /opt/mssql-tools18/bin/sqlcmd ]; then
     SQLCMD="/opt/mssql-tools/bin/sqlcmd"
 fi
 
-SA_PASS="${MSSQL_SA_PASSWORD:-01102006Duc.}"
+SA_PASS="${MSSQL_SA_PASSWORD:?Error: MSSQL_SA_PASSWORD environment variable must be set}"
 
 echo "Waiting for SQL Server to boot..."
 for i in {1..60}; do

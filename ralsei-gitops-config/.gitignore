@@ -1,0 +1,7 @@
+# Never commit actual secret files or environment configurations
+*secret.yaml
+!*secret.example.yaml
+*.env
+!*.example.env
+.DS_Store
+*.log

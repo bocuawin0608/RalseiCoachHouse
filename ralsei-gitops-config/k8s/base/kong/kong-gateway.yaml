@@ -187,3 +187,4 @@ spec:
       - name: kong-kong-tmp
         emptyDir:
           sizeLimit: 1Gi
+

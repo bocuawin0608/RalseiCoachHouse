@@ -21,3 +21,5 @@ spec:
         envFrom:
         - configMapRef:
             name: driver-service-config
+        - secretRef:
+            name: app-secrets
