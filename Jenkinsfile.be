@@ -267,7 +267,7 @@ EOF
         //             ]) {
         //                 def branchName = env.BRANCH_NAME ?: 'unknown'
         //                 def buildNum = env.BUILD_NUMBER ?: 'unknown'
-        //                 def message = "✅ CI pipeline succeeded for backend (Build #${buildNum}, Branch: ${branchName})"
+        //                 def message = "[SUCCESS] CI pipeline succeeded for backend (Build #${buildNum}, Branch: ${branchName})"
         //                 def payload = groovy.json.JsonOutput.toJson([text: message])
         //
         //                 withEnv(["SLACK_PAYLOAD=${payload}"]) {
@@ -305,7 +305,7 @@ EOF
         //                 def branchName = env.BRANCH_NAME ?: 'unknown'
         //                 def buildNum = env.BUILD_NUMBER ?: 'unknown'
         //                 def failedStage = env.FAILED_STAGE ?: 'unknown'
-        //                 def message = "❌ CI pipeline failed for backend (Build #${buildNum}, Branch: ${branchName}, Stage: ${failedStage})"
+        //                 def message = "[FAILURE] CI pipeline failed for backend (Build #${buildNum}, Branch: ${branchName}, Stage: ${failedStage})"
         //                 def payload = groovy.json.JsonOutput.toJson([text: message])
         //
         //                 withEnv(["SLACK_PAYLOAD=${payload}"]) {

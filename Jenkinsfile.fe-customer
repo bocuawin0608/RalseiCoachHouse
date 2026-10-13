@@ -225,7 +225,7 @@ EOF
         //     script {
         //         sh """
         //             curl -X POST -H 'Content-type: application/json' \
-        //             --data '{"text":"✅ CI pipeline succeeded for fe-customer\\nBuild #: ${env.BUILD_NUMBER}\\nBranch: ${env.BRANCH_NAME ?: "unknown"}\\nStage: ${env.FAILED_STAGE ?: "All CI stages completed"}"}' \
+        //             --data '{"text":"[SUCCESS] CI pipeline succeeded for fe-customer\\nBuild #: ${env.BUILD_NUMBER}\\nBranch: ${env.BRANCH_NAME ?: "unknown"}\\nStage: ${env.FAILED_STAGE ?: "All CI stages completed"}"}' \
         //         """
         //     }
         // }
@@ -233,7 +233,7 @@ EOF
         //     script {
         //         sh """
         //             curl -X POST -H 'Content-type: application/json' \
-        //             --data '{"text":"❌ CI pipeline failed for fe-customer\\nBuild #: ${env.BUILD_NUMBER}\\nBranch: ${env.BRANCH_NAME ?: "unknown"}\\nStage: ${env.FAILED_STAGE ?: "unknown"}"}' \
+        //             --data '{"text":"[FAILURE] CI pipeline failed for fe-customer\\nBuild #: ${env.BUILD_NUMBER}\\nBranch: ${env.BRANCH_NAME ?: "unknown"}\\nStage: ${env.FAILED_STAGE ?: "unknown"}"}' \
         //         """
         //     }
         // }

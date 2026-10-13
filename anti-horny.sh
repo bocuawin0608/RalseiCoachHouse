@@ -7,22 +7,22 @@ FAILURE_MESSAGE="${2:-Test execution failed! Anti-Horny Protocol Activated.}"
 LOG_FILE="${3:-}"
 
 echo "================================================================="
-echo "               🚨 ANTI-HORNY FAILURE DETECTED 🚨                  "
+echo "               [ALERT] ANTI-HORNY FAILURE DETECTED               "
 echo "================================================================="
 echo ""
-echo "❌ Error Details:"
+echo "[ERROR] Error Details:"
 echo "   $FAILURE_MESSAGE"
 echo ""
 
 if [ -n "$LOG_FILE" ] && [ -f "$LOG_FILE" ]; then
-    echo "📄 Last 30 lines of log ($LOG_FILE):"
+    echo "[INFO] Last 30 lines of log ($LOG_FILE):"
     echo "-----------------------------------------------------------------"
     tail -n 30 "$LOG_FILE"
     echo "-----------------------------------------------------------------"
 fi
 
 echo ""
-echo "🎵 Activating Rickroll Protocol..."
+echo "[INFO] Activating Rickroll Protocol..."
 
 RICKROLL_URL="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 
@@ -39,7 +39,7 @@ fi
 
 # Fallback: ASCII Rickroll in terminal
 if command -v curl >/dev/null 2>&1; then
-    echo "📺 Playing ASCII Rickroll in terminal..."
+    echo "[INFO] Playing ASCII Rickroll in terminal..."
     curl -sL https://raw.githubusercontent.com/keroserene/rickroll/master/roll.sh | bash || true
 fi
 
