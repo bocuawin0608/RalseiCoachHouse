@@ -32,6 +32,12 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/internal/**").permitAll()
+                        .requestMatchers(
+                                "/api/v1/routes/dropdown",
+                                "/api/v1/routes/customer-locations",
+                                "/api/v1/trips/home",
+                                "/api/v1/trips/*/stops"
+                        ).permitAll()
                         .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll() 
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated())

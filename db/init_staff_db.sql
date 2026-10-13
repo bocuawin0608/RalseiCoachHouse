@@ -233,3 +233,22 @@ BEGIN
     );
 END
 GO
+
+-- ============================================================
+-- COMPATIBILITY: coach_stop stopPointId / stopId
+-- ============================================================
+IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('coach_stop') AND name = 'stopId')
+   AND NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('coach_stop') AND name = 'stopPointId')
+BEGIN
+    EXEC sp_rename 'coach_stop.stopId', 'stopPointId', 'COLUMN';
+    ALTER TABLE coach_stop ADD stopId AS stopPointId;
+END
+GO
+
+IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('coach_stop') AND name = 'stopPointId')
+   AND NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('coach_stop') AND name = 'stopId')
+BEGIN
+    ALTER TABLE coach_stop ADD stopId AS stopPointId;
+END
+GO
+

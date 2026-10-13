@@ -38,10 +38,13 @@ BEGIN
     CREATE TABLE coach_type_price (
         coachTypePriceId    INT IDENTITY(1,1) PRIMARY KEY,
         coachTypeId         INT             NOT NULL,
-        pricePerKm          DECIMAL(18,2)   NOT NULL,
-        effectiveFrom       DATE            NOT NULL,
+        seatPrice           DECIMAL(18,2)   NOT NULL,
+        startEffectiveDate  DATETIME2       NOT NULL,
+        endEffectiveDate    DATETIME2       NOT NULL,
+        pricePerKm          DECIMAL(18,2)   NULL,
+        effectiveFrom       DATE            NULL,
         effectiveTo         DATE            NULL,
-        status              VARCHAR(20)     NOT NULL DEFAULT 'ACTIVE',
+        status              VARCHAR(20)     NULL DEFAULT 'ACTIVE',
         createdAt           DATETIME2       NOT NULL DEFAULT GETDATE(),
         updatedAt           DATETIME2       NULL,
         createdBy           INT             NULL,
@@ -114,3 +117,23 @@ BEGIN
     );
 END
 GO
+
+-- ============================================================
+-- COMPATIBILITY: coach_type_price schema alignment
+-- ============================================================
+IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('coach_type_price') AND name = 'pricePerKm' AND is_nullable = 0)
+BEGIN
+    ALTER TABLE coach_type_price ALTER COLUMN pricePerKm DECIMAL(18,2) NULL;
+END
+GO
+IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('coach_type_price') AND name = 'effectiveFrom' AND is_nullable = 0)
+BEGIN
+    ALTER TABLE coach_type_price ALTER COLUMN effectiveFrom DATE NULL;
+END
+GO
+IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('coach_type_price') AND name = 'status' AND is_nullable = 0)
+BEGIN
+    ALTER TABLE coach_type_price ALTER COLUMN status VARCHAR(20) NULL;
+END
+GO
+
