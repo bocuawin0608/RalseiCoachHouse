@@ -346,7 +346,9 @@ public class CoachServiceImpl implements CoachService {
             try {
                 // [MICROSERVICE-REFACTOR]: Replaced local Route entity reference with FeignClient to Staff Service
                 Object routeObj = staffServiceClient.getRouteById(routeId);
-                if (routeObj != null) {
+                if (routeObj instanceof Map<?, ?> routeMap && routeMap.get("routeName") != null) {
+                    routeName = routeMap.get("routeName").toString();
+                } else if (routeObj != null) {
                     routeName = "Tuyến #" + routeId;
                 }
             } catch (Exception ignored) {}

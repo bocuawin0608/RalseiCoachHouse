@@ -32,7 +32,7 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/auth/**", "/api/v1/auth/**", "/api/internal/**", "/actuator/**").permitAll()
                         // TODO: [MICROSERVICE-CUT] Logic calling Foreign Endpoints (/api/payment/**, /api/v1/bookings/**, /api/v1/trips/**, /api/v1/routes/**) has been removed. Implement via FeignClient or remove entirely from the Auth flow.
                         .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll() 
                         .requestMatchers("/error").permitAll()

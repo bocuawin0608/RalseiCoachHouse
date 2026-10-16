@@ -27,7 +27,13 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/api/internal/**").permitAll() // Microservice internal calls
+                        .requestMatchers(
+                                "/api/internal/**",
+                                "/api/payment/**",
+                                "/api/v1/bookings/**",
+                                "/api/v1/customer/cargo-history/**",
+                                "/actuator/**"
+                        ).permitAll()
                         .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll() 
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated())

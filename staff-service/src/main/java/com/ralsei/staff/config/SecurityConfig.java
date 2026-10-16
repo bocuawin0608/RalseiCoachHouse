@@ -35,8 +35,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/v1/routes/dropdown",
                                 "/api/v1/routes/customer-locations",
-                                "/api/v1/trips/home",
-                                "/api/v1/trips/*/stops"
+                                "/api/v1/trips/**",
+                                "/actuator/**"
                         ).permitAll()
                         .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll() 
                         .requestMatchers("/error").permitAll()

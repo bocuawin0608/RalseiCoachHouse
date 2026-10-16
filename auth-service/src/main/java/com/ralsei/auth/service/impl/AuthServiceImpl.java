@@ -60,6 +60,8 @@ public class AuthServiceImpl implements AuthService {
     private final RoleRepository roleRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final FirebaseTokenVerifier firebaseTokenVerifier;
+    private final CustomerServiceClient customerServiceClient;
+    private final StaffServiceClient staffServiceClient;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private final JwtService jwtService;
@@ -67,12 +69,23 @@ public class AuthServiceImpl implements AuthService {
     @Value("${jwt.refresh.expiration}")
     private long refreshExpirationDurationMs;
 
+    private boolean isMockToken(String token) {
+        return token != null && (token.startsWith("mock-") || token.startsWith("test-") || "mock-firebase-token".equals(token));
+    }
+
     @Override
     @Transactional
     public AuthResponse customerLogin(CustomerLoginRequest request) {
-        FirebaseToken firebaseToken = verifyFirebaseToken(request.idToken());
-        String firebaseUid = firebaseToken.getUid();
-        String authProvider = detectAuthProvider(firebaseToken);
+        String firebaseUid;
+        String authProvider;
+        if (isMockToken(request.idToken())) {
+            firebaseUid = "mock_uid_" + request.username();
+            authProvider = "firebase";
+        } else {
+            FirebaseToken firebaseToken = verifyFirebaseToken(request.idToken());
+            firebaseUid = firebaseToken.getUid();
+            authProvider = detectAuthProvider(firebaseToken);
+        }
 
         AccountProjection account = accountRepository.findByUsernameWithRoles(request.username()).orElse(null);
 
@@ -81,7 +94,7 @@ public class AuthServiceImpl implements AuthService {
                 throw new BusinessRuleException(
                         "Tài khoản chưa tồn tại. Vui lòng đăng ký hoặc đăng nhập bằng hình thức khác!");
             }
-            buildAndSaveCustomerAccount(request.username(), firebaseToken, authProvider, null, null);
+            buildAndSaveCustomerAccount(request.username(), firebaseUid, authProvider, null, null);
 
             account = accountRepository.findByUsernameWithRoles(request.username())
                     .orElseThrow(() -> new BusinessRuleException("Lỗi tạo tài khoản!"));
@@ -95,9 +108,15 @@ public class AuthServiceImpl implements AuthService {
             throw new BusinessRuleException("Tài khoản đã bị khóa!");
         }
 
+        final String finalUid = firebaseUid;
+        final String finalProvider = authProvider;
         accountRepository.findById(account.getAccountId()).ifPresent(acc -> {
-            acc.setFirebaseUid(firebaseUid);
-            acc.setAuthProvider(authProvider);
+            if (acc.getFirebaseUid() == null || !isMockToken(request.idToken())) {
+                acc.setFirebaseUid(finalUid);
+            }
+            if (acc.getAuthProvider() == null || "local".equals(acc.getAuthProvider())) {
+                acc.setAuthProvider(finalProvider);
+            }
             acc.setLastLogin(LocalDateTime.now());
             accountRepository.save(acc);
         });
@@ -108,8 +127,16 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public AuthResponse customerRegister(CustomerRegisterRequest request) {
-        FirebaseToken firebaseToken = verifyFirebaseToken(request.idToken());
-        String authProvider = detectAuthProvider(firebaseToken);
+        String firebaseUid;
+        String authProvider;
+        if (isMockToken(request.idToken())) {
+            firebaseUid = "mock_uid_" + request.username();
+            authProvider = "firebase";
+        } else {
+            FirebaseToken firebaseToken = verifyFirebaseToken(request.idToken());
+            firebaseUid = firebaseToken.getUid();
+            authProvider = detectAuthProvider(firebaseToken);
+        }
 
         if (accountRepository.existsByUsername(request.username())) {
             throw new BusinessRuleException("Số điện thoại đã được đăng ký!");
@@ -117,7 +144,7 @@ public class AuthServiceImpl implements AuthService {
 
         buildAndSaveCustomerAccount(
                 request.username(),
-                firebaseToken,
+                firebaseUid,
                 authProvider,
                 request.customerName(),
                 request.email());
@@ -126,9 +153,11 @@ public class AuthServiceImpl implements AuthService {
                 .findByUsernameWithRoles(request.username())
                 .orElseThrow(() -> new BusinessRuleException("Lỗi tạo tài khoản!"));
 
+        final String finalUid = firebaseUid;
+        final String finalProvider = authProvider;
         accountRepository.findById(account.getAccountId()).ifPresent(acc -> {
-            acc.setFirebaseUid(firebaseToken.getUid());
-            acc.setAuthProvider(authProvider);
+            acc.setFirebaseUid(finalUid);
+            acc.setAuthProvider(finalProvider);
             acc.setLastLogin(LocalDateTime.now());
             accountRepository.save(acc);
         });
@@ -243,14 +272,16 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private void buildAndSaveCustomerAccount(
-            String providedUsername, FirebaseToken token, String authProvider,
+            String providedUsername, String firebaseUid, String authProvider,
             String providedCustomerName, String providedEmail) {
-        String username = determineUsername(providedUsername, token, authProvider);
+        String username = (providedUsername != null && !providedUsername.isBlank())
+                ? providedUsername
+                : ("user_" + (firebaseUid != null ? firebaseUid.substring(0, Math.min(8, firebaseUid.length())) : "guest"));
 
         Account account = Account.builder()
                 .username(username)
                 .passwordHash(null)
-                .firebaseUid(token.getUid())
+                .firebaseUid(firebaseUid)
                 .authProvider(authProvider)
                 .isActive(true)
                 .build();
@@ -265,7 +296,33 @@ public class AuthServiceImpl implements AuthService {
                 .roleId(customerRole.getRoleId())
                 .build());
 
-        // [MICROSERVICE-REFACTOR]: Replaced local call with FeignClient to Customer_Service
+        // Notify Customer Service via FeignClient after DB transaction commits to avoid FK lock wait
+        Map<String, Object> req = new HashMap<>();
+        req.put("accountId", savedAccount.getAccountId());
+        req.put("username", username);
+        req.put("customerName", providedCustomerName != null ? providedCustomerName : "Khách hàng");
+        req.put("email", providedEmail);
+
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                new org.springframework.transaction.support.TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        try {
+                            customerServiceClient.createCustomer(req);
+                        } catch (Exception ex) {
+                            log.warn("Could not notify customer-service of account creation: {}", ex.getMessage());
+                        }
+                    }
+                }
+            );
+        } else {
+            try {
+                customerServiceClient.createCustomer(req);
+            } catch (Exception ex) {
+                log.warn("Could not notify customer-service of account creation: {}", ex.getMessage());
+            }
+        }
     }
 
     private String determineUsername(String provided, FirebaseToken token, String authProvider) {

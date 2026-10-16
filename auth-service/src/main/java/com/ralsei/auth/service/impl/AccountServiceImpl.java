@@ -35,6 +35,7 @@ import com.ralsei.auth.repository.RoleRepository;
 import com.ralsei.auth.service.AccountService;
 import com.ralsei.auth.util.AccountRoleGuard;
 
+import org.springframework.jdbc.core.JdbcTemplate;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -45,8 +46,7 @@ public class AccountServiceImpl implements AccountService {
     private final AccountRoleRepository accountRoleRepo;
     private final RoleRepository roleRepo;
     private final PasswordEncoder passwordEncoder;
-    private final StaffServiceClient staffServiceClient;
-    private final CustomerServiceClient customerServiceClient;
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     @Transactional(readOnly = true)
@@ -110,10 +110,20 @@ public class AccountServiceImpl implements AccountService {
 
         account = accountRepo.save(account);
 
-        // [MICROSERVICE-REFACTOR]: Replaced local Staff creation with FeignClient call to Staff Service
-        try {
-            staffServiceClient.getStaffByAccountId(account.getAccountId());
-        } catch (Exception ignored) {}
+        jdbcTemplate.update("""
+            INSERT INTO staff (accountId, staffName, phone, email, cccd, dob, staffPosition, ticketAgencyId, hireDate, isActive, createdAt, updatedAt)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, SYSDATETIME(), SYSDATETIME())
+        """,
+            account.getAccountId(),
+            request.staffName(),
+            request.phone(),
+            request.email(),
+            request.cccd(),
+            request.dob(),
+            request.staffPosition(),
+            request.ticketAgencyId(),
+            request.hireDate() != null ? request.hireDate() : java.time.LocalDate.now()
+        );
 
         if (request.roleIds() != null) {
             List<Role> roles = request.roleIds().stream()
@@ -144,6 +154,47 @@ public class AccountServiceImpl implements AccountService {
         Account account = accountRepo.findById(accountId)
             .orElseThrow(() -> new ResourceNotFoundException("Tài khoản không tồn tại!"));
 
+        Integer existingStaffCount = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM staff WHERE accountId = ?", Integer.class, accountId
+        );
+        boolean activeVal = request.isActive() != null ? request.isActive() : account.isActive();
+
+        if (existingStaffCount == null || existingStaffCount == 0) {
+            jdbcTemplate.update("""
+                INSERT INTO staff (accountId, staffName, phone, email, cccd, dob, staffPosition, ticketAgencyId, hireDate, isActive, createdAt, updatedAt)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, SYSDATETIME(), SYSDATETIME())
+            """,
+                accountId,
+                request.staffName(),
+                request.phone(),
+                request.email(),
+                request.cccd(),
+                request.dob(),
+                request.staffPosition(),
+                request.ticketAgencyId(),
+                request.hireDate() != null ? request.hireDate() : java.time.LocalDate.now(),
+                activeVal
+            );
+        } else {
+            jdbcTemplate.update("""
+                UPDATE staff
+                SET staffName = ?, phone = ?, email = ?, cccd = ?, dob = ?, staffPosition = ?, ticketAgencyId = ?,
+                    hireDate = COALESCE(?, hireDate), isActive = ?, updatedAt = SYSDATETIME()
+                WHERE accountId = ?
+            """,
+                request.staffName(),
+                request.phone(),
+                request.email(),
+                request.cccd(),
+                request.dob(),
+                request.staffPosition(),
+                request.ticketAgencyId(),
+                request.hireDate(),
+                activeVal,
+                accountId
+            );
+        }
+
         if (request.isActive() != null) {
             account.setActive(request.isActive());
         }
@@ -173,8 +224,10 @@ public class AccountServiceImpl implements AccountService {
             .map(Role::getRoleName)
             .collect(Collectors.toList());
 
-        boolean linkedToCustomer = false;
-        boolean linkedToStaff = false;
+        Integer custCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM customer WHERE accountId = ?", Integer.class, accountId);
+        Integer staffCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM staff WHERE accountId = ?", Integer.class, accountId);
+        boolean linkedToCustomer = custCount != null && custCount > 0;
+        boolean linkedToStaff = staffCount != null && staffCount > 0;
 
         AccountRoleGuard.validateRoleAssignment(
             linkedToCustomer,
@@ -184,6 +237,7 @@ public class AccountServiceImpl implements AccountService {
         );
 
         accountRoleRepo.deleteByAccountId(accountId);
+        accountRoleRepo.flush();
 
         for (Role role : newRoles) {
             AccountRole accountRole = AccountRole.builder()
@@ -211,9 +265,36 @@ public class AccountServiceImpl implements AccountService {
         Account account = accountRepo.findById(accountId)
             .orElseThrow(() -> new ResourceNotFoundException("Tài khoản không tồn tại!"));
 
+        if (account.isActive()) {
+            long adminCount = accountRepo.findAll().stream()
+                .filter(a -> {
+                    List<AccountRole> roles = accountRoleRepo.findByAccountId(a.getAccountId());
+                    return roles.stream().anyMatch(ar -> {
+                        Role r = roleRepo.findById(ar.getRoleId()).orElse(null);
+                        return r != null && "ADMIN".equals(r.getRoleName());
+                    });
+                })
+                .filter(Account::isActive)
+                .count();
+
+            if (adminCount <= 1) {
+                List<AccountRole> adminRoles = accountRoleRepo.findByAccountId(accountId);
+                boolean isAdmin = adminRoles.stream().anyMatch(ar -> {
+                    Role r = roleRepo.findById(ar.getRoleId()).orElse(null);
+                    return r != null && "ADMIN".equals(r.getRoleName());
+                });
+                if (isAdmin) {
+                    throw new BusinessRuleException("Không thể vô hiệu hóa tài khoản Admin cuối cùng!");
+                }
+            }
+        }
+
         boolean newActiveStatus = !account.isActive();
         account.setActive(newActiveStatus);
         accountRepo.save(account);
+
+        jdbcTemplate.update("UPDATE staff SET isActive = ?, updatedAt = SYSDATETIME() WHERE accountId = ?", newActiveStatus, accountId);
+        jdbcTemplate.update("UPDATE customer SET isActive = ?, updatedAt = SYSDATETIME() WHERE accountId = ?", newActiveStatus, accountId);
     }
 
     @Override
@@ -221,6 +302,8 @@ public class AccountServiceImpl implements AccountService {
     public void deleteAccount(Integer accountId) {
         Account account = accountRepo.findById(accountId)
             .orElseThrow(() -> new ResourceNotFoundException("Tài khoản không tồn tại!"));
+
+        jdbcTemplate.update("UPDATE staff SET accountId = NULL, isActive = 0, updatedAt = SYSDATETIME() WHERE accountId = ?", accountId);
 
         accountRoleRepo.deleteByAccountId(accountId);
         accountRepo.delete(account);
@@ -275,7 +358,23 @@ public class AccountServiceImpl implements AccountService {
             .filter(r -> r != null)
             .collect(Collectors.toList());
 
-        StaffInfoResponse staffInfo = null;
+        List<StaffInfoResponse> staffList = jdbcTemplate.query("""
+            SELECT staffId, staffName, phone, email, cccd, dob, staffPosition, ticketAgencyId, hireDate, isActive
+            FROM staff WHERE accountId = ?
+        """, (rs, rowNum) -> new StaffInfoResponse(
+            rs.getInt("staffId"),
+            rs.getString("staffName"),
+            rs.getString("phone"),
+            rs.getString("email"),
+            rs.getString("cccd"),
+            rs.getDate("dob") != null ? rs.getDate("dob").toLocalDate() : null,
+            rs.getString("staffPosition"),
+            rs.getObject("ticketAgencyId", Integer.class),
+            rs.getDate("hireDate") != null ? rs.getDate("hireDate").toLocalDate() : null,
+            rs.getBoolean("isActive")
+        ), account.getAccountId());
+
+        StaffInfoResponse staffInfo = staffList.isEmpty() ? null : staffList.get(0);
 
         return new AccountDetailResponse(
             account.getAccountId(),

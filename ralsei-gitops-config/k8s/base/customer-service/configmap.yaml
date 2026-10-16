@@ -4,7 +4,10 @@ metadata:
   name: customer-service-config
 data:
   SPRING_PROFILES_ACTIVE: dev
-  SPRING_DATASOURCE_URL: jdbc:sqlserver://database:1433;databaseName=customer_db;encrypt=true;trustServerCertificate=true;
+  SPRING_DATASOURCE_URL: jdbc:sqlserver://database:1433;databaseName=VeXeDB;encrypt=true;trustServerCertificate=true;
   SPRING_DATASOURCE_USERNAME: sa
   SPRING_DATA_REDIS_HOST: redis
   SPRING_DATA_REDIS_PORT: '6379'
+  AUTH_SERVICE_URL: http://auth-service:8081
+  STAFF_SERVICE_URL: http://staff-service:8083
+  DRIVER_SERVICE_URL: http://driver-service:8084

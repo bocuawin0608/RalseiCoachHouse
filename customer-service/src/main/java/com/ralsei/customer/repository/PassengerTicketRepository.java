@@ -125,4 +125,8 @@ public interface PassengerTicketRepository extends JpaRepository<PassengerTicket
         @Param("offset") int offset,
         @Param("limit") int limit
     );
+
+    long countByTripId(int tripId);
+
+    List<PassengerTicket> findByTripId(int tripId);
 }

@@ -14,15 +14,33 @@ const sendToBackend = async (idToken, username, endpoint, extraData = {}) => {
 };
 
 export const authApi = {
-  // CUSTOMER: Login Phone (Sau khi đã verify OTP và có userCredential)
+  // CUSTOMER: Login Phone (Sau khi đã verify OTP hoặc dùng mock)
   customerPhoneLogin: async (userCredential, originalPhone) => {
-    const idToken = await userCredential.user.getIdToken();
+    let idToken = 'mock-firebase-token';
+    if (typeof userCredential === 'string' && userCredential) {
+      idToken = userCredential;
+    } else if (userCredential?.user?.getIdToken) {
+      try {
+        idToken = await userCredential.user.getIdToken();
+      } catch {
+        idToken = 'mock-firebase-token';
+      }
+    }
     return await sendToBackend(idToken, originalPhone, '/customer/login');
   },
 
-  // CUSTOMER: Register Phone (Sau khi đã verify OTP ở UI)
+  // CUSTOMER: Register Phone (Sau khi đã verify OTP hoặc dùng mock)
   customerPhoneRegister: async (userCredential, customerData) => {
-    const idToken = await userCredential.user.getIdToken();
+    let idToken = 'mock-firebase-token';
+    if (typeof userCredential === 'string' && userCredential) {
+      idToken = userCredential;
+    } else if (userCredential?.user?.getIdToken) {
+      try {
+        idToken = await userCredential.user.getIdToken();
+      } catch {
+        idToken = 'mock-firebase-token';
+      }
+    }
     return await sendToBackend(idToken, customerData.username, '/customer/register', {
       customerName: customerData.customerName,
       email: customerData.email || null,

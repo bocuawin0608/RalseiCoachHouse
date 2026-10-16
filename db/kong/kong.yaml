@@ -1,0 +1,62 @@
+
+_format_version: "3.0"
+
+services:
+  - name: auth-service
+    url: http://auth-service:8081
+    routes:
+      - name: auth-route
+        paths:
+          - /api/auth
+          - /api/v1/admin/accounts
+          - /api/v1/admin/roles
+        strip_path: false
+
+  - name: customer-service
+    url: http://customer-service:8082
+    routes:
+      - name: customer-route
+        paths:
+          - /api/v1/admin/customers
+          - /api/v1/customer
+          - /api/v1/bookings
+          - /api/v1/vouchers
+          - /api/payment
+        strip_path: false
+
+  - name: payment-service
+    url: http://payment-service:8080
+    routes:
+      - name: payment-route
+        paths:
+          - /api/payments
+        strip_path: false
+
+  - name: staff-service
+    url: http://staff-service:8083
+    routes:
+      - name: staff-route
+        paths:
+          - /api/v1/staff
+          - /api/v1/refunds
+          - /api/v1/route-stops
+          - /api/v1/coach-stops
+          - /api/v1/routes
+          - /api/v1/trips
+          - /api/v1/manager/trips
+          - /api/v1/manager/cargo-types
+          - /api/v1/manager/cargo-type-prices
+          - /api/v1/ticket-staff/cargo-tickets
+          - /api/v1/admin/staff
+          - /api/v1/admin/ticket-agencies
+          - /api/v2/goong
+        strip_path: false
+
+  - name: driver-service
+    url: http://driver-service:8084
+    routes:
+      - name: driver-route
+        paths:
+          - /api/v1/coaches
+          - /api/v1/coach-types
+        strip_path: false

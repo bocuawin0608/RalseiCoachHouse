@@ -4,7 +4,9 @@ metadata:
   name: driver-service-config
 data:
   SPRING_PROFILES_ACTIVE: dev
-  SPRING_DATASOURCE_URL: jdbc:sqlserver://database:1433;databaseName=driver_db;encrypt=true;trustServerCertificate=true;
+  SPRING_DATASOURCE_URL: jdbc:sqlserver://database:1433;databaseName=VeXeDB;encrypt=true;trustServerCertificate=true;
   SPRING_DATASOURCE_USERNAME: sa
   SPRING_DATA_REDIS_HOST: redis
   SPRING_DATA_REDIS_PORT: '6379'
+  AUTH_SERVICE_URL: http://auth-service:8081
+  STAFF_SERVICE_URL: http://staff-service:8083
